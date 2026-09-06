@@ -128,12 +128,12 @@ export interface CallbackCampaignSummary {
 /**
  * One person's outreach within a campaign: mirrors BE `OutreachRecordResponse`.
  * Pending -> Assigned -> Contacted -> one of the four terminal statuses.
- * Unlike a clinical Case, `person_id` here is a real person reference, Care
+ * Unlike a clinical Case, `member_id` here is a real member reference, Care
  * Callbacks is not behind the clinical privacy wall.
  */
 export interface OutreachRecord extends BaseEntity {
   campaign_id: string
-  person_id: string
+  member_id: string
   counsellor_id?: string | null
   status: OutreachStatus
   contact_attempts: number

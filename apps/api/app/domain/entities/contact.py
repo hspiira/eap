@@ -8,7 +8,7 @@ from dataclasses import dataclass, field
 from datetime import datetime
 
 from app.domain.events import DomainEvent
-from app.domain.exceptions import DomainError, InvariantViolation
+from app.domain.exceptions import ConflictError, DomainError, InvariantViolation
 from app.domain.value_objects.core import ContactId, Email, TenantId
 from app.shared.utils.datetime import utc_now
 
@@ -85,7 +85,7 @@ class ContactEntity:
         if self.deleted_at:
             raise DomainError("Cannot activate deleted contact")
         if self._is_active:
-            raise DomainError("Contact is already active")
+            raise ConflictError("Contact is already active")
         self._is_active = True
         self.updated_at = utc_now()
 
@@ -94,7 +94,7 @@ class ContactEntity:
         if self.deleted_at:
             raise DomainError("Cannot deactivate deleted contact")
         if not self._is_active:
-            raise DomainError("Contact is already inactive")
+            raise ConflictError("Contact is already inactive")
         self._is_active = False
         self.updated_at = utc_now()
 

@@ -4,7 +4,7 @@ import { Link } from "@tanstack/react-router"
 import { AlertTriangle, ChevronRight, Phone, ShieldCheck, X } from "lucide-react"
 
 import { K_ANON_FLOOR } from "@/api/endpoints/care-callbacks-fixture"
-import { personsApi } from "@/api/endpoints/persons"
+import { membersApi } from "@/api/endpoints/members"
 import { usersApi } from "@/api/endpoints/users"
 import {
   DetailCard,
@@ -34,7 +34,7 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { useDebouncedValue } from "@/hooks/useDebouncedValue"
-import { displayName, nameInitials } from "@/lib/display"
+import { memberLabel, nameInitials } from "@/lib/display"
 import { useEntityList } from "@/lib/queries"
 import { cn } from "@/lib/utils"
 import { CampaignStatusPill } from "@/routes/care-callbacks/index"
@@ -42,8 +42,8 @@ import type {
   CallbackCampaign,
   CallbackCampaignAggregate,
   Client,
+  Member,
   OutreachRecord,
-  Person,
   User,
 } from "@/types/entities"
 import { CareCallbackCampaignStatus, OutreachStatus } from "@/types/enums"
@@ -109,7 +109,7 @@ export function CasesPanel({ cases, loading }: { cases: OutreachRecord[]; loadin
                   params={{ caseId: c.id }}
                   className="text-xs text-fg group-hover:text-primary font-mono"
                 >
-                  {c.person_id}
+                  {c.member_id}
                 </Link>
               </TableCell>
               <TableCell>
@@ -529,31 +529,31 @@ export function EnrolDialog({
 }: {
   open: boolean
   onOpenChange: (open: boolean) => void
-  onEnrol: (personIds: string[]) => Promise<void>
+  onEnrol: (memberIds: string[]) => Promise<void>
 }) {
-  const [personIds, setPersonIds] = useState<string[]>([])
+  const [memberIds, setMemberIds] = useState<string[]>([])
   const [submitting, setSubmitting] = useState(false)
   const [query, setQuery] = useState("")
   const debounced = useDebouncedValue(query.trim(), 250)
 
   useEffect(() => {
-    if (!open) setPersonIds([])
+    if (!open) setMemberIds([])
   }, [open])
 
-  const list = useEntityList<Person>({
-    resource: "persons",
+  const list = useEntityList<Member>({
+    resource: "members",
     params: { page: 1, limit: 8, search: debounced || undefined },
-    listFn: personsApi.list,
+    listFn: (params) => membersApi.list(params as Parameters<typeof membersApi.list>[0]),
   })
   const items = list.data?.items ?? []
-  const selectedSet = new Set(personIds)
+  const selectedSet = new Set(memberIds)
   const toggle = (id: string) =>
-    setPersonIds((prev) => (prev.includes(id) ? prev.filter((v) => v !== id) : [...prev, id]))
+    setMemberIds((prev) => (prev.includes(id) ? prev.filter((v) => v !== id) : [...prev, id]))
 
   const handleEnrol = async () => {
     setSubmitting(true)
     try {
-      await onEnrol(personIds)
+      await onEnrol(memberIds)
       onOpenChange(false)
     } finally {
       setSubmitting(false)
@@ -564,20 +564,20 @@ export function EnrolDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Enrol persons</DialogTitle>
+          <DialogTitle>Enrol members</DialogTitle>
           <DialogDescription>
-            Each person becomes a new Pending outreach record in this campaign.
+            Each member becomes a new Pending outreach record in this campaign.
           </DialogDescription>
         </DialogHeader>
         <Input
-          placeholder="Search persons…"
+          placeholder="Search members…"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
         />
         <div className="max-h-52 overflow-y-auto rounded-sm border border-fg/15 bg-bg">
           {items.length === 0 ? (
             <p className="px-3 py-2 text-xs text-fg-muted">
-              {debounced ? "No persons match." : "Start typing to search persons."}
+              {debounced ? "No members match." : "Start typing to search members."}
             </p>
           ) : (
             <ul className="divide-y divide-fg/8">
@@ -594,9 +594,9 @@ export function EnrolDialog({
                         aria-hidden
                         className="grid size-6 shrink-0 place-items-center bg-primary/10 text-[10px] font-semibold text-primary"
                       >
-                        {nameInitials(displayName(p))}
+                        {nameInitials(memberLabel(p))}
                       </span>
-                      <span className="min-w-0 truncate text-sm text-fg">{displayName(p)}</span>
+                      <span className="min-w-0 truncate text-sm text-fg">{memberLabel(p)}</span>
                     </span>
                     {selectedSet.has(p.id) ? (
                       <span className="shrink-0 rounded-sm border border-primary/30 bg-primary/10 px-1.5 py-0.5 text-[10px] font-medium text-primary">
@@ -618,8 +618,8 @@ export function EnrolDialog({
           >
             Cancel
           </Button>
-          <Button size="sm" onClick={handleEnrol} disabled={personIds.length === 0 || submitting}>
-            {submitting ? "Enrolling…" : `Enrol ${personIds.length || ""}`.trim()}
+          <Button size="sm" onClick={handleEnrol} disabled={memberIds.length === 0 || submitting}>
+            {submitting ? "Enrolling…" : `Enrol ${memberIds.length || ""}`.trim()}
           </Button>
         </DialogFooter>
       </DialogContent>

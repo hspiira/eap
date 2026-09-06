@@ -17,7 +17,7 @@ def _mappings() -> CanonicalMappings:
         client_codes={"ABSA": "client-absa", "STANBIC": "client-stanbic"},
         service_codes={"COUNSEL": "svc-1"},
         provider_codes={"DR-A": "prov-1"},
-        person_codes={"E1234": "person-1"},
+        member_codes={"client-absa": {"E1234": "member-1"}},
         status_text={
             "COMPLETED": SessionStatus.COMPLETED,
             "CANCELLED": SessionStatus.CANCELLED,
@@ -31,7 +31,7 @@ def _row(**overrides) -> HistoricalSessionRow:
         client_code="ABSA",
         service_code="COUNSEL",
         provider_code="DR-A",
-        person_code="E1234",
+        member_code="E1234",
         status_text="COMPLETED",
         scheduled_at_text="2024-09-15T10:00:00",
     )
@@ -47,7 +47,20 @@ class TestValidateRow:
         out = validate_row(_row(), _mappings(), existing_source_ids=set())
         assert isinstance(out, AcceptedRow)
         assert out.client_id == "client-absa"
+        assert out.member_id == "member-1"
         assert out.status == SessionStatus.COMPLETED
+
+    def test_member_code_is_scoped_to_the_resolved_client(self):
+        out = validate_row(_row(client_code="STANBIC"), _mappings(), existing_source_ids=set())
+        assert isinstance(out, RejectedRow)
+        assert out.classification == ImportClassification.REJECTED_UNMAPPED_MEMBER
+
+    def test_same_company_code_can_resolve_to_different_members(self):
+        mappings = _mappings()
+        mappings.member_codes["client-stanbic"] = {"E1234": "member-2"}
+        out = validate_row(_row(client_code="STANBIC"), mappings, existing_source_ids=set())
+        assert isinstance(out, AcceptedRow)
+        assert out.member_id == "member-2"
 
     def test_unmapped_client(self):
         out = validate_row(_row(client_code="UNKNOWN"), _mappings(), existing_source_ids=set())

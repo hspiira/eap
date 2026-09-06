@@ -581,11 +581,6 @@ const REGISTRY: ReadonlyArray<{
         status: "audit",
       },
       {
-        name: "ClientStaffSummaryCard",
-        path: "components/ClientStaffSummaryCard.tsx",
-        status: "audit",
-      },
-      {
         name: "ClientTodaysTodoCard",
         path: "components/ClientTodaysTodoCard.tsx",
         status: "audit",

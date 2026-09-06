@@ -121,7 +121,7 @@ function CaseDetailPage() {
     <PageShell
       icon={Headphones}
       trail={[{ label: "Care" }, { label: "My worklist", to: "/care-callbacks/worklist" }]}
-      title={`Callback ${outreach.person_id.slice(0, 8)}`}
+      title={`Callback ${outreach.member_id.slice(0, 8)}`}
       actions={
         <Button
           type="button"

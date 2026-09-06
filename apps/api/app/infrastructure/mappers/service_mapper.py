@@ -5,7 +5,7 @@ Converts between ServiceEntity (domain) and ServiceModel (persistence).
 """
 
 from app.domain.entities.service import ServiceEntity
-from app.domain.enums import BaseStatus
+from app.domain.enums import BaseStatus, ServiceCategory
 from app.domain.value_objects.core import ServiceId, TenantId
 from app.infrastructure.models.service_model import ServiceModel
 from app.shared.utils.datetime import ensure_utc
@@ -41,7 +41,7 @@ class ServiceMapper:
             status=status,
             created_at=ensure_utc(model.created_at),
             updated_at=ensure_utc(model.updated_at),
-            category=model.category,
+            category=ServiceCategory(model.category) if model.category else None,
             duration_minutes=model.duration_minutes,
             is_group_service=model.is_group_service,
             max_participants=model.max_participants,

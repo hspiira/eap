@@ -4,7 +4,7 @@ from app.domain.entities.non_compete_clause import NonCompeteClauseEntity
 from app.domain.enums import NonCompeteStatus
 from app.domain.value_objects.core import (
     NonCompeteClauseId,
-    PersonId,
+    ProviderId,
     TenantId,
     UserId,
 )
@@ -20,7 +20,7 @@ class NonCompeteClauseMapper:
         entity = NonCompeteClauseEntity(
             id=NonCompeteClauseId(model.id),
             tenant_id=TenantId(model.tenant_id),
-            provider_id=PersonId(model.provider_id),
+            provider_id=ProviderId(model.provider_id),
             status=NonCompeteStatus(model.status),
             terms_summary=model.terms_summary,
             effective_from=model.effective_from,

@@ -190,6 +190,39 @@ class TestMe:
         assert r.json()["email"] == EMAIL
         assert r.json()["role"] == "Admin"
 
+    async def test_platform_admin_fails_closed_when_unconfigured(
+        self, auth_client: AsyncClient, seeded: Any, monkeypatch: Any
+    ) -> None:
+        """No PLATFORM_TENANT_ID means nobody is a platform admin.
+
+        The frontend gates used to skip their check in this case and show the
+        surface to every tenant, which the API then refused with a 403.
+        """
+        from app.core.config import settings
+
+        monkeypatch.setattr(settings, "PLATFORM_TENANT_ID", "", raising=False)
+        token = (await auth_client.post("/auth/login", json=_login())).json()["access_token"]
+
+        r = await auth_client.get("/auth/me", headers={"Authorization": f"Bearer {token}"})
+
+        assert r.json()["is_platform_admin"] is False
+
+    async def test_platform_admin_is_true_only_for_the_platform_tenant(
+        self, auth_client: AsyncClient, seeded: Any, monkeypatch: Any
+    ) -> None:
+        from app.core.config import settings
+
+        monkeypatch.setattr(settings, "PLATFORM_TENANT_ID", TENANT, raising=False)
+        token = (await auth_client.post("/auth/login", json=_login())).json()["access_token"]
+        assert (
+            await auth_client.get("/auth/me", headers={"Authorization": f"Bearer {token}"})
+        ).json()["is_platform_admin"] is True
+
+        monkeypatch.setattr(settings, "PLATFORM_TENANT_ID", "some-other-tenant", raising=False)
+        assert (
+            await auth_client.get("/auth/me", headers={"Authorization": f"Bearer {token}"})
+        ).json()["is_platform_admin"] is False
+
 
 class TestRefresh:
     async def test_a_refresh_token_buys_a_new_access_token(

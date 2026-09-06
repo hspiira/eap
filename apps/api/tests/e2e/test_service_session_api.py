@@ -41,8 +41,9 @@ class TestCreateServiceSession:
             json={
                 "service_id": session_test_service["id"],
                 "provider_id": session_test_provider["id"],
-                "person_id": session_test_client_person["id"],
+                "member_id": session_test_client_person["id"],
                 "scheduled_at": scheduled_at,
+                "delivery_context": "Direct",
                 "location": "Conference Room A",
             },
         )
@@ -51,7 +52,7 @@ class TestCreateServiceSession:
         data = response.json()
         assert data["service_id"] == session_test_service["id"]
         assert data["provider_id"] == session_test_provider["id"]
-        assert data["person_id"] == session_test_client_person["id"]
+        assert data["member_id"] == session_test_client_person["id"]
         assert data["location"] == "Conference Room A"
         assert data["status"] == "Scheduled"
         assert data["reschedule_count"] == 0
@@ -72,8 +73,9 @@ class TestCreateServiceSession:
             json={
                 "service_id": session_test_service["id"],
                 "provider_id": session_test_provider["id"],
-                "person_id": session_test_client_person["id"],
+                "member_id": session_test_client_person["id"],
                 "scheduled_at": scheduled_at,
+                "delivery_context": "Direct",
             },
         )
 
@@ -104,13 +106,13 @@ class TestGetServiceSession:
         response = await client.get("/service-sessions/nonexistent-id-12345")
 
         assert response.status_code == 404
-        assert "not found" in response.json()["detail"].lower()
+        assert "not found" in response.json()["message"].lower()
 
 
 class TestGetSessionsByPerson:
-    """Tests for GET /service-sessions/person/{person_id} endpoint."""
+    """Tests for GET /service-sessions/member/{member_id} endpoint."""
 
-    async def test_get_sessions_by_person_success(
+    async def test_get_sessions_by_member_success(
         self,
         client: AsyncClient,
         session_test_tenant: dict,
@@ -119,15 +121,15 @@ class TestGetSessionsByPerson:
     ):
         """Test getting all sessions for a person."""
         tenant_id = session_test_tenant["id"]
-        person_id = session_test_client_person["id"]
+        member_id = session_test_client_person["id"]
 
-        response = await client.get(f"/service-sessions/person/{person_id}?tenant_id={tenant_id}")
+        response = await client.get(f"/service-sessions/member/{member_id}?tenant_id={tenant_id}")
 
         assert response.status_code == 200
         data = response.json()
         assert isinstance(data, list)
         assert len(data) >= 1
-        assert all(s["person_id"] == person_id for s in data)
+        assert all(s["member_id"] == member_id for s in data)
 
 
 class TestGetSessionsByProvider:
@@ -260,15 +262,15 @@ class TestListServiceSessions:
     ):
         """Test filtering sessions by person."""
         tenant_id = session_test_tenant["id"]
-        person_id = session_test_client_person["id"]
+        member_id = session_test_client_person["id"]
 
         response = await client.get(
-            f"/service-sessions/?tenant_id={tenant_id}&person_id={person_id}"
+            f"/service-sessions/?tenant_id={tenant_id}&member_id={member_id}"
         )
         data = response.json()
 
         assert response.status_code == 200
-        assert all(s["person_id"] == person_id for s in data["items"])
+        assert all(s["member_id"] == member_id for s in data["items"])
 
 
 # =============================================================================
@@ -292,11 +294,15 @@ class TestCompleteServiceSession:
         )
 
         assert response.status_code == 200
-        data = response.json()
+        # /complete now returns the session alongside the authorization drawdown.
+        body = response.json()
+        data = body["session"]
         assert data["status"] == "Completed"
         assert data["duration"] == 60
         assert data["notes"] == "Session completed successfully"
         assert data["completed_at"] is not None
+        # No case_id was supplied, so no authorization was consumed.
+        assert body["drawdown"]["consumed"] is False
 
     async def test_complete_not_found(self, client: AsyncClient):
         """Test completing non-existent session returns 404."""
@@ -528,8 +534,9 @@ class TestServiceSessionLifecycleFlow:
             json={
                 "service_id": session_test_service["id"],
                 "provider_id": session_test_provider["id"],
-                "person_id": session_test_client_person["id"],
+                "member_id": session_test_client_person["id"],
                 "scheduled_at": scheduled_at,
+                "delivery_context": "Direct",
                 "location": "Initial Location",
             },
         )
@@ -549,8 +556,8 @@ class TestServiceSessionLifecycleFlow:
             f"/service-sessions/{session_id}/complete",
             json={"duration": 55, "notes": "Good progress made"},
         )
-        assert complete_response.json()["status"] == "Completed"
-        assert complete_response.json()["duration"] == 55
+        assert complete_response.json()["session"]["status"] == "Completed"
+        assert complete_response.json()["session"]["duration"] == 55
 
         # Add feedback
         feedback_response = await client.patch(
@@ -577,8 +584,9 @@ class TestServiceSessionLifecycleFlow:
             json={
                 "service_id": session_test_service["id"],
                 "provider_id": session_test_provider["id"],
-                "person_id": session_test_client_person["id"],
+                "member_id": session_test_client_person["id"],
                 "scheduled_at": scheduled_at,
+                "delivery_context": "Direct",
             },
         )
         session_id = create_response.json()["id"]

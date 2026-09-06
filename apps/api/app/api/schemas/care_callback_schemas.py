@@ -31,8 +31,12 @@ class CounsellorPoolUpdate(BaseModel):
     counsellor_pool: list[str] = Field(..., min_length=1)
 
 
-class EnrolPersonsRequest(BaseModel):
-    person_ids: list[str] = Field(..., min_length=1)
+class EnrolMembersRequest(BaseModel):
+    member_ids: list[str] = Field(..., min_length=1)
+
+
+class EnrolPersonsRequest(EnrolMembersRequest):
+    """Deprecated import alias; wire contracts use member_ids."""
 
 
 class OutreachAssignRequest(BaseModel):
@@ -115,7 +119,7 @@ class OutreachRecordResponse(BaseModel):
     id: str
     tenant_id: str
     campaign_id: str
-    person_id: str
+    member_id: str
     counsellor_id: str | None
     status: OutreachStatus
     contact_attempts: int

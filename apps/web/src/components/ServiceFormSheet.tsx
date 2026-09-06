@@ -17,39 +17,37 @@ import {
 } from "@/components/ui/select"
 import { useEntityFormSheet } from "@/hooks/useEntityFormSheet"
 import type { Service } from "@/types/entities"
+import { ServiceCategory } from "@/types/enums"
 
-// Note: BE `ServiceCreate` does not have a `service_type` field. The category
-// label below is freeform per BE; service_type is intentionally dropped from
-// the create payload until BE adds it (file ticket if needed).
-const CATEGORY_OPTIONS = [
-  "Individual counselling",
-  "Couple counselling",
-  "Family therapy",
-  "Group counselling",
-  "Health talk",
-  "Empowerment talk",
-  "Coaching",
-  "Care callback",
-  "Policy advisory",
-  "Survey",
-  "Awareness",
-  "CISM",
-  "Critical incident response",
-] as const
+// `category` is the ServiceCategory enum the programme session caps and
+// authorizations gate on, so the options here are the enum, not a display list.
+// Labelled explicitly rather than derived: getStatusLabel splits on a
+// lower-to-upper boundary and renders CISMResponse as "Cismresponse".
+export const CATEGORY_LABELS: Record<ServiceCategory, string> = {
+  [ServiceCategory.SHORT_TERM_COUNSELLING]: "Short term counselling",
+  [ServiceCategory.CRISIS_INTERVENTION]: "Crisis intervention",
+  [ServiceCategory.SUBSTANCE_USE]: "Substance use",
+  [ServiceCategory.MANAGER_CONSULT]: "Manager consult",
+  [ServiceCategory.WORK_LIFE_REFERRAL]: "Work-life referral",
+  [ServiceCategory.CISM_RESPONSE]: "CISM response",
+  [ServiceCategory.WELLNESS_COACHING]: "Wellness coaching",
+}
+
+const CATEGORY_OPTIONS = Object.values(ServiceCategory)
 
 const schema = z.object({
   name: z.string().trim().min(1, "Name is required"),
   description: z.string().optional(),
-  category: z.string().optional(),
+  category: z.nativeEnum(ServiceCategory).optional(),
   duration_minutes: z
     .string()
     .optional()
-    .refine((v) => !v || /^\d+$/.test(v), "Must be a positive integer"),
+    .refine((v) => !v || /^[1-9]\d*$/.test(v), "Must be a positive integer"),
   is_group_service: z.boolean().optional(),
   max_participants: z
     .string()
     .optional()
-    .refine((v) => !v || /^\d+$/.test(v), "Must be a positive integer"),
+    .refine((v) => !v || /^[1-9]\d*$/.test(v), "Must be a positive integer"),
 })
 
 type Values = z.infer<typeof schema>
@@ -57,7 +55,7 @@ type Values = z.infer<typeof schema>
 const EMPTY: Values = {
   name: "",
   description: "",
-  category: "",
+  category: undefined,
   duration_minutes: "",
   is_group_service: false,
   max_participants: "",
@@ -87,7 +85,7 @@ export function ServiceFormSheet({ open, onOpenChange, service, onSaved }: Servi
     parsePayload: (values): ServiceCreate => ({
       name: values.name,
       description: values.description?.trim() || null,
-      category: values.category?.trim() || null,
+      category: values.category || null,
       duration_minutes: values.duration_minutes ? Number(values.duration_minutes) : null,
       is_group_service: Boolean(values.is_group_service),
       max_participants:
@@ -161,7 +159,7 @@ export function ServiceFormSheet({ open, onOpenChange, service, onSaved }: Servi
                   <SelectContent>
                     {CATEGORY_OPTIONS.map((c) => (
                       <SelectItem key={c} value={c}>
-                        {c}
+                        {CATEGORY_LABELS[c]}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -235,16 +233,9 @@ function toFormValues(s: Service): Values {
   return {
     name: s.name,
     description: s.description ?? "",
-    category: s.category ?? "",
+    category: s.category ?? undefined,
     duration_minutes: s.duration_minutes != null ? String(s.duration_minutes) : "",
     is_group_service: Boolean(s.is_group_service),
     max_participants: s.max_participants != null ? String(s.max_participants) : "",
   }
-}
-
-export function humanizeServiceType(value: string): string {
-  return value
-    .split("_")
-    .map((w) => w[0] + w.slice(1).toLowerCase())
-    .join(" ")
 }

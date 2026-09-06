@@ -3,7 +3,16 @@
 from datetime import date, datetime
 from typing import Any
 
-from sqlalchemy import Boolean, Date, DateTime, ForeignKey, Integer, String, Text
+from sqlalchemy import (
+    Boolean,
+    Date,
+    DateTime,
+    ForeignKey,
+    ForeignKeyConstraint,
+    Integer,
+    String,
+    Text,
+)
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -47,13 +56,23 @@ class CareCallbackCampaignModel(CuidMixin, TenantMixin, Base, TimestampMixin):
 
 class OutreachRecordModel(CuidMixin, TenantMixin, Base, TimestampMixin):
     __tablename__ = "outreach_records"
+    __table_args__ = (
+        ForeignKeyConstraint(
+            ["tenant_id", "counsellor_id"],
+            ["providers.tenant_id", "providers.id"],
+            name="fk_outreach_records_counsellor_tenant",
+            ondelete="RESTRICT",
+        ),
+    )
 
     campaign_id: Mapped[str] = mapped_column(
         ForeignKey("care_callback_campaigns.id", ondelete="CASCADE"),
         nullable=False,
         index=True,
     )
-    person_id: Mapped[str] = mapped_column(String(25), nullable=False, index=True)
+    member_id: Mapped[str] = mapped_column(
+        ForeignKey("eligible_members.id", ondelete="RESTRICT"), nullable=False, index=True
+    )
     counsellor_id: Mapped[str | None] = mapped_column(String(25), nullable=True, index=True)
     status: Mapped[OutreachStatus] = mapped_column(
         EnumValueType(OutreachStatus),

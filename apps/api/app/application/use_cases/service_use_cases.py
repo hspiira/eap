@@ -7,12 +7,20 @@ Refactored to use base use case classes.
 
 from app.application.use_cases.base import BaseUseCase
 from app.domain.entities.service import ServiceEntity
-from app.domain.enums import BaseStatus
+from app.domain.enums import BaseStatus, ServiceCategory
+from app.domain.exceptions import ConflictError
 from app.domain.repositories.service_repository import ServiceRepository
 from app.domain.value_objects.core import ServiceId, TenantId
 from app.shared.utils.datetime import utc_now
 
 # Lifecycle dispatched via TransitionUseCase + ServiceTransition.
+
+
+class _Unset:
+    pass
+
+
+_UNSET = _Unset()
 
 
 class CreateServiceUseCase(BaseUseCase[ServiceEntity, ServiceId]):
@@ -28,7 +36,7 @@ class CreateServiceUseCase(BaseUseCase[ServiceEntity, ServiceId]):
         tenant_id: TenantId,
         name: str,
         description: str | None = None,
-        category: str | None = None,
+        category: ServiceCategory | None = None,
         duration_minutes: int | None = None,
         is_group_service: bool = False,
         max_participants: int | None = None,
@@ -37,7 +45,7 @@ class CreateServiceUseCase(BaseUseCase[ServiceEntity, ServiceId]):
         # Check if service already exists
         existing = await self.service_repository.get_by_name(tenant_id, name)
         if existing:
-            raise ValueError(f"Service with name '{name}' already exists")
+            raise ConflictError(f"Service with name '{name}' already exists")
 
         # Create service entity
         now = utc_now()
@@ -73,20 +81,20 @@ class UpdateServiceUseCase(BaseUseCase[ServiceEntity, ServiceId]):
         self,
         service_id: ServiceId,
         name: str | None = None,
-        description: str | None = None,
-        category: str | None = None,
-        duration_minutes: int | None = None,
+        description: str | None | _Unset = _UNSET,
+        category: ServiceCategory | None | _Unset = _UNSET,
+        duration_minutes: int | None | _Unset = _UNSET,
     ) -> ServiceEntity:
         """Update service information."""
         service = await self._get_entity_or_raise(service_id, "Service")
 
         if name is not None:
             service.update_name(name)
-        if description is not None:
+        if not isinstance(description, _Unset):
             service.update_description(description)
-        if category is not None:
+        if not isinstance(category, _Unset):
             service.update_category(category)
-        if duration_minutes is not None:
+        if not isinstance(duration_minutes, _Unset):
             service.update_duration(duration_minutes)
 
         return await self._save_and_publish_events(service)

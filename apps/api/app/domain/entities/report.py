@@ -6,7 +6,7 @@ from typing import Any
 
 from app.domain.enums import ReportQueryType, ReportRunStatus
 from app.domain.events import DomainEvent
-from app.domain.exceptions import DomainError
+from app.domain.exceptions import ConflictError, DomainError
 from app.domain.value_objects.core import (
     ReportRunId,
     ReportTemplateId,
@@ -54,13 +54,13 @@ class ReportTemplate:
 
     def deactivate(self) -> None:
         if not self.is_active:
-            raise DomainError("ReportTemplate is already inactive")
+            raise ConflictError("ReportTemplate is already inactive")
         self.is_active = False
         self.updated_at = utc_now()
 
     def activate(self) -> None:
         if self.is_active:
-            raise DomainError("ReportTemplate is already active")
+            raise ConflictError("ReportTemplate is already active")
         self.is_active = True
         self.updated_at = utc_now()
 

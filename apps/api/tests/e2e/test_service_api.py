@@ -30,7 +30,7 @@ class TestCreateService:
             json={
                 "name": "Stress Management",
                 "description": "Workshops for stress management",
-                "category": "Wellness",
+                "category": "WellnessCoaching",
                 "duration_minutes": 60,
                 "is_group_service": False,
             },
@@ -40,7 +40,7 @@ class TestCreateService:
         data = response.json()
         assert data["name"] == "Stress Management"
         assert data["description"] == "Workshops for stress management"
-        assert data["category"] == "Wellness"
+        assert data["category"] == "WellnessCoaching"
         assert data["duration_minutes"] == 60
         assert data["is_group_service"] is False
         assert data["status"] == "Pending"
@@ -55,7 +55,7 @@ class TestCreateService:
             json={
                 "name": "Team Building Workshop",
                 "description": "Group workshop for teams",
-                "category": "Training",
+                "category": "ManagerConsult",
                 "duration_minutes": 120,
                 "is_group_service": True,
                 "max_participants": 20,
@@ -73,7 +73,7 @@ class TestCreateService:
             "/services/",
             json={
                 "name": "Test Service",
-                "category": "Test",
+                "category": "WorkLifeReferral",
                 "duration_minutes": 30,
             },
         )
@@ -105,7 +105,7 @@ class TestGetService:
         response = await client.get("/services/nonexistent-id-12345")
 
         assert response.status_code == 404
-        assert "not found" in response.json()["detail"].lower()
+        assert "not found" in response.json()["message"].lower()
 
 
 class TestGetServiceByName:
@@ -241,11 +241,13 @@ class TestListServices:
         """Test filtering services by category."""
         tenant_id = service_test_tenant["id"]
 
-        response = await client.get(f"/services/?tenant_id={tenant_id}&category=Counseling")
+        response = await client.get(
+            f"/services/?tenant_id={tenant_id}&category=ShortTermCounselling"
+        )
         data = response.json()
 
         assert response.status_code == 200
-        assert all(s["category"] == "Counseling" for s in data["items"])
+        assert all(s["category"] == "ShortTermCounselling" for s in data["items"])
 
     async def test_list_services_filter_by_group(
         self, client: AsyncClient, service_test_tenant: dict, test_group_service: dict
@@ -409,6 +411,21 @@ class TestUpdateService:
         data = response.json()
         assert data["duration_minutes"] == 90
 
+    async def test_clear_nullable_service_fields(self, client: AsyncClient, test_service: dict):
+        """Test clearing nullable service fields during an update."""
+        service_id = test_service["id"]
+
+        response = await client.patch(
+            f"/services/{service_id}",
+            json={"description": None, "category": None, "duration_minutes": None},
+        )
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["description"] is None
+        assert data["category"] is None
+        assert data["duration_minutes"] is None
+
     async def test_update_service_not_found(self, client: AsyncClient):
         """Test updating non-existent service returns 404."""
         response = await client.patch(
@@ -478,7 +495,7 @@ class TestServiceLifecycleFlow:
             f"/services/?tenant_id={tenant_id}",
             json={
                 "name": "Lifecycle Test Service",
-                "category": "Testing",
+                "category": "WellnessCoaching",
                 "duration_minutes": 30,
             },
         )
@@ -512,7 +529,7 @@ class TestServiceLifecycleFlow:
             json={
                 "name": "CRUD Test Service",
                 "description": "Initial description",
-                "category": "Testing",
+                "category": "WellnessCoaching",
                 "duration_minutes": 45,
             },
         )

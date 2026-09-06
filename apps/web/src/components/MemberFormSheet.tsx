@@ -17,7 +17,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { useEntityFormSheet } from "@/hooks/useEntityFormSheet"
+import { useEntityFormSheet, type UseEntityFormSheetReturn } from "@/hooks/useEntityFormSheet"
 import { nameInitials } from "@/lib/display"
 import type { Client, Member } from "@/types/entities"
 import { MemberGender, MemberRelation } from "@/types/enums"
@@ -49,7 +49,6 @@ const optionalEmail = () =>
 const memberSchema = z
   .object({
     client_id: z.string().trim().min(1, "Client is required"),
-    employer_member_id: z.string().trim().min(1, "Member ID is required"),
     relation: z.enum(RELATION_VALUES),
     primary_employee_member_id: optionalText(),
     work_email: optionalEmail(),
@@ -58,6 +57,9 @@ const memberSchema = z
     date_of_birth: optionalText(),
     gender: z.enum(GENDER_VALUES).optional(),
     phone: optionalText(),
+    staff_number: optionalText(),
+    national_id: optionalText(),
+    passport_number: optionalText(),
   })
   .superRefine((value, ctx) => {
     if (value.relation !== MemberRelation.EMPLOYEE && !value.primary_employee_member_id?.trim()) {
@@ -73,7 +75,6 @@ type MemberFormValues = z.infer<typeof memberSchema>
 
 const EMPTY: MemberFormValues = {
   client_id: "",
-  employer_member_id: "",
   relation: MemberRelation.EMPLOYEE,
   primary_employee_member_id: "",
   work_email: "",
@@ -82,6 +83,9 @@ const EMPTY: MemberFormValues = {
   date_of_birth: "",
   gender: undefined,
   phone: "",
+  staff_number: "",
+  national_id: "",
+  passport_number: "",
 }
 
 interface MemberFormSheetProps {
@@ -111,7 +115,7 @@ export function MemberFormSheet({
   const resolvedClient = client ?? clientQuery.data
   const initialValues: MemberFormValues = member
     ? toValues(member)
-    : { ...EMPTY, client_id: clientId ?? "" }
+    : { ...EMPTY, client_id: selectedClientId ?? "" }
   const form = useEntityFormSheet<MemberFormValues, MemberFormValues, Member, Member>({
     resource: "members",
     schema: memberSchema,
@@ -130,10 +134,9 @@ export function MemberFormSheet({
       return saved
     },
     successToast: { create: "Member added", update: "Member updated" },
+    extraInvalidations: [{ queryKey: ["clients", "list"] }],
     onSaved,
   })
-  const watchedRelation = form.watch("relation")
-  const errors = form.formState.errors
 
   return (
     <SheetForm
@@ -148,129 +151,13 @@ export function MemberFormSheet({
       submitLabel={member ? "Save changes" : "Add member"}
     >
       <p className="text-xs text-fg-muted">Fields marked * are required.</p>
-      <FormSection title="Member identity">
-        {!member ? (
-          <FormField label="Client" required error={errors.client_id?.message}>
-            <Controller
-              control={form.control}
-              name="client_id"
-              render={({ field }) => (
-                <ClientPicker
-                  value={field.value}
-                  onChange={field.onChange}
-                  selected={resolvedClient}
-                />
-              )}
-            />
-          </FormField>
-        ) : (
-          <FormField
-            label="Client"
-            hint="Client reassignment is handled as a separate controlled workflow."
-          >
-            <div className="border border-fg/15 bg-surface px-3 py-2 text-sm text-fg">
-              {resolvedClient?.name ?? member.client_id}
-            </div>
-          </FormField>
-        )}
-        <FormField label="Company member ID" required error={errors.employer_member_id?.message}>
-          <Input {...form.register("employer_member_id")} placeholder="e.g. EMP-1042" />
-        </FormField>
-        <FormField label="Name" required error={errors.display_label?.message}>
-          <Input {...form.register("display_label")} placeholder="e.g. Amina Namukasa" />
-        </FormField>
-        <FormField label="Relationship" required error={errors.relation?.message}>
-          <Controller
-            control={form.control}
-            name="relation"
-            render={({ field }) => (
-              <Select value={field.value} onValueChange={field.onChange}>
-                <SelectTrigger className="rounded-none">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent className="rounded-none">
-                  {RELATIONS.map((option) => (
-                    <SelectItem key={option.value} value={option.value} className="rounded-none">
-                      {option.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            )}
-          />
-        </FormField>
-        {watchedRelation !== MemberRelation.EMPLOYEE ? (
-          <FormField
-            label="Primary employee"
-            required
-            error={errors.primary_employee_member_id?.message}
-          >
-            <Controller
-              control={form.control}
-              name="primary_employee_member_id"
-              render={({ field }) => (
-                <PrimaryMemberPicker
-                  clientId={form.watch("client_id")}
-                  value={field.value ?? ""}
-                  onChange={field.onChange}
-                />
-              )}
-            />
-          </FormField>
-        ) : null}
-      </FormSection>
+      <MemberIdentityFields form={form} member={member} resolvedClient={resolvedClient} />
 
-      <FormSection title="Personal details">
-        <div className="grid gap-4 sm:grid-cols-2">
-          <FormField label="Date of birth" error={errors.date_of_birth?.message}>
-            <Controller
-              control={form.control}
-              name="date_of_birth"
-              render={({ field }) => (
-                <DatePicker
-                  id="member-date-of-birth"
-                  aria-label="Date of birth"
-                  value={field.value}
-                  onChange={field.onChange}
-                  placeholder="Select date"
-                />
-              )}
-            />
-          </FormField>
-          <FormField label="Gender" error={errors.gender?.message}>
-            <Controller
-              control={form.control}
-              name="gender"
-              render={({ field }) => (
-                <Select value={field.value ?? ""} onValueChange={(value) => field.onChange(value)}>
-                  <SelectTrigger className="rounded-none">
-                    <SelectValue placeholder="Select gender" />
-                  </SelectTrigger>
-                  <SelectContent className="rounded-none">
-                    {GENDERS.map((option) => (
-                      <SelectItem key={option.value} value={option.value} className="rounded-none">
-                        {option.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              )}
-            />
-          </FormField>
-        </div>
-      </FormSection>
+      <MemberPersonalFields form={form} />
 
-      <FormSection title="Contact">
-        <FormField label="Phone" error={errors.phone?.message}>
-          <Input type="tel" {...form.register("phone")} />
-        </FormField>
-        <FormField label="Work email" error={errors.work_email?.message}>
-          <Input type="email" {...form.register("work_email")} />
-        </FormField>
-        <FormField label="Personal email" error={errors.personal_email?.message}>
-          <Input type="email" {...form.register("personal_email")} />
-        </FormField>
-      </FormSection>
+      <MemberIdentifierFields form={form} />
+
+      <MemberContactFields form={form} />
     </SheetForm>
   )
 }
@@ -278,7 +165,6 @@ export function MemberFormSheet({
 function toValues(member: Member): MemberFormValues {
   return {
     client_id: member.client_id,
-    employer_member_id: member.employer_member_id,
     relation: member.relation,
     primary_employee_member_id: member.primary_employee_member_id ?? "",
     work_email: member.work_email ?? "",
@@ -287,13 +173,15 @@ function toValues(member: Member): MemberFormValues {
     date_of_birth: member.date_of_birth ?? "",
     gender: member.gender ?? undefined,
     phone: member.phone ?? "",
+    staff_number: member.staff_number ?? "",
+    national_id: member.national_id ?? "",
+    passport_number: member.passport_number ?? "",
   }
 }
 
 function toRequest(values: MemberFormValues) {
   return {
     client_id: values.client_id.trim(),
-    employer_member_id: values.employer_member_id.trim(),
     relation: values.relation,
     primary_employee_member_id:
       values.relation === MemberRelation.EMPLOYEE
@@ -305,6 +193,9 @@ function toRequest(values: MemberFormValues) {
     date_of_birth: optionalValue(values.date_of_birth),
     gender: values.gender ?? null,
     phone: optionalValue(values.phone),
+    staff_number: optionalValue(values.staff_number),
+    national_id: optionalValue(values.national_id),
+    passport_number: optionalValue(values.passport_number),
   }
 }
 
@@ -352,5 +243,214 @@ function PrimaryMemberPicker({
         />
       )}
     />
+  )
+}
+
+function MemberIdentityFields({
+  form,
+  member,
+  resolvedClient,
+}: {
+  form: UseEntityFormSheetReturn<MemberFormValues>
+  member?: Member | null
+  resolvedClient?: Client | null
+}) {
+  const errors = form.formState.errors
+  const watchedRelation = form.watch("relation")
+  return (
+    <FormSection title="Member identity">
+      {!member ? (
+        <FormField label="Client" required error={errors.client_id?.message}>
+          <Controller
+            control={form.control}
+            name="client_id"
+            render={({ field }) => (
+              <ClientPicker
+                value={field.value}
+                onChange={(id) => {
+                  field.onChange(id)
+                  form.setValue("primary_employee_member_id", "")
+                }}
+                selected={resolvedClient}
+              />
+            )}
+          />
+        </FormField>
+      ) : (
+        <FormField
+          label="Client"
+          hint="Client reassignment is handled as a separate controlled workflow."
+        >
+          <div className="border border-fg/15 bg-surface px-3 py-2 text-sm text-fg">
+            {resolvedClient?.name ?? member.client_id}
+          </div>
+        </FormField>
+      )}
+      {member && (
+        <FormField label="Member code" hint="Issued by the system and not editable.">
+          <div className="border border-fg/15 bg-surface px-3 py-2 text-sm text-fg">
+            {member.employer_member_id}
+          </div>
+        </FormField>
+      )}
+      <FormField label="Name" htmlFor="member-name" required error={errors.display_label?.message}>
+        <Input
+          id="member-name"
+          {...form.register("display_label")}
+          placeholder="e.g. Amina Namukasa"
+        />
+      </FormField>
+      <FormField
+        label="Relationship"
+        htmlFor="member-relation"
+        required
+        error={errors.relation?.message}
+      >
+        <Controller
+          control={form.control}
+          name="relation"
+          render={({ field }) => (
+            <Select value={field.value} onValueChange={field.onChange}>
+              <SelectTrigger id="member-relation" className="rounded-none">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent className="rounded-none">
+                {RELATIONS.map((option) => (
+                  <SelectItem key={option.value} value={option.value} className="rounded-none">
+                    {option.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
+        />
+      </FormField>
+      {watchedRelation !== MemberRelation.EMPLOYEE ? (
+        <FormField
+          label="Primary employee"
+          required
+          error={errors.primary_employee_member_id?.message}
+        >
+          <Controller
+            control={form.control}
+            name="primary_employee_member_id"
+            render={({ field }) => (
+              <PrimaryMemberPicker
+                key={form.watch("client_id")}
+                clientId={form.watch("client_id")}
+                value={field.value ?? ""}
+                onChange={field.onChange}
+              />
+            )}
+          />
+        </FormField>
+      ) : null}
+    </FormSection>
+  )
+}
+
+function MemberPersonalFields({ form }: { form: UseEntityFormSheetReturn<MemberFormValues> }) {
+  const errors = form.formState.errors
+  return (
+    <FormSection title="Personal details">
+      <div className="grid gap-4 sm:grid-cols-2">
+        <FormField label="Date of birth" error={errors.date_of_birth?.message}>
+          <Controller
+            control={form.control}
+            name="date_of_birth"
+            render={({ field }) => (
+              <DatePicker
+                id="member-date-of-birth"
+                aria-label="Date of birth"
+                value={field.value}
+                onChange={field.onChange}
+                placeholder="Select date"
+              />
+            )}
+          />
+        </FormField>
+        <FormField label="Gender" htmlFor="member-gender" error={errors.gender?.message}>
+          <Controller
+            control={form.control}
+            name="gender"
+            render={({ field }) => (
+              <Select
+                value={field.value ?? "unset"}
+                onValueChange={(value) => field.onChange(value === "unset" ? undefined : value)}
+              >
+                <SelectTrigger id="member-gender" className="rounded-none">
+                  <SelectValue placeholder="Select gender" />
+                </SelectTrigger>
+                <SelectContent className="rounded-none">
+                  <SelectItem value="unset" className="rounded-none">
+                    Not recorded
+                  </SelectItem>
+                  {GENDERS.map((option) => (
+                    <SelectItem key={option.value} value={option.value} className="rounded-none">
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+          />
+        </FormField>
+      </div>
+    </FormSection>
+  )
+}
+
+function MemberIdentifierFields({ form }: { form: UseEntityFormSheetReturn<MemberFormValues> }) {
+  const errors = form.formState.errors
+  return (
+    <FormSection
+      title="Identification"
+      description="Optional. Recorded for verification; none of these is the member code."
+    >
+      <div className="grid gap-4 sm:grid-cols-3">
+        <FormField
+          label="Company ID number"
+          htmlFor="member-staff-number"
+          error={errors.staff_number?.message}
+        >
+          <Input id="member-staff-number" {...form.register("staff_number")} />
+        </FormField>
+        <FormField
+          label="National ID (NIN)"
+          htmlFor="member-national-id"
+          error={errors.national_id?.message}
+        >
+          <Input id="member-national-id" {...form.register("national_id")} />
+        </FormField>
+        <FormField
+          label="Passport number"
+          htmlFor="member-passport-number"
+          error={errors.passport_number?.message}
+        >
+          <Input id="member-passport-number" {...form.register("passport_number")} />
+        </FormField>
+      </div>
+    </FormSection>
+  )
+}
+
+function MemberContactFields({ form }: { form: UseEntityFormSheetReturn<MemberFormValues> }) {
+  const errors = form.formState.errors
+  return (
+    <FormSection title="Contact">
+      <FormField label="Phone" htmlFor="member-phone" error={errors.phone?.message}>
+        <Input id="member-phone" type="tel" {...form.register("phone")} />
+      </FormField>
+      <FormField label="Work email" htmlFor="member-work-email" error={errors.work_email?.message}>
+        <Input id="member-work-email" type="email" {...form.register("work_email")} />
+      </FormField>
+      <FormField
+        label="Personal email"
+        htmlFor="member-personal-email"
+        error={errors.personal_email?.message}
+      >
+        <Input id="member-personal-email" type="email" {...form.register("personal_email")} />
+      </FormField>
+    </FormSection>
   )
 }

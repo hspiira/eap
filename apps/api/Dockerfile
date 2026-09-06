@@ -33,7 +33,8 @@ WORKDIR /app
 
 # Create non-root user for security
 RUN groupadd --gid 1000 evexia && \
-    useradd --uid 1000 --gid evexia --shell /bin/bash --create-home evexia
+    useradd --uid 1000 --gid evexia --shell /bin/bash --create-home evexia && \
+    install -d -o evexia -g evexia -m 0700 /app/uploads
 
 # Copy virtual environment from builder
 COPY --from=builder /app/.venv /app/.venv
@@ -42,6 +43,7 @@ COPY --from=builder /app/.venv /app/.venv
 COPY --chown=evexia:evexia app/ ./app/
 COPY --chown=evexia:evexia alembic/ ./alembic/
 COPY --chown=evexia:evexia alembic.ini ./
+COPY --chown=evexia:evexia scripts/ ./scripts/
 
 # Set environment variables
 ENV PATH="/app/.venv/bin:$PATH"
@@ -59,7 +61,8 @@ EXPOSE 8000
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
     CMD python -c "import httpx; httpx.get('http://localhost:8000/health').raise_for_status()"
 
-# Run the application
+# Run the API. The outbox worker runs from this same image with
+# CMD ["python", "scripts/outbox_worker.py"]; see docker-compose.yml.
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
 
 # -----------------------------------------------------------------------------

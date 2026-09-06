@@ -5,8 +5,10 @@ import type {
   DocumentType,
   KPICategory,
   MeasurementUnit,
+  ServiceCategory,
   SessionCategory,
   SessionClinicalStatus,
+  SessionDeliveryContext,
   SessionStatus,
   SessionType,
 } from "../enums"
@@ -19,22 +21,12 @@ export interface Service extends BaseEntity {
   name: string
   description?: string | null
   status: BaseStatus
-  category?: string | null
+  category?: ServiceCategory | null
   duration_minutes?: number | null
   /** Whether this is a group service per BE `ServiceResponse.is_group_service`. */
   is_group_service?: boolean
   /** Group session capacity cap per BE `ServiceResponse.max_participants`. */
   max_participants?: number | null
-  /** @deprecated Not on BE: kept temporarily for legacy callers; will be removed. */
-  service_type?: string | null
-  /** @deprecated Use `is_group_service` + `max_participants`. */
-  group_settings?: {
-    max_group_size?: number | null
-    min_group_size?: number | null
-    allow_group_sessions?: boolean
-  } | null
-  /** @deprecated Not on BE response. */
-  metadata?: Record<string, unknown> | null
 }
 
 /**
@@ -43,8 +35,22 @@ export interface Service extends BaseEntity {
 /** Mirrors BE `ServiceSessionResponse`: field names and types are wire-true. */
 export interface ServiceSession extends BaseEntity {
   service_id: string
-  person_id: string
+  member_id: string
   provider_id?: string | null
+  /**
+   * How the session was delivered. `Unknown` belongs to historical records
+   * whose source does not say, and must be shown as unknown rather than
+   * treated as direct delivery.
+   */
+  delivery_context?: SessionDeliveryContext | null
+  /** The affiliation this session was delivered under, for `Organisation`. */
+  provider_affiliation_id?: string | null
+  /**
+   * Read from the session's own stored affiliation, never from the
+   * practitioner's current affiliations, so moving firms does not reattribute
+   * a past session. Null for direct and unknown delivery.
+   */
+  provider_organisation_id?: string | null
   status: SessionStatus
   scheduled_at: string
   completed_at?: string | null

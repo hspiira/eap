@@ -46,6 +46,7 @@ from app.core.database import get_db
 from app.core.security import TokenData, get_current_user
 from app.domain.entities.tenant import TenantEntity
 from app.domain.enums import SubscriptionTier, TenantRole, TenantStatus
+from app.domain.exceptions import NotFoundError
 from app.domain.repositories.client_repository import ClientRepository
 from app.domain.repositories.industry_repository import IndustryRepository
 from app.domain.repositories.tenant_repository import TenantRepository
@@ -290,8 +291,6 @@ async def update_tenant(
 ):
     """Update tenant basic information."""
     if data.name is None:
-        from app.domain.exceptions import NotFoundError
-
         tenant = await tenant_repo.get_by_id(TenantId(tenant_id))
         if tenant is None:
             raise NotFoundError(f"Tenant not found: {tenant_id}")
@@ -421,6 +420,28 @@ async def restore_tenant(
 # ==================== QUERIES (Direct Repository) ====================
 
 
+def _matches_filters(
+    tenant: TenantEntity,
+    status: TenantStatus | None,
+    subscription_tier: SubscriptionTier | None,
+    search: str | None,
+) -> bool:
+    """Apply the list filters to a single tenant.
+
+    A non-platform user's list is their own tenant, so the filters have to be
+    applied here rather than in the repository query.
+    """
+    if status is not None and tenant.status != status:
+        return False
+    if subscription_tier is not None and tenant.subscription_tier != subscription_tier:
+        return False
+    if search:
+        needle = search.casefold()
+        if needle not in tenant.name.casefold() and needle not in tenant.code.value.casefold():
+            return False
+    return True
+
+
 @router.get(
     "/",
     response_model=TenantListResponse,
@@ -449,7 +470,7 @@ async def list_tenants(
 
     if not is_platform_admin:
         own = await tenant_repo.get_by_id(TenantId(current_user.tenant_id))
-        items = [own] if own else []
+        items = [own] if own and _matches_filters(own, status, subscription_tier, search) else []
         return TenantListResponse(
             items=[_to_tenant_response(t) for t in items],
             total=len(items),
@@ -515,7 +536,7 @@ async def get_tenant_stats(
     """Get tenant statistics including user and client counts."""
     tenant = await tenant_repo.get_by_id(TenantId(tenant_id))
     if not tenant:
-        raise ValueError("Tenant not found")
+        raise NotFoundError("Tenant not found")
     user_count = await user_repo.count(tenant_id=TenantId(tenant_id))
     client_count = await client_repo.count(tenant_id=TenantId(tenant_id))
 
@@ -556,7 +577,7 @@ async def get_tenant(
     """Get tenant by ID."""
     tenant = await tenant_repo.get_by_id(TenantId(tenant_id))
     if not tenant:
-        raise ValueError("Tenant not found")
+        raise NotFoundError("Tenant not found")
     return _to_tenant_response(tenant)
 
 

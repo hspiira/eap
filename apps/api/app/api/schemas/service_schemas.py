@@ -8,7 +8,7 @@ Separate from domain entities.
 from pydantic import BaseModel, ConfigDict, Field
 
 from app.api.schemas.base import OptionalSanitizedStr, SanitizedStr
-from app.domain.enums import BaseStatus
+from app.domain.enums import BaseStatus, ServiceCategory
 
 # === Request Schemas ===
 
@@ -20,7 +20,9 @@ class ServiceCreate(BaseModel):
     description: OptionalSanitizedStr = Field(
         None, max_length=2000, description="Service description"
     )
-    category: OptionalSanitizedStr = Field(None, max_length=100, description="Service category")
+    category: ServiceCategory | None = Field(
+        None, description="Programme category this service is delivered under"
+    )
     duration_minutes: int | None = Field(None, gt=0, description="Service duration in minutes")
     is_group_service: bool = Field(False, description="Whether this is a group service")
     max_participants: int | None = Field(
@@ -37,7 +39,9 @@ class ServiceUpdate(BaseModel):
     description: OptionalSanitizedStr = Field(
         None, max_length=2000, description="Service description"
     )
-    category: OptionalSanitizedStr = Field(None, max_length=100, description="Service category")
+    category: ServiceCategory | None = Field(
+        None, description="Programme category this service is delivered under"
+    )
     duration_minutes: int | None = Field(None, gt=0, description="Service duration in minutes")
 
 
@@ -60,7 +64,9 @@ class ServiceResponse(BaseModel):
     tenant_id: str = Field(..., description="Tenant identifier")
     name: str = Field(..., description="Service name")
     description: str | None = Field(None, description="Service description")
-    category: str | None = Field(None, description="Service category")
+    category: ServiceCategory | None = Field(
+        None, description="Programme category this service is delivered under"
+    )
     status: BaseStatus = Field(..., description="Service status")
     duration_minutes: int | None = Field(None, description="Service duration in minutes")
     is_group_service: bool = Field(..., description="Whether this is a group service")

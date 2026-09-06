@@ -22,6 +22,7 @@ import { StatusBadge } from "@/components/common/StatusBadge"
 import { TABLE_HEAD } from "@/components/common/tableStyles"
 import { Tab, TabPanel, Tabs, TabsList } from "@/components/common/Tabs"
 import { ContractFormSheet } from "@/components/ContractFormSheet"
+import { ContractAttachments } from "@/components/contracts/ContractAttachments"
 import { ServiceAssignmentFormSheet } from "@/components/ServiceAssignmentFormSheet"
 import { Button } from "@/components/ui/button"
 import {
@@ -45,8 +46,14 @@ export const Route = createFileRoute("/contracts/$contractId")({
   component: ContractDetailPage,
 })
 
-type TabValue = "overview" | "services" | "billing" | "history"
-const TAB_VALUES: ReadonlyArray<TabValue> = ["overview", "services", "billing", "history"]
+type TabValue = "overview" | "services" | "attachments" | "billing" | "history"
+const TAB_VALUES: ReadonlyArray<TabValue> = [
+  "overview",
+  "services",
+  "attachments",
+  "billing",
+  "history",
+]
 
 function ContractDetailPage() {
   const { contractId } = Route.useParams()
@@ -113,12 +120,12 @@ function ContractDetailPage() {
   })
   if (state || !contract) return state
 
-  const number = contract.id
+  const title = client?.name ?? "Contract"
 
   return (
     <PageShell
       icon={FileSignature}
-      breadcrumb={`Commercial · Contracts · ${number}`}
+      breadcrumb={`Commercial · Contracts · ${title}`}
       actions={
         <>
           <Button
@@ -177,6 +184,7 @@ function ContractDetailPage() {
                   Services
                 </Tab>
                 <Tab value="billing">Billing</Tab>
+                <Tab value="attachments">Attachments</Tab>
                 <Tab value="history">History</Tab>
               </TabsList>
 
@@ -194,18 +202,21 @@ function ContractDetailPage() {
                     ) : null}
                   </DetailCard>
 
-                  <DetailCard title="Identity">
+                  <DetailCard title="Signature">
                     <DetailGrid>
-                      <DetailRow
-                        label="Reference"
-                        value={<span className="font-mono">{contract.id}</span>}
-                      />
+                      <DetailRow label="Signed by" value={contract.signed_by || "-"} />
+                      <DetailRow label="Signed on" value={formatDay(contract.signed_at)} />
                       <DetailRow
                         label="Contract ID"
                         value={<span className="font-mono text-xs">{contract.id}</span>}
                         fullWidth
                       />
                     </DetailGrid>
+                    {contract.termination_reason ? (
+                      <p className="mt-3 text-xs text-danger">
+                        Terminated: {contract.termination_reason}
+                      </p>
+                    ) : null}
                   </DetailCard>
                 </div>
               </TabPanel>
@@ -218,13 +229,21 @@ function ContractDetailPage() {
                 />
               </TabPanel>
 
+              <TabPanel value="attachments">
+                <ContractAttachments key={contractId} contractId={contractId} />
+              </TabPanel>
               <TabPanel value="billing">
                 <DetailCard title="Billing terms">
                   <DetailGrid>
-                    <DetailRow label="Frequency" value={contract.payment_frequency} />
-                    <DetailRow label="Payment status" value={contract.payment_status} />
                     <DetailRow label="Amount" value={formatMoney(contract)} />
-                    <DetailRow label="Currency" value={contract.billing_rate.currency} />
+                    <DetailRow label="Frequency" value={contract.payment_frequency} />
+                    <DetailRow
+                      label="Payment status"
+                      value={<StatusBadge status={contract.payment_status} />}
+                    />
+                    <DetailRow label="Auto-renew" value={contract.is_auto_renew ? "Yes" : "No"} />
+                    <DetailRow label="Last billed" value={formatDay(contract.last_billing_date)} />
+                    <DetailRow label="Next billing" value={formatDay(contract.next_billing_date)} />
                   </DetailGrid>
                 </DetailCard>
               </TabPanel>
@@ -261,21 +280,24 @@ function Hero({ contract, client }: { contract: Contract; client: Client | null 
       >
         <FileSignature className="size-4" />
       </span>
-      <h1 className="shrink truncate text-base font-semibold leading-tight text-fg font-mono">
-        {contract.id.slice(0, 8)}
+      <h1 className="shrink truncate text-base font-semibold leading-tight text-fg">
+        {client ? (
+          <Link
+            to="/clients/$clientId"
+            params={{ clientId: client.id }}
+            className="hover:text-primary"
+          >
+            {client.name}
+          </Link>
+        ) : (
+          "Contract"
+        )}
       </h1>
-      {client ? (
-        <Link
-          to="/clients/$clientId"
-          params={{ clientId: client.id }}
-          className="text-xs text-fg/65 hover:text-primary"
-        >
-          {client.name}
-          <span className="ml-1.5 text-fg-subtle">{client.code}</span>
-        </Link>
-      ) : (
-        <span className="font-mono text-xs text-fg-subtle">{contract.client_id.slice(0, 8)}</span>
-      )}
+      {client?.code ? <span className="shrink-0 text-xs text-fg-subtle">{client.code}</span> : null}
+      <span className="h-4 w-px shrink-0 bg-fg/15" aria-hidden />
+      <span className="shrink-0 whitespace-nowrap text-xs text-fg/65">
+        {formatDay(contract.period.start_date)} to {formatDay(contract.period.end_date)}
+      </span>
       <span className="h-4 w-px shrink-0 bg-fg/15" aria-hidden />
       <StatusBadge status={contract.status} />
     </div>
@@ -322,12 +344,14 @@ function DetailRail({ contract, client, onAction, actionLoading }: DetailRailPro
         )}
       </RailSection>
 
-      <RailSection title="Billing snapshot">
-        <DetailGrid>
-          <DetailRow label="Amount" value={formatMoney(contract)} />
-          <DetailRow label="Frequency" value={contract.payment_frequency} />
-          <DetailRow label="Payment" value={contract.payment_status} fullWidth />
-        </DetailGrid>
+      <RailSection title="Billing">
+        <p className="tabular-nums text-lg font-semibold leading-tight text-fg">
+          {formatMoney(contract)}
+        </p>
+        <p className="mt-0.5 text-xs text-fg-muted">{contract.payment_frequency}</p>
+        <div className="mt-3">
+          <StatusBadge status={contract.payment_status} size="sm" />
+        </div>
       </RailSection>
 
       <RailSection title="Lifecycle">

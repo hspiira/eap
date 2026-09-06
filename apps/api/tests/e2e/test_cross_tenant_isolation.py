@@ -113,13 +113,25 @@ class TestTenantScopedReads:
             f"tenant A read tenant B's client: {r.status_code} {r.text[:200]}"
         )
 
-    async def test_cannot_list_another_tenants_persons(
+    async def test_members_ignore_a_supplied_tenant_id(
         self, isolated_client: AsyncClient, two_tenants: Any
     ) -> None:
-        r = await isolated_client.get(
-            "/persons/", params={"tenant_id": TENANT_B}, headers=_auth(TENANT_A, "u-a")
+        """`/members` takes no tenant_id: it reads the caller's token instead.
+
+        Replaces the `/persons` case this class used to cover. That router was
+        retired with the members migration, so the assertion had stopped
+        exercising anything. The property here is different from the clients
+        one above by design: rather than rejecting another tenant's id, the
+        endpoint has no parameter to reject, so naming one changes nothing.
+        """
+        headers = _auth(TENANT_A, "u-a")
+        own = await isolated_client.get("/members", headers=headers)
+        spoofed = await isolated_client.get(
+            "/members", params={"tenant_id": TENANT_B}, headers=headers
         )
-        assert r.status_code in (401, 403)
+        assert own.status_code == 200
+        assert spoofed.status_code == 200
+        assert spoofed.json()["total"] == own.json()["total"]
 
 
 class TestUnauthenticated:

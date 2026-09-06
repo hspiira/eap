@@ -43,6 +43,7 @@ from app.core.database import get_db
 from app.core.security import TokenData, get_current_user
 from app.domain.entities.kpi import KPIAssignmentEntity, KPIEntity
 from app.domain.enums import KPICategory
+from app.domain.exceptions import NotFoundError
 from app.domain.repositories.kpi_repository import (
     KPIAssignmentRepository,
     KPIRepository,
@@ -279,7 +280,7 @@ async def get_kpi(
     """Get KPI by ID."""
     kpi = await GetKPIUseCase(kpi_repo).execute(KPIId(kpi_id))
     if not kpi:
-        raise ValueError("KPI not found")
+        raise NotFoundError("KPI not found")
     return _to_kpi_response(kpi)
 
 
@@ -454,7 +455,7 @@ async def get_kpi_assignment(
         KPIAssignmentId(assignment_id)
     )
     if not assignment:
-        raise ValueError("KPI assignment not found")
+        raise NotFoundError("KPI assignment not found")
     return _to_kpi_assignment_response(assignment)
 
 

@@ -7,13 +7,22 @@ This is a data container only - no business logic.
 
 from datetime import datetime
 
-from sqlalchemy import CheckConstraint, DateTime, ForeignKey, Integer, String, Text
+from sqlalchemy import (
+    CheckConstraint,
+    DateTime,
+    ForeignKey,
+    ForeignKeyConstraint,
+    Integer,
+    String,
+    Text,
+)
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.domain.enums import (
     ClientType,
     SessionCategory,
     SessionClinicalStatus,
+    SessionDeliveryContext,
     SessionStatus,
     SessionType,
 )
@@ -65,12 +74,48 @@ class ServiceSessionModel(CuidMixin, TenantMixin, Base, TimestampMixin, SoftDele
             + ")",
             name="session_clinical_outcome_check",
         ),
+        ForeignKeyConstraint(
+            ["tenant_id", "provider_id"],
+            ["providers.tenant_id", "providers.id"],
+            name="fk_service_sessions_provider_tenant",
+            ondelete="RESTRICT",
+        ),
+        CheckConstraint(
+            "delivery_context IN ("
+            + ", ".join(f"'{e.value}'" for e in SessionDeliveryContext)
+            + ")",
+            name="session_delivery_context_check",
+        ),
+        CheckConstraint(
+            "(delivery_context = 'Organisation') = (provider_affiliation_id IS NOT NULL)",
+            name="session_affiliation_matches_context_check",
+        ),
+        ForeignKeyConstraint(
+            ["tenant_id", "provider_affiliation_id", "provider_id"],
+            [
+                "provider_affiliations.tenant_id",
+                "provider_affiliations.id",
+                "provider_affiliations.provider_id",
+            ],
+            name="fk_service_sessions_affiliation_tenant_provider",
+            ondelete="RESTRICT",
+        ),
     )
 
     # Relationships
     service_id: Mapped[str] = mapped_column(String(25), nullable=False, index=True)
-    provider_id: Mapped[str] = mapped_column(ForeignKey("persons.id"), nullable=False, index=True)
-    person_id: Mapped[str] = mapped_column(ForeignKey("persons.id"), nullable=False, index=True)
+    provider_id: Mapped[str] = mapped_column(String(25), nullable=False, index=True)
+    delivery_context: Mapped[SessionDeliveryContext] = mapped_column(
+        EnumValueType(SessionDeliveryContext),
+        nullable=False,
+        default=SessionDeliveryContext.UNKNOWN,
+    )
+    provider_affiliation_id: Mapped[str | None] = mapped_column(
+        String(25), nullable=True, index=True
+    )
+    member_id: Mapped[str] = mapped_column(
+        ForeignKey("eligible_members.id"), nullable=False, index=True
+    )
 
     # Scheduling
     scheduled_at: Mapped[datetime] = mapped_column(

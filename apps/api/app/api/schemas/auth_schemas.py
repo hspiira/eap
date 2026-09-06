@@ -106,3 +106,11 @@ class MeResponse(BaseModel):
         default_factory=list,
         description="Scope grants for this session (Clinical / EmployerPortal)",
     )
+    is_platform_admin: bool = Field(
+        False,
+        description=(
+            "Whether this session may administer platform-wide surfaces. Derived "
+            "server-side from PLATFORM_TENANT_ID so the UI cannot disagree with the "
+            "API about who may write; it fails closed when unconfigured."
+        ),
+    )

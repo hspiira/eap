@@ -61,19 +61,20 @@ class TestCreateIndustry:
         )
         tenant_id = tenant_resp.json()["id"]
 
-        # Create parent industry
+        # Names outside the seeded catalogue: creating a tenant seeds the
+        # default industries, and "Finance" and "Banking" are among them.
         parent_resp = await client.post(
             f"/industries/?tenant_id={tenant_id}",
-            json={"name": "Finance", "code": "FIN"},
+            json={"name": "Bespoke Parent Industry", "code": "BPI"},
         )
+        assert parent_resp.status_code == 201, parent_resp.text
         parent_id = parent_resp.json()["id"]
 
-        # Create child industry
         child_resp = await client.post(
             f"/industries/?tenant_id={tenant_id}",
             json={
-                "name": "Banking",
-                "code": "BANK",
+                "name": "Bespoke Child Industry",
+                "code": "BCI",
                 "parent_industry_id": parent_id,
             },
         )
@@ -101,8 +102,8 @@ class TestListIndustries:
 
         assert response.status_code == 422
 
-    async def test_list_industries_empty(self, client: AsyncClient):
-        """Test listing industries when none exist."""
+    async def test_list_industries_returns_the_seeded_catalogue(self, client: AsyncClient):
+        """A new tenant is seeded with the default industries, not left empty."""
         tenant_resp = await client.post(
             "/tenants/",
             json={"name": "Empty Ind Tenant", "code": "empty-ind"},
@@ -113,8 +114,9 @@ class TestListIndustries:
 
         assert response.status_code == 200
         data = response.json()
-        assert data["items"] == []
-        assert data["total"] == 0
+        assert data["total"] > 0
+        assert len(data["items"]) <= data["total"]
+        assert all(item["tenant_id"] == tenant_id for item in data["items"])
 
 
 class TestUpdateIndustry:
@@ -255,11 +257,11 @@ class TestIndustryIntegration:
         # Create child industries
         await client.post(
             f"/industries/?tenant_id={tenant_id}",
-            json={"name": "Automotive", "code": "AUTO", "parent_industry_id": parent_id},
+            json={"name": "Bespoke Automotive", "code": "AUTO", "parent_industry_id": parent_id},
         )
         await client.post(
             f"/industries/?tenant_id={tenant_id}",
-            json={"name": "Electronics", "code": "ELEC", "parent_industry_id": parent_id},
+            json={"name": "Bespoke Electronics", "code": "ELEC", "parent_industry_id": parent_id},
         )
 
         # Get children

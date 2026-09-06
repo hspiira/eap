@@ -2,16 +2,19 @@ import * as React from "react"
 import { useState } from "react"
 
 import { clientsApi } from "@/api/endpoints/clients"
+import { type MemberListParams, membersApi } from "@/api/endpoints/members"
 import { personsApi } from "@/api/endpoints/persons"
-import { providersApi } from "@/api/endpoints/providers"
+import { type ProviderListParams, providersApi } from "@/api/endpoints/providers"
 import { servicesApi } from "@/api/endpoints/services"
+import { usersApi } from "@/api/endpoints/users"
+import { CATEGORY_LABELS } from "@/components/ServiceFormSheet"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { useDebouncedValue } from "@/hooks/useDebouncedValue"
-import { displayName, nameInitials, personInitials } from "@/lib/display"
+import { displayName, memberLabel, nameInitials, personInitials } from "@/lib/display"
 import { useEntityList } from "@/lib/queries"
 import type { ListParams, PaginatedResponse } from "@/types/api"
-import type { Client, Person, Provider, Service } from "@/types/entities"
+import type { Client, Member, Person, Provider, Service, User } from "@/types/entities"
 import { getStatusLabel } from "@/utils/statusColors"
 
 /** Search-and-select over a paginated resource. */
@@ -186,18 +189,95 @@ export function ServicePicker({
         <PickerRow
           initials="SV"
           primary={s.name}
-          secondary={s.service_type ?? s.category ?? "-"}
+          secondary={s.category ? CATEGORY_LABELS[s.category] : "-"}
           size="md"
         />
       )}
       renderRow={(s) => (
-        <PickerRow initials="SV" primary={s.name} secondary={s.service_type ?? s.category ?? "-"} />
+        <PickerRow
+          initials="SV"
+          primary={s.name}
+          secondary={s.category ? CATEGORY_LABELS[s.category] : "-"}
+        />
       )}
     />
   )
 }
 
 /** Person search-and-select. Was copy-pasted into form sheets that assign a session or service to someone. */
+export function MemberPicker({
+  value,
+  onChange,
+}: {
+  value: string
+  onChange: (id: string) => void
+}) {
+  return (
+    <EntityPicker<Member, MemberListParams>
+      resource="members"
+      listFn={membersApi.list}
+      value={value}
+      onChange={onChange}
+      placeholder="Search members…"
+      emptyPrompt="Search by name or company member ID."
+      emptyNoMatch="No members match."
+      renderSelected={(member) => (
+        <PickerRow
+          initials={nameInitials(memberLabel(member))}
+          primary={memberLabel(member)}
+          secondary={member.relation}
+          size="md"
+        />
+      )}
+      renderRow={(member) => (
+        <PickerRow
+          initials={nameInitials(memberLabel(member))}
+          primary={memberLabel(member)}
+          secondary={member.relation}
+        />
+      )}
+    />
+  )
+}
+
+export function UserPicker({
+  value,
+  onChange,
+  selected,
+}: {
+  value: string
+  onChange: (id: string) => void
+  selected?: User | null
+}) {
+  return (
+    <EntityPicker<User>
+      resource="users"
+      listFn={usersApi.list}
+      value={value}
+      onChange={onChange}
+      selectedItem={selected}
+      placeholder="Search users by email…"
+      emptyPrompt="Search for an existing user account."
+      emptyNoMatch="No user accounts match."
+      renderSelected={(user) => (
+        <PickerRow
+          initials={nameInitials(user.display_name || user.email)}
+          primary={user.display_name || user.email}
+          secondary={user.display_name ? user.email : user.status}
+          size="md"
+        />
+      )}
+      renderRow={(user) => (
+        <PickerRow
+          initials={nameInitials(user.display_name || user.email)}
+          primary={user.display_name || user.email}
+          secondary={user.display_name ? user.email : user.status}
+        />
+      )}
+    />
+  )
+}
+
 export function PersonPicker({
   value,
   onChange,
@@ -242,18 +322,18 @@ export function ProviderPicker({
   onChange: (id: string) => void
 }) {
   return (
-    <EntityPicker<Provider>
+    <EntityPicker<Provider, ProviderListParams>
       resource="providers"
       listFn={providersApi.list}
       value={value}
       onChange={onChange}
-      placeholder="Search providers…"
-      emptyPrompt="Start typing to search providers."
-      emptyNoMatch="No providers match."
+      placeholder="Search practitioners…"
+      emptyPrompt="Start typing to search practitioners."
+      emptyNoMatch="No practitioners match."
       renderSelected={(p) => (
         <PickerRow
           initials="PR"
-          primary={p.id}
+          primary={p.display_name}
           secondary={`${p.provider_profile.tier} · ${p.provider_profile.region}`}
           size="md"
         />
@@ -261,7 +341,7 @@ export function ProviderPicker({
       renderRow={(p) => (
         <PickerRow
           initials="PR"
-          primary={p.id}
+          primary={p.display_name}
           secondary={`${p.provider_profile.tier} · ${p.provider_profile.region}`}
         />
       )}

@@ -9,6 +9,9 @@ interface DetailRailProps {
   client: Client
   stats: ClientStatsResponse | null
   statsLoading: boolean
+  memberCount?: number
+  nextRenewal?: string
+  milestonesState?: "loading" | "error" | "ready"
   tags: ClientTag[]
   tagsLoading: boolean
   children: Client[]
@@ -40,6 +43,7 @@ import {
 import { StatusBadge } from "@/components/common/StatusBadge"
 import { TABLE_HEAD } from "@/components/common/tableStyles"
 import { TierBadge } from "@/components/common/TierBadge"
+import { ContractAttachments } from "@/components/contracts/ContractAttachments"
 import { Button } from "@/components/ui/button"
 import {
   Select,
@@ -56,7 +60,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import { nameInitials } from "@/lib/display"
+import { contractLabel, nameInitials } from "@/lib/display"
 import { formatDay } from "@/lib/format"
 import type { Client, ClientTag, Contract } from "@/types/entities"
 import { ClientTier } from "@/types/enums"
@@ -92,6 +96,7 @@ export function ContractsPanel({
   contracts,
   total,
   loading,
+  error,
   onAdd,
   clientId,
 }: {
@@ -99,19 +104,27 @@ export function ContractsPanel({
   /** Server-side total, which can exceed the page held in `contracts`. */
   total?: number
   loading: boolean
-  onAdd: () => void
+  onAdd?: () => void
+  error?: boolean
   clientId: string
 }) {
   const [sort, setSort] = useState<SortState>({ field: undefined, desc: false })
+  const [attachmentContract, setAttachmentContract] = useState<Contract | null>(null)
   const toggleSort = (field: string) => setSort((prev) => nextSort(prev, field))
   const sorted = compareSort(contracts, sort, (row, field) => {
-    if (field === "number") return row.id
+    if (field === "number") return row.period.start_date
     // The term is nested under `period`; a bare field lookup would miss it.
     if (field === "start_date") return row.period.start_date
     if (field === "end_date") return row.period.end_date
     return fieldValue(row, field)
   })
 
+  if (error)
+    return (
+      <p role="alert" className="border border-fg/15 p-6 text-sm">
+        Contracts could not be loaded. Refresh to try again.
+      </p>
+    )
   if (loading) {
     return <p className="text-sm text-fg/65">Loading contracts…</p>
   }
@@ -121,10 +134,12 @@ export function ContractsPanel({
         title="No contracts yet"
         description="Add a contract once it's signed."
         action={
-          <Button size="sm" className="gap-1.5" onClick={onAdd}>
-            <Plus className="size-4" />
-            Add contract
-          </Button>
+          onAdd ? (
+            <Button size="sm" className="gap-1.5" onClick={onAdd}>
+              <Plus className="size-4" />
+              Add contract
+            </Button>
+          ) : undefined
         }
       />
     )
@@ -148,10 +163,12 @@ export function ContractsPanel({
               <ChevronRight className="size-3" />
             </Link>
           ) : null}
-          <Button size="sm" variant="outline" className="h-7 gap-1.5 px-2.5" onClick={onAdd}>
-            <Plus className="size-3.5" />
-            Add contract
-          </Button>
+          {onAdd && (
+            <Button size="sm" variant="outline" className="h-7 gap-1.5 px-2.5" onClick={onAdd}>
+              <Plus className="size-3.5" />
+              Add contract
+            </Button>
+          )}
         </div>
       </div>
       <div className="overflow-hidden border border-fg/10 bg-surface">
@@ -160,7 +177,7 @@ export function ContractsPanel({
             <TableRow className={`hover:bg-transparent ${ROW_BORDER}`}>
               <TableHead>
                 <SortHeader field="number" sort={sort} onToggle={toggleSort}>
-                  Number
+                  Contract term
                 </SortHeader>
               </TableHead>
               <TableHead>
@@ -178,6 +195,7 @@ export function ContractsPanel({
                   End
                 </SortHeader>
               </TableHead>
+              <TableHead>Documents</TableHead>
               <TableHead className="w-10 text-right text-fg/65">
                 <span className="sr-only">Open</span>
               </TableHead>
@@ -190,9 +208,9 @@ export function ContractsPanel({
                   <Link
                     to="/contracts/$contractId"
                     params={{ contractId: c.id }}
-                    className="font-medium text-fg group-hover:text-primary font-mono"
+                    className="font-medium text-fg group-hover:text-primary"
                   >
-                    {c.id.slice(0, 8)}
+                    {contractLabel(c)}
                   </Link>
                 </TableCell>
                 <TableCell>
@@ -202,6 +220,11 @@ export function ContractsPanel({
                   {formatDay(c.period.start_date)}
                 </TableCell>
                 <TableCell className="text-sm text-fg/75">{formatDay(c.period.end_date)}</TableCell>
+                <TableCell>
+                  <Button size="sm" variant="outline" onClick={() => setAttachmentContract(c)}>
+                    Attachments
+                  </Button>
+                </TableCell>
                 <TableCell className="text-right">
                   <Link
                     to="/contracts/$contractId"
@@ -217,6 +240,17 @@ export function ContractsPanel({
           </TableBody>
         </Table>
       </div>
+      {attachmentContract && (
+        <div className="space-y-3">
+          <div className="flex items-center justify-between gap-3">
+            <h3 className="text-sm font-medium">{contractLabel(attachmentContract)}</h3>
+            <Button variant="ghost" size="sm" onClick={() => setAttachmentContract(null)}>
+              Close attachments
+            </Button>
+          </div>
+          <ContractAttachments key={attachmentContract.id} contractId={attachmentContract.id} />
+        </div>
+      )}
     </div>
   )
 }
@@ -225,6 +259,9 @@ export function DetailRail({
   client,
   stats,
   statsLoading,
+  memberCount,
+  nextRenewal,
+  milestonesState = "ready",
   tags,
   tagsLoading,
   children,
@@ -241,14 +278,31 @@ export function DetailRail({
     <div className="space-y-5">
       <RailSection title="At a glance">
         <div className="grid grid-cols-2 gap-3">
+          <Stat label="Members" value={fmtCount(memberCount)} />
           <Stat
-            label="Child clients"
-            value={statsLoading ? "…" : fmtCount(stats?.child_clients_count)}
+            label="Active contracts"
+            value={statsLoading ? "…" : fmtCount(stats?.active_contracts_count)}
           />
           <Stat
             label="Contracts"
             value={statsLoading ? "…" : fmtCount(stats?.total_contracts_count)}
           />
+          <Stat
+            label="Child clients"
+            value={statsLoading ? "…" : fmtCount(stats?.child_clients_count)}
+          />
+        </div>
+        <div className="mt-4 border-t border-fg/10 pt-3 text-sm">
+          <p className="text-xs text-fg-muted">Next contract milestone · 90 days</p>
+          <p className="mt-1 font-medium">
+            {milestonesState === "loading"
+              ? "Loading…"
+              : milestonesState === "error"
+                ? "Contract dates unavailable"
+                : nextRenewal
+                  ? formatDay(nextRenewal)
+                  : "No contract dates in the next 90 days"}
+          </p>
         </div>
       </RailSection>
 

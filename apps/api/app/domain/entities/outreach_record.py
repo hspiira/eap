@@ -19,8 +19,10 @@ from app.domain.events import (
 from app.domain.exceptions import DomainError, InvalidStateError
 from app.domain.value_objects.core import (
     CareCallbackCampaignId,
+    EligibleMemberId,
     OutreachRecordId,
     PersonId,
+    ProviderId,
     TenantId,
 )
 from app.shared.utils.datetime import utc_now
@@ -40,12 +42,15 @@ class OutreachRecord:
     id: OutreachRecordId
     tenant_id: TenantId
     campaign_id: CareCallbackCampaignId
-    person_id: PersonId
-    status: OutreachStatus
-    contact_attempts: int
-    created_at: datetime
-    updated_at: datetime
-    counsellor_id: PersonId | None = None
+    member_id: EligibleMemberId | None = None
+    # Deprecated constructor alias retained for one release so replayed jobs
+    # can be rehydrated while all persisted/API data uses member_id.
+    person_id: PersonId | None = None
+    status: OutreachStatus = OutreachStatus.PENDING
+    contact_attempts: int = 0
+    created_at: datetime = field(default_factory=utc_now)
+    updated_at: datetime = field(default_factory=utc_now)
+    counsellor_id: ProviderId | None = None
     assigned_at: datetime | None = None
     last_attempted_at: datetime | None = None
     completed_at: datetime | None = None
@@ -58,10 +63,21 @@ class OutreachRecord:
     events: list[DomainEvent] = field(default_factory=list[DomainEvent])
 
     def __post_init__(self) -> None:
+        if self.member_id is None and self.person_id is not None:
+            self.member_id = EligibleMemberId(self.person_id.value)
+        if self.member_id is None:
+            raise DomainError("Outreach record requires a member_id")
         if self.contact_attempts < 0:
             raise DomainError("contact_attempts cannot be negative")
 
-    def assign(self, counsellor_id: PersonId, now: datetime | None = None) -> None:
+    @property
+    def required_member_id(self) -> EligibleMemberId:
+        """`__post_init__` guarantees this; the property states it for the checker."""
+        if self.member_id is None:
+            raise DomainError("Outreach record requires a member_id")
+        return self.member_id
+
+    def assign(self, counsellor_id: ProviderId, now: datetime | None = None) -> None:
         """Route this outreach to a counsellor."""
         if self.status in _TERMINAL_STATUSES:
             raise InvalidStateError(
@@ -121,7 +137,7 @@ class OutreachRecord:
                 CrisisFlagRaised(
                     occurred_at=now,
                     outreach_id=self.id,
-                    person_id=self.person_id,
+                    person_id=PersonId(self.required_member_id.value),
                     risk_level=risk_level.value,
                     reason=crisis_reason or "Crisis indicator triggered by triage",
                 )

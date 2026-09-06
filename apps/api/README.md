@@ -45,6 +45,22 @@ uv run uvicorn app.main:app --reload
 - **Alembic** lives at the **project root** (`alembic/`, `alembic.ini`). This is the usual layout; migrations are a top-level concern and stay out of `app/` so they can run against any environment.
 - **PostgreSQL** is recommended (database name: `evexia_db`). Set `DATABASE_URL=postgresql+asyncpg://user:password@localhost:5432/evexia_db` in `.env`.
 
+From the repository root, the preferred commands are:
+
+```bash
+pnpm migrate:current  # inspect the applied revision
+pnpm migrate:heads    # every head; more than one means a branch to merge
+pnpm migrate          # apply pending migrations
+pnpm migrate:make     # autogenerate a revision; pass -m "message"
+pnpm migrate:down     # roll back one revision
+pnpm migrate:history  # inspect the migration history
+```
+
+These commands operate on the database in `DATABASE_URL`. Verify that the
+environment file points to the intended database before running them, especially
+for production. The direct `uv run alembic ...` commands below remain available
+when working inside `apps/api`.
+
 To **drop and recreate** the database and run migrations:
 
 ```bash

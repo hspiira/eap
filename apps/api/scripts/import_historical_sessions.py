@@ -9,7 +9,7 @@ Usage:
 
 CSV columns (header required):
     source_id, client_code, service_code, provider_code,
-    person_code, status_text, scheduled_at_text, notes (optional)
+    member_code, status_text, scheduled_at_text, notes (optional)
 
 mappings.json shape::
 
@@ -17,7 +17,7 @@ mappings.json shape::
         "client_codes":   {"ABSA": "<canonical-client-id>", ...},
         "service_codes":  {...},
         "provider_codes": {...},
-        "person_codes":   {...},
+        "member_codes":   {"<canonical-client-id>": {"<company-member-code>": "<member-id>"}},
         "status_text":    {"COMPLETED": "Completed", ...}
     }
 
@@ -35,6 +35,11 @@ import csv
 import json
 import sys
 from pathlib import Path
+
+# Running as a script puts scripts/ on sys.path, not the repo root.
+_project_root = Path(__file__).resolve().parent.parent
+if str(_project_root) not in sys.path:
+    sys.path.insert(0, str(_project_root))
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import create_async_engine
@@ -54,7 +59,7 @@ def _load_mappings(path: Path) -> CanonicalMappings:
         client_codes=dict(raw.get("client_codes", {})),
         service_codes=dict(raw.get("service_codes", {})),
         provider_codes=dict(raw.get("provider_codes", {})),
-        person_codes=dict(raw.get("person_codes", {})),
+        member_codes=dict(raw.get("member_codes", {})),
         status_text={k: SessionStatus(v) for k, v in raw.get("status_text", {}).items()},
     )
 
@@ -70,7 +75,7 @@ def _load_rows(csv_path: Path) -> list[HistoricalSessionRow]:
                     client_code=r.get("client_code", "").strip(),
                     service_code=r.get("service_code", "").strip(),
                     provider_code=r.get("provider_code", "").strip(),
-                    person_code=r.get("person_code", "").strip(),
+                    member_code=r.get("member_code", "").strip(),
                     status_text=r.get("status_text", "").strip(),
                     scheduled_at_text=r.get("scheduled_at_text", "").strip(),
                     notes=r.get("notes") or None,

@@ -33,7 +33,7 @@ from dataclasses import dataclass, field
 from datetime import date, datetime
 
 from app.domain.entities.user import UserEntity
-from app.domain.enums import BaseStatus, PanelStatus, PersonType, ProviderTier
+from app.domain.enums import BaseStatus, PersonType
 from app.domain.events import (
     DomainEvent,
     PersonActivated,
@@ -41,10 +41,8 @@ from app.domain.events import (
     PersonSecondaryRoleAdded,
     PersonSecondaryRoleRemoved,
     PersonTerminated,
-    ProviderPanelStatusChanged,
-    ProviderTierChanged,
 )
-from app.domain.exceptions import DomainError, InvariantViolation
+from app.domain.exceptions import ConflictError, DomainError, InvariantViolation
 from app.domain.value_objects.core import (
     ClientId,
     DependentInfo,
@@ -98,7 +96,7 @@ class PersonEntity:
         if self.status == BaseStatus.DELETED:
             raise DomainError("Cannot activate deleted person")
         if self.status == BaseStatus.ACTIVE:
-            raise DomainError("Person is already active")
+            raise ConflictError("Person is already active")
         self.status = BaseStatus.ACTIVE
         now = utc_now()
         self.updated_at = now
@@ -111,7 +109,7 @@ class PersonEntity:
         if self.status == BaseStatus.DELETED:
             raise DomainError("Cannot deactivate deleted person")
         if self.status == BaseStatus.INACTIVE:
-            raise DomainError("Person is already inactive")
+            raise ConflictError("Person is already inactive")
         self.status = BaseStatus.INACTIVE
         now = utc_now()
         self.updated_at = now
@@ -122,7 +120,7 @@ class PersonEntity:
         if not reason:
             raise DomainError("Termination requires reason")
         if self.status == BaseStatus.DELETED:
-            raise DomainError("Person is already terminated")
+            raise ConflictError("Person is already terminated")
         self.status = BaseStatus.DELETED
         now = utc_now()
         self.deleted_at = now
@@ -178,7 +176,7 @@ class PersonEntity:
             raise DomainError("Cannot add dependent as secondary role")
 
         if role == self.person_type:
-            raise DomainError(
+            raise ConflictError(
                 f"Cannot add {role.value} as secondary role when it is already the primary role"
             )
 
@@ -287,87 +285,6 @@ class PersonEntity:
         self.updated_at = utc_now()
         self._ensure_invariants()
 
-    def update_provider_profile(self, profile: ProviderProfile) -> None:
-        """Set or replace the provider's panel profile (tier/region/accreditation)."""
-        if self.status == BaseStatus.DELETED:
-            raise DomainError("Cannot update provider profile for deleted person")
-        if (
-            self.person_type != PersonType.SERVICE_PROVIDER
-            and self.secondary_person_type != PersonType.SERVICE_PROVIDER
-        ):
-            raise DomainError("Provider profile is only valid for SERVICE_PROVIDER persons")
-        self.provider_profile = profile
-        self.updated_at = utc_now()
-
-    def _require_provider_profile(self) -> ProviderProfile:
-        if self.provider_profile is None:
-            raise DomainError("Provider has no panel profile to update")
-        return self.provider_profile
-
-    def change_panel_status(
-        self,
-        *,
-        new_status: PanelStatus,
-        actor: UserId,
-        reason: str,
-    ) -> None:
-        """Audited panel-status flip, used by the 80→8 cull and any cure / suspension."""
-        if not reason:
-            raise DomainError("Panel-status change requires a reason")
-        if self.status == BaseStatus.DELETED:
-            raise DomainError("Cannot change panel status for deleted person")
-        profile = self._require_provider_profile()
-        if profile.panel_status == new_status:
-            return
-        old_status = profile.panel_status
-        from dataclasses import replace
-
-        self.provider_profile = replace(profile, panel_status=new_status)
-        now = utc_now()
-        self.updated_at = now
-        self.events.append(
-            ProviderPanelStatusChanged(
-                occurred_at=now,
-                provider_id=self.id,
-                old_status=old_status.value,
-                new_status=new_status.value,
-                actor=actor,
-                reason=reason,
-            )
-        )
-
-    def change_tier(
-        self,
-        *,
-        new_tier: ProviderTier,
-        actor: UserId,
-        reason: str,
-    ) -> None:
-        """Audited tier promotion / demotion."""
-        if not reason:
-            raise DomainError("Tier change requires a reason")
-        if self.status == BaseStatus.DELETED:
-            raise DomainError("Cannot change tier for deleted person")
-        profile = self._require_provider_profile()
-        if profile.tier == new_tier:
-            return
-        old_tier = profile.tier
-        from dataclasses import replace
-
-        self.provider_profile = replace(profile, tier=new_tier)
-        now = utc_now()
-        self.updated_at = now
-        self.events.append(
-            ProviderTierChanged(
-                occurred_at=now,
-                provider_id=self.id,
-                old_tier=old_tier.value,
-                new_tier=new_tier.value,
-                actor=actor,
-                reason=reason,
-            )
-        )
-
     def update_staff_info(self, info: StaffInfo) -> None:
         """Update staff information."""
         if self.status == BaseStatus.DELETED:
@@ -395,7 +312,7 @@ class PersonEntity:
         if self.status == BaseStatus.DELETED:
             raise DomainError("Cannot archive deleted person")
         if self.status == BaseStatus.ARCHIVED:
-            raise DomainError("Person is already archived")
+            raise ConflictError("Person is already archived")
         self.status = BaseStatus.ARCHIVED
         self.updated_at = utc_now()
 
@@ -408,9 +325,9 @@ class PersonEntity:
         if self.status == BaseStatus.DELETED:
             raise DomainError("Cannot restore deleted person")
         if self.status == BaseStatus.ACTIVE:
-            raise DomainError("Person is already active")
+            raise ConflictError("Person is already active")
         if self.status != BaseStatus.ARCHIVED:
-            raise DomainError("Person must be archived to restore")
+            raise ConflictError("Person must be archived to restore")
         self.status = BaseStatus.ACTIVE
         self.updated_at = utc_now()
 
@@ -446,32 +363,6 @@ class PersonEntity:
             profile=profile,
             employment_info=employment_info,
             family_id=family_id,  # Set family_id if part of existing family
-            status=BaseStatus.PENDING,
-            created_at=now,
-            updated_at=now,
-        )
-        person._ensure_invariants()
-        return person
-
-    @classmethod
-    def create_service_provider(
-        cls,
-        id: PersonId,
-        tenant_id: TenantId,
-        user_id: UserId,
-        profile: UserEntity,
-        license_info: LicenseInfo,
-    ) -> "PersonEntity":
-        """Factory for SERVICE_PROVIDER type"""
-        now = utc_now()
-        person = cls(
-            id=id,
-            tenant_id=tenant_id,
-            person_type=PersonType.SERVICE_PROVIDER,
-            is_dual_role=False,
-            user_id=user_id,
-            profile=profile,
-            license_info=license_info,
             status=BaseStatus.PENDING,
             created_at=now,
             updated_at=now,

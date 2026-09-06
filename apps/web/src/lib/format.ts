@@ -21,7 +21,7 @@ export function formatDateTime(value: string | number | Date | null | undefined)
 }
 
 /**
- * Currency amount with an optional currency code prefix, e.g. "USD 1,200".
+ * Currency amount with an optional currency code prefix, e.g. "UGX 1,200".
  * Returns a placeholder when the amount is nullish.
  */
 export function formatMoney(amount: number | null | undefined, currency?: string | null): string {

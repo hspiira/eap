@@ -3,10 +3,10 @@ import {
   Activity,
   BarChart3,
   Briefcase,
+  Building,
   Building2,
   Calendar,
   ClipboardCheck,
-  FileCheck,
   FileSignature,
   FolderOpen,
   Handshake,
@@ -17,8 +17,10 @@ import {
   PhoneCall,
   Search,
   ShieldCheck,
+  Stethoscope,
   Tag,
   UserCog,
+  UserRound,
   Users,
 } from "lucide-react"
 
@@ -35,7 +37,7 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
-import { useHasClinicalScope } from "@/hooks/useCanWrite"
+import { useHasClinicalScope, useIsPlatformAdmin } from "@/hooks/useCanWrite"
 import { type FeatureFlag, featureFlags } from "@/lib/featureFlags"
 import { cn } from "@/lib/utils"
 import { useTenantStore } from "@/store/slices/tenantSlice"
@@ -48,13 +50,11 @@ type NavItem = {
   icon: React.ElementType
   iconClassName?: string
   flag?: FeatureFlag
+  /** Rendered greyed out and non-navigable until the flag is on. */
+  comingSoon?: FeatureFlag
   platformAdmin?: boolean
   /** Requires the Clinical access scope, hidden entirely otherwise (privacy wall). */
   clinicalScope?: boolean
-}
-
-function platformTenantId(): string {
-  return (import.meta.env.VITE_PLATFORM_TENANT_ID ?? "").trim()
 }
 
 /** Quick-access items: always visible at the top, no label. */
@@ -65,14 +65,20 @@ const MAIN_ITEMS: ReadonlyArray<NavItem> = [
   { to: "/clients", label: "Clients", icon: Building2 },
   { to: "/members", label: "Members", icon: Users },
   { to: "/contacts", label: "Contacts", icon: Users, flag: "contacts" },
+  { to: "/providers", label: "Practitioners", icon: UserRound },
+  { to: "/provider-organisations", label: "Provider Orgs", icon: Building },
   { to: "/service-sessions", label: "Sessions", icon: Calendar },
   { to: "/cases", label: "Cases", icon: HeartPulse, clinicalScope: true },
-  { to: "/care-callbacks", label: "Campaigns", icon: PhoneCall },
-  { to: "/care-callbacks/worklist", label: "My Worklist", icon: Headphones },
-  { to: "/surveys", label: "Surveys", icon: MessageSquare },
-  { to: "/engagements", label: "Engagements", icon: Handshake },
+  { to: "/care-callbacks", label: "Campaigns", icon: PhoneCall, comingSoon: "campaigns" },
+  {
+    to: "/care-callbacks/worklist",
+    label: "My Worklist",
+    icon: Headphones,
+    comingSoon: "worklist",
+  },
+  { to: "/surveys", label: "Surveys", icon: MessageSquare, comingSoon: "surveys" },
+  { to: "/engagements", label: "Engagements", icon: Handshake, comingSoon: "engagements" },
   { to: "/contracts", label: "Contracts", icon: FileSignature },
-  { to: "/service-assignments", label: "Assignments", icon: FileCheck },
   { to: "/services", label: "Services", icon: Briefcase },
   { to: "/kpis", label: "KPIs", icon: BarChart3, flag: "kpis" },
   { to: "/documents", label: "Documents", icon: FolderOpen, flag: "documents" },
@@ -81,6 +87,7 @@ const MAIN_ITEMS: ReadonlyArray<NavItem> = [
 /** Configuration & admin: shown under a "Settings" label. */
 const SETTINGS_ITEMS: ReadonlyArray<NavItem> = [
   { to: "/industries", label: "Industries", icon: BarChart3 },
+  { to: "/diagnoses", label: "Diagnoses", icon: Stethoscope },
   { to: "/tags", label: "Tags", icon: Tag },
   { to: "/users", label: "Platform Users", icon: UserCog },
   { to: "/audit", label: "Audits", icon: ClipboardCheck, flag: "audit" },
@@ -90,16 +97,20 @@ const SETTINGS_ITEMS: ReadonlyArray<NavItem> = [
 
 function isItemEnabled(
   item: NavItem,
-  currentTenantId: string | null,
+  isPlatformAdmin: boolean,
   hasClinicalScope: boolean,
 ): boolean {
   if (item.flag && !featureFlags[item.flag]) return false
-  if (item.platformAdmin) {
-    const required = platformTenantId()
-    if (required && currentTenantId !== required) return false
-  }
+  // Server-derived, not read from VITE_PLATFORM_TENANT_ID: the old check
+  // skipped itself when that variable was unset, so every tenant saw the link
+  // and got a 403 on using it.
+  if (item.platformAdmin && !isPlatformAdmin) return false
   if (item.clinicalScope && !hasClinicalScope) return false
   return true
+}
+
+function isComingSoon(item: NavItem): boolean {
+  return !!item.comingSoon && !featureFlags[item.comingSoon]
 }
 
 function toProperCase(s: string): string {
@@ -158,13 +169,27 @@ function ExpandedHeader() {
   )
 }
 
-function NavItem({
-  to,
-  label,
-  icon: Icon,
-  iconClassName,
-  isActive,
-}: NavItem & { isActive: boolean }) {
+function ComingSoonNavItem({ label, icon: Icon, iconClassName }: NavItem) {
+  return (
+    <SidebarMenuItem>
+      <SidebarMenuButton
+        disabled
+        title={`${label} is not available yet`}
+        className="cursor-not-allowed opacity-50 hover:bg-transparent"
+      >
+        <Icon className={iconClassName} />
+        <span>{label}</span>
+        <span className="ml-auto text-[10px] font-medium tracking-wide text-fg-subtle/70">
+          Soon
+        </span>
+      </SidebarMenuButton>
+    </SidebarMenuItem>
+  )
+}
+
+function NavItem(props: NavItem & { isActive: boolean }) {
+  const { to, label, icon: Icon, iconClassName, isActive } = props
+  if (isComingSoon(props)) return <ComingSoonNavItem {...props} />
   return (
     <SidebarMenuItem>
       <SidebarMenuButton asChild isActive={isActive}>
@@ -179,12 +204,12 @@ function NavItem({
 
 function ExpandedSidebar() {
   const pathname = useRouterState({ select: (s) => s.location.pathname })
-  const currentTenantId = useTenantStore((s) => s.currentTenantId)
+  const { isPlatformAdmin } = useIsPlatformAdmin()
   const { hasScope: hasClinicalScope } = useHasClinicalScope()
 
-  const mainItems = MAIN_ITEMS.filter((i) => isItemEnabled(i, currentTenantId, hasClinicalScope))
+  const mainItems = MAIN_ITEMS.filter((i) => isItemEnabled(i, isPlatformAdmin, hasClinicalScope))
   const settingsItems = SETTINGS_ITEMS.filter((i) =>
-    isItemEnabled(i, currentTenantId, hasClinicalScope),
+    isItemEnabled(i, isPlatformAdmin, hasClinicalScope),
   )
   const allTos = [...TOP_ITEMS, ...mainItems, ...settingsItems].map((i) => i.to)
   const active = (to: string) => resolveActive(pathname, to, allTos)
@@ -242,21 +267,30 @@ function ExpandedSidebar() {
 const ICON_BTN =
   "relative grid h-7 w-7 mx-auto place-items-center rounded-sm text-sidebar-foreground/60 transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring"
 
-interface CollapsedNavLinkProps {
-  to: string
-  label: string
-  icon: React.ElementType
-  iconClassName?: string
-  isActive: boolean
+type CollapsedNavLinkProps = NavItem & { isActive: boolean }
+
+function ComingSoonCollapsedNavLink({ label, icon: Icon, iconClassName }: NavItem) {
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <span
+          aria-disabled="true"
+          aria-label={`${label}: not available yet`}
+          className={cn(ICON_BTN, "cursor-not-allowed opacity-40 hover:bg-transparent")}
+        >
+          <Icon className={cn("size-4", iconClassName)} />
+        </span>
+      </TooltipTrigger>
+      <TooltipContent side="right" className="font-medium">
+        {label} (soon)
+      </TooltipContent>
+    </Tooltip>
+  )
 }
 
-function CollapsedNavLink({
-  to,
-  label,
-  icon: Icon,
-  iconClassName,
-  isActive,
-}: CollapsedNavLinkProps) {
+function CollapsedNavLink(props: CollapsedNavLinkProps) {
+  const { to, label, icon: Icon, iconClassName, isActive } = props
+  if (isComingSoon(props)) return <ComingSoonCollapsedNavLink {...props} />
   return (
     <Tooltip>
       <TooltipTrigger asChild>
@@ -326,12 +360,12 @@ function CollapsedHeader() {
 
 function CollapsedSidebar() {
   const pathname = useRouterState({ select: (s) => s.location.pathname })
-  const currentTenantId = useTenantStore((s) => s.currentTenantId)
+  const { isPlatformAdmin } = useIsPlatformAdmin()
   const { hasScope: hasClinicalScope } = useHasClinicalScope()
 
-  const mainItems = MAIN_ITEMS.filter((i) => isItemEnabled(i, currentTenantId, hasClinicalScope))
+  const mainItems = MAIN_ITEMS.filter((i) => isItemEnabled(i, isPlatformAdmin, hasClinicalScope))
   const settingsItems = SETTINGS_ITEMS.filter((i) =>
-    isItemEnabled(i, currentTenantId, hasClinicalScope),
+    isItemEnabled(i, isPlatformAdmin, hasClinicalScope),
   )
   const allTos = [...TOP_ITEMS, ...mainItems, ...settingsItems].map((i) => i.to)
   const active = (to: string) => resolveActive(pathname, to, allTos)

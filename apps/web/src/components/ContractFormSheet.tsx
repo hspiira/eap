@@ -1,13 +1,17 @@
+import { useEffect, useState } from "react"
+
 import { Controller } from "react-hook-form"
 import { z } from "zod"
 
 import { clientsApi } from "@/api/endpoints/clients"
 import { contractsApi } from "@/api/endpoints/contracts"
+import { documentsApi } from "@/api/endpoints/documents"
 import type { ContractCreate } from "@/api/generated"
 import { ClientPicker } from "@/components/common/EntityPicker"
 import { FormField } from "@/components/common/FormField"
 import { FormSection } from "@/components/common/FormSection"
 import { SheetForm } from "@/components/common/SheetForm"
+import { ContractAttachmentQueue } from "@/components/contracts/ContractAttachmentQueue"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Input } from "@/components/ui/input"
 import {
@@ -41,7 +45,10 @@ const contractSchema = z
       .trim()
       .min(1, "Billing amount is required")
       .refine((v) => /^\d+(\.\d+)?$/.test(v) && Number(v) > 0, "Must be a positive number"),
-    currency: z.string().trim().length(3, "Use the ISO 3-letter currency code (e.g. KES, USD)"),
+    currency: z
+      .string()
+      .trim()
+      .regex(/^[A-Za-z]{3}$/, "Use the ISO 3-letter currency code (e.g. UGX, KES)"),
     payment_frequency: z.enum(FREQUENCY_VALUES as readonly [string, ...string[]], {
       message: "Payment frequency is required",
     }),
@@ -59,7 +66,7 @@ const EMPTY: ContractFormValues = {
   start_date: "",
   end_date: "",
   billing_amount: "",
-  currency: "KES",
+  currency: "UGX",
   payment_frequency: PaymentFrequency.MONTHLY,
   is_auto_renew: false,
 }
@@ -85,6 +92,34 @@ export function ContractFormSheet({
   onSaved,
 }: ContractFormSheetProps) {
   const lockedClientId = clientId ?? contract?.client_id
+  const [queued, setQueued] = useState<File[]>([])
+  const [attachmentWarning, setAttachmentWarning] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (!open) return
+    setQueued([])
+    setAttachmentWarning(null)
+  }, [open])
+
+  /**
+   * Uploads after the contract exists. A failure here leaves a saved contract,
+   * so it warns rather than failing the save the user already completed.
+   */
+  const uploadQueued = async (contractId: string) => {
+    const failed: string[] = []
+    for (const file of queued) {
+      try {
+        await documentsApi.uploadContractAttachment(contractId, file)
+      } catch {
+        failed.push(file.name)
+      }
+    }
+    if (failed.length > 0) {
+      setAttachmentWarning(
+        `Contract saved, but these did not upload: ${failed.join(", ")}. Add them from the Attachments tab.`,
+      )
+    }
+  }
 
   const { register, control, formState, submit, serverError, setValue, watch, isEdit } =
     useEntityFormSheet<ContractFormValues, ContractCreate, Contract, Contract>({
@@ -97,7 +132,7 @@ export function ContractFormSheet({
       // Read straight off the wire shape. These previously read top-level
       // start_date/billing_amount/currency/billing_frequency, none of which the
       // BE sends, so editing a contract opened a blank form and saving it reset
-      // the currency to the KES default.
+      // the currency to the UGX default.
       toFormValues: (c) => ({
         client_id: c.client_id,
         start_date: c.period.start_date,
@@ -128,7 +163,9 @@ export function ContractFormSheet({
             is_auto_renew: payload.is_auto_renew,
           })
         }
-        return contractsApi.create(payload)
+        const created = await contractsApi.create(payload)
+        await uploadQueued(created.id)
+        return created
       },
       successToast: { create: "Contract created", update: "Contract updated" },
       extraInvalidations: lockedClientId
@@ -266,7 +303,7 @@ export function ContractFormSheet({
           >
             <Input
               id="cf-currency"
-              placeholder="KES"
+              placeholder="UGX"
               maxLength={3}
               className="uppercase"
               {...register("currency")}
@@ -274,6 +311,22 @@ export function ContractFormSheet({
           </FormField>
         </div>
       </FormSection>
+
+      {!isEdit && (
+        <FormSection
+          title="Documents"
+          description="Attached once the contract is saved. You can add more later from the Attachments tab."
+        >
+          <FormField label="Attachments" htmlFor="cf-attachments">
+            <ContractAttachmentQueue
+              files={queued}
+              onChange={setQueued}
+              disabled={formState.isSubmitting}
+            />
+          </FormField>
+          {attachmentWarning ? <p className="text-xs text-warning">{attachmentWarning}</p> : null}
+        </FormSection>
+      )}
     </SheetForm>
   )
 }

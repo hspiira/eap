@@ -12,7 +12,7 @@ from datetime import datetime
 from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from app.infrastructure.models.base import Base, CuidMixin, TimestampMixin
+from app.infrastructure.models.base import Base, CuidMixin, TenantMixin, TimestampMixin
 
 
 class DiagnosisTypeModel(CuidMixin, Base, TimestampMixin):
@@ -54,3 +54,42 @@ class DiagnosisModel(CuidMixin, Base, TimestampMixin):
     diagnosis_type: Mapped["DiagnosisTypeModel"] = relationship(
         "DiagnosisTypeModel", back_populates="diagnoses"
     )
+
+
+class TenantDiagnosisSettingModel(CuidMixin, TenantMixin, Base, TimestampMixin):
+    """Per-tenant overlay on the shared taxonomy.
+
+    The taxonomy itself stays global so prevalence remains comparable across
+    tenants. A missing row means enabled at the taxonomy's own sort order.
+    """
+
+    __tablename__ = "tenant_diagnosis_settings"
+
+    diagnosis_type_id: Mapped[str] = mapped_column(
+        ForeignKey("diagnosis_types.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    diagnosis_id: Mapped[str | None] = mapped_column(
+        ForeignKey("diagnoses.id", ondelete="CASCADE"), nullable=True, index=True
+    )
+    is_enabled: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default="true")
+    sort_order: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    local_label: Mapped[str | None] = mapped_column(String(255), nullable=True)
+
+
+class DiagnosisAliasModel(CuidMixin, Base, TimestampMixin):
+    """Maps a legacy free-text diagnosis string to a canonical taxonomy row."""
+
+    __tablename__ = "diagnosis_aliases"
+
+    raw_value: Mapped[str] = mapped_column(Text, nullable=False)
+    normalised_key: Mapped[str] = mapped_column(
+        String(255), unique=True, nullable=False, index=True
+    )
+    diagnosis_type_id: Mapped[str] = mapped_column(
+        ForeignKey("diagnosis_types.id"), nullable=False, index=True
+    )
+    diagnosis_id: Mapped[str | None] = mapped_column(
+        ForeignKey("diagnoses.id"), nullable=True, index=True
+    )
+    source: Mapped[str] = mapped_column(String(50), nullable=False)
+    confidence: Mapped[str] = mapped_column(String(20), nullable=False)

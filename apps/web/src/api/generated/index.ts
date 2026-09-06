@@ -32,11 +32,13 @@ export type ContactInfoCreate = Schemas["ContactInfoCreate"]
 export type ContactMethod = Schemas["ContactMethod"]
 export type ClientTier = Schemas["ClientTier"]
 
-// ----- Persons ---------------------------------------------------------------
-export type PersonCreate = Schemas["PersonCreate"]
-export type EmploymentInfoCreateSchema = Schemas["EmploymentInfoCreateSchema"]
-export type DependentInfoSchema = Schemas["DependentInfoSchema"]
-export type PersonType = Schemas["PersonType"]
+// ----- Legacy person form types ---------------------------------------------
+// The Persons API is retired. These local shapes keep the dormant compatibility
+// form compiling without reintroducing retired OpenAPI operations.
+export type PersonCreate = Record<string, unknown>
+export type EmploymentInfoCreateSchema = Record<string, unknown>
+export type DependentInfoSchema = Record<string, unknown>
+export type PersonType = string
 
 // ----- Contracts -------------------------------------------------------------
 export type ContractCreate = Schemas["ContractCreate"]

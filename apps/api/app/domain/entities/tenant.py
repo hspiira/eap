@@ -14,7 +14,7 @@ from datetime import datetime
 
 from app.domain.enums import SubscriptionTier, TenantStatus
 from app.domain.events import DomainEvent, TenantActivated, TenantSuspended, TenantTerminated
-from app.domain.exceptions import DomainError, InvariantViolation
+from app.domain.exceptions import ConflictError, DomainError, InvariantViolation
 from app.domain.value_objects.core import TenantCode, TenantId, TenantSettings
 from app.shared.utils.datetime import utc_now
 
@@ -43,7 +43,7 @@ class TenantEntity:
         if self.status == TenantStatus.TERMINATED:
             raise DomainError("Cannot activate terminated tenant")
         if self.status == TenantStatus.ACTIVE and self.deleted_at is None:
-            raise DomainError("Tenant is already active")
+            raise ConflictError("Tenant is already active")
         self.status = TenantStatus.ACTIVE
         if self.deleted_at:
             self.deleted_at = None
@@ -57,7 +57,7 @@ class TenantEntity:
         if self.status == TenantStatus.TERMINATED:
             raise DomainError("Cannot suspend terminated tenant")
         if self.status == TenantStatus.SUSPENDED:
-            raise DomainError("Tenant is already suspended")
+            raise ConflictError("Tenant is already suspended")
         self.status = TenantStatus.SUSPENDED
         self.updated_at = utc_now()
         self.events.append(TenantSuspended(occurred_at=utc_now(), tenant_id=self.id, reason=reason))
@@ -67,7 +67,7 @@ class TenantEntity:
         if not reason:
             raise DomainError("Termination requires reason")
         if self.status == TenantStatus.TERMINATED:
-            raise DomainError("Tenant is already terminated")
+            raise ConflictError("Tenant is already terminated")
         self.status = TenantStatus.TERMINATED
         self.deleted_at = utc_now()
         self.updated_at = utc_now()
@@ -120,7 +120,7 @@ class TenantEntity:
         if self.status == TenantStatus.TERMINATED:
             raise DomainError("Cannot archive terminated tenant")
         if self.status == TenantStatus.ARCHIVED:
-            raise DomainError("Tenant is already archived")
+            raise ConflictError("Tenant is already archived")
         self.status = TenantStatus.ARCHIVED
         self.updated_at = utc_now()
 
@@ -138,7 +138,7 @@ class TenantEntity:
         ):
             raise DomainError("Tenant is not archived or deleted")
         if self.status == TenantStatus.ACTIVE and not self.deleted_at:
-            raise DomainError("Tenant is already active and does not need restoration")
+            raise ConflictError("Tenant is already active and does not need restoration")
         if self.deleted_at:
             self.deleted_at = None
         if self.status == TenantStatus.ARCHIVED:

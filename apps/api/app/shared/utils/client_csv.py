@@ -6,6 +6,7 @@ import csv
 import io
 import re
 from dataclasses import dataclass
+from typing import TypedDict
 
 CLIENT_IMPORT_HEADERS = [
     "name",
@@ -56,6 +57,15 @@ class ClientCsvRow:
     aliases: tuple[str, ...] = ()
 
 
+class Issue(TypedDict):
+    """One problem found in an imported CSV row."""
+
+    row: int
+    field: str | None
+    message: str
+    severity: str
+
+
 def _header_key(value: str) -> str:
     return re.sub(r"[^a-z0-9]+", "_", value.strip().lower()).strip("_")
 
@@ -73,7 +83,7 @@ def _value(row: dict[str, str | None], *keys: str) -> str | None:
     return None
 
 
-def parse_client_csv(content: bytes) -> tuple[list[ClientCsvRow], list[dict[str, str | int]]]:
+def parse_client_csv(content: bytes) -> tuple[list[ClientCsvRow], list[Issue]]:
     """Parse supported client CSV columns, including the supplied sample's names."""
     try:
         text = content.decode("utf-8-sig")
@@ -98,7 +108,7 @@ def parse_client_csv(content: bytes) -> tuple[list[ClientCsvRow], list[dict[str,
         raise ValueError("CSV must include a name column (name, Company Name, or canonical list)")
 
     rows: list[ClientCsvRow] = []
-    issues: list[dict[str, str | int]] = []
+    issues: list[Issue] = []
     for row_number, raw_row in enumerate(reader, start=2):
         row = {_header_key(key): value for key, value in raw_row.items() if key is not None}
         if not any(_clean(value) for value in raw_row.values() if value is not None):
@@ -115,7 +125,14 @@ def parse_client_csv(content: bytes) -> tuple[list[ClientCsvRow], list[dict[str,
             "og_company",
         )
         if not name:
-            issues.append({"row": row_number, "field": "name", "message": "Name is required"})
+            issues.append(
+                {
+                    "row": row_number,
+                    "field": "name",
+                    "message": "Name is required",
+                    "severity": "error",
+                }
+            )
             continue
 
         billing_values = {
@@ -135,6 +152,7 @@ def parse_client_csv(content: bytes) -> tuple[list[ClientCsvRow], list[dict[str,
                     "row": row_number,
                     "field": "billing_address",
                     "message": "billing_street, billing_city, and billing_country are required together",
+                    "severity": "error",
                 }
             )
             continue

@@ -1,4 +1,5 @@
 import { fireEvent, screen, waitFor } from "@testing-library/react"
+import userEvent from "@testing-library/user-event"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 
 import { ServiceSessionFormSheet } from "@/components/ServiceSessionFormSheet"
@@ -7,8 +8,9 @@ import { ApiError } from "@/types/api"
 
 const createMock = vi.fn()
 const listServicesMock = vi.fn().mockResolvedValue({ items: [], total: 0 })
-const listPersonsMock = vi.fn().mockResolvedValue({ items: [], total: 0 })
+const listMembersMock = vi.fn().mockResolvedValue({ items: [], total: 0 })
 const listProvidersMock = vi.fn()
+const listAffiliationsMock = vi.fn()
 
 vi.mock("@/api/endpoints/service-sessions", () => ({
   serviceSessionsApi: {
@@ -22,9 +24,9 @@ vi.mock("@/api/endpoints/services", () => ({
   },
 }))
 
-vi.mock("@/api/endpoints/persons", () => ({
-  personsApi: {
-    list: (...args: unknown[]) => listPersonsMock(...args),
+vi.mock("@/api/endpoints/members", () => ({
+  membersApi: {
+    list: (...args: unknown[]) => listMembersMock(...args),
   },
 }))
 
@@ -34,17 +36,34 @@ vi.mock("@/api/endpoints/providers", () => ({
   },
 }))
 
+vi.mock("@/api/endpoints/provider-affiliations", () => ({
+  providerAffiliationsApi: {
+    list: (...args: unknown[]) => listAffiliationsMock(...args),
+  },
+}))
+
 beforeEach(() => {
   createMock.mockReset()
   listServicesMock.mockClear()
-  listPersonsMock.mockClear()
+  listMembersMock.mockClear()
   listProvidersMock.mockClear()
+  listAffiliationsMock.mockClear()
   listProvidersMock.mockResolvedValue({
     items: [
       {
         id: "prov-1",
-        person_type: "Provider",
-        provider_profile: { tier: "Senior", region: "Kampala" },
+        display_name: "Dr Alice Nakato",
+        email: "alice.nakato@example.com",
+        phone: null,
+        user_id: null,
+        status: "Active",
+        provider_profile: {
+          tier: "T2",
+          region: "KampalaMetro",
+          accreditation_status: "Accredited",
+          panel_status: "Active",
+          specialties: [],
+        },
       },
     ],
     total: 1,
@@ -52,23 +71,33 @@ beforeEach(() => {
     limit: 8,
     has_more: false,
   })
+  listAffiliationsMock.mockResolvedValue({
+    items: [],
+    total: 0,
+    page: 1,
+    limit: 100,
+    has_more: false,
+  })
 })
 afterEach(() => {
   createMock.mockReset()
 })
 
-/** Provider is required, so every create-path test has to choose one. */
-async function chooseProvider() {
-  const search = screen.getByPlaceholderText(/search providers/i)
-  fireEvent.change(search, { target: { value: "prov" } })
+/** A practitioner is required, so every create-path test has to choose one. */
+async function choosePractitioner() {
+  const search = screen.getByPlaceholderText(/search practitioners/i)
+  fireEvent.change(search, { target: { value: "Nakato" } })
   await new Promise((r) => setTimeout(r, 400))
 
-  console.log(
-    "PICKER:",
-    screen.getByPlaceholderText(/search providers/i).parentElement?.textContent,
-  )
-  const option = await screen.findByText("prov-1")
+  const option = await screen.findByText("Dr Alice Nakato")
   fireEvent.click(option)
+}
+
+/** Delivery context has no default, so a create-path test has to choose one. */
+async function chooseDirectDelivery() {
+  const user = userEvent.setup()
+  await user.click(screen.getByRole("combobox", { name: /delivered through/i }))
+  await user.click(await screen.findByRole("option", { name: "Direct" }))
 }
 
 describe("ServiceSessionFormSheet: create", () => {
@@ -77,7 +106,7 @@ describe("ServiceSessionFormSheet: create", () => {
 
     fireEvent.click(screen.getByRole("button", { name: /create session/i }))
     expect(await screen.findByText(/service is required/i)).toBeInTheDocument()
-    expect(screen.getByText(/person is required/i)).toBeInTheDocument()
+    expect(screen.getByText(/member is required/i)).toBeInTheDocument()
     expect(screen.getByText(/scheduled time is required/i)).toBeInTheDocument()
     expect(createMock).not.toHaveBeenCalled()
   })
@@ -90,14 +119,16 @@ describe("ServiceSessionFormSheet: create", () => {
         open
         onOpenChange={() => {}}
         serviceId="svc-1"
-        personId="p-1"
+        memberId="p-1"
         service={{ id: "svc-1", name: "Counselling" } as never}
-        person={
+        member={
           {
             id: "p-1",
             first_name: "Ada",
             last_name: "Lovelace",
-            person_type: "ClientEmployee",
+            relation: "Employee",
+            display_label: "Test member",
+            employer_member_id: "HR-1",
           } as never
         }
         onSaved={onSaved}
@@ -107,13 +138,14 @@ describe("ServiceSessionFormSheet: create", () => {
     fireEvent.change(screen.getByLabelText(/scheduled at/i), {
       target: { value: "2026-06-01T10:30" },
     })
-    await chooseProvider()
+    await choosePractitioner()
+    await chooseDirectDelivery()
     fireEvent.click(screen.getByRole("button", { name: /create session/i }))
 
     await waitFor(() => expect(createMock).toHaveBeenCalled())
     const args = createMock.mock.calls[0][0]
     expect(args.service_id).toBe("svc-1")
-    expect(args.person_id).toBe("p-1")
+    expect(args.member_id).toBe("p-1")
     expect(args.scheduled_at).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/)
     await waitFor(() => expect(onSaved).toHaveBeenCalled())
   })
@@ -127,14 +159,16 @@ describe("ServiceSessionFormSheet: create", () => {
         open
         onOpenChange={() => {}}
         serviceId="svc-1"
-        personId="p-1"
+        memberId="p-1"
         service={{ id: "svc-1", name: "Counselling" } as never}
-        person={
+        member={
           {
             id: "p-1",
             first_name: "Ada",
             last_name: "Lovelace",
-            person_type: "ClientEmployee",
+            relation: "Employee",
+            display_label: "Test member",
+            employer_member_id: "HR-1",
           } as never
         }
       />,
@@ -143,9 +177,141 @@ describe("ServiceSessionFormSheet: create", () => {
     fireEvent.change(screen.getByLabelText(/scheduled at/i), {
       target: { value: "2026-06-01T10:30" },
     })
-    await chooseProvider()
+    await choosePractitioner()
+    await chooseDirectDelivery()
     fireEvent.click(screen.getByRole("button", { name: /create session/i }))
 
     expect(await screen.findByText(/service not found/i)).toBeInTheDocument()
+  })
+
+  it("refuses to submit without an explicit delivery context", async () => {
+    renderWithProviders(
+      <ServiceSessionFormSheet
+        open
+        onOpenChange={() => {}}
+        serviceId="svc-1"
+        memberId="p-1"
+        service={{ id: "svc-1", name: "Counselling" } as never}
+        member={{ id: "p-1", display_label: "Test member" } as never}
+      />,
+    )
+
+    fireEvent.change(screen.getByLabelText(/scheduled at/i), {
+      target: { value: "2026-06-01T10:30" },
+    })
+    await choosePractitioner()
+    fireEvent.click(screen.getByRole("button", { name: /create session/i }))
+
+    expect(await screen.findByText(/choose direct or organisation delivery/i)).toBeInTheDocument()
+    expect(createMock).not.toHaveBeenCalled()
+  })
+
+  it("sends direct delivery with no affiliation", async () => {
+    createMock.mockResolvedValue({ id: "sess-1" })
+    renderWithProviders(
+      <ServiceSessionFormSheet
+        open
+        onOpenChange={() => {}}
+        serviceId="svc-1"
+        memberId="p-1"
+        service={{ id: "svc-1", name: "Counselling" } as never}
+        member={{ id: "p-1", display_label: "Test member" } as never}
+      />,
+    )
+
+    fireEvent.change(screen.getByLabelText(/scheduled at/i), {
+      target: { value: "2026-06-01T10:30" },
+    })
+    await choosePractitioner()
+    await chooseDirectDelivery()
+    fireEvent.click(screen.getByRole("button", { name: /create session/i }))
+
+    await waitFor(() => expect(createMock).toHaveBeenCalled())
+    const args = createMock.mock.calls[0][0]
+    expect(args.delivery_context).toBe("Direct")
+    expect(args.provider_affiliation_id).toBeNull()
+  })
+
+  it("puts a server field error on the delivery-context select", async () => {
+    // The API rejects Unknown delivery with a ValidationException naming
+    // delivery_context, so the message belongs on that input.
+    createMock.mockRejectedValue(
+      new ApiError(
+        "A booking must state Direct or Organisation delivery.",
+        "VALIDATION_ERROR",
+        422,
+        { delivery_context: "A booking must state Direct or Organisation delivery." },
+        undefined,
+        [
+          {
+            field: "delivery_context",
+            message: "A booking must state Direct or Organisation delivery.",
+            code: null,
+          },
+        ],
+      ),
+    )
+    renderWithProviders(
+      <ServiceSessionFormSheet
+        open
+        onOpenChange={() => {}}
+        serviceId="svc-1"
+        memberId="p-1"
+        service={{ id: "svc-1", name: "Counselling" } as never}
+        member={{ id: "p-1", display_label: "Test member" } as never}
+      />,
+    )
+
+    fireEvent.change(screen.getByLabelText(/scheduled at/i), {
+      target: { value: "2026-06-01T10:30" },
+    })
+    await choosePractitioner()
+    await chooseDirectDelivery()
+    fireEvent.click(screen.getByRole("button", { name: /create session/i }))
+
+    const message = await screen.findByText(/must state Direct or Organisation delivery/i)
+    const field = screen.getByLabelText(/delivered through/i).closest("div")?.parentElement
+    expect(field).toContainElement(message)
+  })
+
+  it("lists every eligibility reason the server returns", async () => {
+    createMock.mockRejectedValue(
+      new ApiError(
+        "Provider is not eligible for this booking",
+        "PROVIDER_NOT_ELIGIBLE",
+        409,
+        undefined,
+        undefined,
+        [
+          { field: "provider_id", message: "prv_1", code: "provider_id" },
+          { field: "eligibility", message: "Panel status is Suspended", code: "panel_not_active" },
+          {
+            field: "eligibility",
+            message: "Accreditation expired on 2026-01-01",
+            code: "accreditation_expired",
+          },
+        ],
+      ),
+    )
+    renderWithProviders(
+      <ServiceSessionFormSheet
+        open
+        onOpenChange={() => {}}
+        serviceId="svc-1"
+        memberId="p-1"
+        service={{ id: "svc-1", name: "Counselling" } as never}
+        member={{ id: "p-1", display_label: "Test member" } as never}
+      />,
+    )
+
+    fireEvent.change(screen.getByLabelText(/scheduled at/i), {
+      target: { value: "2026-06-01T10:30" },
+    })
+    await choosePractitioner()
+    await chooseDirectDelivery()
+    fireEvent.click(screen.getByRole("button", { name: /create session/i }))
+
+    expect(await screen.findByText(/panel status is suspended/i)).toBeInTheDocument()
+    expect(screen.getByText(/accreditation expired on 2026-01-01/i)).toBeInTheDocument()
   })
 })

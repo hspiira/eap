@@ -2,7 +2,21 @@ import { useCallback, useState } from "react"
 
 import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { createFileRoute, Link, useNavigate, useSearch } from "@tanstack/react-router"
-import { Download, ExternalLink, Plus, ScanSearch, Users } from "lucide-react"
+import {
+  CheckCircle2,
+  CircleDashed,
+  Clock,
+  Download,
+  ExternalLink,
+  FileDown,
+  FileUp,
+  MoreHorizontal,
+  PauseCircle,
+  Plus,
+  ScanSearch,
+  Users,
+  XCircle,
+} from "lucide-react"
 
 import { type MemberDuplicateCandidate, membersApi } from "@/api/endpoints/members"
 import { EmptyState } from "@/components/common/EmptyState"
@@ -11,8 +25,10 @@ import { FilterBar, FilterChip, FilterSearch, FilterTrigger } from "@/components
 import { IconButton } from "@/components/common/IconButton"
 import { PageShell } from "@/components/common/PageShell"
 import { SelectionBar } from "@/components/common/SelectionBar"
-import { StatusBadge } from "@/components/common/StatusBadge"
+import { ROW_BORDER } from "@/components/common/tableStyles"
 import { MemberFormSheet } from "@/components/MemberFormSheet"
+import { MemberMergeDialog } from "@/components/MemberMergeDialog"
+import { MemberImportDialog } from "@/components/members/MemberImportDialog"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import {
@@ -22,12 +38,17 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 import { TableCell, TableRow } from "@/components/ui/table"
 import { useToast } from "@/contexts/ToastContext"
-import { useCanWrite } from "@/hooks/useCanWrite"
+import { useCanWrite, useCurrentRole } from "@/hooks/useCanWrite"
 import { useListPage } from "@/hooks/useListPage"
 import { useTableSelection } from "@/hooks/useTableSelection"
-import { nameInitials } from "@/lib/display"
 import { normalizeErrorMessage } from "@/lib/errors"
 import { useEntityList } from "@/lib/queries"
 import { enumParam, listSearchSchema } from "@/lib/search-params"
@@ -44,12 +65,36 @@ export const Route = createFileRoute("/members/")({
 })
 
 const COLUMNS: ListColumn[] = [
+  {
+    header: <span className="sr-only">Status</span>,
+    sortField: "status",
+    className: "w-8 px-2",
+  },
   { header: "Member", sortField: "display_label" },
-  { header: "Relationship", sortField: "relation" },
-  { header: "Client" },
-  { header: "Status", sortField: "status" },
-  { header: "Contact" },
+  { header: "Member code", className: "text-fg/65" },
+  { header: "Relationship", sortField: "relation", className: "text-fg/65" },
+  { header: "Client", className: "text-fg/65" },
+  { header: "Work email", className: "text-fg/65" },
+  { header: "Personal email", className: "text-fg/65" },
+  { header: "Phone", className: "text-fg/65" },
 ]
+
+const STATUS_ICONS: Record<string, { icon: typeof CheckCircle2; className: string }> = {
+  [EligibilityStatus.ACTIVE]: { icon: CheckCircle2, className: "text-primary" },
+  [EligibilityStatus.PENDING]: { icon: Clock, className: "text-warning" },
+  [EligibilityStatus.SUSPENDED]: { icon: PauseCircle, className: "text-fg/45" },
+  [EligibilityStatus.TERMINATED]: { icon: XCircle, className: "text-danger" },
+}
+
+function StatusIcon({ status }: { status: string }) {
+  const entry = STATUS_ICONS[status] ?? { icon: CircleDashed, className: "text-fg/40" }
+  const Icon = entry.icon
+  return (
+    <span title={status} aria-label={status} role="img" className="inline-flex">
+      <Icon className={`size-3.5 ${entry.className}`} />
+    </span>
+  )
+}
 
 const RELATION_OPTIONS = [
   { value: "all", label: "All relationships" },
@@ -79,12 +124,10 @@ function MembersListPage() {
   const queryClient = useQueryClient()
   const toast = useToast()
   const [editing, setEditing] = useState<Member | null>(null)
+  const [mergeOpen, setMergeOpen] = useState(false)
+  const [importOpen, setImportOpen] = useState(false)
   const [duplicatesOpen, setDuplicatesOpen] = useState(false)
-  const duplicatesQuery = useQuery({
-    queryKey: ["members", "duplicates", searchParams.client_id],
-    queryFn: () => membersApi.scanDuplicates(searchParams.client_id),
-    enabled: false,
-  })
+  const role = useCurrentRole()
   const query = useEntityList({
     resource: "members",
     params: {
@@ -98,8 +141,15 @@ function MembersListPage() {
     },
     listFn: membersApi.list,
   })
+  const duplicatesQuery = useQuery({
+    queryKey: ["member-duplicates"],
+    queryFn: membersApi.scanDuplicates,
+    enabled: false,
+  })
   const items = query.data?.items ?? []
   const selection = useTableSelection(items)
+  const mergeMembers = items.filter((member) => selection.selectedIds.has(member.id))
+  const mergePair = mergeMembers.length === 2 ? (mergeMembers as [Member, Member]) : null
 
   const download = useCallback(
     async (promise: Promise<Blob>, filename: string) => {
@@ -124,6 +174,10 @@ function MembersListPage() {
   const setStatus = (value: StatusFilter) => {
     list.setFilter("status", value === "all" ? undefined : value)
   }
+  const scanDuplicates = () => {
+    setDuplicatesOpen(true)
+    void duplicatesQuery.refetch()
+  }
   const hasFilters = Boolean(
     list.activeSearch || searchParams.relation || searchParams.status || searchParams.client_id,
   )
@@ -134,14 +188,6 @@ function MembersListPage() {
       breadcrumb="Members"
       actions={
         <>
-          <IconButton
-            label="Scan duplicates"
-            icon={ScanSearch}
-            onClick={() => {
-              setDuplicatesOpen(true)
-              void duplicatesQuery.refetch()
-            }}
-          />
           <IconButton
             label="Export members"
             icon={Download}
@@ -157,6 +203,40 @@ function MembersListPage() {
               )
             }
           />
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="h-7 gap-1.5 px-2"
+            onClick={() =>
+              void download(membersApi.getImportTemplate(), "members-import-template.csv")
+            }
+          >
+            <FileDown className="size-3.5" />
+            Template
+          </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="h-7 gap-1.5 px-2"
+            onClick={scanDuplicates}
+          >
+            <ScanSearch className="size-3.5" />
+            Find duplicates
+          </Button>
+          {canWrite ? (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="h-7 gap-1.5 rounded-none px-2"
+              onClick={() => setImportOpen(true)}
+            >
+              <FileUp className="size-3.5" />
+              Import
+            </Button>
+          ) : null}
           {canWrite ? (
             <Button
               size="sm"
@@ -200,6 +280,20 @@ function MembersListPage() {
         />
       </FilterBar>
 
+      <MemberImportDialog
+        open={importOpen}
+        onOpenChange={setImportOpen}
+        onImported={() => void queryClient.invalidateQueries({ queryKey: ["members"] })}
+      />
+
+      <MemberDuplicateScanDialog
+        open={duplicatesOpen}
+        onOpenChange={setDuplicatesOpen}
+        loading={duplicatesQuery.isFetching}
+        scanned={duplicatesQuery.data?.scanned ?? 0}
+        items={duplicatesQuery.data?.items ?? []}
+      />
+
       <MemberFormSheet
         open={list.addOpen || editing !== null}
         onOpenChange={(open) => {
@@ -209,18 +303,21 @@ function MembersListPage() {
           }
         }}
         member={editing}
+        clientId={searchParams.client_id}
         onSaved={() => {
           void queryClient.invalidateQueries({ queryKey: ["members"] })
           list.setAddOpen(false)
           setEditing(null)
         }}
       />
-
-      <DuplicateDialog
-        open={duplicatesOpen}
-        onOpenChange={setDuplicatesOpen}
-        loading={duplicatesQuery.isFetching}
-        candidates={duplicatesQuery.data?.candidates ?? []}
+      <MemberMergeDialog
+        open={mergeOpen}
+        onOpenChange={setMergeOpen}
+        members={mergePair}
+        onMerged={() => {
+          selection.clearSelection()
+          void queryClient.invalidateQueries({ queryKey: ["members"] })
+        }}
       />
 
       <EntityListView
@@ -266,6 +363,17 @@ function MembersListPage() {
         onToggleSelectAll={selection.toggleSelectAll}
         toolbar={
           <SelectionBar count={selection.selectedIds.size} onClear={selection.clearSelection}>
+            {role === "Admin" && mergePair ? (
+              <Button
+                type="button"
+                variant="destructive"
+                size="sm"
+                className="h-7 rounded-none px-2.5"
+                onClick={() => setMergeOpen(true)}
+              >
+                Merge selected
+              </Button>
+            ) : null}
             <Button
               type="button"
               variant="outline"
@@ -288,6 +396,66 @@ function MembersListPage() {
   )
 }
 
+function MemberDuplicateScanDialog({
+  open,
+  onOpenChange,
+  loading,
+  scanned,
+  items,
+}: {
+  open: boolean
+  onOpenChange: (open: boolean) => void
+  loading: boolean
+  scanned: number
+  items: MemberDuplicateCandidate[]
+}) {
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-h-[80vh] overflow-y-auto sm:max-w-2xl">
+        <DialogHeader>
+          <DialogTitle>Duplicate member IDs</DialogTitle>
+          <DialogDescription>
+            {loading
+              ? "Scanning members…"
+              : `${items.length} exact matches in ${scanned} members. Only the same tenant, client, and Staff_ID are compared.`}
+          </DialogDescription>
+        </DialogHeader>
+        {!loading && items.length === 0 ? (
+          <p className="text-sm text-fg-muted">No duplicate Staff_IDs found.</p>
+        ) : (
+          <div className="space-y-2">
+            {items.map((item) => (
+              <div
+                key={`${item.first.id}-${item.second.id}`}
+                className="grid gap-3 rounded-md border p-3 sm:grid-cols-[1fr_auto_1fr] sm:items-center"
+              >
+                <MemberDuplicateCard member={item.first} />
+                <span className="text-center text-xs text-fg-muted">{item.reason}</span>
+                <MemberDuplicateCard member={item.second} />
+              </div>
+            ))}
+          </div>
+        )}
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+function MemberDuplicateCard({ member }: { member: MemberDuplicateCandidate["first"] }) {
+  return (
+    <Link
+      to="/members/$memberId"
+      params={{ memberId: member.id }}
+      className="min-w-0 rounded-sm hover:bg-surface-hover"
+    >
+      <p className="truncate text-sm font-medium text-fg">{member.display_label}</p>
+      <p className="truncate text-xs text-fg-muted">
+        {member.employer_member_id} · {member.client_name ?? member.client_id} · {member.relation}
+      </p>
+    </Link>
+  )
+}
+
 function MemberRow({
   member,
   selected,
@@ -300,103 +468,64 @@ function MemberRow({
   onEdit?: () => void
 }) {
   const label = member.display_label ?? member.employer_member_id
-  const contact = member.work_email ?? member.personal_email ?? "—"
   return (
-    <TableRow className="group border-fg/8">
-      <TableCell className="px-3">
+    <TableRow className={`group h-9 ${ROW_BORDER}`}>
+      <TableCell className="px-3 py-1.5">
         <Checkbox aria-label={`Select ${label}`} checked={selected} onCheckedChange={onToggle} />
       </TableCell>
-      <TableCell>
-        <Link
-          to="/members/$memberId"
-          params={{ memberId: member.id }}
-          className="flex items-center gap-2.5"
-        >
-          <span
-            aria-hidden
-            className="grid size-6 shrink-0 place-items-center bg-primary/10 text-[10px] font-semibold text-primary"
+      <TableCell className="px-2 py-1.5">
+        <StatusIcon status={member.status} />
+      </TableCell>
+      <TableCell className="max-w-[14rem] truncate py-1.5 text-sm font-medium text-fg">
+        {label}
+      </TableCell>
+      <TableCell className="py-1.5 text-xs text-fg/70">{member.employer_member_id}</TableCell>
+      <TableCell className="py-1.5 text-xs text-fg/70">{member.relation}</TableCell>
+      <TableCell className="max-w-[12rem] truncate py-1.5 text-xs text-fg/70">
+        {member.client_name ?? "-"}
+      </TableCell>
+      <TableCell className="max-w-[14rem] truncate py-1.5 text-xs text-fg/70">
+        {member.work_email ?? "-"}
+      </TableCell>
+      <TableCell className="max-w-[14rem] truncate py-1.5 text-xs text-fg/70">
+        {member.personal_email ?? "-"}
+      </TableCell>
+      <TableCell className="whitespace-nowrap py-1.5 text-xs text-fg/70">
+        {member.phone ?? "-"}
+      </TableCell>
+      <TableCell className="py-1.5 text-right">
+        <div className="flex items-center justify-end gap-0.5 opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100">
+          <Link
+            to="/members/$memberId"
+            params={{ memberId: member.id }}
+            aria-label={`Open ${label}`}
+            className="grid size-7 place-items-center rounded-sm text-fg/65 hover:bg-surface-hover hover:text-fg"
           >
-            {nameInitials(label)}
-          </span>
-          <span className="min-w-0">
-            <span className="block truncate text-sm font-medium text-fg group-hover:text-primary">
-              {label}
-            </span>
-            <span className="block truncate text-xs text-fg-muted">
-              {member.employer_member_id}
-            </span>
-          </span>
-        </Link>
-      </TableCell>
-      <TableCell className="text-xs text-fg/70">{member.relation}</TableCell>
-      <TableCell>
-        <span className="font-mono text-xs text-fg/60">{member.client_id.slice(0, 10)}</span>
-      </TableCell>
-      <TableCell>
-        <StatusBadge status={member.status} />
-      </TableCell>
-      <TableCell className="text-xs text-fg/70">{contact}</TableCell>
-      <TableCell className="text-right">
-        {onEdit ? (
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            className="rounded-none px-2 text-xs"
-            onClick={onEdit}
-          >
-            Edit
-          </Button>
-        ) : null}
-        <Link
-          to="/members/$memberId"
-          params={{ memberId: member.id }}
-          aria-label={`Open ${label}`}
-          className="inline-grid size-7 place-items-center text-fg/65 hover:text-fg"
-        >
-          <ExternalLink className="size-3.5" />
-        </Link>
+            <ExternalLink className="size-3.5" />
+          </Link>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                aria-label={`More actions for ${label}`}
+                className="size-7 p-0 text-fg/65"
+              >
+                <MoreHorizontal className="size-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem asChild>
+                <Link to="/members/$memberId" params={{ memberId: member.id }}>
+                  View details
+                </Link>
+              </DropdownMenuItem>
+              {onEdit ? <DropdownMenuItem onSelect={onEdit}>Edit</DropdownMenuItem> : null}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
       </TableCell>
     </TableRow>
-  )
-}
-
-function DuplicateDialog({
-  open,
-  onOpenChange,
-  loading,
-  candidates,
-}: {
-  open: boolean
-  onOpenChange: (open: boolean) => void
-  loading: boolean
-  candidates: MemberDuplicateCandidate[]
-}) {
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[80vh] overflow-y-auto rounded-none sm:max-w-2xl">
-        <DialogHeader>
-          <DialogTitle>Possible duplicate members</DialogTitle>
-          <DialogDescription>
-            {loading
-              ? "Scanning the member roster…"
-              : `${candidates.length} possible duplicate records found.`}
-          </DialogDescription>
-        </DialogHeader>
-        {!loading && candidates.length === 0 ? (
-          <p className="text-sm text-fg-muted">No likely duplicates found.</p>
-        ) : null}
-        <div className="space-y-2">
-          {candidates.map((candidate) => (
-            <div key={candidate.member.id} className="border border-fg/15 bg-surface p-3">
-              <p className="text-sm font-medium text-fg">
-                {candidate.member.display_label ?? candidate.member.employer_member_id}
-              </p>
-              <p className="text-xs text-fg-muted">Matched on {candidate.matched_on.join(", ")}</p>
-            </div>
-          ))}
-        </div>
-      </DialogContent>
-    </Dialog>
   )
 }

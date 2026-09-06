@@ -6,6 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.api.dependencies import (
     get_audit_event_handler,
     get_non_compete_clause_repository,
+    get_provider_repository,
 )
 from app.api.schemas.non_compete_schemas import (
     NonCompeteCreate,
@@ -25,9 +26,10 @@ from app.domain.enums import NonCompeteStatus
 from app.domain.repositories.non_compete_clause_repository import (
     NonCompeteClauseRepository,
 )
+from app.domain.repositories.provider_repository import ProviderRepository
 from app.domain.value_objects.core import (
     NonCompeteClauseId,
-    PersonId,
+    ProviderId,
     TenantId,
     UserId,
 )
@@ -71,14 +73,18 @@ async def create_non_compete(
     tenant_id: str = Query(..., description="Tenant identifier"),
     current_user: TokenData = Depends(require_same_tenant),
     repo: NonCompeteClauseRepository = Depends(get_non_compete_clause_repository),
+    provider_repo: ProviderRepository = Depends(get_provider_repository),
     audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
 ):
+    provider = await provider_repo.get_by_id(ProviderId(data.provider_id))
+    if provider is None or provider.tenant_id.value != tenant_id:
+        raise HTTPException(status_code=404, detail="Provider not found")
     now = utc_now()
     clause = NonCompeteClauseEntity(
         id=NonCompeteClauseId(generate_cuid()),
         tenant_id=TenantId(tenant_id),
-        provider_id=PersonId(data.provider_id),
+        provider_id=ProviderId(data.provider_id),
         status=NonCompeteStatus.DRAFT,
         terms_summary=data.terms_summary,
         effective_from=data.effective_from,
@@ -181,5 +187,5 @@ async def list_for_provider(
     repo: NonCompeteClauseRepository = Depends(get_non_compete_clause_repository),
     db: AsyncSession = Depends(get_db),
 ):
-    clauses = await repo.list_for_provider(TenantId(tenant_id), PersonId(provider_id))
+    clauses = await repo.list_for_provider(TenantId(tenant_id), ProviderId(provider_id))
     return [_to_response(c) for c in clauses]

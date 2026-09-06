@@ -2,32 +2,40 @@
 
 import logging
 
-from sqlalchemy import func, or_, select
+from sqlalchemy import delete, func, or_, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.domain.entities.clinical_subject import ClinicalSubject
 from app.domain.entities.eligible_member import EligibleMember
 from app.domain.enums import EligibilityStatus, MemberRelation
+from app.domain.exceptions import ConflictError
 from app.domain.repositories.eligible_member_repository import (
     ClinicalSubjectRepository,
     EligibleMemberClinicalLinkRepository,
     EligibleMemberRepository,
+    MemberMergeResult,
 )
 from app.domain.value_objects.core import (
     ClientId,
     ClinicalSubjectId,
     EligibleMemberId,
     TenantId,
+    UserId,
 )
 from app.infrastructure.mappers.eligible_member_mapper import (
     ClinicalSubjectMapper,
     EligibleMemberMapper,
 )
+from app.infrastructure.models.case_model import CaseModel
+from app.infrastructure.models.clinical_note_model import ClinicalNoteModel
+from app.infrastructure.models.eap_programme_model import AuthorizationModel
 from app.infrastructure.models.eligible_member_model import (
     ClinicalSubjectModel,
     EligibleMemberClinicalLinkModel,
     EligibleMemberModel,
 )
+from app.infrastructure.models.member_next_of_kin_model import MemberNextOfKinModel
+from app.infrastructure.models.service_session_model import ServiceSessionModel
 from app.shared.utils.datetime import utc_now
 
 _link_audit_logger = logging.getLogger("evexia.privacy.subject_link")
@@ -60,9 +68,13 @@ class EligibleMemberRepositoryImpl(EligibleMemberRepository):
             existing.date_of_birth = new_model.date_of_birth
             existing.gender = new_model.gender
             existing.phone = new_model.phone
+            existing.staff_number = new_model.staff_number
+            existing.national_id = new_model.national_id
+            existing.passport_number = new_model.passport_number
             existing.last_imported_at = new_model.last_imported_at
             existing.suspended_at = new_model.suspended_at
             existing.terminated_at = new_model.terminated_at
+            existing.user_id = new_model.user_id
             existing.updated_at = new_model.updated_at
         await self._session.flush()
 
@@ -161,7 +173,14 @@ class EligibleMemberRepositoryImpl(EligibleMemberRepository):
         sort_by: str = "created_at",
         sort_desc: bool = True,
     ) -> list[EligibleMember]:
-        allowed = {"created_at", "updated_at", "employer_member_id", "display_label", "status"}
+        allowed = {
+            "created_at",
+            "updated_at",
+            "employer_member_id",
+            "display_label",
+            "status",
+            "relation",
+        }
         if sort_by not in allowed:
             raise ValueError(f"Invalid member sort column: {sort_by}")
         stmt = self._filters(
@@ -204,6 +223,30 @@ class EligibleMemberRepositoryImpl(EligibleMemberRepository):
         )
         return int((await self._session.execute(stmt)).scalar_one())
 
+    async def next_member_sequence(
+        self,
+        tenant_id: TenantId,
+        client_id: ClientId,
+        prefix: str,
+    ) -> int:
+        """Highest numeric suffix already issued under ``prefix``, plus one.
+
+        Reads existing ids rather than a counter table so a client whose members
+        were imported with hand-written ids still continues from the top.
+        """
+        stmt = select(EligibleMemberModel.employer_member_id).where(
+            EligibleMemberModel.tenant_id == tenant_id.value,
+            EligibleMemberModel.client_id == client_id.value,
+            EligibleMemberModel.employer_member_id.like(f"{prefix}-%"),
+        )
+        rows = (await self._session.execute(stmt)).scalars().all()
+        highest = 0
+        for value in rows:
+            suffix = value[len(prefix) + 1 :]
+            if suffix.isdigit():
+                highest = max(highest, int(suffix))
+        return highest + 1
+
     async def find_by_employer_member_id(
         self,
         tenant_id: TenantId,
@@ -217,6 +260,143 @@ class EligibleMemberRepositoryImpl(EligibleMemberRepository):
         )
         row = (await self._session.execute(stmt)).scalar_one_or_none()
         return EligibleMemberMapper.to_entity(row) if row else None
+
+    async def find_by_user_id(self, tenant_id: TenantId, user_id: UserId) -> EligibleMember | None:
+        row = (
+            await self._session.execute(
+                select(EligibleMemberModel).where(
+                    EligibleMemberModel.tenant_id == tenant_id.value,
+                    EligibleMemberModel.user_id == user_id.value,
+                )
+            )
+        ).scalar_one_or_none()
+        return EligibleMemberMapper.to_entity(row) if row else None
+
+    async def merge_into(
+        self, tenant_id: TenantId, source_id: EligibleMemberId, target_id: EligibleMemberId
+    ) -> MemberMergeResult:
+        ids = [source_id.value, target_id.value]
+        rows = (
+            (
+                await self._session.execute(
+                    select(EligibleMemberModel)
+                    .where(
+                        EligibleMemberModel.tenant_id == tenant_id.value,
+                        EligibleMemberModel.id.in_(ids),
+                    )
+                    .with_for_update()
+                )
+            )
+            .scalars()
+            .all()
+        )
+        members = {row.id: row for row in rows}
+        source, target = members.get(source_id.value), members.get(target_id.value)
+        if source is None or target is None:
+            raise ConflictError("Both members must exist in the current tenant")
+        if source.client_id != target.client_id:
+            raise ConflictError("Members must belong to the same client")
+        if source.relation != target.relation or (
+            source.relation != MemberRelation.EMPLOYEE
+            and source.primary_employee_member_id != target.primary_employee_member_id
+        ):
+            raise ConflictError("Members must have the same relationship context")
+        if source.user_id and target.user_id:
+            raise ConflictError("Unlink one member account before merging")
+
+        contacts = (
+            await self._session.execute(
+                select(MemberNextOfKinModel.member_id, MemberNextOfKinModel.is_primary).where(
+                    MemberNextOfKinModel.tenant_id == tenant_id.value,
+                    MemberNextOfKinModel.member_id.in_(ids),
+                    MemberNextOfKinModel.is_primary.is_(True),
+                )
+            )
+        ).all()
+        if {member_id for member_id, _ in contacts} == set(ids):
+            raise ConflictError("Choose one primary next-of-kin contact before merging")
+
+        links = (
+            (
+                await self._session.execute(
+                    select(EligibleMemberClinicalLinkModel).where(
+                        EligibleMemberClinicalLinkModel.tenant_id == tenant_id.value,
+                        EligibleMemberClinicalLinkModel.member_id.in_(ids),
+                    )
+                )
+            )
+            .scalars()
+            .all()
+        )
+        subjects = {link.member_id: link.subject_id for link in links}
+        if set(subjects) != set(ids):
+            raise ConflictError("Both members need a clinical continuity link before merging")
+        source_subject, target_subject = subjects[source_id.value], subjects[target_id.value]
+
+        operations = {
+            "sessions": update(ServiceSessionModel)
+            .where(
+                ServiceSessionModel.tenant_id == tenant_id.value,
+                ServiceSessionModel.member_id == source_id.value,
+            )
+            .values(member_id=target_id.value),
+            "beneficiaries": update(EligibleMemberModel)
+            .where(
+                EligibleMemberModel.tenant_id == tenant_id.value,
+                EligibleMemberModel.primary_employee_member_id == source_id.value,
+            )
+            .values(primary_employee_member_id=target_id.value),
+            "next_of_kin": update(MemberNextOfKinModel)
+            .where(
+                MemberNextOfKinModel.tenant_id == tenant_id.value,
+                MemberNextOfKinModel.member_id == source_id.value,
+            )
+            .values(member_id=target_id.value),
+            "cases": update(CaseModel)
+            .where(
+                CaseModel.tenant_id == tenant_id.value,
+                CaseModel.clinical_subject_id == source_subject,
+            )
+            .values(clinical_subject_id=target_subject),
+            "clinical_notes": update(ClinicalNoteModel)
+            .where(
+                ClinicalNoteModel.tenant_id == tenant_id.value,
+                ClinicalNoteModel.clinical_subject_id == source_subject,
+            )
+            .values(clinical_subject_id=target_subject),
+            "authorizations": update(AuthorizationModel)
+            .where(
+                AuthorizationModel.tenant_id == tenant_id.value,
+                AuthorizationModel.clinical_subject_id == source_subject,
+            )
+            .values(clinical_subject_id=target_subject),
+        }
+        counts: MemberMergeResult = {}
+        for name, statement in operations.items():
+            counts[name] = (await self._session.execute(statement)).rowcount or 0
+        if source.user_id and not target.user_id:
+            linked_user_id = source.user_id
+            source.user_id = None
+            await self._session.flush()
+            target.user_id = linked_user_id
+            counts["account_links"] = 1
+        else:
+            counts["account_links"] = 0
+        await self._session.execute(
+            delete(EligibleMemberClinicalLinkModel).where(
+                EligibleMemberClinicalLinkModel.tenant_id == tenant_id.value,
+                EligibleMemberClinicalLinkModel.member_id == source_id.value,
+            )
+        )
+        await self._session.execute(
+            delete(ClinicalSubjectModel).where(
+                ClinicalSubjectModel.tenant_id == tenant_id.value,
+                ClinicalSubjectModel.id == source_subject,
+            )
+        )
+        await self._session.delete(source)
+        await self._session.flush()
+        return counts
 
 
 class ClinicalSubjectRepositoryImpl(ClinicalSubjectRepository):

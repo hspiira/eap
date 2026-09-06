@@ -9,7 +9,7 @@ from dataclasses import dataclass, field
 from datetime import datetime
 
 from app.domain.events import DomainEvent
-from app.domain.exceptions import DomainError, InvariantViolation
+from app.domain.exceptions import ConflictError, DomainError, InvariantViolation
 from app.domain.value_objects.core import ClientTagId, TenantId
 from app.shared.utils.datetime import utc_now
 
@@ -67,7 +67,7 @@ class ClientTagEntity:
         if self.deleted_at:
             raise DomainError("Cannot activate deleted tag")
         if self._is_active:
-            raise DomainError("Tag is already active")
+            raise ConflictError("Tag is already active")
         self._is_active = True
         self.updated_at = utc_now()
 
@@ -76,7 +76,7 @@ class ClientTagEntity:
         if self.deleted_at:
             raise DomainError("Cannot deactivate deleted tag")
         if not self._is_active:
-            raise DomainError("Tag is already inactive")
+            raise ConflictError("Tag is already inactive")
         self._is_active = False
         self.updated_at = utc_now()
 

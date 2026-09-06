@@ -7,10 +7,13 @@ export function IconButton({
   label,
   icon: Icon,
   onClick,
+  disabled,
 }: {
   label: string
   icon: React.ElementType
   onClick?: () => void
+  /** Kept rendered rather than hidden, so a row's controls do not shift. */
+  disabled?: boolean
 }) {
   return (
     <Button
@@ -18,6 +21,7 @@ export function IconButton({
       variant="ghost"
       size="sm"
       onClick={onClick}
+      disabled={disabled}
       aria-label={label}
       title={label}
       className="size-7 p-0 text-fg/70"

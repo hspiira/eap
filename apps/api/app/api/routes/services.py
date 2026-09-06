@@ -37,7 +37,8 @@ from app.core.authorization import (
 from app.core.database import get_db
 from app.core.security import TokenData, get_current_user
 from app.domain.entities.service import ServiceEntity
-from app.domain.enums import BaseStatus
+from app.domain.enums import BaseStatus, ServiceCategory
+from app.domain.exceptions import NotFoundError
 from app.domain.repositories.service_repository import ServiceRepository
 from app.domain.value_objects.core import ServiceId, TenantId
 from app.shared.decorators import readonly, transactional
@@ -199,11 +200,7 @@ async def update_service(
 ):
     """Update service basic information."""
     service = await UpdateServiceUseCase(service_repo).execute(
-        service.id,
-        name=data.name,
-        description=data.description,
-        category=data.category,
-        duration_minutes=data.duration_minutes,
+        service.id, **data.model_dump(exclude_unset=True)
     )
     await audit_change(service, audit_handler, current_user, request)
     return _to_service_response(service)
@@ -248,7 +245,7 @@ async def list_services(
     current_user: TokenData = Depends(require_same_tenant),
     status: BaseStatus | None = Query(None, description="Filter by service status"),
     search: str | None = Query(None, description="Search in service name"),
-    category: str | None = Query(None, description="Filter by category"),
+    category: ServiceCategory | None = Query(None, description="Filter by category"),
     is_group_service: bool | None = Query(None, description="Filter by group service"),
     pg: PageParams = Depends(pagination()),
     sort_by: str = Query("created_at", description="Field to sort by"),
@@ -317,7 +314,7 @@ async def get_service_by_name(
     """Get service by name within a tenant."""
     service = await service_repo.get_by_name(TenantId(tenant_id), name)
     if not service:
-        raise ValueError("Service not found")
+        raise NotFoundError("Service not found")
     return _to_service_response(service)
 
 

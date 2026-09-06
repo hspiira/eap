@@ -108,11 +108,11 @@ function CampaignDetailPage() {
     }
   }
 
-  const handleEnrol = async (personIds: string[]) => {
+  const handleEnrol = async (memberIds: string[]) => {
     try {
-      await careCallbacksApi.enrol(campaignId, personIds)
+      await careCallbacksApi.enrol(campaignId, memberIds)
       await refreshCases()
-      showSuccess(`Enrolled ${personIds.length} ${personIds.length === 1 ? "person" : "persons"}`)
+      showSuccess(`Enrolled ${memberIds.length} ${memberIds.length === 1 ? "member" : "members"}`)
     } catch (err) {
       showError(normalizeErrorMessage(err, "Could not enrol persons"))
       throw err

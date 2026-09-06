@@ -9,7 +9,7 @@ from app.domain.enums import NonCompeteStatus
 
 
 class NonCompeteCreate(BaseModel):
-    provider_id: str = Field(..., description="Provider person identifier")
+    provider_id: str = Field(..., description="Provider identifier")
     terms_summary: SanitizedStr = Field(..., min_length=1, description="Non-compete terms summary")
     effective_from: date = Field(..., description="Start date of the restriction")
     effective_until: date | None = Field(None, description="End date (null = indefinite)")

@@ -11,7 +11,7 @@ from decimal import Decimal
 
 from app.domain.enums import KPICategory, KPIMeasurementUnit
 from app.domain.events import DomainEvent
-from app.domain.exceptions import DomainError, InvariantViolation
+from app.domain.exceptions import ConflictError, DomainError, InvariantViolation
 from app.domain.value_objects.core import ClientId, ContractId, KPIAssignmentId, KPIId, TenantId
 from app.shared.utils.datetime import utc_now
 
@@ -79,7 +79,7 @@ class KPIEntity:
         if self.deleted_at:
             raise DomainError("Cannot activate deleted KPI")
         if self._is_active:
-            raise DomainError("KPI is already active")
+            raise ConflictError("KPI is already active")
         self._is_active = True
         self.updated_at = utc_now()
 
@@ -88,7 +88,7 @@ class KPIEntity:
         if self.deleted_at:
             raise DomainError("Cannot deactivate deleted KPI")
         if not self._is_active:
-            raise DomainError("KPI is already inactive")
+            raise ConflictError("KPI is already inactive")
         self._is_active = False
         self.updated_at = utc_now()
 
@@ -158,7 +158,7 @@ class KPIAssignmentEntity:
         if self.deleted_at:
             raise DomainError("Cannot activate deleted assignment")
         if self._is_active:
-            raise DomainError("Assignment is already active")
+            raise ConflictError("Assignment is already active")
         self._is_active = True
         self.updated_at = utc_now()
 
@@ -167,7 +167,7 @@ class KPIAssignmentEntity:
         if self.deleted_at:
             raise DomainError("Cannot deactivate deleted assignment")
         if not self._is_active:
-            raise DomainError("Assignment is already inactive")
+            raise ConflictError("Assignment is already inactive")
         self._is_active = False
         self.updated_at = utc_now()
 

@@ -11,7 +11,6 @@ const SCOPE_LABEL: Record<AccessScope, string> = {
 
 interface DetailRailProps {
   user: User
-  person: Person | null
   onAction: (id: string, action: LifecycleAction) => Promise<void>
   actionLoading: boolean
   onVerifyEmail: () => Promise<void>
@@ -20,7 +19,6 @@ interface DetailRailProps {
 
 import { useState } from "react"
 
-import { Link } from "@tanstack/react-router"
 import { BadgeCheck, ShieldCheck, UserCog } from "lucide-react"
 
 import { usersApi } from "@/api/endpoints/users"
@@ -37,13 +35,11 @@ import {
 } from "@/components/ui/select"
 import { Switch } from "@/components/ui/switch"
 import { useToast } from "@/contexts/ToastContext"
-import { displayName, personInitials } from "@/lib/display"
 import { normalizeErrorMessage } from "@/lib/errors"
 import { useTenantStore } from "@/store/slices/tenantSlice"
-import type { Person, User } from "@/types/entities"
+import type { User } from "@/types/entities"
 import { AccessScope, TenantRole } from "@/types/enums"
 import type { LifecycleAction } from "@/utils/lifecycleConfig"
-import { getStatusLabel } from "@/utils/statusColors"
 
 export function Hero({ user }: { user: User }) {
   return (
@@ -77,7 +73,6 @@ export function Hero({ user }: { user: User }) {
 
 export function DetailRail({
   user,
-  person,
   onAction,
   actionLoading,
   onVerifyEmail,
@@ -93,31 +88,6 @@ export function DetailRail({
           />
           <Stat label="Email" value={user.is_email_verified ? "Verified" : "Unverified"} />
         </div>
-      </RailSection>
-
-      <RailSection title="Linked person">
-        {person ? (
-          <Link
-            to="/persons/$personId"
-            params={{ personId: person.id }}
-            className="flex items-center gap-2.5 rounded-sm border border-fg/10 bg-surface px-3 py-2 transition-colors hover:border-fg/25"
-          >
-            <span
-              aria-hidden
-              className="grid size-7 shrink-0 place-items-center bg-primary/10 text-[10px] font-semibold text-primary"
-            >
-              {personInitials(person)}
-            </span>
-            <div className="min-w-0 flex-1">
-              <p className="truncate text-sm font-medium text-fg">{displayName(person, user)}</p>
-              <p className="truncate text-[11px] text-fg-muted">
-                {getStatusLabel(person.person_type)}
-              </p>
-            </div>
-          </Link>
-        ) : (
-          <p className="text-xs text-fg-muted">No person profile linked.</p>
-        )}
       </RailSection>
 
       {!user.is_email_verified && (

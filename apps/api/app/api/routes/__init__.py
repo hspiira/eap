@@ -30,12 +30,17 @@ from app.api.routes.kpis import router as kpis_router
 from app.api.routes.members import router as members_router
 from app.api.routes.non_compete_clauses import router as non_compete_router
 from app.api.routes.panel import router as panel_router
-from app.api.routes.persons import router as persons_router
 from app.api.routes.pricing import router as pricing_router
+from app.api.routes.provider_affiliations import router as provider_affiliations_router
+from app.api.routes.provider_aliases import router as provider_aliases_router
+from app.api.routes.provider_organisations import router as provider_organisations_router
+from app.api.routes.provider_specialties import router as provider_specialties_router
+from app.api.routes.providers import router as providers_router
 from app.api.routes.reports import router as reports_router
 from app.api.routes.service_assignments import router as service_assignments_router
 from app.api.routes.service_sessions import router as service_sessions_router
 from app.api.routes.services import router as services_router
+from app.api.routes.session_imports import router as session_imports_router
 from app.api.routes.surveys import router as surveys_router
 from app.api.routes.tenants import router as tenants_router
 from app.api.routes.users import router as users_router
@@ -47,7 +52,12 @@ def register_routers(app: FastAPI) -> None:
     app.include_router(auth_azure_router)
     app.include_router(tenants_router)
     app.include_router(users_router)
-    app.include_router(persons_router)
+    app.include_router(providers_router)
+    app.include_router(provider_organisations_router)
+    app.include_router(provider_affiliations_router)
+    app.include_router(provider_specialties_router)
+    app.include_router(provider_aliases_router)
+    app.include_router(session_imports_router)
     app.include_router(clients_router)
     app.include_router(industries_router)
     app.include_router(client_tags_router)
@@ -103,7 +113,11 @@ __all__ = [
     "members_router",
     "non_compete_router",
     "panel_router",
-    "persons_router",
+    "provider_affiliations_router",
+    "provider_aliases_router",
+    "provider_organisations_router",
+    "provider_specialties_router",
+    "providers_router",
     "pricing_router",
     "register_routers",
     "reports_router",
@@ -111,6 +125,7 @@ __all__ = [
     "service_assignments_router",
     "service_sessions_router",
     "surveys_router",
+    "session_imports_router",
     "tenants_router",
     "users_router",
 ]

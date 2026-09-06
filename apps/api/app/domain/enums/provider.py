@@ -35,6 +35,7 @@ class AccreditationStatus(str, Enum):
 class PanelStatus(str, Enum):
     """Whether the provider is currently on the active panel."""
 
+    PENDING = "Pending"
     ACTIVE = "Active"
     SUSPENDED = "Suspended"
     REMOVED = "Removed"
@@ -47,3 +48,10 @@ class NonCompeteStatus(str, Enum):
     ACTIVE = "Active"
     REVOKED = "Revoked"
     EXPIRED = "Expired"
+
+
+class ProviderIdentityProvenance(str, Enum):
+    """Where a practitioner's owned name and contact details came from."""
+
+    OWNED = "Owned"
+    BACKFILLED_FROM_USER = "BackfilledFromUser"

@@ -14,6 +14,7 @@ from app.application.use_cases.user_use_cases import CreateUserUseCase
 from app.core.security import hash_password
 from app.domain.entities.tenant import TenantEntity
 from app.domain.enums import SubscriptionTier, TenantStatus
+from app.domain.exceptions import ConflictError
 from app.domain.repositories.industry_repository import IndustryRepository
 from app.domain.repositories.tenant_repository import TenantRepository
 from app.domain.repositories.user_repository import UserRepository
@@ -84,7 +85,7 @@ class CreateTenantUseCase(BaseUseCase[TenantEntity, TenantId]):
         # Check if tenant already exists
         existing = await self.tenant_repository.get_by_code(code)
         if existing:
-            raise ValueError(f"Tenant with code '{code}' already exists")
+            raise ConflictError(f"Tenant with code '{code}' already exists")
 
         # Create value objects
         tenant_code = TenantCode(code)

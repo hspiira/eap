@@ -7,6 +7,7 @@ from app.domain.entities.member_next_of_kin import MemberNextOfKin
 from app.domain.repositories.member_next_of_kin_repository import MemberNextOfKinRepository
 from app.domain.value_objects.core import EligibleMemberId, MemberNextOfKinId, TenantId
 from app.infrastructure.mappers.member_next_of_kin_mapper import MemberNextOfKinMapper
+from app.infrastructure.models.eligible_member_model import EligibleMemberModel
 from app.infrastructure.models.member_next_of_kin_model import MemberNextOfKinModel
 
 
@@ -19,6 +20,14 @@ class MemberNextOfKinRepositoryImpl(MemberNextOfKinRepository):
         return MemberNextOfKinMapper.to_entity(model) if model else None
 
     async def save(self, entity: MemberNextOfKin) -> None:
+        await self._session.execute(
+            select(EligibleMemberModel.id)
+            .where(
+                EligibleMemberModel.id == entity.member_id.value,
+                EligibleMemberModel.tenant_id == entity.tenant_id.value,
+            )
+            .with_for_update()
+        )
         if entity.is_primary:
             await self._session.execute(
                 update(MemberNextOfKinModel)

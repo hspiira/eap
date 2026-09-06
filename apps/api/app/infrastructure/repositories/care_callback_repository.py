@@ -12,7 +12,7 @@ from app.domain.repositories.care_callback_repository import (
 from app.domain.value_objects.core import (
     CareCallbackCampaignId,
     OutreachRecordId,
-    PersonId,
+    ProviderId,
     TenantId,
 )
 from app.infrastructure.mappers.care_callback_mapper import (
@@ -137,7 +137,7 @@ class OutreachRecordRepositoryImpl(OutreachRecordRepository):
     async def list_for_counsellor(
         self,
         tenant_id: TenantId,
-        counsellor_id: PersonId,
+        counsellor_id: ProviderId,
         *,
         limit: int = 100,
     ) -> list[OutreachRecord]:

@@ -25,8 +25,9 @@ from app.domain.services.triage_scoring import score_triage
 from app.domain.value_objects.core import (
     CareCallbackCampaignId,
     ClientId,
+    EligibleMemberId,
     OutreachRecordId,
-    PersonId,
+    ProviderId,
     TenantId,
     UserId,
 )
@@ -49,7 +50,7 @@ class CreateCareCallbackCampaignUseCase(BaseUseCase[CareCallbackCampaign, CareCa
         period_start: date,
         period_end: date,
         target_count: int,
-        counsellor_pool: tuple[PersonId, ...],
+        counsellor_pool: tuple[ProviderId, ...],
         created_by: UserId,
         sampling_notes: str | None = None,
     ) -> CareCallbackCampaign:
@@ -73,7 +74,7 @@ class CreateCareCallbackCampaignUseCase(BaseUseCase[CareCallbackCampaign, CareCa
 
 
 class EnrolPersonsInCampaignUseCase:
-    """Create one ``OutreachRecord`` per supplied person id (bulk enrol)."""
+    """Create one ``OutreachRecord`` per supplied member id (bulk enrol)."""
 
     def __init__(
         self,
@@ -87,7 +88,7 @@ class EnrolPersonsInCampaignUseCase:
         self,
         *,
         campaign_id: CareCallbackCampaignId,
-        person_ids: list[PersonId],
+        member_ids: list[EligibleMemberId],
     ) -> list[OutreachRecord]:
         campaign = await self._campaigns.get_by_id(campaign_id)
         if campaign is None:
@@ -103,12 +104,12 @@ class EnrolPersonsInCampaignUseCase:
             raise DomainError(f"Cannot enrol into a {campaign.status.value} campaign")
         now = utc_now()
         records: list[OutreachRecord] = []
-        for person_id in person_ids:
+        for member_id in member_ids:
             record = OutreachRecord(
                 id=OutreachRecordId(generate_cuid()),
                 tenant_id=campaign.tenant_id,
                 campaign_id=campaign_id,
-                person_id=person_id,
+                member_id=member_id,
                 status=OutreachStatus.PENDING,
                 contact_attempts=0,
                 created_at=now,

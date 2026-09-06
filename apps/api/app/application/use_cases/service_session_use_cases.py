@@ -13,6 +13,7 @@ from app.domain.enums import (
     ClientType,
     SessionCategory,
     SessionClinicalStatus,
+    SessionDeliveryContext,
     SessionStatus,
     SessionType,
 )
@@ -20,7 +21,8 @@ from app.domain.repositories.service_session_repository import (
     ServiceSessionRepository,
 )
 from app.domain.value_objects.core import (
-    PersonId,
+    EligibleMemberId,
+    ProviderId,
     ServiceId,
     SessionId,
     TenantId,
@@ -41,9 +43,11 @@ class CreateServiceSessionUseCase(BaseUseCase[ServiceSessionEntity, SessionId]):
         session_id: SessionId,
         tenant_id: TenantId,
         service_id: ServiceId,
-        provider_id: PersonId,
-        person_id: PersonId,
+        provider_id: ProviderId,
+        member_id: EligibleMemberId,
         scheduled_at: datetime,
+        delivery_context: SessionDeliveryContext,
+        provider_affiliation_id: str | None = None,
         location: str | None = None,
         session_type: SessionType | None = None,
         category: SessionCategory | None = None,
@@ -65,8 +69,10 @@ class CreateServiceSessionUseCase(BaseUseCase[ServiceSessionEntity, SessionId]):
             tenant_id=tenant_id,
             service_id=service_id,
             provider_id=provider_id,
-            person_id=person_id,
+            member_id=member_id,
             scheduled_at=scheduled_at,
+            delivery_context=delivery_context,
+            provider_affiliation_id=provider_affiliation_id,
             status=SessionStatus.SCHEDULED,
             created_at=utc_now(),
             updated_at=utc_now(),
@@ -158,14 +164,14 @@ class GetServiceSessionUseCase(BaseUseCase[ServiceSessionEntity, SessionId]):
         """Get session by ID."""
         return await self.repository.get_by_id(session_id)
 
-    async def execute_by_person(
-        self, tenant_id: TenantId, person_id: PersonId
+    async def execute_by_member(
+        self, tenant_id: TenantId, member_id: EligibleMemberId
     ) -> list[ServiceSessionEntity]:
-        """Get all sessions for a person."""
-        return await self.session_repository.get_by_person_id(tenant_id, person_id)
+        """Get all sessions for a member."""
+        return await self.session_repository.get_by_member_id(tenant_id, member_id)
 
     async def execute_by_provider(
-        self, tenant_id: TenantId, provider_id: PersonId
+        self, tenant_id: TenantId, provider_id: ProviderId
     ) -> list[ServiceSessionEntity]:
         """Get all sessions for a provider."""
         return await self.session_repository.get_by_provider_id(tenant_id, provider_id)

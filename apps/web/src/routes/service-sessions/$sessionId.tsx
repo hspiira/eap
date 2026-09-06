@@ -5,7 +5,7 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router"
 import { ArrowLeft, CalendarClock, Pencil, Wrench } from "lucide-react"
 
 import { diagnosesApi } from "@/api/endpoints/diagnoses"
-import { personsApi } from "@/api/endpoints/persons"
+import { membersApi } from "@/api/endpoints/members"
 import { providersApi } from "@/api/endpoints/providers"
 import { serviceSessionsApi } from "@/api/endpoints/service-sessions"
 import { servicesApi } from "@/api/endpoints/services"
@@ -15,7 +15,9 @@ import { EmptyState } from "@/components/common/EmptyState"
 import { PageShell } from "@/components/common/PageShell"
 import { StatusBadge } from "@/components/common/StatusBadge"
 import { Tab, TabPanel, Tabs, TabsList } from "@/components/common/Tabs"
+import { CATEGORY_LABELS } from "@/components/ServiceFormSheet"
 import { ServiceSessionFormSheet } from "@/components/ServiceSessionFormSheet"
+import { SessionDeliveryLabel } from "@/components/sessions/SessionAttribution"
 import {
   CancelDialog,
   CompleteDialog,
@@ -27,7 +29,7 @@ import {
 import { Button } from "@/components/ui/button"
 import { useToast } from "@/contexts/ToastContext"
 import { useTabSearchParam } from "@/hooks/useTabSearchParam"
-import { displayName, personInitials } from "@/lib/display"
+import { memberLabel, nameInitials } from "@/lib/display"
 import { normalizeErrorMessage } from "@/lib/errors"
 import { formatDateTime } from "@/lib/format"
 import { entityDetailKey, useEntityDetail } from "@/lib/queries"
@@ -74,19 +76,16 @@ function ServiceSessionDetailPage() {
     enabled: !!session?.service_id,
   })
 
-  const { data: person = null } = useQuery({
-    queryKey: entityDetailKey("persons", session?.person_id ?? ""),
-    queryFn: () => personsApi.getById(session!.person_id),
-    enabled: !!session?.person_id,
+  const { data: member = null } = useQuery({
+    queryKey: entityDetailKey("members", session?.member_id ?? ""),
+    queryFn: () => membersApi.getById(session!.member_id),
+    enabled: !!session?.member_id,
   })
 
   const providerId = session?.provider_id
   const { data: provider = null } = useQuery({
     queryKey: entityDetailKey("providers", providerId ?? ""),
-    queryFn: async () => {
-      const res = await providersApi.list({ page: 1, limit: 1, search: providerId as string })
-      return (res.items ?? []).find((p) => p.id === providerId) ?? null
-    },
+    queryFn: () => providersApi.getById(providerId as string),
     enabled: !!providerId,
   })
 
@@ -119,11 +118,25 @@ function ServiceSessionDetailPage() {
   )
 
   const confirmComplete = useCallback(
-    async (duration: number, notes: string) => {
+    async (duration: number, notes: string, caseId?: string) => {
       if (!session) return
-      await serviceSessionsApi.complete(session.id, { duration, notes })
+      const { drawdown } = await serviceSessionsApi.complete(session.id, {
+        duration,
+        notes,
+        case_id: caseId ?? null,
+      })
       await queryClient.invalidateQueries({ queryKey: ["service-sessions"] })
-      showSuccess("Session completed")
+      if (drawdown.consumed) {
+        showSuccess(`Session completed. ${drawdown.sessions_remaining} authorized sessions left.`)
+        return
+      }
+      // A named case that could not be drawn down is worth saying out loud:
+      // the session is complete either way, but the entitlement did not move.
+      showSuccess(
+        caseId && drawdown.reason
+          ? `Session completed. Not drawn down: ${drawdown.reason}`
+          : "Session completed",
+      )
     },
     [session, queryClient, showSuccess],
   )
@@ -196,14 +209,14 @@ function ServiceSessionDetailPage() {
         </>
       }
     >
-      <Hero session={session} service={service} person={person} />
+      <Hero session={session} service={service} member={member} />
 
       <ServiceSessionFormSheet
         open={editOpen}
         onOpenChange={setEditOpen}
         session={session}
         service={service}
-        person={person}
+        member={member}
         onSaved={(updated) =>
           queryClient.setQueryData(entityDetailKey("service-sessions", updated.id), updated)
         }
@@ -213,6 +226,7 @@ function ServiceSessionDetailPage() {
         open={completeOpen}
         onOpenChange={setCompleteOpen}
         defaultDuration={service?.duration_minutes ?? 60}
+        clientId={member?.client_id}
         onConfirm={confirmComplete}
       />
       <CancelDialog open={cancelOpen} onOpenChange={setCancelOpen} onConfirm={confirmCancel} />
@@ -275,33 +289,33 @@ function ServiceSessionDetailPage() {
                   </DetailCard>
 
                   <DetailCard title="Subject">
-                    {person ? (
+                    {member ? (
                       <Link
-                        to="/persons/$personId"
-                        params={{ personId: person.id }}
+                        to="/members/$memberId"
+                        params={{ memberId: member.id }}
                         className="flex items-center gap-2.5 rounded-sm border border-fg/10 bg-bg px-3 py-2 transition-colors hover:border-fg/25"
                       >
                         <span
                           aria-hidden
                           className="grid size-7 shrink-0 place-items-center bg-primary/10 text-[10px] font-semibold text-primary"
                         >
-                          {personInitials(person)}
+                          {nameInitials(memberLabel(member))}
                         </span>
                         <div className="min-w-0 flex-1">
                           <p className="truncate text-sm font-medium text-fg">
-                            {displayName(person)}
+                            {memberLabel(member)}
                           </p>
                           <p className="truncate text-[11px] text-fg-muted">
-                            {getStatusLabel(person.person_type)}
+                            {getStatusLabel(member.relation)}
                           </p>
                         </div>
                       </Link>
                     ) : (
-                      <p className="text-xs text-fg-muted">Loading person…</p>
+                      <p className="text-xs text-fg-muted">Loading member…</p>
                     )}
                   </DetailCard>
 
-                  <DetailCard title="Service & provider">
+                  <DetailCard title="Service & practitioner">
                     {service ? (
                       <Link
                         to="/services/$serviceId"
@@ -317,13 +331,17 @@ function ServiceSessionDetailPage() {
                         <div className="min-w-0 flex-1">
                           <p className="truncate text-sm font-medium text-fg">{service.name}</p>
                           <p className="truncate text-[11px] text-fg-muted">
-                            {service.service_type ?? "-"}
+                            {service.category ? CATEGORY_LABELS[service.category] : "-"}
                           </p>
                         </div>
                       </Link>
                     ) : null}
                     {provider ? (
-                      <div className="flex items-center gap-2.5 rounded-sm border border-fg/10 bg-bg px-3 py-2">
+                      <Link
+                        to="/providers/$providerId"
+                        params={{ providerId: provider.id }}
+                        className="flex items-center gap-2.5 rounded-sm border border-fg/10 bg-bg px-3 py-2 transition-colors hover:border-fg/25"
+                      >
                         <span
                           aria-hidden
                           className="grid size-7 shrink-0 place-items-center bg-primary/10 text-[10px] font-semibold text-primary"
@@ -331,19 +349,27 @@ function ServiceSessionDetailPage() {
                           PR
                         </span>
                         <div className="min-w-0 flex-1">
-                          <p className="truncate text-sm font-medium text-fg font-mono">
-                            {provider.id}
+                          <p className="truncate text-sm font-medium text-fg">
+                            {provider.display_name}
                           </p>
                           <p className="truncate text-[11px] text-fg-muted">
                             {provider.provider_profile.tier} · {provider.provider_profile.region}
                           </p>
                         </div>
-                      </div>
+                      </Link>
                     ) : session.provider_id ? (
-                      <p className="text-xs text-fg-muted">Loading provider…</p>
+                      <p className="text-xs text-fg-muted">Loading practitioner…</p>
                     ) : (
-                      <p className="text-xs text-fg-muted">No provider assigned.</p>
+                      <p className="text-xs text-fg-muted">No practitioner assigned.</p>
                     )}
+                    <div className="mt-2 border-t border-fg/10 pt-2">
+                      <p className="text-[11px] font-medium tracking-wide text-fg-muted">
+                        Delivered through
+                      </p>
+                      <div className="mt-0.5">
+                        <SessionDeliveryLabel session={session} />
+                      </div>
+                    </div>
                   </DetailCard>
 
                   <DetailCard title="Clinical">
@@ -389,7 +415,7 @@ function ServiceSessionDetailPage() {
             <DetailRail
               session={session}
               service={service}
-              person={person}
+              member={member}
               onAction={handleAction}
               actionLoading={actionLoading}
             />

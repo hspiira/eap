@@ -51,6 +51,12 @@ Run from the repository root:
 ```bash
 pnpm setup            # first-run bootstrap; safe to re-run
 pnpm bootstrap        # just the env/database/migrate/seed part, no installs
+pnpm migrate          # apply pending Alembic migrations to DATABASE_URL
+pnpm migrate:make     # autogenerate a revision; pass -m "message"
+pnpm migrate:down     # roll back one revision
+pnpm migrate:current  # show the database's current migration revision
+pnpm migrate:heads    # show every head; more than one means a branch to merge
+pnpm migrate:history  # show the migration history
 
 pnpm dev              # both dev servers, one terminal
 pnpm dev:api          # uvicorn with reload, port 8000
@@ -74,6 +80,37 @@ pnpm contracts:check  # fail if the committed contract or client is stale
 deliberate: if it passes locally it passes in CI. It is slower than `pnpm lint`
 because it includes pyright and the coverage gate, so `lint` and `test` stay
 the fast inner loop and `verify` is the pre-push check.
+
+### Production migrations
+
+The migration commands use the `DATABASE_URL` loaded from the repo-root `.env`.
+For a production deployment, verify that `.env` targets the production database,
+check the current revision, and then apply migrations:
+
+```bash
+pnpm migrate:heads
+pnpm migrate:current
+pnpm migrate
+pnpm migrate:current
+```
+
+Check `migrate:heads` first. `pnpm migrate` resolves `head`, which fails outright
+when the history has more than one, and a branch is easy to create by accident
+when several people add revisions in parallel. One line of output means one head
+and the upgrade is unambiguous.
+
+`pnpm migrate` only applies committed Alembic migrations; it does not seed data
+or modify application configuration. Take the normal database backup and follow
+the deployment rollback procedure before applying migrations to a shared or
+production database.
+
+Two habits that matter more on a shared database than a local one. Commit a
+migration before applying it anywhere others use, so the record of what ran
+exists in the history rather than only in one working tree. And never edit a
+revision after it has been applied; write a new one instead. Alembic decides
+what to run from the version table alone, so a revision that is edited after
+running leaves the database marked done for work it never did, and no later
+`pnpm migrate` will notice.
 
 ### Pre-commit hooks
 
@@ -140,19 +177,20 @@ that rewrote them with CRLF would fail those gates:
 
 ## Known gaps
 
-- The integration and E2E suite (`pytest tests --ignore=tests/unit`) is
-  currently red and runs with `continue-on-error: true` in CI. It does not gate
-  merges until that is fixed.
 - Backend type coverage is ratcheting. `app/domain` is a strict zero-error
   pyright gate; the rest of the project is reported but not enforced.
 - Backend test coverage sits just above the 60% floor (63%), so a moderately
   sized untested addition can fail the gate.
-- `apps/web/eslint.config.js` points developers at `docs/CODING_GUIDELINES.md`
-  and `docs/IMPLEMENTATION_PLAN.md` in two of its error messages. Neither file
-  exists anywhere in the repository.
-- `apps/web` depends on `nitro-nightly@latest`, which is unpinned and can change
-  under you between installs. The lockfile holds it steady until something
-  forces a re-resolve.
+- The audit trail covers lifecycle transitions and little else. Auditing is
+  event-driven, so a mutating entity method that appends no domain event never
+  reaches `audit_logs`: creating a client and changing its name or contact
+  details both leave no record, while suspending it does. 54 of 196 mutating
+  entity methods emit an event, leaving 142 silent across 32 classes;
+  17 classes emit nothing at all, including `ServiceEntity`, `ContactEntity`
+  and `EligibleMember`.
+  `tests/unit/domain/test_audit_coverage.py` pins that number and names the
+  silent methods, so the gap cannot widen unnoticed. Widening the audit scope
+  is a product decision, not a bug fix.
 
 ## The API contract
 
@@ -187,6 +225,27 @@ Only the API keeps a `vercel.json`; the frontend is auto-detected.
 One push deploys both from the same commit, so the frontend and the API cannot
 drift apart. Point the primary domain at the **web** project: the frontend
 serves the landing page at `/`, and the API stays reachable on its own domain.
+
+### The API needs a second, long-running process
+
+Two pieces of work outlive a request and cannot run on a serverless function:
+
+- **The outbox worker** (`scripts/outbox_worker.py`). Every audited mutation
+  writes a row to `outbox_events` inside the request transaction; this worker
+  drains those rows into `audit_logs` and `entity_changes`. Nothing else does.
+  If it is not running, the audit trail stays empty while the API looks
+  healthy. Run exactly one replica: the dispatcher is safe under concurrency
+  but not yet efficient, as it has no `SKIP LOCKED`.
+- **Queued client imports**, handed to FastAPI `BackgroundTasks` by
+  `POST /clients/import/jobs`. A function frozen after the response leaves the
+  job in `processing`; it becomes retryable again after `STALE_IMPORT_AFTER`.
+
+`docker-compose.yml` defines both worker services (`outbox-worker` and, under
+the `production` profile, `outbox-worker-prod`) from the same image as the API.
+On a platform without a worker process type, the outbox worker has to run
+somewhere else, such as a small VM or a scheduled container. Moving the queued
+import onto the outbox worker would remove the second constraint, but that has
+not been done.
 
 ### Optional: serve the API under the web domain
 

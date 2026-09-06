@@ -1,4 +1,9 @@
-"""ProviderProfile + non-compete tests (Phase 2 #D-Provider)."""
+"""Non-compete clause tests.
+
+The panel-eligibility cases that used to live here moved to
+tests/unit/domain/test_provider_eligibility.py when ProviderProfile.is_panel_eligible
+was retired in favour of the one policy the write paths call.
+"""
 
 from datetime import UTC, date, datetime, timedelta
 
@@ -15,7 +20,7 @@ from app.domain.enums import (
 from app.domain.exceptions import DomainError
 from app.domain.value_objects.core import (
     NonCompeteClauseId,
-    PersonId,
+    ProviderId,
     ProviderProfile,
     TenantId,
     UserId,
@@ -42,28 +47,6 @@ def _profile(
     )
 
 
-class TestProviderProfile:
-    def test_panel_eligible_with_active_accredited_unexpired(self):
-        profile = _profile(expiry=utc_now().date() + timedelta(days=30))
-        assert profile.is_panel_eligible() is True
-
-    def test_panel_ineligible_when_panel_suspended(self):
-        profile = _profile(panel=PanelStatus.SUSPENDED)
-        assert profile.is_panel_eligible() is False
-
-    def test_panel_ineligible_when_accreditation_lapsed(self):
-        profile = _profile(accreditation=AccreditationStatus.LAPSED)
-        assert profile.is_panel_eligible() is False
-
-    def test_panel_ineligible_when_accreditation_expired(self):
-        profile = _profile(expiry=utc_now().date() - timedelta(days=1))
-        assert profile.is_panel_eligible() is False
-
-    def test_panel_eligible_when_no_expiry(self):
-        profile = _profile(expiry=None)
-        assert profile.is_panel_eligible() is True
-
-
 def _clause(
     *,
     status: NonCompeteStatus = NonCompeteStatus.DRAFT,
@@ -74,7 +57,7 @@ def _clause(
     return NonCompeteClauseEntity(
         id=NonCompeteClauseId("nc-1"),
         tenant_id=TenantId("t-1"),
-        provider_id=PersonId("p-1"),
+        provider_id=ProviderId("p-1"),
         status=status,
         terms_summary="No direct work with Minet clients for 12 months.",
         effective_from=effective_from or utc_now().date(),
@@ -144,7 +127,7 @@ class TestNonCompete:
             NonCompeteClauseEntity(
                 id=NonCompeteClauseId("nc-x"),
                 tenant_id=TenantId("t-1"),
-                provider_id=PersonId("p-1"),
+                provider_id=ProviderId("p-1"),
                 status=NonCompeteStatus.DRAFT,
                 terms_summary="x",
                 effective_from=date(2026, 6, 1),

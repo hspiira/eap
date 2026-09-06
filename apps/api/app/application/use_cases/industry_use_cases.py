@@ -7,6 +7,7 @@ Refactored to use base use case classes.
 
 from app.application.use_cases.base import BaseUseCase
 from app.domain.entities.industry import IndustryEntity
+from app.domain.exceptions import ConflictError
 from app.domain.repositories.industry_repository import IndustryRepository
 from app.domain.value_objects.core import IndustryId, TenantId
 from app.shared.utils.datetime import utc_now
@@ -34,7 +35,7 @@ class CreateIndustryUseCase(BaseUseCase[IndustryEntity, IndustryId]):
         # Check if industry with same name already exists
         existing = await self.industry_repository.get_by_name(name, tenant_id)
         if existing:
-            raise ValueError(f"Industry with name '{name}' already exists")
+            raise ConflictError(f"Industry with name '{name}' already exists")
 
         # Validate parent exists if provided
         if parent_industry_id:
@@ -87,7 +88,7 @@ class UpdateIndustryUseCase(BaseUseCase[IndustryEntity, IndustryId]):
         if name and name != industry.name:
             existing = await self.industry_repository.get_by_name(name, industry.tenant_id)
             if existing:
-                raise ValueError(f"Industry with name '{name}' already exists")
+                raise ConflictError(f"Industry with name '{name}' already exists")
 
         # Validate parent exists if provided
         if parent_industry_id:

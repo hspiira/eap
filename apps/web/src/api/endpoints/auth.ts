@@ -27,6 +27,8 @@ export interface MeResponse {
   email: string
   role?: string | null
   access_scopes?: string[]
+  /** Server-derived; the UI must not recompute this from an env var. */
+  is_platform_admin?: boolean
 }
 
 export const authApi = {

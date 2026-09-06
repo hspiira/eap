@@ -213,7 +213,7 @@ function WorklistPage() {
               <TableHeader className={STICKY_TABLE_HEAD}>
                 <TableRow className={`hover:bg-transparent ${ROW_BORDER}`}>
                   <TableHead>
-                    <SortHeader field="person_id" sort={sort} onToggle={toggleSort}>
+                    <SortHeader field="member_id" sort={sort} onToggle={toggleSort}>
                       Person
                     </SortHeader>
                   </TableHead>
@@ -271,7 +271,7 @@ function CaseRow({ row, campaignName }: { row: OutreachRecord; campaignName: str
             <Headphones className="size-3" />
           </span>
           <span className="text-sm font-medium text-fg group-hover:text-primary font-mono">
-            {row.person_id}
+            {row.member_id}
           </span>
         </Link>
       </TableCell>
@@ -304,7 +304,7 @@ function CaseRow({ row, campaignName }: { row: OutreachRecord; campaignName: str
         <Link
           to="/care-callbacks/worklist/$caseId"
           params={{ caseId: row.id }}
-          aria-label={`Open ${row.person_id}`}
+          aria-label={`Open ${row.member_id}`}
           className="inline-grid size-7 place-items-center rounded-sm text-fg/65 hover:bg-surface-hover hover:text-fg group-hover:opacity-100"
         >
           <ChevronRight className="size-3.5" />
@@ -356,7 +356,7 @@ function filterAndSort(
   if (opts.search) {
     const q = opts.search.toLowerCase()
     out = out.filter(
-      (c) => c.person_id.toLowerCase().includes(q) || c.campaign_id.toLowerCase().includes(q),
+      (c) => c.member_id.toLowerCase().includes(q) || c.campaign_id.toLowerCase().includes(q),
     )
   }
   return compareSort(out, opts.sort)

@@ -13,6 +13,23 @@ declare module "vitest" {
   }
 }
 
+// jsdom implements neither the Pointer Events capture APIs nor scrollIntoView,
+// both of which Radix's Select uses. Without these, opening any Select through
+// userEvent throws. Shared here so every suite gets it, not just the ones that
+// happened to hit it.
+if (!Element.prototype.hasPointerCapture) {
+  Element.prototype.hasPointerCapture = () => false
+}
+if (!Element.prototype.setPointerCapture) {
+  Element.prototype.setPointerCapture = () => {}
+}
+if (!Element.prototype.releasePointerCapture) {
+  Element.prototype.releasePointerCapture = () => {}
+}
+if (!Element.prototype.scrollIntoView) {
+  Element.prototype.scrollIntoView = () => {}
+}
+
 beforeEach(() => {
   vi.stubEnv("VITE_AUTH_USE_COOKIES", "false")
 })

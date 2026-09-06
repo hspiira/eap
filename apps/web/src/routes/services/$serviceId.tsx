@@ -17,11 +17,12 @@ import {
 import { renderDetailState } from "@/components/common/DetailStates"
 import { EmptyState } from "@/components/common/EmptyState"
 import { LifecycleActions } from "@/components/common/LifecycleActions"
+import { MemberLink } from "@/components/common/MemberLink"
 import { PageShell } from "@/components/common/PageShell"
 import { StatusBadge } from "@/components/common/StatusBadge"
 import { TABLE_HEAD } from "@/components/common/tableStyles"
 import { Tab, TabPanel, Tabs, TabsList } from "@/components/common/Tabs"
-import { humanizeServiceType, ServiceFormSheet } from "@/components/ServiceFormSheet"
+import { CATEGORY_LABELS, ServiceFormSheet } from "@/components/ServiceFormSheet"
 import { Button } from "@/components/ui/button"
 import {
   Table,
@@ -38,7 +39,6 @@ import { formatDateTime } from "@/lib/format"
 import { entityDetailKey, entityListKey, useEntityDetail } from "@/lib/queries"
 import type { Service, ServiceAssignment, ServiceSession } from "@/types/entities"
 import type { LifecycleAction } from "@/utils/lifecycleConfig"
-import { getStatusLabel } from "@/utils/statusColors"
 
 export const Route = createFileRoute("/services/$serviceId")({
   component: ServiceDetailPage,
@@ -165,14 +165,8 @@ function ServiceDetailPage() {
                       <DetailRow label="Name" value={service.name} fullWidth />
                       <DetailRow label="Description" value={service.description} fullWidth />
                       <DetailRow
-                        label="Type"
-                        value={
-                          service.service_type ? humanizeServiceType(service.service_type) : null
-                        }
-                      />
-                      <DetailRow
                         label="Category"
-                        value={service.category ? getStatusLabel(service.category) : null}
+                        value={service.category ? CATEGORY_LABELS[service.category] : null}
                       />
                     </DetailGrid>
                   </DetailCard>
@@ -194,16 +188,12 @@ function ServiceDetailPage() {
                   <DetailCard title="Group settings">
                     <DetailGrid>
                       <DetailRow
-                        label="Allow group sessions"
-                        value={service.group_settings?.allow_group_sessions ? "Yes" : "No"}
+                        label="Group service"
+                        value={service.is_group_service ? "Yes" : "No"}
                       />
                       <DetailRow
-                        label="Min group size"
-                        value={service.group_settings?.min_group_size}
-                      />
-                      <DetailRow
-                        label="Max group size"
-                        value={service.group_settings?.max_group_size}
+                        label="Max participants"
+                        value={service.is_group_service ? service.max_participants : null}
                       />
                     </DetailGrid>
                   </DetailCard>
@@ -258,8 +248,8 @@ function Hero({ service }: { service: Service }) {
       <h1 className="shrink truncate text-base font-semibold leading-tight text-fg">
         {service.name}
       </h1>
-      {service.service_type ? (
-        <span className="text-xs text-fg-muted">{humanizeServiceType(service.service_type)}</span>
+      {service.category ? (
+        <span className="text-xs text-fg-muted">{CATEGORY_LABELS[service.category]}</span>
       ) : null}
       <span className="h-4 w-px shrink-0 bg-fg/15" aria-hidden />
       <StatusBadge status={service.status} />
@@ -380,7 +370,7 @@ function SessionsPanel({
           <TableHeader className={TABLE_HEAD}>
             <TableRow className="border-fg/8 hover:bg-transparent">
               <TableHead>Scheduled</TableHead>
-              <TableHead>Person</TableHead>
+              <TableHead>Member</TableHead>
               <TableHead>Status</TableHead>
               <TableHead className="w-10 text-right text-fg/65">
                 <span className="sr-only">Open</span>
@@ -392,13 +382,7 @@ function SessionsPanel({
               <TableRow key={s.id} className="group border-fg/8">
                 <TableCell className="text-sm text-fg">{formatDateTime(s.scheduled_at)}</TableCell>
                 <TableCell>
-                  <Link
-                    to="/persons/$personId"
-                    params={{ personId: s.person_id }}
-                    className="text-xs text-fg/75 hover:text-primary font-mono"
-                  >
-                    {s.person_id.slice(0, 8)}
-                  </Link>
+                  <MemberLink memberId={s.member_id} />
                 </TableCell>
                 <TableCell>
                   <StatusBadge status={s.status} />
@@ -454,7 +438,13 @@ function DetailRail({
           />
           <DetailRow
             label="Group"
-            value={service.group_settings?.allow_group_sessions ? "Allowed" : "Individual"}
+            value={
+              service.is_group_service
+                ? service.max_participants
+                  ? `Group · up to ${service.max_participants}`
+                  : "Group"
+                : "Individual"
+            }
           />
         </DetailGrid>
       </RailSection>

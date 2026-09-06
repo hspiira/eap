@@ -28,6 +28,7 @@ from app.core.authorization import require_same_tenant
 from app.core.database import get_db
 from app.core.security import TokenData, get_current_user
 from app.domain.entities.contact import ContactEntity
+from app.domain.exceptions import NotFoundError
 from app.domain.repositories.contact_repository import ContactRepository
 from app.domain.value_objects.core import ContactId, TenantId
 from app.shared.decorators import readonly, transactional
@@ -266,5 +267,5 @@ async def get_contact(
     """Get contact by ID."""
     contact = await GetContactUseCase(contact_repo).execute(ContactId(contact_id))
     if not contact:
-        raise ValueError("Contact not found")
+        raise NotFoundError("Contact not found")
     return _to_contact_response(contact)

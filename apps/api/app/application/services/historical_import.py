@@ -22,6 +22,7 @@ from datetime import date, datetime
 from enum import Enum
 
 from app.domain.enums import SessionStatus
+from app.domain.services.diagnosis_alias import normalise_diagnosis_value
 
 
 class ImportClassification(str, Enum):
@@ -31,8 +32,9 @@ class ImportClassification(str, Enum):
     REJECTED_UNMAPPED_CLIENT = "RejectedUnmappedClient"
     REJECTED_UNMAPPED_SERVICE = "RejectedUnmappedService"
     REJECTED_UNMAPPED_PROVIDER = "RejectedUnmappedProvider"
-    REJECTED_UNMAPPED_PERSON = "RejectedUnmappedPerson"
+    REJECTED_UNMAPPED_MEMBER = "RejectedUnmappedMember"
     REJECTED_UNMAPPED_STATUS = "RejectedUnmappedStatus"
+    REJECTED_UNMAPPED_DIAGNOSIS = "RejectedUnmappedDiagnosis"
     REJECTED_INVALID_DATE = "RejectedInvalidDate"
     REJECTED_DUPLICATE = "RejectedDuplicate"
     REJECTED_MISSING_FIELD = "RejectedMissingField"
@@ -50,8 +52,11 @@ class CanonicalMappings:
     client_codes: dict[str, str] = field(default_factory=dict[str, str])
     service_codes: dict[str, str] = field(default_factory=dict[str, str])
     provider_codes: dict[str, str] = field(default_factory=dict[str, str])
-    person_codes: dict[str, str] = field(default_factory=dict[str, str])
+    member_codes: dict[str, dict[str, str]] = field(default_factory=dict)
     status_text: dict[str, SessionStatus] = field(default_factory=dict[str, SessionStatus])
+    diagnosis_aliases: dict[str, tuple[str, str | None]] = field(
+        default_factory=dict[str, tuple[str, str | None]]
+    )
 
 
 @dataclass(frozen=True)
@@ -67,10 +72,11 @@ class HistoricalSessionRow:
     client_code: str
     service_code: str
     provider_code: str
-    person_code: str
+    member_code: str
     status_text: str
     scheduled_at_text: str
     notes: str | None = None
+    diagnosis_text: str | None = None
 
 
 @dataclass
@@ -81,10 +87,13 @@ class AcceptedRow:
     client_id: str
     service_id: str
     provider_id: str
-    person_id: str
+    member_id: str
     status: SessionStatus
     scheduled_at: datetime
     notes: str | None
+    diagnosis_type_id: str | None = None
+    diagnosis_id: str | None = None
+    issue_topic: str | None = None
 
 
 @dataclass
@@ -139,6 +148,24 @@ def _parse_datetime(value: str) -> datetime | None:
             return None
 
 
+_UNMAPPED = object()
+
+
+def _resolve_diagnosis(
+    raw: str | None,
+    aliases: dict[str, tuple[str, str | None]],
+):
+    """Resolve a legacy diagnosis string, or ``_UNMAPPED`` if it has no alias.
+
+    A blank value is not an error: not every legacy row carries a diagnosis.
+    A value that is present but unrecognised is rejected rather than bucketed,
+    so a missing alias is noticed before the import runs.
+    """
+    if raw is None or not raw.strip():
+        return (None, None)
+    return aliases.get(normalise_diagnosis_value(raw), _UNMAPPED)
+
+
 def validate_row(
     row: HistoricalSessionRow,
     mappings: CanonicalMappings,
@@ -163,7 +190,7 @@ def validate_row(
         "client_code": row.client_code,
         "service_code": row.service_code,
         "provider_code": row.provider_code,
-        "person_code": row.person_code,
+        "member_code": row.member_code,
         "status_text": row.status_text,
         "scheduled_at_text": row.scheduled_at_text,
     }.items():
@@ -199,12 +226,12 @@ def validate_row(
             detail=f"No canonical provider for code '{row.provider_code}'",
             raw=row,
         )
-    person_id = mappings.person_codes.get(row.person_code)
-    if person_id is None:
+    member_id = mappings.member_codes.get(client_id, {}).get(row.member_code)
+    if member_id is None:
         return RejectedRow(
             source_id=row.source_id,
-            classification=ImportClassification.REJECTED_UNMAPPED_PERSON,
-            detail=f"No canonical person for code '{row.person_code}'",
+            classification=ImportClassification.REJECTED_UNMAPPED_MEMBER,
+            detail=f"No canonical member for code '{row.member_code}'",
             raw=row,
         )
     status = mappings.status_text.get(row.status_text)
@@ -223,15 +250,27 @@ def validate_row(
             detail=f"Cannot parse '{row.scheduled_at_text}' as ISO date/datetime",
             raw=row,
         )
+    diagnosis = _resolve_diagnosis(row.diagnosis_text, mappings.diagnosis_aliases)
+    if diagnosis is _UNMAPPED:
+        return RejectedRow(
+            source_id=row.source_id,
+            classification=ImportClassification.REJECTED_UNMAPPED_DIAGNOSIS,
+            detail=f"No diagnosis alias for '{row.diagnosis_text}'",
+            raw=row,
+        )
+    type_id, diagnosis_id = diagnosis
     return AcceptedRow(
         source_id=row.source_id,
         client_id=client_id,
         service_id=service_id,
         provider_id=provider_id,
-        person_id=person_id,
+        member_id=member_id,
         status=status,
         scheduled_at=scheduled_at,
         notes=row.notes,
+        diagnosis_type_id=type_id,
+        diagnosis_id=diagnosis_id,
+        issue_topic=row.diagnosis_text or None,
     )
 
 

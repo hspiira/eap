@@ -9,7 +9,7 @@ Audit logs are immutable - no updates or deletes.
 from datetime import datetime
 from typing import Any
 
-from sqlalchemy import JSON, CheckConstraint, ForeignKey, String, Text
+from sqlalchemy import JSON, CheckConstraint, DateTime, ForeignKey, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.domain.enums import AuditActionType
@@ -49,7 +49,9 @@ class AuditLogModel(CuidMixin, TenantMixin, Base, TimestampMixin):
         "metadata", JSON, nullable=True
     )  # Column name is 'metadata' in DB, attribute is 'extra_metadata' in Python
 
-    occurred_at: Mapped[datetime] = mapped_column(nullable=False, index=True)
+    occurred_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, index=True
+    )
 
     is_special_category: Mapped[bool] = mapped_column(
         nullable=False, default=False, server_default="false", index=True

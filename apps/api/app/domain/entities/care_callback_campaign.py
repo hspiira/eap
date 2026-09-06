@@ -19,7 +19,7 @@ from app.domain.exceptions import DomainError, InvalidStateError
 from app.domain.value_objects.core import (
     CareCallbackCampaignId,
     ClientId,
-    PersonId,
+    ProviderId,
     TenantId,
     UserId,
 )
@@ -37,7 +37,7 @@ class CareCallbackCampaign:
     period_start: date
     period_end: date
     target_count: int
-    counsellor_pool: tuple[PersonId, ...]
+    counsellor_pool: tuple[ProviderId, ...]
     status: CareCallbackCampaignStatus
     created_by: UserId
     created_at: datetime
@@ -105,7 +105,7 @@ class CareCallbackCampaign:
         self.status = CareCallbackCampaignStatus.ARCHIVED
         self.updated_at = now
 
-    def update_counsellor_pool(self, pool: tuple[PersonId, ...]) -> None:
+    def update_counsellor_pool(self, pool: tuple[ProviderId, ...]) -> None:
         """Replace the counsellor pool for the campaign."""
         if self.status not in {
             CareCallbackCampaignStatus.DRAFT,

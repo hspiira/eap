@@ -21,7 +21,7 @@ vi.mock("@/api/endpoints/service-sessions", () => ({
         {
           id: "ss_1",
           service_id: "sv_1",
-          person_id: "p_1",
+          member_id: "p_1",
           status: "Scheduled",
           session_type: "Online",
           session_category: "Individual",
@@ -52,12 +52,12 @@ vi.mock("@/api/endpoints/services", () => ({
     }),
   },
 }))
-vi.mock("@/api/endpoints/persons", () => ({
-  personsApi: {
+vi.mock("@/api/endpoints/members", () => ({
+  membersApi: {
     getById: vi.fn().mockResolvedValue({
       id: "p_1",
-      first_name: "Janet",
-      last_name: "Nakato",
+      display_label: "Janet Nakato",
+      employer_member_id: "HR-1",
       status: "Active",
     }),
   },

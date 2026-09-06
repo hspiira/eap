@@ -14,7 +14,7 @@ from app.domain.events import DomainEvent
 from app.domain.exceptions import DomainError
 from app.domain.value_objects.core import (
     NonCompeteClauseId,
-    PersonId,
+    ProviderId,
     TenantId,
     UserId,
 )
@@ -27,7 +27,7 @@ class NonCompeteClauseEntity:
 
     id: NonCompeteClauseId
     tenant_id: TenantId
-    provider_id: PersonId
+    provider_id: ProviderId
     status: NonCompeteStatus
     terms_summary: str
     effective_from: date

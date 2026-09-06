@@ -160,6 +160,10 @@ ignore_imports = [
     "app.api.dependencies.privacy -> app.infrastructure.services.benchmark_collector",
     "app.api.dependencies.privacy -> app.infrastructure.services.dsar_service",
     "app.api.dependencies.provider -> app.infrastructure.repositories.non_compete_clause_repository",
+    "app.api.dependencies.provider_network -> app.infrastructure.repositories.affiliation_attribution_guard",
+    "app.api.dependencies.provider_network -> app.infrastructure.repositories.provider_network_repository",
+    "app.api.dependencies.provider -> app.infrastructure.repositories.provider_repository",
+    "app.api.dependencies.provider -> app.infrastructure.repositories.session_attribution_reader",
     "app.api.dependencies.reporting -> app.infrastructure.repositories.report_repository",
     "app.api.dependencies.reporting -> app.infrastructure.repositories.utilisation_event_repository",
     "app.api.dependencies.reporting -> app.infrastructure.services.report_query_runner",
@@ -174,6 +178,14 @@ ignore_imports = [
     "app.api.routes.auth_azure -> app.infrastructure.repositories.refresh_token_repository",
     "app.api.routes.auth_azure -> app.infrastructure.services.azure_sso_service",
     "app.api.routes.clients -> app.infrastructure.mappers.client_mapper",
+    # Composition root for the queued import: the runner lives in the
+    # application layer and takes a gateway, so the concrete repositories are
+    # wired here rather than imported by the service.
+    "app.api.routes.clients -> app.infrastructure.repositories.client_alias_repository",
+    "app.api.routes.clients -> app.infrastructure.repositories.client_repository",
+    "app.api.routes.clients -> app.infrastructure.repositories.industry_repository",
+    "app.api.routes.clients -> app.infrastructure.repositories.outbox_repository",
+    "app.api.routes.clients -> app.infrastructure.repositories.tenant_repository",
     "app.api.routes.clients -> app.infrastructure.models.client_model",
     # Remaining legacy client workspace SQL orchestration.  These imports are
     # pre-existing and must be moved behind application ports in the client
@@ -185,11 +197,6 @@ ignore_imports = [
     "app.api.routes.clients -> app.infrastructure.models.client_tag_model",
     "app.api.routes.clients -> app.infrastructure.models.contact_model",
     "app.api.routes.clients -> app.infrastructure.models.person_model",
-    "app.api.routes.clients -> app.infrastructure.repositories.client_alias_repository",
-    "app.api.routes.clients -> app.infrastructure.repositories.client_repository",
-    "app.api.routes.clients -> app.infrastructure.repositories.industry_repository",
-    "app.api.routes.clients -> app.infrastructure.repositories.outbox_repository",
-    "app.api.routes.clients -> app.infrastructure.repositories.tenant_repository",
     "app.api.routes.tenants -> app.infrastructure.repositories.password_set_token_repository",
     "app.application.use_cases.tenant_use_cases -> app.infrastructure.repositories.password_set_token_repository",
 ]

@@ -1,12 +1,3 @@
-/**
- * Service Sessions API Endpoints
- *
- * Create payload sourced from BE OpenAPI (`@/api/generated.ServiceSessionCreate`).
- * Fields beyond `{service_id, provider_id, person_id, scheduled_at, location}`
- * are not accepted by the BE. Lifecycle mutations (complete/cancel/no-show)
- * have dedicated request schemas; see ServiceSessionCompleteRequest etc.
- */
-
 import type { Schemas, ServiceSessionCreate } from "@/api/generated"
 
 import apiClient from "../client"
@@ -15,13 +6,20 @@ import type { ListParams, PaginatedResponse, ServiceSession } from "../types"
 export type { ServiceSessionCreate }
 export type ServiceSessionUpdate = Schemas["ServiceSessionUpdate"]
 export type ServiceSessionCompleteRequest = Schemas["ServiceSessionCompleteRequest"]
+export type SessionDrawdown = Schemas["SessionDrawdownResponse"]
+
+/** `session` is typed as the entity, matching how the other endpoints here cast. */
+export interface ServiceSessionCompleteResult {
+  session: ServiceSession
+  drawdown: SessionDrawdown
+}
 export type ServiceSessionCancelRequest = Schemas["ServiceSessionCancelRequest"]
 export type ServiceSessionRescheduleRequest = Schemas["ServiceSessionRescheduleRequest"]
 export type ServiceSessionUpdateFeedback = Schemas["ServiceSessionUpdateFeedback"]
 
 /** Mirrors the query params on `GET /service-sessions/` in the BE OpenAPI schema. */
 export interface ServiceSessionListParams extends ListParams {
-  person_id?: string
+  member_id?: string
   provider_id?: string
   service_id?: string
   /** ISO 8601 instant; inclusive lower bound on `scheduled_at`. */
@@ -72,8 +70,14 @@ export const serviceSessionsApi = {
   /**
    * Complete service session. BE requires `{duration: int>0, notes: str≥1}`.
    */
-  async complete(sessionId: string, data: ServiceSessionCompleteRequest): Promise<ServiceSession> {
-    return apiClient.post<ServiceSession>(`/service-sessions/${sessionId}/complete`, data)
+  async complete(
+    sessionId: string,
+    data: ServiceSessionCompleteRequest,
+  ): Promise<ServiceSessionCompleteResult> {
+    return apiClient.post<ServiceSessionCompleteResult>(
+      `/service-sessions/${sessionId}/complete`,
+      data,
+    )
   },
 
   /**

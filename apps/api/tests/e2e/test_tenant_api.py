@@ -9,6 +9,7 @@ Comprehensive tests for all tenant endpoints covering:
 """
 
 import pytest
+import pytest_asyncio
 from httpx import AsyncClient
 
 pytestmark = pytest.mark.asyncio
@@ -17,6 +18,10 @@ pytestmark = pytest.mark.asyncio
 # =============================================================================
 # Helper Functions
 # =============================================================================
+
+
+# The platform admin belongs to a tenant, so that tenant appears in every list.
+PLATFORM_TENANTS = 1
 
 
 async def create_tenant(client: AsyncClient, data: dict) -> dict:
@@ -185,7 +190,7 @@ class TestGetTenant:
         response = await client.get("/tenants/nonexistent-id-12345")
 
         assert response.status_code == 404
-        assert "not found" in response.json()["detail"].lower()
+        assert "not found" in response.json()["message"].lower()
 
 
 class TestGetTenantByCode:
@@ -209,7 +214,7 @@ class TestGetTenantByCode:
         response = await client.get("/tenants/code/nonexistent-code")
 
         assert response.status_code == 404
-        assert "not found" in response.json()["detail"].lower()
+        assert "not found" in response.json()["message"].lower()
 
 
 # =============================================================================
@@ -218,16 +223,33 @@ class TestGetTenantByCode:
 
 
 class TestListTenants:
-    """Tests for GET /tenants/ endpoint."""
+    """Tests for GET /tenants/ endpoint.
+
+    Listing more than one tenant requires a platform admin: everyone else sees
+    only their own tenant, by design in list_tenants.
+    """
+
+    @pytest_asyncio.fixture(autouse=True)
+    async def _platform_admin(self, client: AsyncClient, monkeypatch):
+        """Promote the caller to platform admin for the duration of the test.
+
+        The auth stub reports the first tenant in the database, so the platform
+        tenant has to be resolved after that tenant exists.
+        """
+        from app.core.config import settings
+
+        seed = await client.post("/tenants/", json={"name": "Platform", "code": "platform-admin"})
+        assert seed.status_code == 201
+        monkeypatch.setattr(settings, "PLATFORM_TENANT_ID", seed.json()["id"], raising=False)
 
     async def test_list_tenants_empty(self, client: AsyncClient):
-        """Test listing tenants when none exist."""
+        """Only the platform tenant exists, so nothing else is listed."""
         response = await client.get("/tenants/")
 
         assert response.status_code == 200
         data = response.json()
-        assert data["items"] == []
-        assert data["total"] == 0
+        assert [item["code"] for item in data["items"]] == ["platform-admin"]
+        assert data["total"] == PLATFORM_TENANTS
         assert data["page"] == 1
         assert data["has_more"] is False
 
@@ -244,8 +266,8 @@ class TestListTenants:
 
         assert response.status_code == 200
         data = response.json()
-        assert data["total"] == 2
-        assert len(data["items"]) == 2
+        assert data["total"] == 2 + PLATFORM_TENANTS
+        assert len(data["items"]) == 2 + PLATFORM_TENANTS
 
     async def test_list_tenants_pagination(self, client: AsyncClient):
         """Test tenant list pagination."""
@@ -262,7 +284,7 @@ class TestListTenants:
 
         assert response.status_code == 200
         assert len(data["items"]) == 2
-        assert data["total"] == 5
+        assert data["total"] == 5 + PLATFORM_TENANTS
         assert data["page"] == 1
         assert data["limit"] == 2
         assert data["has_more"] is True
@@ -279,7 +301,7 @@ class TestListTenants:
         response = await client.get("/tenants/?page=3&limit=2")
         data = response.json()
 
-        assert len(data["items"]) == 1
+        assert len(data["items"]) == 1 + PLATFORM_TENANTS
         assert data["page"] == 3
         assert data["has_more"] is False
 
@@ -309,7 +331,7 @@ class TestListTenants:
         data = response.json()
 
         assert response.status_code == 200
-        assert data["total"] == 1
+        assert data["total"] == 1 + PLATFORM_TENANTS
         assert all(item["status"] == "Active" for item in data["items"])
 
         # Filter by suspended status
@@ -521,7 +543,7 @@ class TestActivateTenant:
 
         # Returns 409 Conflict for state conflicts
         assert response.status_code == 409
-        assert "already active" in response.json()["detail"].lower()
+        assert "already active" in response.json()["message"].lower()
 
     async def test_activate_terminated_tenant_fails(
         self, client: AsyncClient, sample_tenant_data: dict
@@ -587,7 +609,7 @@ class TestSuspendTenant:
 
         # Returns 409 Conflict for state conflicts
         assert response.status_code == 409
-        assert "already suspended" in response.json()["detail"].lower()
+        assert "already suspended" in response.json()["message"].lower()
 
     async def test_suspend_terminated_tenant_fails(
         self, client: AsyncClient, sample_tenant_data: dict
@@ -723,7 +745,7 @@ class TestArchiveTenant:
 
         # Returns 409 Conflict for state conflicts
         assert response.status_code == 409
-        assert "already archived" in response.json()["detail"].lower()
+        assert "already archived" in response.json()["message"].lower()
 
     async def test_archive_terminated_tenant_fails(
         self, client: AsyncClient, sample_tenant_data: dict
@@ -779,8 +801,8 @@ class TestRestoreTenant:
         # Returns 409 Conflict for state conflicts
         assert response.status_code == 409
         assert (
-            "does not need restoration" in response.json()["detail"].lower()
-            or "already active" in response.json()["detail"].lower()
+            "does not need restoration" in response.json()["message"].lower()
+            or "already active" in response.json()["message"].lower()
         )
 
     async def test_restore_terminated_tenant_fails(

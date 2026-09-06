@@ -19,6 +19,7 @@ from app.application.use_cases.user_use_cases import (
 )
 from app.domain.entities.user import UserEntity
 from app.domain.enums import UserStatus
+from app.domain.exceptions import ConflictError
 from app.domain.value_objects.core import Email, TenantId, UserId
 
 
@@ -101,7 +102,7 @@ class TestCreateUserUseCase:
     ):
         mock_user_repo.get_by_email.return_value = active_user
         use_case = CreateUserUseCase(mock_user_repo)
-        with pytest.raises(ValueError, match="already exists"):
+        with pytest.raises(ConflictError, match="already exists"):
             await use_case.execute(user_id, tenant_id, email, "hash")
 
 

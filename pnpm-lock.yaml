@@ -99,7 +99,7 @@ importers:
         specifier: ^0.561.0
         version: 0.561.0(react@19.2.8)
       nitro:
-        specifier: npm:nitro-nightly@latest
+        specifier: npm:nitro-nightly@3.0.1-20260903-085528-568b687f
         version: nitro-nightly@3.0.1-20260903-085528-568b687f
       react:
         specifier: ^19.2.0

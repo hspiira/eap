@@ -177,7 +177,7 @@ class TestServiceAssignmentIntegration:
             f"/services/?tenant_id={tenant_id}",
             json={
                 "name": "Assignment Test Service",
-                "category": "Counseling",
+                "category": "ShortTermCounselling",
                 "duration_minutes": 60,
             },
         )
@@ -188,6 +188,7 @@ class TestServiceAssignmentIntegration:
             f"/clients/?tenant_id={tenant_id}",
             json={
                 "name": "Assignment Test Client",
+                "code": "ASGNC",
                 "contact_info": {"email": "info@atc.com"},
             },
         )
@@ -198,8 +199,8 @@ class TestServiceAssignmentIntegration:
         await client.post(f"/clients/{client_id}/activate")
 
         # Create contract
-        start_date = datetime.now(UTC).isoformat()
-        end_date = (datetime.now(UTC) + timedelta(days=365)).isoformat()
+        start_date = datetime.now(UTC).date().isoformat()
+        end_date = (datetime.now(UTC) + timedelta(days=365)).date().isoformat()
         contract_resp = await client.post(
             f"/contracts/?tenant_id={tenant_id}",
             json={

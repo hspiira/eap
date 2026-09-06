@@ -35,6 +35,7 @@ import {
 } from "@/components/ui/table"
 import { useCanWrite } from "@/hooks/useCanWrite"
 import { useListPage } from "@/hooks/useListPage"
+import { termLabel, termTone } from "@/lib/contract-term"
 import { normalizeErrorMessage } from "@/lib/errors"
 import { formatDay } from "@/lib/format"
 import { useEntityList } from "@/lib/queries"
@@ -52,6 +53,13 @@ export const Route = createFileRoute("/contracts/")({
       v === "30d" || v === "90d" || v === "expired" ? v : undefined,
   }),
 })
+
+/**
+ * The clients endpoint caps limit at 100 (`pagination()` defaults in
+ * app/api/dependencies/pagination.py). Asking for more 422s, which left the
+ * lookup empty and every row reading "Unknown client".
+ */
+const CLIENT_LOOKUP_LIMIT = 100
 
 const STATUS_OPTIONS = [
   { value: "all", label: "All statuses" },
@@ -114,7 +122,7 @@ function ContractsListPage() {
 
   const { data: clientsData } = useQuery({
     queryKey: ["clients", "lookup"],
-    queryFn: () => clientsApi.list({ limit: 500 }),
+    queryFn: () => clientsApi.list({ limit: CLIENT_LOOKUP_LIMIT }),
     staleTime: 5 * 60_000,
   })
   const clientsById = useMemo(() => {
@@ -202,7 +210,7 @@ function ContractsListPage() {
       <div className="flex min-h-0 flex-1 flex-col bg-bg">
         {loading ? (
           <div className="flex-1 overflow-auto p-5">
-            <TableSkeleton cols={6} />
+            <TableSkeleton cols={9} />
           </div>
         ) : error ? (
           <ErrorState message={error} onRetry={() => void query.refetch()} />
@@ -230,19 +238,15 @@ function ContractsListPage() {
               <Table className="w-full caption-bottom text-sm">
                 <TableHeader className={STICKY_TABLE_HEAD}>
                   <TableRow className={`hover:bg-transparent ${ROW_BORDER}`}>
-                    <TableHead>
-                      <SortHeader field="contract_number" sort={sort} onToggle={toggleSort}>
-                        Number
-                      </SortHeader>
-                    </TableHead>
-                    <TableHead>
-                      <SortHeader field="client_id" sort={sort} onToggle={toggleSort}>
-                        Client
-                      </SortHeader>
-                    </TableHead>
+                    <TableHead className="text-fg/65">Client</TableHead>
                     <TableHead>
                       <SortHeader field="status" sort={sort} onToggle={toggleSort}>
                         Status
+                      </SortHeader>
+                    </TableHead>
+                    <TableHead>
+                      <SortHeader field="payment_status" sort={sort} onToggle={toggleSort}>
+                        Payment
                       </SortHeader>
                     </TableHead>
                     <TableHead>
@@ -252,10 +256,12 @@ function ContractsListPage() {
                     </TableHead>
                     <TableHead>
                       <SortHeader field="end_date" sort={sort} onToggle={toggleSort}>
-                        End / Renewal
+                        End
                       </SortHeader>
                     </TableHead>
-                    <TableHead className="text-fg/65">Billing</TableHead>
+                    <TableHead className="text-fg/65">Renewal</TableHead>
+                    <TableHead className="text-right text-fg/65">Amount</TableHead>
+                    <TableHead className="text-fg/65">Frequency</TableHead>
                     <TableHead className="w-16 text-right text-fg/65">
                       <span className="sr-only">Actions</span>
                     </TableHead>
@@ -281,12 +287,11 @@ function ContractsListPage() {
 }
 
 function ContractRow({ row, clientsById }: { row: Contract; clientsById: Map<string, Client> }) {
-  const number = row.id.slice(0, 8)
   const billing = formatBilling(row)
-  const linkedClient = clientsById.get(row.client_id) ?? null
+  const clientName = clientsById.get(row.client_id)?.name ?? "Unknown client"
   return (
-    <TableRow className={`group cursor-default ${ROW_BORDER}`}>
-      <TableCell>
+    <TableRow className={`group h-9 cursor-default ${ROW_BORDER}`}>
+      <TableCell className="max-w-[16rem]">
         <Link
           to="/contracts/$contractId"
           params={{ contractId: row.id }}
@@ -294,46 +299,40 @@ function ContractRow({ row, clientsById }: { row: Contract; clientsById: Map<str
         >
           <span
             aria-hidden
-            className="grid size-6 shrink-0 place-items-center bg-primary/10 text-[10px] font-semibold text-primary"
+            className="grid size-6 shrink-0 place-items-center bg-primary/10 text-primary"
           >
             <FileSignature className="size-3" />
           </span>
-          <span className="text-sm font-medium text-fg group-hover:text-primary">{number}</span>
-        </Link>
-      </TableCell>
-      <TableCell>
-        <Link
-          to="/clients/$clientId"
-          params={{ clientId: row.client_id }}
-          className={cn("text-sm text-fg hover:text-primary", !linkedClient?.name && "font-mono")}
-        >
-          {linkedClient?.name ?? row.client_id.slice(0, 8)}
+          <span className="truncate text-sm font-medium text-fg group-hover:text-primary">
+            {clientName}
+          </span>
         </Link>
       </TableCell>
       <TableCell>
         <StatusBadge status={row.status} />
       </TableCell>
-      <TableCell className="text-sm text-fg/75">{formatDay(row.period.start_date)}</TableCell>
       <TableCell>
-        <span className="block min-w-0">
-          <span className="block truncate text-sm text-fg">{formatDay(row.period.end_date)}</span>
-          <span className="block truncate text-xs text-fg-muted">
-            {row.is_auto_renew ? "Renews" : "Ends"}
-          </span>
-        </span>
+        <StatusBadge status={row.payment_status} />
       </TableCell>
-      <TableCell>
-        <span className="block min-w-0">
-          <span className="block truncate tabular-nums text-sm text-fg">{billing.amount}</span>
-          <span className="block truncate text-xs text-fg-muted">{billing.frequency}</span>
-        </span>
+      <TableCell className="whitespace-nowrap text-xs text-fg/70">
+        {formatDay(row.period.start_date)}
       </TableCell>
+      <TableCell className="whitespace-nowrap text-xs text-fg/70">
+        {formatDay(row.period.end_date)}
+      </TableCell>
+      <TableCell className={cn("whitespace-nowrap text-xs", termTone(row))}>
+        {termLabel(row)}
+      </TableCell>
+      <TableCell className="whitespace-nowrap text-right tabular-nums text-xs text-fg">
+        {billing.amount}
+      </TableCell>
+      <TableCell className="whitespace-nowrap text-xs text-fg/70">{billing.frequency}</TableCell>
       <TableCell className="text-right">
         <div className="flex items-center justify-end gap-0.5 opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100">
           <Link
             to="/contracts/$contractId"
             params={{ contractId: row.id }}
-            aria-label={`Open ${number}`}
+            aria-label={`Open the ${clientName} contract`}
             className="grid size-7 place-items-center rounded-sm text-fg/65 hover:bg-surface-hover hover:text-fg"
           >
             <ExternalLink className="size-3.5" />
@@ -344,7 +343,7 @@ function ContractRow({ row, clientsById }: { row: Contract; clientsById: Map<str
                 type="button"
                 variant="ghost"
                 size="sm"
-                aria-label={`More actions for ${number}`}
+                aria-label={`More actions for the ${clientName} contract`}
                 className="size-7 p-0 text-fg/65"
               >
                 <MoreHorizontal className="size-4" />

@@ -20,7 +20,7 @@ export function DetailCard({
   children: React.ReactNode
 }) {
   return (
-    <section className="rounded-sm border border-fg/10 bg-surface p-4">
+    <section className="rounded-none border border-fg/10 bg-surface p-4">
       {phiLabel ? (
         <div className="mb-3 flex items-center gap-2">
           <h3 className="text-xs font-semibold tracking-wide text-fg-muted">{title}</h3>

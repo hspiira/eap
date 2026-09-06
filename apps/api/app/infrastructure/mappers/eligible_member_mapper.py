@@ -39,10 +39,14 @@ class EligibleMemberMapper:
             date_of_birth=model.date_of_birth,
             gender=MemberGender(model.gender) if model.gender else None,
             phone=model.phone,
+            staff_number=model.staff_number,
+            national_id=model.national_id,
+            passport_number=model.passport_number,
             last_imported_at=ensure_utc(model.last_imported_at) if model.last_imported_at else None,
             suspended_at=ensure_utc(model.suspended_at) if model.suspended_at else None,
             terminated_at=ensure_utc(model.terminated_at) if model.terminated_at else None,
             created_by=UserId(model.created_by) if model.created_by else None,
+            user_id=UserId(model.user_id) if model.user_id else None,
             created_at=ensure_utc(model.created_at),
             updated_at=ensure_utc(model.updated_at),
         )
@@ -71,12 +75,16 @@ class EligibleMemberMapper:
             date_of_birth=entity.date_of_birth,
             gender=entity.gender,
             phone=entity.phone,
+            staff_number=entity.staff_number,
+            national_id=entity.national_id,
+            passport_number=entity.passport_number,
             last_imported_at=ensure_utc(entity.last_imported_at)
             if entity.last_imported_at
             else None,
             suspended_at=ensure_utc(entity.suspended_at) if entity.suspended_at else None,
             terminated_at=ensure_utc(entity.terminated_at) if entity.terminated_at else None,
             created_by=entity.created_by.value if entity.created_by else None,
+            user_id=entity.user_id.value if entity.user_id else None,
             created_at=ensure_utc(entity.created_at),
             updated_at=ensure_utc(entity.updated_at),
         )

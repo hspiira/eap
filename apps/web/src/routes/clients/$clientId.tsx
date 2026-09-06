@@ -7,7 +7,7 @@ import { Building2, Pencil } from "lucide-react"
 import { clientsApi } from "@/api/endpoints/clients"
 import { contactsApi } from "@/api/endpoints/contacts"
 import { contractsApi } from "@/api/endpoints/contracts"
-import { personsApi } from "@/api/endpoints/persons"
+import { membersApi } from "@/api/endpoints/members"
 import { ClientActivityCard } from "@/components/clients/ClientActivityCard"
 import type { ClientAlert } from "@/components/clients/ClientAlertsCard"
 import { ClientAlertsCard } from "@/components/clients/ClientAlertsCard"
@@ -16,7 +16,6 @@ import { ClientFormSheet } from "@/components/clients/ClientFormSheet"
 import {
   ClientContactsPanel,
   ClientDocumentsPanel,
-  ClientHealthCard,
   ClientRosterPanel,
   ClientServicesPanel,
   ClientUtilisationPanel,
@@ -31,18 +30,19 @@ import { renderDetailState } from "@/components/common/DetailStates"
 import { PageShell } from "@/components/common/PageShell"
 import { Tab, TabPanel, Tabs, TabsList } from "@/components/common/Tabs"
 import { ContractFormSheet } from "@/components/ContractFormSheet"
-import { PersonFormSheet } from "@/components/PersonFormSheet"
+import { MemberFormSheet } from "@/components/MemberFormSheet"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { useToast } from "@/contexts/ToastContext"
+import { useCanWrite } from "@/hooks/useCanWrite"
 import { useTabSearchParam } from "@/hooks/useTabSearchParam"
+import { contractLabel } from "@/lib/display"
 import { normalizeErrorMessage } from "@/lib/errors"
 import { addDaysToDay, daysBetweenDays, formatDay, todayDayKey, toDayKey } from "@/lib/format"
 import { entityDetailKey, entityListKey, useEntityDetail } from "@/lib/queries"
 import { useAuthStore } from "@/store/slices/authSlice"
 import type { Client } from "@/types/entities"
 import type { ClientTier } from "@/types/enums"
-import { PersonType } from "@/types/enums"
 import type { LifecycleAction } from "@/utils/lifecycleConfig"
 
 export const Route = createFileRoute("/clients/$clientId")({
@@ -50,7 +50,15 @@ export const Route = createFileRoute("/clients/$clientId")({
 })
 
 type TabValue =
-  "overview" | "activity" | "contracts" | "staff" | "services" | "documents" | "utilisation"
+  | "overview"
+  | "activity"
+  | "contracts"
+  | "staff"
+  | "services"
+  | "documents"
+  | "utilisation"
+  | "setup"
+  | "contacts"
 const TAB_VALUES: ReadonlyArray<TabValue> = [
   "overview",
   "activity",
@@ -59,6 +67,8 @@ const TAB_VALUES: ReadonlyArray<TabValue> = [
   "services",
   "documents",
   "utilisation",
+  "setup",
+  "contacts",
 ]
 
 const CLIENTS_LIST_SEARCH = {
@@ -70,6 +80,7 @@ const CLIENTS_LIST_SEARCH = {
 } as const
 
 const CONTRACTS_PAGE = 10
+const MEMBERS_PREVIEW = 20
 const UPCOMING_DAYS = 90
 const ALERT_DAYS = 30
 /** The list endpoint caps limit at 100. Past that the window is reported as partial. */
@@ -81,12 +92,13 @@ function ClientDetailPage() {
   const queryClient = useQueryClient()
   const [actionLoading, setActionLoading] = useState(false)
   const toast = useToast()
+  const canWrite = useCanWrite()
   const userId = useAuthStore((s) => s.user_id)
   const [tab, setTab] = useTabSearchParam<TabValue>(TAB_VALUES, "overview")
   const [tierLoading, setTierLoading] = useState(false)
   const [editOpen, setEditOpen] = useState(false)
   const [addContractOpen, setAddContractOpen] = useState(false)
-  const [addPersonOpen, setAddPersonOpen] = useState(false)
+  const [addMemberOpen, setAddMemberOpen] = useState(false)
 
   const clientQuery = useEntityDetail<Client>({
     resource: "clients",
@@ -128,11 +140,11 @@ function ClientDetailPage() {
   })
   const contacts = contactsQuery.data ?? []
   const rosterQuery = useQuery({
-    queryKey: entityListKey("persons", { client_id: clientId, limit: 100 }),
-    queryFn: () => personsApi.list({ client_id: clientId, limit: 100 }),
+    queryKey: entityListKey("members", { client_id: clientId, limit: MEMBERS_PREVIEW }),
+    queryFn: () => membersApi.list({ client_id: clientId, limit: MEMBERS_PREVIEW }),
     enabled,
   })
-  const rosterCount = rosterQuery.data?.total ?? rosterQuery.data?.items.length ?? 0
+  const rosterCount = rosterQuery.data?.total
 
   // Alerts and the upcoming list need every contract ending in the window, not
   // the first page of all of them. Anchored to the day so the key is stable.
@@ -253,7 +265,7 @@ function ClientDetailPage() {
       if (untilEnd != null && untilEnd >= 0 && untilEnd <= ALERT_DAYS) {
         list.push({
           id: `contract-expiring-${c.id}`,
-          title: `Contract ending soon: ${c.id.slice(0, 8)}`,
+          title: `Contract ending soon: ${contractLabel(c)}`,
           description: `End date: ${formatDay(c.period.end_date)}`,
           severity: "high",
           link: `/contracts/${c.id}`,
@@ -286,7 +298,7 @@ function ClientDetailPage() {
         if (untilEnd != null && untilEnd >= 0 && untilEnd <= UPCOMING_DAYS) {
           list.push({
             id: `${c.is_auto_renew ? "renewal" : "end"}-${c.id}`,
-            title: `${c.is_auto_renew ? "Contract renewal" : "Contract ends"}: ${c.id.slice(0, 8)}`,
+            title: `${c.is_auto_renew ? "Contract renewal" : "Contract ends"}: ${contractLabel(c)}`,
             date: toDayKey(c.period.end_date),
             context: c.is_auto_renew ? "Renewal" : "End date",
             link: `/contracts/${c.id}`,
@@ -295,20 +307,28 @@ function ClientDetailPage() {
         }
       }
     })
-    return list.slice(0, 5).sort((a, b) => a.date.localeCompare(b.date))
+    return list.sort((a, b) => a.date.localeCompare(b.date)).slice(0, 5)
   }, [ending])
 
   const onboardingSteps = useMemo((): ClientOnboardingStep[] => {
     if (!client) return []
-    const hasContact = !!(client.contact_info?.email || client.contact_info?.phone)
+    const hasContact = !!(
+      client.contact_info?.email ||
+      client.contact_info?.phone ||
+      contacts.length
+    )
     const hasContract = contractsTotal > 0
     return [
       { id: "contact", label: "Contact info added", done: hasContact },
       { id: "contract", label: "At least one contract", done: hasContract },
       { id: "billing", label: "Billing address set", done: hasBilling },
       { id: "verified", label: "Client verified", done: isVerified },
+      { id: "roster", label: "Roster started", done: (rosterCount ?? 0) > 0 },
     ]
-  }, [client, isVerified, contractsTotal, hasBilling])
+  }, [client, isVerified, contractsTotal, hasBilling, contacts.length, rosterCount])
+
+  const setupReady = contractsQuery.isSuccess && rosterQuery.isSuccess && contactsQuery.isSuccess
+  const setupComplete = setupReady && onboardingSteps.every((step) => step.done)
 
   const todaysTodoItems = useMemo((): ClientTodaysTodoItem[] => {
     const today = todayDayKey()
@@ -374,12 +394,11 @@ function ClientDetailPage() {
         }}
       />
 
-      <PersonFormSheet
-        open={addPersonOpen}
-        onOpenChange={setAddPersonOpen}
-        clientId={clientId}
+      <MemberFormSheet
+        key={clientId}
+        open={canWrite && addMemberOpen}
+        onOpenChange={setAddMemberOpen}
         client={client}
-        lockType={PersonType.CLIENT_EMPLOYEE}
         onSaved={() => {
           setTab("staff")
         }}
@@ -387,7 +406,9 @@ function ClientDetailPage() {
 
       <div className="min-h-0 flex-1 overflow-y-auto bg-bg">
         <div className="grid grid-cols-12 gap-5 px-5 pb-5">
-          <div className="col-span-12 min-w-0 lg:col-span-8">
+          <div
+            className={`col-span-12 min-w-0 ${tab === "overview" || tab === "setup" ? "lg:col-span-8" : ""}`}
+          >
             <Tabs value={tab} onValueChange={(v) => setTab(v as TabValue)}>
               <div className="sticky top-0 z-20 -mx-3 mb-4 bg-bg/95 px-3 backdrop-blur">
                 <TabsList className="px-0">
@@ -396,36 +417,65 @@ function ClientDetailPage() {
                   <Tab value="contracts" count={contractsTotal}>
                     Contracts
                   </Tab>
-                  <Tab value="staff">Staff</Tab>
+                  <Tab value="staff" count={rosterCount}>
+                    Members
+                  </Tab>
                   <Tab value="services">Services</Tab>
                   <Tab value="documents">Documents</Tab>
-                  <Tab value="utilisation">Usage</Tab>
+                  <Tab value="utilisation">Sessions</Tab>
+                  <Tab value="contacts">Contacts</Tab>
+                  <Tab value="setup">Setup</Tab>
                 </TabsList>
               </div>
 
               <TabPanel value="overview">
                 <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-2">
                   <div className="space-y-4">
-                    <ClientHealthCard
-                      client={client}
-                      stats={stats}
-                      contacts={contacts}
-                      staffCount={rosterCount}
-                      contracts={contracts}
-                    />
-                    <ClientAlertsCard alerts={alerts} />
-                    <ClientOnboardingCard steps={onboardingSteps} />
-                    <ClientAliasesCard
-                      client={client}
-                      onSaved={(updated) =>
-                        queryClient.setQueryData(entityDetailKey("clients", updated.id), updated)
-                      }
-                    />
+                    {alerts.length > 0 && <ClientAlertsCard alerts={alerts} />}
+                    {setupReady && !setupComplete && (
+                      <ClientOnboardingCard
+                        steps={onboardingSteps}
+                        onStep={(id) =>
+                          setTab(
+                            id === "contract" ? "contracts" : id === "roster" ? "staff" : "setup",
+                          )
+                        }
+                      />
+                    )}
+                    <ClientActivityCard clientId={clientId} limit={5} />
                   </div>
                   <div className="space-y-4">
-                    <ClientContactsPanel clientId={clientId} client={client} contacts={contacts} />
                     <ClientUpcomingCard items={upcomingItems} />
-                    <ClientTodaysTodoCard items={todaysTodoItems} />
+                    {todaysTodoItems.length > 0 && <ClientTodaysTodoCard items={todaysTodoItems} />}
+                    <section className="border border-fg/10 bg-surface p-4">
+                      <h2 className="text-sm font-semibold">Manage this client</h2>
+                      <p className="mt-1 text-sm text-fg-muted">
+                        People, coverage and records in one place.
+                      </p>
+                      <div className="mt-3 flex flex-wrap gap-2">
+                        <Button
+                          variant="outline"
+                          className="rounded-none"
+                          onClick={() => setTab("staff")}
+                        >
+                          Members
+                        </Button>
+                        <Button
+                          variant="outline"
+                          className="rounded-none"
+                          onClick={() => setTab("contracts")}
+                        >
+                          Contracts
+                        </Button>
+                        <Button
+                          variant="outline"
+                          className="rounded-none"
+                          onClick={() => setTab("contacts")}
+                        >
+                          Contacts
+                        </Button>
+                      </div>
+                    </section>
                   </div>
                 </div>
               </TabPanel>
@@ -434,22 +484,67 @@ function ClientDetailPage() {
                 <ClientActivityCard clientId={clientId} limit={20} />
               </TabPanel>
 
+              <TabPanel value="contacts">
+                {contactsQuery.isError ? (
+                  <p role="alert">Could not load contacts.</p>
+                ) : contactsQuery.isPending ? (
+                  <p>Loading contacts…</p>
+                ) : (
+                  <ClientContactsPanel clientId={clientId} client={client} contacts={contacts} />
+                )}
+              </TabPanel>
+              <TabPanel value="setup">
+                <div className="space-y-4">
+                  <p className="text-sm text-fg-muted">
+                    Setup progress reflects your saved client details, contracts and member roster.
+                    Completed steps remain available here.
+                  </p>
+                  {setupReady ? (
+                    <ClientOnboardingCard
+                      steps={onboardingSteps}
+                      onStep={(id) =>
+                        id === "contract"
+                          ? setTab("contracts")
+                          : id === "roster"
+                            ? setTab("staff")
+                            : id === "contact"
+                              ? setTab("contacts")
+                              : setEditOpen(true)
+                      }
+                    />
+                  ) : (
+                    <p role="status">Setup progress is unavailable until related records load.</p>
+                  )}
+                  <ClientAliasesCard
+                    client={client}
+                    onSaved={(updated) =>
+                      queryClient.setQueryData(entityDetailKey("clients", updated.id), updated)
+                    }
+                  />
+                </div>
+              </TabPanel>
+
               <TabPanel value="contracts">
                 <ContractsPanel
                   contracts={contracts}
                   total={contractsTotal}
                   loading={contractsQuery.isPending}
+                  error={contractsQuery.isError}
                   clientId={clientId}
-                  onAdd={() => setAddContractOpen(true)}
+                  onAdd={canWrite ? () => setAddContractOpen(true) : undefined}
                 />
               </TabPanel>
 
               <TabPanel value="staff">
-                <ClientRosterPanel clientId={clientId} onAdd={() => setAddPersonOpen(true)} />
+                <ClientRosterPanel
+                  clientId={clientId}
+                  query={rosterQuery}
+                  onAdd={canWrite ? () => setAddMemberOpen(true) : undefined}
+                />
               </TabPanel>
 
               <TabPanel value="services">
-                <ClientServicesPanel contracts={contracts} />
+                <ClientServicesPanel clientId={clientId} />
               </TabPanel>
 
               <TabPanel value="documents">
@@ -457,27 +552,34 @@ function ClientDetailPage() {
               </TabPanel>
 
               <TabPanel value="utilisation">
-                <ClientUtilisationPanel contracts={contracts} />
+                <ClientUtilisationPanel clientId={clientId} />
               </TabPanel>
             </Tabs>
           </div>
 
-          <aside className="col-span-12 min-w-0 lg:col-span-4 lg:pt-14">
-            <DetailRail
-              client={client}
-              stats={stats}
-              statsLoading={statsQuery.isPending}
-              tags={tags}
-              tagsLoading={tagsQuery.isPending}
-              children={children}
-              childrenLoading={childrenQuery.isPending}
-              onAction={handleAction}
-              actionLoading={actionLoading}
-              onTierChange={handleTierChange}
-              tierLoading={tierLoading}
-              onVerify={handleVerify}
-            />
-          </aside>
+          {(tab === "overview" || tab === "setup") && (
+            <aside className="col-span-12 min-w-0 lg:col-span-4 lg:pt-14">
+              <DetailRail
+                client={client}
+                stats={stats}
+                statsLoading={statsQuery.isPending}
+                memberCount={rosterCount}
+                nextRenewal={upcomingItems[0]?.date}
+                milestonesState={
+                  endingQuery.isPending ? "loading" : endingQuery.isError ? "error" : "ready"
+                }
+                tags={tags}
+                tagsLoading={tagsQuery.isPending}
+                children={children}
+                childrenLoading={childrenQuery.isPending}
+                onAction={handleAction}
+                actionLoading={actionLoading}
+                onTierChange={handleTierChange}
+                tierLoading={tierLoading}
+                onVerify={handleVerify}
+              />
+            </aside>
+          )}
         </div>
       </div>
     </PageShell>

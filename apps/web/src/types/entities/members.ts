@@ -23,6 +23,7 @@ export interface Member {
   id: string
   tenant_id: string
   client_id: string
+  client_name?: string | null
   employer_member_id: string
   relation: MemberRelation
   status: EligibilityStatus
@@ -33,9 +34,13 @@ export interface Member {
   date_of_birth?: string | null
   gender?: MemberGender | null
   phone?: string | null
+  staff_number?: string | null
+  national_id?: string | null
+  passport_number?: string | null
   last_imported_at?: string | null
   suspended_at?: string | null
   terminated_at?: string | null
   created_at: string
   updated_at: string
+  user_id?: string | null
 }

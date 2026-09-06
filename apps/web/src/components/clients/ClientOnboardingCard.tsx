@@ -1,6 +1,7 @@
 import { Check, Rocket } from "lucide-react"
 
 import { Panel } from "@/components/common/Panel"
+import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 
 export interface ClientOnboardingStep {
@@ -13,12 +14,14 @@ interface ClientOnboardingCardProps {
   steps: ClientOnboardingStep[]
   title?: string
   className?: string
+  onStep?: (id: string) => void
 }
 
 export function ClientOnboardingCard({
   steps,
   title = "Setup progress",
   className,
+  onStep,
 }: ClientOnboardingCardProps) {
   const doneCount = steps.filter((s) => s.done).length
   const total = steps.length
@@ -73,6 +76,16 @@ export function ClientOnboardingCard({
                   >
                     {step.label}
                   </span>
+                  {!step.done && onStep && (
+                    <Button
+                      variant="link"
+                      size="sm"
+                      className="h-auto p-0 text-xs"
+                      onClick={() => onStep(step.id)}
+                    >
+                      Continue
+                    </Button>
+                  )}
                 </li>
               )
             })}

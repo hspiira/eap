@@ -59,7 +59,12 @@ class MemberCreate(BaseModel):
     """Create a covered member; a login account is optional and separate."""
 
     client_id: str = Field(..., min_length=1)
-    employer_member_id: SanitizedStr = Field(..., min_length=1, max_length=255)
+    employer_member_id: SanitizedStr | None = Field(
+        None,
+        min_length=1,
+        max_length=255,
+        description="Optional. Left blank, the server issues {client code}-001, -002, and so on.",
+    )
     relation: MemberRelation
     primary_employee_member_id: str | None = None
     work_email: EmailStr | None = None
@@ -68,6 +73,9 @@ class MemberCreate(BaseModel):
     date_of_birth: date | None = None
     gender: MemberGender | None = None
     phone: SanitizedStr | None = Field(None, max_length=50)
+    staff_number: SanitizedStr | None = Field(None, max_length=100)
+    national_id: SanitizedStr | None = Field(None, max_length=100)
+    passport_number: SanitizedStr | None = Field(None, max_length=100)
 
     model_config = ConfigDict(extra="forbid")
 
@@ -106,6 +114,9 @@ class MemberUpdate(BaseModel):
     date_of_birth: date | None = None
     gender: MemberGender | None = None
     phone: SanitizedStr | None = Field(None, max_length=50)
+    staff_number: SanitizedStr | None = Field(None, max_length=100)
+    national_id: SanitizedStr | None = Field(None, max_length=100)
+    passport_number: SanitizedStr | None = Field(None, max_length=100)
 
     model_config = ConfigDict(extra="forbid")
 
@@ -128,6 +139,7 @@ class MemberResponse(BaseModel):
     id: str
     tenant_id: str
     client_id: str
+    client_name: str | None = None
     employer_member_id: str
     relation: MemberRelation
     status: EligibilityStatus
@@ -138,11 +150,15 @@ class MemberResponse(BaseModel):
     date_of_birth: date | None
     gender: MemberGender | None
     phone: str | None
+    staff_number: str | None = None
+    national_id: str | None = None
+    passport_number: str | None = None
     last_imported_at: datetime | None
     suspended_at: datetime | None
     terminated_at: datetime | None
     created_at: datetime
     updated_at: datetime
+    user_id: str | None = None
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -155,10 +171,61 @@ class MemberListResponse(BaseModel):
     has_more: bool
 
 
-class MemberDuplicateCandidate(BaseModel):
+class MemberAccountLinkRequest(BaseModel):
+    user_id: str = Field(..., min_length=1)
+
+
+class MemberMergeRequest(BaseModel):
+    source_member_id: str = Field(..., min_length=1)
+
+
+class MemberMergeResponse(BaseModel):
     member: MemberResponse
-    matched_on: list[str]
+    source_member_id: str
+    transferred: dict[str, int]
+
+
+class MemberDuplicateMember(BaseModel):
+    id: str
+    client_id: str
+    client_name: str | None = None
+    employer_member_id: str
+    display_label: str
+    relation: MemberRelation
+
+
+class MemberDuplicateCandidate(BaseModel):
+    first: MemberDuplicateMember
+    second: MemberDuplicateMember
+    reason: str
 
 
 class MemberDuplicateListResponse(BaseModel):
-    candidates: list[MemberDuplicateCandidate]
+    items: list[MemberDuplicateCandidate]
+    scanned: int
+
+
+class MemberImportRowPreview(BaseModel):
+    row: int
+    client_code: str | None
+    client_name: str | None
+    employer_member_id: str | None
+    staff_number: str | None = None
+    display_label: str | None
+    state: str
+    message: str | None = None
+    default_action: str = "import"
+
+
+class MemberImportIssue(BaseModel):
+    row: int
+    field: str | None = None
+    message: str
+
+
+class MemberImportResponse(BaseModel):
+    imported: int
+    skipped: int
+    failed: int
+    issues: list[MemberImportIssue] = Field(default_factory=list)
+    rows: list[MemberImportRowPreview]

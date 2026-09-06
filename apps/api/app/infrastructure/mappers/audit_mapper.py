@@ -66,23 +66,22 @@ class AuditMapper:
         Returns:
             AuditLogModel for persistence
         """
-        # Create model - convert metadata to plain dict for JSON serialization
-        # (entity stores it as MappingProxyType for immutability, which is not JSON-serializable)
-        metadata_dict = dict(entity._metadata) if entity._metadata else None
+        # The entity holds metadata as a MappingProxyType, which is not JSON
+        # serializable.
+        metadata_dict = dict(entity.metadata) if entity.metadata else None
 
-        # Create model
         return AuditLogModel(
             id=entity.id.value,
             tenant_id=entity.tenant_id.value,
             user_id=entity.user_id.value if entity.user_id else None,
-            action_type=entity._action_type,
-            resource_type=entity._resource_type,
-            resourceid=entity._resource_id,
+            action_type=entity.action_type,
+            resource_type=entity.resource_type,
+            resource_id=entity.resource_id,
             description=entity.description,
-            ip_address=entity._ip_address,
-            user_agent=entity._user_agent,
+            ip_address=entity.ip_address,
+            user_agent=entity.user_agent,
             occurred_at=ensure_utc(entity.occurred_at),
-            extrametadata=metadata_dict,
+            extra_metadata=metadata_dict,
             is_special_category=getattr(entity, "is_special_category", False),
             created_at=ensure_utc(entity.occurred_at),
             updated_at=ensure_utc(entity.occurred_at),
@@ -133,22 +132,20 @@ class AuditMapper:
         Returns:
             EntityChangeModel for persistence
         """
-        # Serialize field changes to JSON
         field_changes = [
             {
                 "field_name": fc.field_name,
                 "old_value": fc.old_value,
                 "new_value": fc.new_value,
             }
-            for fc in entity._field_changes
+            for fc in entity.field_changes
         ]
 
-        # Create model
         return EntityChangeModel(
             id=entity.id.value,
-            audit_logid=entity._audit_log_id.value,
-            entity_type=entity._entity_type,
-            entityid=entity._entity_id,
+            audit_log_id=entity.audit_log_id.value,
+            entity_type=entity.entity_type,
+            entity_id=entity.entity_id,
             field_changes=field_changes,
             created_at=utc_now(),
             updated_at=utc_now(),

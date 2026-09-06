@@ -9,20 +9,27 @@ function toLocalDatetime(iso: string): string {
 interface DetailRailProps {
   session: ServiceSession
   service: Service | null
-  person: Person | null
+  member: Member | null
   onAction: (id: string, action: LifecycleAction) => Promise<void>
   actionLoading: boolean
 }
 
-import { useEffect, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 
+import { useQuery } from "@tanstack/react-query"
 import { Link } from "@tanstack/react-router"
 import { CalendarClock, CalendarRange, Lock, Users, Wrench } from "lucide-react"
 
+import { casesApi } from "@/api/endpoints/cases"
 import { DetailCard, RailSection, Stat } from "@/components/common/DetailPrimitives"
 import { FormField } from "@/components/common/FormField"
 import { LifecycleActions } from "@/components/common/LifecycleActions"
 import { StatusBadge } from "@/components/common/StatusBadge"
+import { CATEGORY_LABELS } from "@/components/ServiceFormSheet"
+import {
+  EligibilityFailureNotice,
+  eligibilityReasons,
+} from "@/components/sessions/EligibilityFailureNotice"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -33,21 +40,32 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
-import { displayName } from "@/lib/display"
+import { useHasClinicalScope } from "@/hooks/useCanWrite"
+import { memberLabel } from "@/lib/display"
+import { normalizeErrorMessage } from "@/lib/errors"
 import { formatDateTime } from "@/lib/format"
-import type { Person, Service, ServiceSession } from "@/types/entities"
+import type { ErrorDetail } from "@/types/api"
+import type { Member, Service, ServiceSession } from "@/types/entities"
+import { CaseStatus } from "@/types/enums"
 import type { LifecycleAction } from "@/utils/lifecycleConfig"
 import { getStatusLabel } from "@/utils/statusColors"
 
 export function Hero({
   session,
   service,
-  person,
+  member,
 }: {
   session: ServiceSession
   service: Service | null
-  person: Person | null
+  member: Member | null
 }) {
   return (
     <div className="flex shrink-0 items-center gap-3 border-b border-fg/10 bg-surface px-5 py-3">
@@ -69,13 +87,13 @@ export function Hero({
           {service.name}
         </Link>
       ) : null}
-      {person ? (
+      {member ? (
         <Link
-          to="/persons/$personId"
-          params={{ personId: person.id }}
+          to="/members/$memberId"
+          params={{ memberId: member.id }}
           className="text-xs text-fg/65 hover:text-primary"
         >
-          · {displayName(person)}
+          · {memberLabel(member)}
         </Link>
       ) : null}
       <span className="h-4 w-px shrink-0 bg-fg/15" aria-hidden />
@@ -91,7 +109,7 @@ export function Hero({
   )
 }
 
-export function DetailRail({ session, service, person, onAction, actionLoading }: DetailRailProps) {
+export function DetailRail({ session, service, member, onAction, actionLoading }: DetailRailProps) {
   return (
     <div className="space-y-5">
       <RailSection title="At a glance">
@@ -120,14 +138,16 @@ export function DetailRail({ session, service, person, onAction, actionLoading }
               </span>
               <div className="min-w-0 flex-1">
                 <p className="truncate text-sm font-medium text-fg">{service.name}</p>
-                <p className="truncate text-[11px] text-fg-muted">{service.service_type ?? "-"}</p>
+                <p className="truncate text-[11px] text-fg-muted">
+                  {service.category ? CATEGORY_LABELS[service.category] : "-"}
+                </p>
               </div>
             </Link>
           ) : null}
-          {person ? (
+          {member ? (
             <Link
-              to="/persons/$personId"
-              params={{ personId: person.id }}
+              to="/members/$memberId"
+              params={{ memberId: member.id }}
               className="flex items-center gap-2.5 rounded-sm border border-fg/10 bg-surface px-3 py-2 transition-colors hover:border-fg/25"
             >
               <span
@@ -137,9 +157,9 @@ export function DetailRail({ session, service, person, onAction, actionLoading }
                 <Users className="size-3.5" />
               </span>
               <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-medium text-fg">{displayName(person)}</p>
+                <p className="truncate text-sm font-medium text-fg">{memberLabel(member)}</p>
                 <p className="truncate text-[11px] text-fg-muted">
-                  {getStatusLabel(person.person_type)}
+                  {getStatusLabel(member.relation)}
                 </p>
               </div>
             </Link>
@@ -205,25 +225,62 @@ export function FeedbackPanel({
   )
 }
 
+const NO_CASE = "__none__"
+
+/** A closed case cannot absorb a drawdown, so it is not worth offering. */
+const CLOSED_CASE_STATUSES: ReadonlyArray<CaseStatus> = [
+  CaseStatus.CLOSED,
+  CaseStatus.REFERRED_OUT,
+  CaseStatus.NO_SHOW_CLOSED,
+]
+
 export function CompleteDialog({
   open,
   onOpenChange,
   defaultDuration,
+  clientId,
   onConfirm,
 }: {
   open: boolean
   onOpenChange: (open: boolean) => void
   defaultDuration: number
-  onConfirm: (duration: number, notes: string) => Promise<void>
+  /**
+   * The session's client. Cases carry no member id, so this is the only link
+   * available. Undefined while the member is still loading, which suppresses
+   * the picker rather than offering every client's cases.
+   */
+  clientId?: string | null
+  onConfirm: (duration: number, notes: string, caseId?: string) => Promise<void>
 }) {
   const [duration, setDuration] = useState(String(defaultDuration))
   const [notes, setNotes] = useState("")
+  const [caseId, setCaseId] = useState(NO_CASE)
   const [submitting, setSubmitting] = useState(false)
+
+  // Naming a case is what draws the session down against its authorization.
+  // Only a clinical-scoped user may list cases, and the API fails closed, so
+  // the picker is not rendered at all without the scope.
+  const { hasScope } = useHasClinicalScope()
+  const casesQuery = useQuery({
+    queryKey: ["cases", "list"],
+    queryFn: casesApi.list,
+    enabled: open && hasScope,
+    staleTime: 60_000,
+  })
+  const cases = useMemo(() => {
+    // Fail closed without a client. Drawing a session down against another
+    // client's authorization is worse than not drawing it down at all, and
+    // the caller cannot always tell the two lists apart.
+    if (!clientId) return []
+    const rows = casesQuery.data ?? []
+    return rows.filter((c) => c.client_id === clientId && !CLOSED_CASE_STATUSES.includes(c.status))
+  }, [casesQuery.data, clientId])
 
   useEffect(() => {
     if (open) {
       setDuration(String(defaultDuration))
       setNotes("")
+      setCaseId(NO_CASE)
     }
   }, [open, defaultDuration])
 
@@ -234,7 +291,7 @@ export function CompleteDialog({
     if (!valid) return
     setSubmitting(true)
     try {
-      await onConfirm(minutes, notes.trim())
+      await onConfirm(minutes, notes.trim(), caseId === NO_CASE ? undefined : caseId)
       onOpenChange(false)
     } finally {
       setSubmitting(false)
@@ -269,6 +326,29 @@ export function CompleteDialog({
               rows={3}
             />
           </FormField>
+          {hasScope ? (
+            <FormField
+              label="Draw down against case"
+              htmlFor="complete-case"
+              hint="Optional. Choosing a case spends one authorized session from it."
+            >
+              <Select value={caseId} onValueChange={setCaseId}>
+                <SelectTrigger id="complete-case" className="rounded-none">
+                  <SelectValue placeholder={casesQuery.isPending ? "Loading cases…" : "No case"} />
+                </SelectTrigger>
+                <SelectContent className="rounded-none">
+                  <SelectItem value={NO_CASE} className="rounded-none">
+                    No case
+                  </SelectItem>
+                  {cases.map((row) => (
+                    <SelectItem key={row.id} value={row.id} className="rounded-none">
+                      {row.clinical_subject_id} · {row.presenting_problem}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </FormField>
+          ) : null}
         </div>
         <DialogFooter>
           <Button
@@ -368,20 +448,33 @@ export function RescheduleDialog({
   const [scheduled, setScheduled] = useState(toLocalDatetime(currentISO))
   const [notes, setNotes] = useState("")
   const [submitting, setSubmitting] = useState(false)
+  const [refused, setRefused] = useState<ErrorDetail[] | null>(null)
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     if (open) {
       setScheduled(toLocalDatetime(currentISO))
       setNotes("")
+      setRefused(null)
+      setError(null)
     }
   }, [open, currentISO])
 
+  // Rescheduling reapplies the booking gate, so a new time can be refused for
+  // the practitioner or for the affiliation that no longer covers it. The
+  // dialog stays open and shows why, rather than closing as if it had worked.
   const handleConfirm = async () => {
     if (!scheduled) return
     setSubmitting(true)
+    setRefused(null)
+    setError(null)
     try {
       await onConfirm(new Date(scheduled).toISOString(), notes)
       onOpenChange(false)
+    } catch (err) {
+      const reasons = eligibilityReasons(err)
+      if (reasons) setRefused(reasons)
+      else setError(normalizeErrorMessage(err, "Could not reschedule this session"))
     } finally {
       setSubmitting(false)
     }
@@ -398,6 +491,15 @@ export function RescheduleDialog({
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-3">
+          {refused ? <EligibilityFailureNotice reasons={refused} /> : null}
+          {error ? (
+            <p
+              role="alert"
+              className="border border-danger/30 bg-danger-soft px-3 py-2 text-sm text-danger-fg"
+            >
+              {error}
+            </p>
+          ) : null}
           <FormField label="New scheduled time" required htmlFor="reschedule-when">
             <Input
               id="reschedule-when"

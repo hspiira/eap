@@ -21,7 +21,7 @@ from app.domain.events import (
     CriticalIncidentPhaseRecorded,
     DomainEvent,
 )
-from app.domain.exceptions import DomainError
+from app.domain.exceptions import ConflictError, DomainError
 from app.domain.value_objects.core import (
     ClientId,
     CriticalIncidentId,
@@ -96,7 +96,7 @@ class CriticalIncidentEntity:
     def close(self, after_action_summary: str, now: datetime | None = None) -> None:
         """Close the response and capture the after-action summary."""
         if self.status == CriticalIncidentStatus.CLOSED:
-            raise DomainError("Incident is already closed")
+            raise ConflictError("Incident is already closed")
         if not after_action_summary:
             raise DomainError("Closing an incident requires an after-action summary")
         now = now or utc_now()

@@ -9,7 +9,7 @@ from datetime import datetime
 
 from app.domain.enums import BaseStatus
 from app.domain.events import DomainEvent
-from app.domain.exceptions import DomainError
+from app.domain.exceptions import ConflictError, DomainError
 from app.domain.value_objects.core import ContractId, ServiceAssignmentId, ServiceId, TenantId
 from app.shared.utils.datetime import utc_now
 
@@ -37,7 +37,7 @@ class ServiceAssignmentEntity:
     def activate(self) -> None:
         """Activate service assignment."""
         if self.status == BaseStatus.ACTIVE:
-            raise DomainError("Assignment is already active")
+            raise ConflictError("Assignment is already active")
         if self.deleted_at:
             raise DomainError("Cannot activate deleted assignment")
         self.status = BaseStatus.ACTIVE
@@ -48,7 +48,7 @@ class ServiceAssignmentEntity:
     def deactivate(self) -> None:
         """Deactivate service assignment."""
         if self.status == BaseStatus.INACTIVE:
-            raise DomainError("Assignment is already inactive")
+            raise ConflictError("Assignment is already inactive")
         if self.deleted_at:
             raise DomainError("Cannot deactivate deleted assignment")
         self.status = BaseStatus.INACTIVE
@@ -64,7 +64,7 @@ class ServiceAssignmentEntity:
     def archive(self) -> None:
         """Archive service assignment."""
         if self.deleted_at:
-            raise DomainError("Assignment is already archived")
+            raise ConflictError("Assignment is already archived")
         self.status = BaseStatus.ARCHIVED
         self.updated_at = utc_now()
 

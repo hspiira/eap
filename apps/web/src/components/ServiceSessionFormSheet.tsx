@@ -1,14 +1,24 @@
+import { useState } from "react"
+
+import { useQuery } from "@tanstack/react-query"
 import { Controller } from "react-hook-form"
 import { z } from "zod"
 
-import { personsApi } from "@/api/endpoints/persons"
+import { membersApi } from "@/api/endpoints/members"
 import { serviceSessionsApi } from "@/api/endpoints/service-sessions"
 import { servicesApi } from "@/api/endpoints/services"
 import { DiagnosisSelector } from "@/components/common/DiagnosisSelector"
-import { PersonPicker, ProviderPicker, ServicePicker } from "@/components/common/EntityPicker"
+import { MemberPicker, ProviderPicker, ServicePicker } from "@/components/common/EntityPicker"
 import { FormField } from "@/components/common/FormField"
 import { FormSection } from "@/components/common/FormSection"
 import { SheetForm } from "@/components/common/SheetForm"
+import { CATEGORY_LABELS } from "@/components/ServiceFormSheet"
+import { DeliveryContextField } from "@/components/sessions/DeliveryContextField"
+import {
+  EligibilityFailureNotice,
+  eligibilityReasons,
+} from "@/components/sessions/EligibilityFailureNotice"
+import { StoredAttribution } from "@/components/sessions/SessionAttribution"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Input } from "@/components/ui/input"
 import {
@@ -19,17 +29,22 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { useEntityFormSheet } from "@/hooks/useEntityFormSheet"
-import { displayName, personInitials } from "@/lib/display"
+import { memberLabel, nameInitials } from "@/lib/display"
 import { useEntityList } from "@/lib/queries"
 import { cn } from "@/lib/utils"
-import type { Person, Service, ServiceSession } from "@/types/entities"
-import { ClientType, SessionCategory, SessionType } from "@/types/enums"
+import type { ErrorDetail } from "@/types/api"
+import type { Member, Service, ServiceSession } from "@/types/entities"
+import { ClientType, SessionCategory, SessionDeliveryContext, SessionType } from "@/types/enums"
 
 const schema = z
   .object({
     service_id: z.string().trim().min(1, "Service is required"),
-    person_id: z.string().trim().min(1, "Person is required"),
-    service_provider_id: z.string().trim().min(1, "Provider is required"),
+    member_id: z.string().trim().min(1, "Member is required"),
+    service_provider_id: z.string().trim().min(1, "Practitioner is required"),
+    delivery_context: z.enum([SessionDeliveryContext.DIRECT, SessionDeliveryContext.ORGANISATION], {
+      message: "Choose direct or organisation delivery",
+    }),
+    provider_affiliation_id: z.string().optional(),
     scheduled_at: z
       .string()
       .min(1, "Scheduled time is required")
@@ -50,6 +65,15 @@ const schema = z
     is_backfill: z.boolean().optional(),
     backfill_reason: z.string().optional(),
   })
+  .refine(
+    (d) =>
+      d.delivery_context !== SessionDeliveryContext.ORGANISATION ||
+      Boolean(d.provider_affiliation_id?.trim()),
+    {
+      path: ["provider_affiliation_id"],
+      message: "Choose the organisation this session is delivered through",
+    },
+  )
   .refine((d) => !d.is_backfill || new Date(d.scheduled_at).getTime() <= Date.now(), {
     path: ["scheduled_at"],
     message: "Backfilled sessions must be in the past",
@@ -72,8 +96,10 @@ type Values = z.infer<typeof schema>
 
 const EMPTY: Values = {
   service_id: "",
-  person_id: "",
+  member_id: "",
   service_provider_id: "",
+  delivery_context: undefined as unknown as Values["delivery_context"],
+  provider_affiliation_id: "",
   scheduled_at: "",
   location: "",
   notes: "",
@@ -99,12 +125,12 @@ interface ServiceSessionFormSheetProps {
   session?: ServiceSession | null
   /** When set, locks the service picker. */
   serviceId?: string
-  /** When set, locks the person picker. */
-  personId?: string
+  /** When set, locks the member picker. */
+  memberId?: string
   /** Pre-resolved service for the locked summary. */
   service?: Service | null
-  /** Pre-resolved person for the locked summary. */
-  person?: Person | null
+  /** Pre-resolved member for the locked summary. */
+  member?: Member | null
   onSaved?: (session: ServiceSession) => void
 }
 
@@ -113,13 +139,14 @@ export function ServiceSessionFormSheet({
   onOpenChange,
   session,
   serviceId,
-  personId,
+  memberId,
   service,
-  person,
+  member,
   onSaved,
 }: ServiceSessionFormSheetProps) {
   const lockedServiceId = serviceId ?? session?.service_id
-  const lockedPersonId = personId ?? session?.person_id
+  const lockedMemberId = memberId ?? session?.member_id
+  const [ineligible, setIneligible] = useState<ErrorDetail[] | null>(null)
 
   const { register, control, formState, submit, serverError, setValue, watch, isEdit } =
     useEntityFormSheet<
@@ -134,7 +161,7 @@ export function ServiceSessionFormSheet({
     >({
       resource: "service-sessions",
       schema,
-      defaultValues: { ...EMPTY, service_id: serviceId ?? "", person_id: personId ?? "" },
+      defaultValues: { ...EMPTY, service_id: serviceId ?? "", member_id: memberId ?? "" },
       open,
       onOpenChange,
       entity: session,
@@ -150,8 +177,13 @@ export function ServiceSessionFormSheet({
         }
         return {
           service_id: values.service_id,
-          person_id: values.person_id,
+          member_id: values.member_id,
           provider_id: values.service_provider_id,
+          delivery_context: values.delivery_context,
+          provider_affiliation_id:
+            values.delivery_context === SessionDeliveryContext.ORGANISATION
+              ? (values.provider_affiliation_id?.trim() ?? null)
+              : null,
           scheduled_at: new Date(values.scheduled_at).toISOString(),
           location: values.location?.trim() || null,
           category: values.category ?? undefined,
@@ -175,25 +207,42 @@ export function ServiceSessionFormSheet({
         if (isEdit && entity) {
           // PATCH takes the clinical/admin fields (+ notes); scheduling is
           // immutable here: reschedule is its own transition on the detail page.
+          //
+          // Attribution is stripped too: changing which practitioner or
+          // affiliation delivered a session is a privileged, audited
+          // correction, not a general edit.
           const {
             service_id: _s,
-            person_id: _p,
+            member_id: _p,
             provider_id: _pr,
+            delivery_context: _dc,
+            provider_affiliation_id: _af,
             scheduled_at: _at,
             session_number: _sn,
             ...updatable
           } = body
           return serviceSessionsApi.update(entity.id, { ...updatable, notes: __notes })
         }
-        let result = await serviceSessionsApi.create(body)
+        setIneligible(null)
+        let result = await serviceSessionsApi.create(body).catch((error: unknown) => {
+          // Rendered as its own list rather than one message: the server sends
+          // every reason, and the form-level banner shows only the last.
+          setIneligible(eligibilityReasons(error))
+          throw error
+        })
         if (__isBackfill && result?.id) {
           // A backfilled session is complete by definition. Duration comes
           // from the service's configured length; the reason becomes the note.
+          //
+          // No case_id, deliberately: a backfill records history that already
+          // happened, and spending a live authorization for it would double
+          // count against an entitlement the past session never used.
           const svc = await servicesApi.getById(body.service_id).catch(() => null)
-          result = await serviceSessionsApi.complete(result.id, {
+          const completed = await serviceSessionsApi.complete(result.id, {
             duration: svc?.duration_minutes ?? 60,
             notes: __backfillReason ?? "Backfilled from manual entry",
           })
+          result = completed.session
         }
         return result
       },
@@ -202,7 +251,7 @@ export function ServiceSessionFormSheet({
     })
 
   const watchedService = watch("service_id")
-  const watchedPerson = watch("person_id")
+  const watchedMember = watch("member_id")
   const watchedProvider = watch("service_provider_id")
   const watchedBackfill = !isEdit && Boolean(watch("is_backfill"))
   const watchedCategory = watch("category")
@@ -222,7 +271,7 @@ export function ServiceSessionFormSheet({
           ? "Update the time, location, or notes for this session."
           : watchedBackfill
             ? "Record a session that already happened. Marked Completed and tagged in the audit trail."
-            : "Schedule a session for a person against a service. Lifecycle changes (complete / cancel / no-show) happen later from the detail view."
+            : "Schedule a session for a member against a service. Lifecycle changes (complete / cancel / no-show) happen later from the detail view."
       }
       size="lg"
       onSubmit={submit}
@@ -231,6 +280,8 @@ export function ServiceSessionFormSheet({
       submitLabel={isEdit ? "Save changes" : watchedBackfill ? "Log session" : "Create session"}
       submittingLabel={isEdit ? "Saving…" : watchedBackfill ? "Logging…" : "Creating…"}
     >
+      {ineligible ? <EligibilityFailureNotice reasons={ineligible} /> : null}
+
       <FormSection title="Service">
         <FormField label="Service" required error={errors.service_id?.message}>
           {lockedServiceId ? (
@@ -287,19 +338,19 @@ export function ServiceSessionFormSheet({
       </FormSection>
 
       <FormSection title="Subject">
-        <FormField label="Person" required error={errors.person_id?.message}>
-          {lockedPersonId ? (
-            <LockedPersonSummary personId={lockedPersonId} person={person ?? null} />
+        <FormField label="Member" required error={errors.member_id?.message}>
+          {lockedMemberId ? (
+            <LockedMemberSummary memberId={lockedMemberId} member={member ?? null} />
           ) : (
-            <PersonPicker
-              value={watchedPerson ?? ""}
+            <MemberPicker
+              value={watchedMember ?? ""}
               onChange={(id) =>
-                setValue("person_id", id, { shouldValidate: true, shouldDirty: true })
+                setValue("member_id", id, { shouldValidate: true, shouldDirty: true })
               }
             />
           )}
         </FormField>
-        <Input type="hidden" {...register("person_id")} />
+        <Input type="hidden" {...register("member_id")} />
         <FormField label="Client type" optional error={errors.client_type?.message}>
           <Controller
             control={control}
@@ -340,19 +391,44 @@ export function ServiceSessionFormSheet({
         ) : null}
       </FormSection>
 
-      <FormSection title="Provider" description="The counsellor or clinic delivering the session.">
-        <FormField label="Provider" required error={errors.service_provider_id?.message}>
+      <FormSection
+        title="Practitioner"
+        description="Who delivers the session, and whether they deliver it directly or for a supplier firm."
+      >
+        <FormField label="Practitioner" required error={errors.service_provider_id?.message}>
           <ProviderPicker
             value={watchedProvider ?? ""}
-            onChange={(id) =>
-              setValue("service_provider_id", id, {
+            onChange={(id) => {
+              setValue("service_provider_id", id, { shouldValidate: true, shouldDirty: true })
+              setValue("provider_affiliation_id", "", { shouldDirty: true })
+            }}
+          />
+        </FormField>
+        <Input type="hidden" {...register("service_provider_id")} />
+        {isEdit ? (
+          <StoredAttribution session={session ?? null} />
+        ) : (
+          <DeliveryContextField
+            providerId={watchedProvider ?? ""}
+            scheduledAt={watch("scheduled_at") ?? ""}
+            context={watch("delivery_context")}
+            affiliationId={watch("provider_affiliation_id") ?? ""}
+            onContextChange={(value) => {
+              setValue("delivery_context", value, { shouldValidate: true, shouldDirty: true })
+              if (value !== SessionDeliveryContext.ORGANISATION) {
+                setValue("provider_affiliation_id", "", { shouldDirty: true })
+              }
+            }}
+            onAffiliationChange={(value) =>
+              setValue("provider_affiliation_id", value, {
                 shouldValidate: true,
                 shouldDirty: true,
               })
             }
+            contextError={errors.delivery_context?.message}
+            affiliationError={errors.provider_affiliation_id?.message}
           />
-        </FormField>
-        <Input type="hidden" {...register("service_provider_id")} />
+        )}
         <div className="grid grid-cols-2 gap-3">
           <FormField label="Rate (UGX)" optional error={errors.rate_ugx?.message} htmlFor="ss-rate">
             <Input id="ss-rate" type="number" min={0} {...register("rate_ugx")} />
@@ -360,7 +436,7 @@ export function ServiceSessionFormSheet({
           <FormField
             label="Session number"
             optional
-            description="Position in the person's episode, e.g. 3 of 6."
+            description="Position in the member's episode, e.g. 3 of 6."
             error={errors.session_number?.message}
             htmlFor="ss-session-no"
           >
@@ -506,8 +582,10 @@ function EnumSelect<T extends string>({
 function toFormValues(s: ServiceSession): Values {
   return {
     service_id: s.service_id,
-    person_id: s.person_id,
+    member_id: s.member_id,
     service_provider_id: s.provider_id ?? "",
+    delivery_context: deliveryContextForForm(s.delivery_context),
+    provider_affiliation_id: s.provider_affiliation_id ?? "",
     scheduled_at: toLocalDatetime(s.scheduled_at),
     location: s.location ?? "",
     notes: s.notes ?? "",
@@ -525,6 +603,19 @@ function toFormValues(s: ServiceSession): Values {
     is_backfill: false,
     backfill_reason: "",
   }
+}
+
+/**
+ * The form offers only direct and organisation delivery. A stored `Unknown`
+ * has no form value: it is a historical record whose source does not say, and
+ * defaulting it to direct would invent evidence.
+ */
+function deliveryContextForForm(
+  stored: SessionDeliveryContext | null | undefined,
+): Values["delivery_context"] {
+  return stored === SessionDeliveryContext.DIRECT || stored === SessionDeliveryContext.ORGANISATION
+    ? stored
+    : (undefined as unknown as Values["delivery_context"])
 }
 
 function toLocalDatetime(iso: string): string {
@@ -550,6 +641,7 @@ function LockedServiceSummary({
     enabled,
   })
   const resolved = service ?? (detail.data?.items ?? []).find((s) => s.id === serviceId) ?? null
+  const categoryLabel = resolved?.category ? CATEGORY_LABELS[resolved.category] : null
   return (
     <div className="flex items-center gap-2.5 rounded-sm border border-fg/15 bg-surface px-3 py-2">
       <span
@@ -562,13 +654,8 @@ function LockedServiceSummary({
         <p className="truncate text-sm font-medium text-fg">
           {resolved?.name ?? "Selected service"}
         </p>
-        <p
-          className={cn(
-            "truncate text-[11px] text-fg-muted",
-            !resolved?.service_type && "font-mono",
-          )}
-        >
-          {resolved?.service_type ?? serviceId.slice(0, 8)}
+        <p className={cn("truncate text-[11px] text-fg-muted", !categoryLabel && "font-mono")}>
+          {categoryLabel ?? serviceId.slice(0, 8)}
         </p>
       </div>
       <span className="shrink-0 rounded-sm border border-fg/15 bg-bg px-1.5 py-0.5 text-[10px] font-medium tracking-wide text-fg-muted">
@@ -578,34 +665,28 @@ function LockedServiceSummary({
   )
 }
 
-function LockedPersonSummary({ personId, person }: { personId: string; person: Person | null }) {
-  const enabled = !person && Boolean(personId)
-  const detail = useEntityList<Person>({
-    resource: "persons",
-    params: { page: 1, limit: 1, search: personId },
-    listFn: personsApi.list,
+function LockedMemberSummary({ memberId, member }: { memberId: string; member: Member | null }) {
+  const enabled = !member && Boolean(memberId)
+  const detail = useQuery({
+    queryKey: ["members", "detail", memberId],
+    queryFn: () => membersApi.getById(memberId),
     enabled,
   })
-  const resolved = person ?? (detail.data?.items ?? []).find((p) => p.id === personId) ?? null
+  const resolved = member ?? detail.data ?? null
   return (
     <div className="flex items-center gap-2.5 rounded-sm border border-fg/15 bg-surface px-3 py-2">
       <span
         aria-hidden
         className="grid size-7 shrink-0 place-items-center bg-primary/10 text-[10px] font-semibold text-primary"
       >
-        {resolved ? personInitials(resolved) : "··"}
+        {resolved ? nameInitials(memberLabel(resolved)) : "··"}
       </span>
       <div className="min-w-0 flex-1">
         <p className="truncate text-sm font-medium text-fg">
-          {resolved ? displayName(resolved) : "Selected person"}
+          {resolved ? memberLabel(resolved) : "Selected member"}
         </p>
-        <p
-          className={cn(
-            "truncate text-[11px] text-fg-muted",
-            !resolved?.person_type && "font-mono",
-          )}
-        >
-          {resolved?.person_type ?? personId.slice(0, 8)}
+        <p className={cn("truncate text-[11px] text-fg-muted", !resolved?.relation && "font-mono")}>
+          {resolved?.relation ?? "Member"}
         </p>
       </div>
       <span className="shrink-0 rounded-sm border border-fg/15 bg-bg px-1.5 py-0.5 text-[10px] font-medium tracking-wide text-fg-muted">

@@ -14,6 +14,7 @@ from app.domain.enums import (
     ClientType,
     SessionCategory,
     SessionClinicalStatus,
+    SessionDeliveryContext,
     SessionStatus,
     SessionType,
 )
@@ -26,8 +27,15 @@ class ServiceSessionCreate(BaseModel):
 
     service_id: str = Field(..., description="Service identifier")
     provider_id: str = Field(..., description="Provider (person) identifier")
-    person_id: str = Field(..., description="Person identifier")
+    member_id: str = Field(..., description="Member identifier")
     scheduled_at: datetime = Field(..., description="Scheduled date and time")
+    delivery_context: SessionDeliveryContext = Field(
+        ...,
+        description="Direct or Organisation. Unknown is rejected: it belongs to historical import",
+    )
+    provider_affiliation_id: str | None = Field(
+        None, description="Required for Organisation delivery, forbidden otherwise"
+    )
     location: OptionalSanitizedStr = Field(None, description="Session location")
 
     # Care Activity Log fields
@@ -61,6 +69,31 @@ class ServiceSessionCompleteRequest(BaseModel):
 
     duration: int = Field(..., gt=0, description="Session duration in minutes")
     notes: SanitizedStr = Field(..., min_length=1, description="Session notes")
+    case_id: str | None = Field(
+        None,
+        description=(
+            "Clinical case to draw this session down against. Supplied by a caller that "
+            "already holds clinical context; it cannot be inferred from the session, "
+            "which carries an employer-side member id. Omit to leave the authorization "
+            "untouched and consume it through the manual route."
+        ),
+    )
+
+
+class ServiceSessionCompleteResponse(BaseModel):
+    """A completed session and what the completion did to the authorization."""
+
+    session: "ServiceSessionResponse"
+    drawdown: "SessionDrawdownResponse"
+
+
+class SessionDrawdownResponse(BaseModel):
+    """What the completion did, or did not do, to the programme authorization."""
+
+    consumed: bool = Field(..., description="Whether a session was drawn down")
+    authorization_id: str | None = Field(None, description="Authorization consumed, if any")
+    sessions_remaining: int | None = Field(None, description="Remaining after the drawdown")
+    reason: str | None = Field(None, description="Why no drawdown happened")
 
 
 class ServiceSessionCancelRequest(BaseModel):
@@ -126,8 +159,19 @@ class ServiceSessionResponse(BaseModel):
     tenant_id: str = Field(..., description="Tenant identifier")
     service_id: str = Field(..., description="Service identifier")
     provider_id: str = Field(..., description="Provider (person) identifier")
-    person_id: str = Field(..., description="Person identifier")
+    member_id: str = Field(..., description="Member identifier")
     scheduled_at: datetime = Field(..., description="Scheduled date and time")
+    delivery_context: SessionDeliveryContext = Field(..., description="How this was delivered")
+    provider_affiliation_id: str | None = Field(
+        None, description="The affiliation this session is attributed to, if any"
+    )
+    provider_organisation_id: str | None = Field(
+        None,
+        description=(
+            "Resolved from this session's own affiliation, never from the "
+            "practitioner's current affiliations"
+        ),
+    )
     status: SessionStatus = Field(..., description="Session status")
     reschedule_count: int = Field(..., description="Number of times rescheduled")
     completed_at: datetime | None = Field(None, description="Completion date and time")

@@ -78,8 +78,14 @@ from app.domain.events.privacy import (
     DSARRequestSubmitted,
 )
 from app.domain.events.provider import (
+    ProviderAccountLinked,
+    ProviderAccountUnlinked,
+    ProviderAccreditationChanged,
     ProviderAssignmentBlocked,
+    ProviderCreated,
     ProviderPanelStatusChanged,
+    ProviderProfileUpdated,
+    ProviderStatusChanged,
     ProviderTierChanged,
 )
 from app.domain.events.session import SessionCancelled, SessionCompleted, SessionRescheduled
@@ -152,7 +158,13 @@ __all__ = [
     "PersonSecondaryRoleAdded",
     "PersonSecondaryRoleRemoved",
     "PersonTerminated",
+    "ProviderAccountLinked",
+    "ProviderAccountUnlinked",
+    "ProviderAccreditationChanged",
     "ProviderAssignmentBlocked",
+    "ProviderCreated",
+    "ProviderProfileUpdated",
+    "ProviderStatusChanged",
     "ProviderPanelStatusChanged",
     "ProviderTierChanged",
     "RiskAssessmentRecorded",

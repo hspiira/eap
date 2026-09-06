@@ -28,6 +28,7 @@ from app.core.authorization import require_same_tenant
 from app.core.database import get_db
 from app.core.security import TokenData, get_current_user
 from app.domain.entities.client_tag import ClientTagEntity
+from app.domain.exceptions import NotFoundError
 from app.domain.repositories.client_tag_repository import ClientTagRepository
 from app.domain.value_objects.core import ClientTagId, TenantId
 from app.shared.decorators import readonly, transactional
@@ -97,6 +98,7 @@ async def update_client_tag(
     """Update a client tag."""
     tag = await UpdateClientTagUseCase(tag_repo).execute(
         ClientTagId(tag_id),
+        TenantId(current_user.tenant_id),
         name=data.name,
         description=data.description,
         color=data.color,
@@ -201,7 +203,7 @@ async def get_client_tag(
     """Get client tag by ID."""
     tag = await GetClientTagUseCase(tag_repo).execute(ClientTagId(tag_id))
     if not tag:
-        raise ValueError("Tag not found")
+        raise NotFoundError("Tag not found")
     return _to_client_tag_response(tag)
 
 

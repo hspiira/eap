@@ -30,7 +30,12 @@ from app.infrastructure.models.clinical_note_model import ClinicalNoteModel
 from app.infrastructure.models.contact_model import ContactModel
 from app.infrastructure.models.contract_model import ContractModel
 from app.infrastructure.models.critical_incident_model import CriticalIncidentModel
-from app.infrastructure.models.diagnosis_model import DiagnosisModel, DiagnosisTypeModel
+from app.infrastructure.models.diagnosis_model import (
+    DiagnosisAliasModel,
+    DiagnosisModel,
+    DiagnosisTypeModel,
+    TenantDiagnosisSettingModel,
+)
 from app.infrastructure.models.document_model import DocumentModel
 from app.infrastructure.models.dsar_model import DSARRequestModel
 from app.infrastructure.models.eap_programme_model import (
@@ -58,6 +63,14 @@ from app.infrastructure.models.non_compete_clause_model import NonCompeteClauseM
 from app.infrastructure.models.outbox_model import OutboxEventModel
 from app.infrastructure.models.password_set_token_model import PasswordSetTokenModel
 from app.infrastructure.models.person_model import PersonModel
+from app.infrastructure.models.provider_affiliation_model import ProviderAffiliationModel
+from app.infrastructure.models.provider_alias_model import ProviderAliasModel
+from app.infrastructure.models.provider_model import ProviderModel
+from app.infrastructure.models.provider_organisation_model import ProviderOrganisationModel
+from app.infrastructure.models.provider_specialty_model import (
+    ProviderSpecialtyLinkModel,
+    ProviderSpecialtyModel,
+)
 from app.infrastructure.models.report_model import (
     ReportRunModel,
     ReportTemplateModel,
@@ -65,6 +78,10 @@ from app.infrastructure.models.report_model import (
 from app.infrastructure.models.service_assignment_model import ServiceAssignmentModel
 from app.infrastructure.models.service_model import ServiceModel
 from app.infrastructure.models.service_session_model import ServiceSessionModel
+from app.infrastructure.models.session_import_model import (
+    SessionImportBatchModel,
+    SessionImportRowModel,
+)
 from app.infrastructure.models.survey_model import (
     SurveyCampaignModel,
     SurveyResponseModel,
@@ -100,7 +117,9 @@ __all__ = [
     "EligibleMemberClinicalLinkModel",
     "EligibleMemberModel",
     "MemberNextOfKinModel",
+    "DiagnosisAliasModel",
     "DiagnosisTypeModel",
+    "TenantDiagnosisSettingModel",
     "DocumentModel",
     "EmergencyContactDict",
     "EmploymentInfoDict",
@@ -116,12 +135,20 @@ __all__ = [
     "OutreachRecordModel",
     "PasswordSetTokenModel",
     "PersonModel",
+    "ProviderAffiliationModel",
+    "ProviderAliasModel",
+    "ProviderModel",
+    "ProviderOrganisationModel",
+    "ProviderSpecialtyLinkModel",
+    "ProviderSpecialtyModel",
     "ProviderProfileDict",
     "ReportRunModel",
     "ReportTemplateModel",
     "ServiceAssignmentModel",
     "ServiceModel",
     "ServiceSessionModel",
+    "SessionImportBatchModel",
+    "SessionImportRowModel",
     "SoftDeleteMixin",
     "StaffInfoDict",
     "SurveyCampaignModel",

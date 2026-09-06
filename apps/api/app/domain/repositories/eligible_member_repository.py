@@ -9,7 +9,10 @@ from app.domain.value_objects.core import (
     ClinicalSubjectId,
     EligibleMemberId,
     TenantId,
+    UserId,
 )
+
+type MemberMergeResult = dict[str, int]
 
 
 class EligibleMemberRepository(BaseRepository[EligibleMember, EligibleMemberId]):
@@ -61,6 +64,23 @@ class EligibleMemberRepository(BaseRepository[EligibleMember, EligibleMemberId])
         client_id: ClientId,
         employer_member_id: str,
     ) -> EligibleMember | None: ...
+
+    async def find_by_user_id(
+        self, tenant_id: TenantId, user_id: UserId
+    ) -> EligibleMember | None: ...
+
+    async def merge_into(
+        self, tenant_id: TenantId, source_id: EligibleMemberId, target_id: EligibleMemberId
+    ) -> MemberMergeResult: ...
+
+    async def next_member_sequence(
+        self,
+        tenant_id: TenantId,
+        client_id: ClientId,
+        prefix: str,
+    ) -> int:
+        """Next free numeric suffix for ``{prefix}-###`` member ids in this client."""
+        ...
 
 
 class ClinicalSubjectRepository(BaseRepository[ClinicalSubject, ClinicalSubjectId]):

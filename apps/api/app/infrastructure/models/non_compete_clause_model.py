@@ -2,7 +2,7 @@
 
 from datetime import date, datetime
 
-from sqlalchemy import Date, DateTime, String, Text
+from sqlalchemy import Date, DateTime, ForeignKeyConstraint, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.domain.enums import NonCompeteStatus
@@ -19,6 +19,14 @@ class NonCompeteClauseModel(CuidMixin, TenantMixin, Base, TimestampMixin):
     """Non-compete clause attached to a provider."""
 
     __tablename__ = "non_compete_clauses"
+    __table_args__ = (
+        ForeignKeyConstraint(
+            ["tenant_id", "provider_id"],
+            ["providers.tenant_id", "providers.id"],
+            name="fk_non_compete_clauses_provider_tenant",
+            ondelete="RESTRICT",
+        ),
+    )
 
     provider_id: Mapped[str] = mapped_column(String(25), nullable=False, index=True)
     status: Mapped[NonCompeteStatus] = mapped_column(

@@ -575,8 +575,8 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Bulk-enrol persons into a campaign */
-        post: operations["enrol_persons_care_callback_campaigns__campaign_id__enrol_post"];
+        /** Bulk-enrol members into a campaign */
+        post: operations["enrol_members_care_callback_campaigns__campaign_id__enrol_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1041,7 +1041,7 @@ export interface paths {
         put?: never;
         /**
          * Retry a failed client import
-         * @description Requeue a failed import using its original file and decisions.
+         * @description Requeue a failed or abandoned import using its file and decisions.
          */
         post: operations["retry_client_import_job_clients_import_jobs__job_id__retry_post"];
         delete?: never;
@@ -2061,6 +2061,63 @@ export interface paths {
         /** List diagnoses, optionally filtered by type */
         get: operations["list_diagnoses_diagnoses_get"];
         put?: never;
+        /** Create Diagnosis */
+        post: operations["create_diagnosis_diagnoses_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/diagnoses/aliases": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Diagnosis Aliases */
+        get: operations["list_diagnosis_aliases_diagnoses_aliases_get"];
+        /**
+         * Upsert Diagnosis Alias
+         * @description Map a legacy spelling onto the taxonomy, keyed on its normalised form.
+         */
+        put: operations["upsert_diagnosis_alias_diagnoses_aliases_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/diagnoses/capabilities": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Diagnosis Capabilities */
+        get: operations["diagnosis_capabilities_diagnoses_capabilities_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/diagnoses/settings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Diagnosis Settings */
+        get: operations["list_diagnosis_settings_diagnoses_settings_get"];
+        /** Set Diagnosis Setting */
+        put: operations["set_diagnosis_setting_diagnoses_settings_put"];
         post?: never;
         delete?: never;
         options?: never;
@@ -2095,7 +2152,76 @@ export interface paths {
         /** List diagnosis types */
         get: operations["list_diagnosis_types_diagnoses_types_get"];
         put?: never;
+        /** Create Diagnosis Type */
+        post: operations["create_diagnosis_type_diagnoses_types_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/diagnoses/types/{type_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Update Diagnosis Type */
+        patch: operations["update_diagnosis_type_diagnoses_types__type_id__patch"];
+        trace?: never;
+    };
+    "/diagnoses/types/{type_id}/active": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Set Diagnosis Type Active */
+        post: operations["set_diagnosis_type_active_diagnoses_types__type_id__active_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/diagnoses/{diagnosis_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Update Diagnosis */
+        patch: operations["update_diagnosis_diagnoses__diagnosis_id__patch"];
+        trace?: never;
+    };
+    "/diagnoses/{diagnosis_id}/active": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Set Diagnosis Active */
+        post: operations["set_diagnosis_active_diagnoses__diagnosis_id__active_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -2120,6 +2246,23 @@ export interface paths {
          * @description Create a new document.
          */
         post: operations["create_document_documents__post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/documents/contracts/{contract_id}/attachments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Upload Contract Attachment */
+        post: operations["upload_contract_attachment_documents_contracts__contract_id__attachments_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -2188,6 +2331,23 @@ export interface paths {
          * @description Set document confidentiality.
          */
         patch: operations["set_document_confidentiality_documents__document_id__confidentiality_patch"];
+        trace?: never;
+    };
+    "/documents/{document_id}/download": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Download Attachment */
+        get: operations["download_attachment_documents__document_id__download_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/documents/{document_id}/expiry": {
@@ -3080,7 +3240,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Scan Member Duplicates */
+        /**
+         * Find members sharing an employer member ID
+         * @description Find exact tenant/client/member-ID collisions without name or email matching.
+         */
         get: operations["scan_member_duplicates_members_duplicates_get"];
         put?: never;
         post?: never;
@@ -3107,6 +3270,46 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/members/import": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Import Members
+         * @description Preview or import a roster using only explicit, stable member IDs.
+         */
+        post: operations["import_members_members_import_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/members/import/template": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Download the member CSV import template
+         * @description Return the supported member roster columns with one safe example row.
+         */
+        get: operations["member_import_template_members_import_template_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/members/{member_id}": {
         parameters: {
             query?: never;
@@ -3125,6 +3328,24 @@ export interface paths {
         patch: operations["update_member_members__member_id__patch"];
         trace?: never;
     };
+    "/members/{member_id}/account": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Link Member Account */
+        put: operations["link_member_account_members__member_id__account_put"];
+        post?: never;
+        /** Unlink Member Account */
+        delete: operations["unlink_member_account_members__member_id__account_delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/members/{member_id}/beneficiaries": {
         parameters: {
             query?: never;
@@ -3136,6 +3357,23 @@ export interface paths {
         get: operations["list_member_beneficiaries_members__member_id__beneficiaries_get"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/members/{member_id}/merge": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Merge Members */
+        post: operations["merge_members_members__member_id__merge_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -3189,6 +3427,23 @@ export interface paths {
         put?: never;
         /** Reinstate Member */
         post: operations["reinstate_member_members__member_id__reinstate_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/members/{member_id}/sessions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Member Sessions */
+        get: operations["list_member_sessions_members__member_id__sessions_get"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -3340,7 +3595,10 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Assign an outreach record to a counsellor */
+        /**
+         * Assign an outreach record to a counsellor
+         * @description Assign an outreach record, applying the same gate as a new booking.
+         */
         post: operations["assign_outreach_outreach_records__outreach_id__assign_post"];
         delete?: never;
         options?: never;
@@ -3480,7 +3738,7 @@ export interface paths {
         delete?: never;
         options?: never;
         head?: never;
-        /** Bulk update panel status (audit-trailed; supports the 80→8 cull) */
+        /** Bulk update panel status (audit-trailed; supports the 80 to 8 cull) */
         patch: operations["bulk_update_panel_status_panel_bulk_panel_status_patch"];
         trace?: never;
     };
@@ -3491,7 +3749,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Pre-assignment eligibility check (panel + non-compete) */
+        /** Pre-assignment eligibility preview; the write path re-evaluates it */
         get: operations["check_provider_eligibility_panel__provider_id__eligibility_get"];
         put?: never;
         post?: never;
@@ -3518,154 +3776,30 @@ export interface paths {
         patch: operations["change_provider_tier_panel__provider_id__tier_patch"];
         trace?: never;
     };
-    "/persons/": {
+    "/provider-affiliations": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        /**
-         * List persons with filtering and pagination
-         * @description List persons with filtering, searching, and pagination.
-         */
-        get: operations["list_persons_persons__get"];
+        /** List Affiliations */
+        get: operations["list_affiliations_provider_affiliations_get"];
         put?: never;
         /**
-         * Create a new person
-         * @description Create a new person (CLIENT_EMPLOYEE or DEPENDENT).
+         * Create Affiliation
+         * @description Rejects an interval overlapping another affiliation for the same pair.
          *
-         *     The user identified by user_id must already exist. Persons are created after
-         *     user registration; provide the existing user_id and type-specific payload.
+         *     Concurrent affiliations with different organisations are allowed.
          */
-        post: operations["create_person_persons__post"];
+        post: operations["create_affiliation_provider_affiliations_post"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/persons/by-user/{user_id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Get person by user ID
-         * @description Get person by user ID.
-         */
-        get: operations["get_person_by_user_id_persons_by_user__user_id__get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/persons/tenant/{tenant_id}/type/{person_type}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Get persons by type
-         * @description Get all persons of a specific type within a tenant.
-         */
-        get: operations["get_persons_by_type_persons_tenant__tenant_id__type__person_type__get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/persons/{person_id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Get person by ID
-         * @description Get person by ID.
-         */
-        get: operations["get_person_persons__person_id__get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/persons/{person_id}/activate": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Activate a person
-         * @description Activate a person.
-         */
-        post: operations["activate_person_persons__person_id__activate_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/persons/{person_id}/archive": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Archive a person
-         * @description Archive a person.
-         */
-        post: operations["archive_person_persons__person_id__archive_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/persons/{person_id}/deactivate": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Deactivate a person
-         * @description Deactivate a person.
-         */
-        post: operations["deactivate_person_persons__person_id__deactivate_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/persons/{person_id}/dependent-info": {
+    "/provider-affiliations/{affiliation_id}": {
         parameters: {
             query?: never;
             header?: never;
@@ -3679,110 +3813,33 @@ export interface paths {
         options?: never;
         head?: never;
         /**
-         * Update dependent information
-         * @description Update dependent information for a person (must be DEPENDENT type).
+         * Change Affiliation End
+         * @description Moves the end date only. The practitioner and organisation are immutable.
+         *
+         *     Narrowing is rejected with 409 when it would stop covering a session
+         *     already attributed to this affiliation.
          */
-        patch: operations["update_dependent_info_persons__person_id__dependent_info_patch"];
+        patch: operations["change_affiliation_end_provider_affiliations__affiliation_id__patch"];
         trace?: never;
     };
-    "/persons/{person_id}/emergency-contact": {
+    "/provider-aliases": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        get?: never;
+        /** List Aliases */
+        get: operations["list_aliases_provider_aliases_get"];
         put?: never;
         post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        /**
-         * Update emergency contact
-         * @description Update emergency contact for a person.
-         */
-        patch: operations["update_emergency_contact_persons__person_id__emergency_contact_patch"];
-        trace?: never;
-    };
-    "/persons/{person_id}/employment-info": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        /**
-         * Update employment information
-         * @description Update employment information for a person.
-         */
-        patch: operations["update_employment_info_persons__person_id__employment_info_patch"];
-        trace?: never;
-    };
-    "/persons/{person_id}/license-info": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        /**
-         * Update license information
-         * @description Update license information for a person.
-         */
-        patch: operations["update_license_info_persons__person_id__license_info_patch"];
-        trace?: never;
-    };
-    "/persons/{person_id}/provider-profile": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        /** Set or replace the provider panel profile */
-        patch: operations["update_provider_profile_persons__person_id__provider_profile_patch"];
-        trace?: never;
-    };
-    "/persons/{person_id}/restore": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Restore a person
-         * @description Restore an archived person to active status.
-         */
-        post: operations["restore_person_persons__person_id__restore_post"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/persons/{person_id}/secondary-role": {
+    "/provider-aliases/{alias_id}/reject": {
         parameters: {
             query?: never;
             header?: never;
@@ -3792,21 +3849,243 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * Add secondary role to a person
-         * @description Add a secondary role to a person.
+         * Reject Alias
+         * @description Record that this source value does not name a practitioner.
          */
-        post: operations["add_secondary_role_persons__person_id__secondary_role_post"];
-        /**
-         * Remove secondary role from a person
-         * @description Remove secondary role from a person.
-         */
-        delete: operations["remove_secondary_role_persons__person_id__secondary_role_delete"];
+        post: operations["reject_alias_provider_aliases__alias_id__reject_post"];
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/persons/{person_id}/staff-info": {
+    "/provider-aliases/{alias_id}/resolve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Resolve Alias
+         * @description Record that this source name is this practitioner.
+         *
+         *     Admin-only, because a wrong mapping silently reattributes historical work.
+         */
+        post: operations["resolve_alias_provider_aliases__alias_id__resolve_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/provider-organisations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Organisations
+         * @description Filtered and counted in SQL, so `total` covers the full matching set.
+         */
+        get: operations["list_organisations_provider_organisations_get"];
+        put?: never;
+        /** Create Organisation */
+        post: operations["create_organisation_provider_organisations_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/provider-organisations/{organisation_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Organisation */
+        get: operations["get_organisation_provider_organisations__organisation_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Update Organisation
+         * @description Partial update of descriptive fields only.
+         *
+         *     `is_active` and `approval_status` are absent from the schema, so a general
+         *     edit cannot move the supplier's approval or retire the record.
+         */
+        patch: operations["update_organisation_provider_organisations__organisation_id__patch"];
+        trace?: never;
+    };
+    "/provider-organisations/{organisation_id}/{command}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Run Approval Command
+         * @description Admin-only approval and activation commands, each requiring a reason.
+         */
+        post: operations["run_approval_command_provider_organisations__organisation_id___command__post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/provider-specialties": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Specialties
+         * @description Readable by any authenticated caller; the vocabulary carries no tenant.
+         */
+        get: operations["list_specialties_provider_specialties_get"];
+        put?: never;
+        /** Create Specialty */
+        post: operations["create_specialty_provider_specialties_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/provider-specialties/links": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Links
+         * @description Includes links to retired specialties, flagged by specialty_is_active.
+         */
+        get: operations["list_links_provider_specialties_links_get"];
+        put?: never;
+        /**
+         * Add Link
+         * @description A tenant selects an active catalogue entry for one of its practitioners.
+         */
+        post: operations["add_link_provider_specialties_links_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/provider-specialties/links/{link_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Remove Link */
+        delete: operations["remove_link_provider_specialties_links__link_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/provider-specialties/{specialty_id}/retire": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Retire Specialty
+         * @description Stops new selection. Existing links stay readable on historical records.
+         */
+        post: operations["retire_specialty_provider_specialties__specialty_id__retire_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/providers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Practitioner directory
+         * @description Filter, search, sort and paginate over the whole tenant dataset.
+         */
+        get: operations["list_providers_providers_get"];
+        put?: never;
+        /** Create a practitioner, with no account and no lifecycle standing */
+        post: operations["create_provider_providers_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/providers/{provider_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Provider */
+        get: operations["get_provider_providers__provider_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Partial update of ordinary contact and profile fields */
+        patch: operations["update_provider_providers__provider_id__patch"];
+        trace?: never;
+    };
+    "/providers/{provider_id}/account-link": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Link a same-tenant user account. Grants no role and copies no contact data */
+        post: operations["link_account_providers__provider_id__account_link_post"];
+        /** Unlink the account. The practitioner and their sessions remain visible */
+        delete: operations["unlink_account_providers__provider_id__account_link_delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/providers/{provider_id}/accreditation": {
         parameters: {
             query?: never;
             header?: never;
@@ -3819,14 +4098,11 @@ export interface paths {
         delete?: never;
         options?: never;
         head?: never;
-        /**
-         * Update staff information
-         * @description Update staff information for a person.
-         */
-        patch: operations["update_staff_info_persons__person_id__staff_info_patch"];
+        /** Audited accreditation change */
+        patch: operations["change_accreditation_providers__provider_id__accreditation_patch"];
         trace?: never;
     };
-    "/persons/{person_id}/terminate": {
+    "/providers/{provider_id}/panel-status": {
         parameters: {
             query?: never;
             header?: never;
@@ -3835,15 +4111,46 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /**
-         * Terminate a person
-         * @description Terminate a person.
-         */
-        post: operations["terminate_person_persons__person_id__terminate_post"];
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
-        patch?: never;
+        /** Audited panel-status change */
+        patch: operations["change_panel_status_providers__provider_id__panel_status_patch"];
+        trace?: never;
+    };
+    "/providers/{provider_id}/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Audited activation or deactivation */
+        patch: operations["change_status_providers__provider_id__status_patch"];
+        trace?: never;
+    };
+    "/providers/{provider_id}/tier": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Audited tier change */
+        patch: operations["change_tier_providers__provider_id__tier_patch"];
         trace?: never;
     };
     "/reports/runs/{run_id}": {
@@ -4084,7 +4391,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/service-sessions/person/{person_id}": {
+    "/service-sessions/member/{member_id}": {
         parameters: {
             query?: never;
             header?: never;
@@ -4092,10 +4399,10 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * Get all sessions for a person
-         * @description Get all sessions for a person.
+         * Get all sessions for a member
+         * @description Get all sessions for a member.
          */
-        get: operations["get_sessions_by_person_service_sessions_person__person_id__get"];
+        get: operations["get_sessions_by_member_service_sessions_member__member_id__get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -4219,7 +4526,7 @@ export interface paths {
         put?: never;
         /**
          * Complete a service session
-         * @description Complete a service session.
+         * @description Complete a service session, drawing it down when a case is supplied.
          */
         post: operations["complete_service_session_service_sessions__session_id__complete_post"];
         delete?: never;
@@ -4279,7 +4586,10 @@ export interface paths {
         put?: never;
         /**
          * Reschedule a service session
-         * @description Reschedule a service session.
+         * @description Reschedule a service session, re-checking eligibility for the new date.
+         *
+         *     The whole gate is reapplied, not just the practitioner's half: an
+         *     affiliation valid at the original time need not cover the new one.
          */
         post: operations["reschedule_service_session_service_sessions__session_id__reschedule_post"];
         delete?: never;
@@ -4490,6 +4800,87 @@ export interface paths {
          * @description Restore an archived or soft-deleted service.
          */
         post: operations["restore_service_services__service_id__restore_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/session-imports": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Stage Import
+         * @description Stage rows for review. Writes no sessions and has no billing side effects.
+         *
+         *     Restaging the same file in one tenant is a conflict, not a second batch.
+         */
+        post: operations["stage_import_session_imports_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/session-imports/{batch_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Batch */
+        get: operations["get_batch_session_imports__batch_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/session-imports/{batch_id}/apply": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Apply Batch
+         * @description Write every importable row through the historical path, then close the batch.
+         *
+         *     Applying a second time is refused, so a replayed request cannot write
+         *     twice. `imported` is zero today for every batch: no staged row can reach
+         *     Accepted while member and service resolution does not exist, which the
+         *     row outcomes state per row rather than leaving to be discovered here.
+         */
+        post: operations["apply_batch_session_imports__batch_id__apply_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/session-imports/{batch_id}/rows": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Rows */
+        get: operations["list_rows_session_imports__batch_id__rows_get"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -5280,6 +5671,28 @@ export interface components {
          * @enum {string}
          */
         AccessScope: "Clinical" | "EmployerPortal";
+        /** AccountLinkCommand */
+        AccountLinkCommand: {
+            /** Reason */
+            reason: string;
+            /** User Id */
+            user_id: string;
+        };
+        /** AccountUnlinkCommand */
+        AccountUnlinkCommand: {
+            /** Reason */
+            reason: string;
+        };
+        /** AccreditationCommand */
+        AccreditationCommand: {
+            /** Accreditation Authority */
+            accreditation_authority?: string | null;
+            /** Accreditation Expiry */
+            accreditation_expiry?: string | null;
+            accreditation_status: components["schemas"]["AccreditationStatus"];
+            /** Reason */
+            reason: string;
+        };
         /**
          * AccreditationStatus
          * @description Where the provider sits in the accreditation pipeline.
@@ -5466,20 +5879,6 @@ export interface components {
             outcome?: string | null;
         };
         /**
-         * AddSecondaryRoleRequest
-         * @description Request schema for adding a secondary role.
-         */
-        AddSecondaryRoleRequest: {
-            /** @description Employment info (for CLIENT_EMPLOYEE role) */
-            employment_info?: components["schemas"]["EmploymentInfoSchema"] | null;
-            /** @description License info (for SERVICE_PROVIDER role) */
-            license_info?: components["schemas"]["LicenseInfoSchema"] | null;
-            /** @description Secondary person type */
-            role: components["schemas"]["PersonType"];
-            /** @description Staff info (for PLATFORM_STAFF role) */
-            staff_info?: components["schemas"]["StaffInfoSchema"] | null;
-        };
-        /**
          * AddressCreate
          * @description Address for creation.
          */
@@ -5535,6 +5934,25 @@ export interface components {
         AdvanceCaseRequest: {
             target: components["schemas"]["CaseStatus"];
         };
+        /**
+         * AliasConfidence
+         * @description How much weight a legacy alias mapping carries.
+         *
+         *     ``INFERRED`` is a reading of the label that nobody has signed off, so it
+         *     stays filterable: a reviewer can list exactly the mappings still awaiting
+         *     a clinical owner without re-deriving which ones those were.
+         * @enum {string}
+         */
+        AliasConfidence: "confirmed" | "inferred";
+        /**
+         * AliasResolutionState
+         * @description Whether a source name has been reconciled to a practitioner.
+         *
+         *     `AMBIGUOUS` and `UNMAPPED` are distinct review outcomes: the first has
+         *     candidates and no decision, the second has no candidate at all.
+         * @enum {string}
+         */
+        AliasResolutionState: "Unmapped" | "Ambiguous" | "Resolved" | "Rejected";
         /** AmendClinicalNoteRequest */
         AmendClinicalNoteRequest: {
             /** Body */
@@ -5790,6 +6208,19 @@ export interface components {
              */
             file: string;
         };
+        /** Body_import_members_members_import_post */
+        Body_import_members_members_import_post: {
+            /**
+             * Decisions Json
+             * @description Row decisions from the preview
+             */
+            decisions_json?: string | null;
+            /**
+             * File
+             * @description UTF-8 client member roster CSV
+             */
+            file: string;
+        };
         /** Body_queue_client_import_clients_import_jobs_post */
         Body_queue_client_import_clients_import_jobs_post: {
             /**
@@ -5802,6 +6233,16 @@ export interface components {
              * File
              * @description UTF-8 CSV using the client import template
              */
+            file: string;
+        };
+        /** Body_stage_import_session_imports_post */
+        Body_stage_import_session_imports_post: {
+            /** File */
+            file: string;
+        };
+        /** Body_upload_contract_attachment_documents_contracts__contract_id__attachments_post */
+        Body_upload_contract_attachment_documents_contracts__contract_id__attachments_post: {
+            /** File */
             file: string;
         };
         /** BulkPanelStatusResponse */
@@ -7439,22 +7880,151 @@ export interface components {
             status: components["schemas"]["DeliverableStatus"];
         };
         /**
-         * DependentInfoSchema
-         * @description Dependent information schema.
+         * DeliveryContext
+         * @description How a session was delivered.
+         *
+         *     `UNKNOWN` records missing historical evidence and is never a valid choice
+         *     for a new booking.
+         * @enum {string}
          */
-        DependentInfoSchema: {
+        DeliveryContext: "Direct" | "Organisation" | "Unknown";
+        /** DiagnosisAliasResponse */
+        DiagnosisAliasResponse: {
+            /** Confidence */
+            confidence: string;
+            /** Diagnosis Id */
+            diagnosis_id: string | null;
+            /** Diagnosis Type Id */
+            diagnosis_type_id: string;
+            /** Id */
+            id: string;
+            /** Normalised Key */
+            normalised_key: string;
+            /** Raw Value */
+            raw_value: string;
+            /** Source */
+            source: string;
+        };
+        /**
+         * DiagnosisAliasUpsert
+         * @description Map a legacy spelling onto the taxonomy.
+         *
+         *     ``diagnosis_id`` stays optional because many legacy classifications name
+         *     only a type. Inventing a leaf to fill the gap would be worse than
+         *     recording the type alone.
+         */
+        DiagnosisAliasUpsert: {
             /**
-             * Guardian Id
-             * @description Guardian user ID
+             * @description 'confirmed' once a clinical owner has signed it off
+             * @default inferred
              */
-            guardian_id?: string | null;
+            confidence: components["schemas"]["AliasConfidence"];
             /**
-             * Primary Employee Id
-             * @description Primary employee person ID
+             * Diagnosis Id
+             * @description Leaf, when the source named one
              */
-            primary_employee_id: string;
-            /** @description Relationship type */
-            relationship: components["schemas"]["RelationType"];
+            diagnosis_id?: string | null;
+            /**
+             * Diagnosis Type Id
+             * @description Taxonomy type it resolves to
+             */
+            diagnosis_type_id: string;
+            /**
+             * Raw Value
+             * @description The spelling as it arrives
+             */
+            raw_value: string;
+            /**
+             * Source
+             * @description Where this mapping came from
+             */
+            source: string;
+        };
+        /**
+         * DiagnosisCapabilitiesResponse
+         * @description What the caller may change, so the UI can hide controls it cannot use.
+         */
+        DiagnosisCapabilitiesResponse: {
+            /**
+             * Can Manage Overlay
+             * @description Hide, reorder and relabel rows for this tenant (tenant admin)
+             */
+            can_manage_overlay: boolean;
+            /**
+             * Can Manage Taxonomy
+             * @description Create, edit and retire shared taxonomy rows (platform admin)
+             */
+            can_manage_taxonomy: boolean;
+        };
+        /** DiagnosisCreate */
+        DiagnosisCreate: {
+            /**
+             * Code
+             * @description Stable diagnosis code
+             */
+            code: string;
+            /**
+             * Description
+             * @description Optional description
+             */
+            description?: string | null;
+            /**
+             * Name
+             * @description Display name
+             */
+            name: string;
+            /**
+             * Sort Order
+             * @description Sort order within the type
+             * @default 0
+             */
+            sort_order: number;
+            /**
+             * Type Id
+             * @description Parent diagnosis type identifier
+             */
+            type_id: string;
+        };
+        /** DiagnosisOverlayResponse */
+        DiagnosisOverlayResponse: {
+            /** Diagnosis Id */
+            diagnosis_id: string | null;
+            /** Diagnosis Type Id */
+            diagnosis_type_id: string;
+            /** Is Enabled */
+            is_enabled: boolean;
+            /** Local Label */
+            local_label: string | null;
+            /** Sort Order */
+            sort_order: number | null;
+        };
+        /** DiagnosisOverlayUpdate */
+        DiagnosisOverlayUpdate: {
+            /**
+             * Diagnosis Id
+             * @description Leave null to target the whole type
+             */
+            diagnosis_id?: string | null;
+            /**
+             * Diagnosis Type Id
+             * @description Taxonomy type this applies to
+             */
+            diagnosis_type_id: string;
+            /**
+             * Is Enabled
+             * @description Hide or show for this tenant
+             */
+            is_enabled?: boolean | null;
+            /**
+             * Local Label
+             * @description Tenant-specific label
+             */
+            local_label?: string | null;
+            /**
+             * Sort Order
+             * @description Tenant-specific ordering
+             */
+            sort_order?: number | null;
         };
         /** DiagnosisResponse */
         DiagnosisResponse: {
@@ -7497,6 +8067,30 @@ export interface components {
              */
             types: components["schemas"]["DiagnosisTypeWithChildrenResponse"][];
         };
+        /** DiagnosisTypeCreate */
+        DiagnosisTypeCreate: {
+            /**
+             * Code
+             * @description Stable type code
+             */
+            code: string;
+            /**
+             * Description
+             * @description Optional description
+             */
+            description?: string | null;
+            /**
+             * Name
+             * @description Display name
+             */
+            name: string;
+            /**
+             * Sort Order
+             * @description Sort order
+             * @default 0
+             */
+            sort_order: number;
+        };
         /** DiagnosisTypeResponse */
         DiagnosisTypeResponse: {
             /**
@@ -7524,6 +8118,15 @@ export interface components {
              * @description Sort order
              */
             sort_order: number;
+        };
+        /** DiagnosisTypeUpdate */
+        DiagnosisTypeUpdate: {
+            /** Description */
+            description?: string | null;
+            /** Name */
+            name?: string | null;
+            /** Sort Order */
+            sort_order?: number | null;
         };
         /** DiagnosisTypeWithChildrenResponse */
         DiagnosisTypeWithChildrenResponse: {
@@ -7557,6 +8160,15 @@ export interface components {
              * @description Sort order
              */
             sort_order: number;
+        };
+        /** DiagnosisUpdate */
+        DiagnosisUpdate: {
+            /** Description */
+            description?: string | null;
+            /** Name */
+            name?: string | null;
+            /** Sort Order */
+            sort_order?: number | null;
         };
         /**
          * DocumentCreate
@@ -7917,6 +8529,13 @@ export interface components {
              */
             updated_at: string;
         };
+        /** EligibilityFailure */
+        EligibilityFailure: {
+            /** Code */
+            code: string;
+            /** Message */
+            message: string;
+        };
         /**
          * EligibilityStatus
          * @description Lifecycle of an EAP-eligible member as supplied by the employer.
@@ -7979,110 +8598,6 @@ export interface components {
              * Format: date-time
              */
             updated_at: string;
-        };
-        /**
-         * EmergencyContactSchema
-         * @description Emergency contact schema.
-         */
-        EmergencyContactSchema: {
-            /**
-             * Email
-             * @description Email address
-             */
-            email?: string | null;
-            /**
-             * Name
-             * @description Contact name
-             */
-            name: string;
-            /**
-             * Phone
-             * @description Phone number
-             */
-            phone?: string | null;
-        };
-        /**
-         * EmploymentInfoCreateSchema
-         * @description Employment information for creating a person (employee_code is generated).
-         */
-        EmploymentInfoCreateSchema: {
-            /**
-             * Client Id
-             * @description Client identifier
-             */
-            client_id: string;
-            /**
-             * Department
-             * @description Department
-             */
-            department?: string | null;
-            /**
-             * Employee Id
-             * @description External employee ID (optional)
-             */
-            employee_id?: string | null;
-            /**
-             * End Date
-             * @description Employment end date
-             */
-            end_date?: string | null;
-            /**
-             * Role
-             * @description Job role
-             */
-            role: string;
-            /**
-             * Start Date
-             * Format: date
-             * @description Employment start date
-             */
-            start_date: string;
-            /** @description Work status */
-            status: components["schemas"]["WorkStatus"];
-        };
-        /**
-         * EmploymentInfoSchema
-         * @description Employment information schema.
-         */
-        EmploymentInfoSchema: {
-            /**
-             * Client Id
-             * @description Client identifier
-             */
-            client_id: string;
-            /**
-             * Department
-             * @description Department
-             */
-            department?: string | null;
-            /**
-             * Employee Code
-             * @description Employee code (format: CLIENT-FAMILY-MEMBER, e.g., MNT-00-00)
-             */
-            employee_code: string;
-            /**
-             * Employee Id
-             * @description External employee ID (optional)
-             */
-            employee_id?: string | null;
-            /**
-             * End Date
-             * @description Employment end date
-             */
-            end_date?: string | null;
-            /**
-             * Role
-             * @description Job role
-             */
-            role: string;
-            /**
-             * Start Date
-             * Format: date
-             * @description Employment start date
-             */
-            start_date: string;
-            /** @description Work status */
-            status: components["schemas"]["WorkStatus"];
         };
         /** EngagementCreate */
         EngagementCreate: {
@@ -8173,10 +8688,10 @@ export interface components {
             /** Total Hours */
             total_hours: number;
         };
-        /** EnrolPersonsRequest */
-        EnrolPersonsRequest: {
-            /** Person Ids */
-            person_ids: string[];
+        /** EnrolMembersRequest */
+        EnrolMembersRequest: {
+            /** Member Ids */
+            member_ids: string[];
         };
         /**
          * EntityChangeListResponse
@@ -8309,6 +8824,18 @@ export interface components {
             /** User Id */
             user_id: string;
         };
+        /**
+         * ImportBatchStatus
+         * @description Lifecycle of a staged import batch.
+         * @enum {string}
+         */
+        ImportBatchStatus: "Staged" | "Applied" | "Abandoned";
+        /**
+         * ImportRowOutcome
+         * @description Per-row result of a staged historical import.
+         * @enum {string}
+         */
+        ImportRowOutcome: "Accepted" | "Duplicate" | "Conflicting" | "MissingPractitioner" | "UnmappedPractitioner" | "AmbiguousPractitioner" | "UnresolvedMember" | "UnresolvedService" | "Rejected";
         /** IncidentClose */
         IncidentClose: {
             /**
@@ -8819,27 +9346,6 @@ export interface components {
          */
         Language: "en" | "es" | "fr" | "de" | "it" | "pt" | "zh" | "ja" | "ko";
         /**
-         * LicenseInfoSchema
-         * @description License information schema.
-         */
-        LicenseInfoSchema: {
-            /**
-             * Expiry Date
-             * @description License expiry date
-             */
-            expiry_date?: string | null;
-            /**
-             * Issuing Authority
-             * @description Issuing authority
-             */
-            issuing_authority: string;
-            /**
-             * Number
-             * @description License number
-             */
-            number: string;
-        };
-        /**
          * LoginRequest
          * @description Request schema for user login.
          */
@@ -8929,6 +9435,12 @@ export interface components {
              */
             email: string;
             /**
+             * Is Platform Admin
+             * @description Whether this session may administer platform-wide surfaces. Derived server-side from PLATFORM_TENANT_ID so the UI cannot disagree with the API about who may write; it fails closed when unconfigured.
+             * @default false
+             */
+            is_platform_admin: boolean;
+            /**
              * Role
              * @description Tenant role (Admin/User/Viewer)
              */
@@ -8944,6 +9456,11 @@ export interface components {
              */
             user_id: string;
         };
+        /** MemberAccountLinkRequest */
+        MemberAccountLinkRequest: {
+            /** User Id */
+            user_id: string;
+        };
         /**
          * MemberCreate
          * @description Create a covered member; a login account is optional and separate.
@@ -8955,9 +9472,16 @@ export interface components {
             date_of_birth?: string | null;
             /** Display Label */
             display_label: string;
-            /** Employer Member Id */
-            employer_member_id: string;
+            /**
+             * Employer Member Id
+             * @description Optional. Left blank, the server issues {client code}-001, -002, and so on.
+             */
+            employer_member_id?: string | null;
             gender?: components["schemas"]["MemberGender"] | null;
+            /** National Id */
+            national_id?: string | null;
+            /** Passport Number */
+            passport_number?: string | null;
             /** Personal Email */
             personal_email?: string | null;
             /** Phone */
@@ -8965,19 +9489,38 @@ export interface components {
             /** Primary Employee Member Id */
             primary_employee_member_id?: string | null;
             relation: components["schemas"]["MemberRelation"];
+            /** Staff Number */
+            staff_number?: string | null;
             /** Work Email */
             work_email?: string | null;
         };
         /** MemberDuplicateCandidate */
         MemberDuplicateCandidate: {
-            /** Matched On */
-            matched_on: string[];
-            member: components["schemas"]["MemberResponse"];
+            first: components["schemas"]["MemberDuplicateMember"];
+            /** Reason */
+            reason: string;
+            second: components["schemas"]["MemberDuplicateMember"];
         };
         /** MemberDuplicateListResponse */
         MemberDuplicateListResponse: {
-            /** Candidates */
-            candidates: components["schemas"]["MemberDuplicateCandidate"][];
+            /** Items */
+            items: components["schemas"]["MemberDuplicateCandidate"][];
+            /** Scanned */
+            scanned: number;
+        };
+        /** MemberDuplicateMember */
+        MemberDuplicateMember: {
+            /** Client Id */
+            client_id: string;
+            /** Client Name */
+            client_name?: string | null;
+            /** Display Label */
+            display_label: string;
+            /** Employer Member Id */
+            employer_member_id: string;
+            /** Id */
+            id: string;
+            relation: components["schemas"]["MemberRelation"];
         };
         /**
          * MemberGender
@@ -8985,6 +9528,52 @@ export interface components {
          * @enum {string}
          */
         MemberGender: "Female" | "Male" | "NonBinary" | "PreferNotToSay" | "Unknown";
+        /** MemberImportIssue */
+        MemberImportIssue: {
+            /** Field */
+            field?: string | null;
+            /** Message */
+            message: string;
+            /** Row */
+            row: number;
+        };
+        /** MemberImportResponse */
+        MemberImportResponse: {
+            /** Failed */
+            failed: number;
+            /** Imported */
+            imported: number;
+            /** Issues */
+            issues?: components["schemas"]["MemberImportIssue"][];
+            /** Rows */
+            rows: components["schemas"]["MemberImportRowPreview"][];
+            /** Skipped */
+            skipped: number;
+        };
+        /** MemberImportRowPreview */
+        MemberImportRowPreview: {
+            /** Client Code */
+            client_code: string | null;
+            /** Client Name */
+            client_name: string | null;
+            /**
+             * Default Action
+             * @default import
+             */
+            default_action: string;
+            /** Display Label */
+            display_label: string | null;
+            /** Employer Member Id */
+            employer_member_id: string | null;
+            /** Message */
+            message?: string | null;
+            /** Row */
+            row: number;
+            /** Staff Number */
+            staff_number?: string | null;
+            /** State */
+            state: string;
+        };
         /** MemberListResponse */
         MemberListResponse: {
             /** Has More */
@@ -8997,6 +9586,21 @@ export interface components {
             page: number;
             /** Total */
             total: number;
+        };
+        /** MemberMergeRequest */
+        MemberMergeRequest: {
+            /** Source Member Id */
+            source_member_id: string;
+        };
+        /** MemberMergeResponse */
+        MemberMergeResponse: {
+            member: components["schemas"]["MemberResponse"];
+            /** Source Member Id */
+            source_member_id: string;
+            /** Transferred */
+            transferred: {
+                [key: string]: number;
+            };
         };
         /** MemberNextOfKinCreate */
         MemberNextOfKinCreate: {
@@ -9066,6 +9670,8 @@ export interface components {
         MemberResponse: {
             /** Client Id */
             client_id: string;
+            /** Client Name */
+            client_name?: string | null;
             /**
              * Created At
              * Format: date-time
@@ -9082,6 +9688,10 @@ export interface components {
             id: string;
             /** Last Imported At */
             last_imported_at: string | null;
+            /** National Id */
+            national_id?: string | null;
+            /** Passport Number */
+            passport_number?: string | null;
             /** Personal Email */
             personal_email: string | null;
             /** Phone */
@@ -9089,6 +9699,8 @@ export interface components {
             /** Primary Employee Member Id */
             primary_employee_member_id: string | null;
             relation: components["schemas"]["MemberRelation"];
+            /** Staff Number */
+            staff_number?: string | null;
             status: components["schemas"]["EligibilityStatus"];
             /** Suspended At */
             suspended_at: string | null;
@@ -9101,6 +9713,8 @@ export interface components {
              * Format: date-time
              */
             updated_at: string;
+            /** User Id */
+            user_id?: string | null;
             /** Work Email */
             work_email: string | null;
         };
@@ -9116,6 +9730,10 @@ export interface components {
             /** Employer Member Id */
             employer_member_id?: string | null;
             gender?: components["schemas"]["MemberGender"] | null;
+            /** National Id */
+            national_id?: string | null;
+            /** Passport Number */
+            passport_number?: string | null;
             /** Personal Email */
             personal_email?: string | null;
             /** Phone */
@@ -9123,6 +9741,8 @@ export interface components {
             /** Primary Employee Member Id */
             primary_employee_member_id?: string | null;
             relation?: components["schemas"]["MemberRelation"] | null;
+            /** Staff Number */
+            staff_number?: string | null;
             /** Work Email */
             work_email?: string | null;
         };
@@ -9168,7 +9788,7 @@ export interface components {
             effective_until?: string | null;
             /**
              * Provider Id
-             * @description Provider person identifier
+             * @description Provider identifier
              */
             provider_id: string;
             /**
@@ -9267,6 +9887,15 @@ export interface components {
             referral_notes?: string | null;
             referral_source: components["schemas"]["CaseReferralSource"];
         };
+        /**
+         * OrganisationApprovalStatus
+         * @description Supplier approval to deliver, held separately from the record's state.
+         *
+         *     Eligibility needs "not active" and "not approved" as distinct reasons, so a
+         *     deactivated record and a suspended supplier do not collapse into one value.
+         * @enum {string}
+         */
+        OrganisationApprovalStatus: "Pending" | "Approved" | "Suspended" | "Revoked";
         /** OutreachAssignRequest */
         OutreachAssignRequest: {
             /** Counsellor Id */
@@ -9300,10 +9929,10 @@ export interface components {
             id: string;
             /** Last Attempted At */
             last_attempted_at: string | null;
+            /** Member Id */
+            member_id: string;
             /** Notes */
             notes: string | null;
-            /** Person Id */
-            person_id: string;
             status: components["schemas"]["OutreachStatus"];
             /** Tenant Id */
             tenant_id: string;
@@ -9332,7 +9961,13 @@ export interface components {
          * @description Whether the provider is currently on the active panel.
          * @enum {string}
          */
-        PanelStatus: "Active" | "Suspended" | "Removed";
+        PanelStatus: "Pending" | "Active" | "Suspended" | "Removed";
+        /** PanelStatusCommand */
+        PanelStatusCommand: {
+            panel_status: components["schemas"]["PanelStatus"];
+            /** Reason */
+            reason: string;
+        };
         /**
          * PaymentFrequency
          * @enum {string}
@@ -9343,153 +9978,6 @@ export interface components {
          * @enum {string}
          */
         PaymentStatus: "Pending" | "Paid" | "Overdue" | "Cancelled" | "Refunded";
-        /**
-         * PersonCreate
-         * @description Request schema for creating a person.
-         *
-         *     Persons are created after a User exists. Provide user_id and tenant_id;
-         *     then either employment_info (for CLIENT_EMPLOYEE) or dependent_info (for DEPENDENT).
-         */
-        PersonCreate: {
-            /** @description Required for DEPENDENT */
-            dependent_info?: components["schemas"]["DependentInfoSchema"] | null;
-            /** @description Required for CLIENT_EMPLOYEE */
-            employment_info?: components["schemas"]["EmploymentInfoCreateSchema"] | null;
-            /**
-             * Family Id
-             * @description Family identifier (optional, for CLIENT_EMPLOYEE)
-             */
-            family_id?: string | null;
-            /** @description Primary person type (CLIENT_EMPLOYEE or DEPENDENT) */
-            person_type: components["schemas"]["PersonType"];
-            /**
-             * Tenant Id
-             * @description Tenant identifier
-             */
-            tenant_id: string;
-            /**
-             * User Id
-             * @description User identifier (user must exist)
-             */
-            user_id: string;
-        };
-        /**
-         * PersonDeactivateRequest
-         * @description Request schema for deactivating a person.
-         */
-        PersonDeactivateRequest: {
-            /**
-             * Reason
-             * @description Deactivation reason
-             */
-            reason?: string | null;
-        };
-        /**
-         * PersonListResponse
-         * @description Response schema for person list.
-         */
-        PersonListResponse: {
-            /**
-             * Has More
-             * @description Whether there are more items
-             */
-            has_more: boolean;
-            /**
-             * Items
-             * @description List of persons
-             */
-            items: components["schemas"]["PersonResponse"][];
-            /**
-             * Limit
-             * @description Items per page
-             */
-            limit: number;
-            /**
-             * Page
-             * @description Current page number
-             */
-            page: number;
-            /**
-             * Total
-             * @description Total number of persons matching filters
-             */
-            total: number;
-        };
-        /**
-         * PersonResponse
-         * @description Response schema for person.
-         */
-        PersonResponse: {
-            /** @description Dependent information */
-            dependent_info?: components["schemas"]["DependentInfoSchema"] | null;
-            /** @description Emergency contact */
-            emergency_contact?: components["schemas"]["EmergencyContactSchema"] | null;
-            /** @description Employment information */
-            employment_info?: components["schemas"]["EmploymentInfoSchema"] | null;
-            /**
-             * Family Id
-             * @description Family identifier (points to primary employee)
-             */
-            family_id?: string | null;
-            /**
-             * Id
-             * @description Person identifier
-             */
-            id: string;
-            /**
-             * Is Dual Role
-             * @description Whether person has dual role
-             */
-            is_dual_role: boolean;
-            /**
-             * Is Eligible For Services
-             * @description Eligible for services
-             */
-            is_eligible_for_services: boolean;
-            /**
-             * Last Service Date
-             * @description Last service date
-             */
-            last_service_date?: string | null;
-            /** @description License information */
-            license_info?: components["schemas"]["LicenseInfoSchema"] | null;
-            /** @description Primary person type */
-            person_type: components["schemas"]["PersonType"];
-            /** @description Provider panel profile. Populated when person_type is SERVICE_PROVIDER. Carries tier, region, accreditation, panel status, specialties. */
-            provider_profile?: components["schemas"]["ProviderProfileSchema"] | null;
-            /** @description Secondary person type */
-            secondary_person_type?: components["schemas"]["PersonType"] | null;
-            /** @description Staff information */
-            staff_info?: components["schemas"]["StaffInfoSchema"] | null;
-            /** @description Person status */
-            status: components["schemas"]["BaseStatus"];
-            /**
-             * Tenant Id
-             * @description Tenant identifier
-             */
-            tenant_id: string;
-            /**
-             * User Id
-             * @description User identifier
-             */
-            user_id: string;
-        };
-        /**
-         * PersonTerminateRequest
-         * @description Request schema for terminating a person.
-         */
-        PersonTerminateRequest: {
-            /**
-             * Reason
-             * @description Termination reason
-             */
-            reason: string;
-        };
-        /**
-         * PersonType
-         * @enum {string}
-         */
-        PersonType: "PlatformStaff" | "ClientEmployee" | "Dependent" | "ServiceProvider";
         /**
          * PresentingProblem
          * @description Top-level category of the presenting concern at intake.
@@ -9518,7 +10006,167 @@ export interface components {
             per_year?: number | null;
             service_category: components["schemas"]["ServiceCategory"];
         };
-        /** ProviderEligibilityResponse */
+        /**
+         * ProviderAffiliationCreate
+         * @description `valid_until` is exclusive: the last covered day is the day before.
+         */
+        ProviderAffiliationCreate: {
+            /** Provider Id */
+            provider_id: string;
+            /**
+             * Valid From
+             * Format: date
+             */
+            valid_from: string;
+            /** Valid Until */
+            valid_until?: string | null;
+        };
+        /**
+         * ProviderAffiliationEndUpdate
+         * @description Move the end date. The practitioner and organisation are immutable.
+         *
+         *     `valid_until` is required even though it is nullable. Defaulting it would
+         *     make an omitted field indistinguishable from an explicit null, so a caller
+         *     sending only a reason would silently reopen a closed affiliation. Send null
+         *     deliberately to make it open-ended.
+         */
+        ProviderAffiliationEndUpdate: {
+            /** Reason */
+            reason: string;
+            /** Valid Until */
+            valid_until: string | null;
+        };
+        /** ProviderAffiliationListResponse */
+        ProviderAffiliationListResponse: {
+            /** Has More */
+            has_more: boolean;
+            /** Items */
+            items: components["schemas"]["ProviderAffiliationResponse"][];
+            /** Limit */
+            limit: number;
+            /** Page */
+            page: number;
+            /** Total */
+            total: number;
+        };
+        /** ProviderAffiliationResponse */
+        ProviderAffiliationResponse: {
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Id */
+            id: string;
+            organisation_approval_status: components["schemas"]["OrganisationApprovalStatus"];
+            /** Organisation Id */
+            organisation_id: string;
+            /** Organisation Is Active */
+            organisation_is_active: boolean;
+            /** Organisation Name */
+            organisation_name: string;
+            /** Provider Id */
+            provider_id: string;
+            /** Tenant Id */
+            tenant_id: string;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+            /**
+             * Valid From
+             * Format: date
+             */
+            valid_from: string;
+            /** Valid Until */
+            valid_until: string | null;
+        };
+        /** ProviderAliasListResponse */
+        ProviderAliasListResponse: {
+            /** Has More */
+            has_more: boolean;
+            /** Items */
+            items: components["schemas"]["ProviderAliasResponse"][];
+            /** Limit */
+            limit: number;
+            /** Page */
+            page: number;
+            /** Total */
+            total: number;
+        };
+        /** ProviderAliasRejectRequest */
+        ProviderAliasRejectRequest: {
+            /** Note */
+            note: string;
+        };
+        /**
+         * ProviderAliasResolveRequest
+         * @description Explicit reconciliation. There is no automatic resolution endpoint.
+         */
+        ProviderAliasResolveRequest: {
+            /** Provider Id */
+            provider_id: string;
+        };
+        /** ProviderAliasResponse */
+        ProviderAliasResponse: {
+            /** Candidate Provider Ids */
+            candidate_provider_ids: string[];
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Id */
+            id: string;
+            /** Normalized Value */
+            normalized_value: string;
+            /** Provider Id */
+            provider_id: string | null;
+            /** Review Note */
+            review_note: string | null;
+            /** Source System */
+            source_system: string;
+            /** Source Value */
+            source_value: string;
+            state: components["schemas"]["AliasResolutionState"];
+            /** Tenant Id */
+            tenant_id: string;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+        };
+        /**
+         * ProviderCreate
+         * @description Create a practitioner. No account is linked and no lifecycle field is set.
+         */
+        ProviderCreate: {
+            /** Bio */
+            bio?: string | null;
+            /** Display Name */
+            display_name: string;
+            /** Email */
+            email?: string | null;
+            /** License Info */
+            license_info?: {
+                [key: string]: unknown;
+            } | null;
+            /** Phone */
+            phone?: string | null;
+            region: components["schemas"]["UgandaRegion"];
+            tier: components["schemas"]["ProviderTier"];
+        };
+        /**
+         * ProviderEligibilityResponse
+         * @description Preview of the booking gate.
+         *
+         *     ``eligible`` is the same rule the write paths apply, so a preview cannot
+         *     disagree with the booking it precedes. The non-compete counts are retained
+         *     for compatibility and are informational: non-compete is not live and does
+         *     not restrict booking.
+         */
         ProviderEligibilityResponse: {
             /** Binding Non Compete Count */
             binding_non_compete_count: number;
@@ -9528,12 +10176,110 @@ export interface components {
             client_id: string | null;
             /** Eligible */
             eligible: boolean;
+            /** Failures */
+            failures: components["schemas"]["EligibilityFailure"][];
             /** Panel Eligible */
             panel_eligible: boolean;
             /** Provider Id */
             provider_id: string;
             /** Reasons */
             reasons: string[];
+            /**
+             * Scheduled At
+             * Format: date-time
+             */
+            scheduled_at: string;
+        };
+        /**
+         * ProviderIdentityProvenance
+         * @description Where a practitioner's owned name and contact details came from.
+         * @enum {string}
+         */
+        ProviderIdentityProvenance: "Owned" | "BackfilledFromUser";
+        /** ProviderListResponse */
+        ProviderListResponse: {
+            /** Has More */
+            has_more: boolean;
+            /** Items */
+            items: components["schemas"]["ProviderResponse"][];
+            /** Limit */
+            limit: number;
+            /** Page */
+            page: number;
+            /**
+             * Total
+             * @description Count over the whole filtered dataset
+             */
+            total: number;
+        };
+        /** ProviderOrganisationCreate */
+        ProviderOrganisationCreate: {
+            /** Contact Email */
+            contact_email?: string | null;
+            /** Contact Phone */
+            contact_phone?: string | null;
+            /** Name */
+            name: string;
+            /** Registration Number */
+            registration_number?: string | null;
+        };
+        /** ProviderOrganisationListResponse */
+        ProviderOrganisationListResponse: {
+            /** Has More */
+            has_more: boolean;
+            /** Items */
+            items: components["schemas"]["ProviderOrganisationResponse"][];
+            /** Limit */
+            limit: number;
+            /** Page */
+            page: number;
+            /** Total */
+            total: number;
+        };
+        /** ProviderOrganisationResponse */
+        ProviderOrganisationResponse: {
+            approval_status: components["schemas"]["OrganisationApprovalStatus"];
+            /** Contact Email */
+            contact_email: string | null;
+            /** Contact Phone */
+            contact_phone: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Id */
+            id: string;
+            /** Is Active */
+            is_active: boolean;
+            /** Name */
+            name: string;
+            /** Registration Number */
+            registration_number: string | null;
+            /** Tenant Id */
+            tenant_id: string;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+        };
+        /**
+         * ProviderOrganisationUpdate
+         * @description Partial update. An explicit null clears an optional field.
+         *
+         *     `is_active` and `approval_status` are deliberately absent: they move only
+         *     through the audited lifecycle commands.
+         */
+        ProviderOrganisationUpdate: {
+            /** Contact Email */
+            contact_email?: string | null;
+            /** Contact Phone */
+            contact_phone?: string | null;
+            /** Name */
+            name?: string | null;
+            /** Registration Number */
+            registration_number?: string | null;
         };
         /** ProviderProfileSchema */
         ProviderProfileSchema: {
@@ -9551,10 +10297,85 @@ export interface components {
             specialties?: string[];
             tier: components["schemas"]["ProviderTier"];
         };
-        /** ProviderProfileUpdate */
-        ProviderProfileUpdate: {
-            /** @description Replacement provider profile */
-            profile: components["schemas"]["ProviderProfileSchema"];
+        /** ProviderResponse */
+        ProviderResponse: {
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Display Name */
+            display_name: string;
+            /**
+             * Email
+             * @description Practitioner contact email, not a login
+             */
+            email?: string | null;
+            /** Id */
+            id: string;
+            identity_provenance: components["schemas"]["ProviderIdentityProvenance"];
+            /** License Info */
+            license_info?: {
+                [key: string]: unknown;
+            } | null;
+            /** Phone */
+            phone?: string | null;
+            provider_profile: components["schemas"]["ProviderProfileSchema"];
+            status: components["schemas"]["BaseStatus"];
+            /** Tenant Id */
+            tenant_id: string;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+            /**
+             * User Id
+             * @description Linked account, if any
+             */
+            user_id?: string | null;
+        };
+        /** ProviderSpecialtyCreate */
+        ProviderSpecialtyCreate: {
+            /** Code */
+            code: string;
+            /** Label */
+            label: string;
+        };
+        /** ProviderSpecialtyLinkCreate */
+        ProviderSpecialtyLinkCreate: {
+            /** Provider Id */
+            provider_id: string;
+            /** Specialty Id */
+            specialty_id: string;
+        };
+        /** ProviderSpecialtyLinkResponse */
+        ProviderSpecialtyLinkResponse: {
+            /** Id */
+            id: string;
+            /** Provider Id */
+            provider_id: string;
+            /** Specialty Code */
+            specialty_code: string;
+            /** Specialty Id */
+            specialty_id: string;
+            /** Specialty Is Active */
+            specialty_is_active: boolean;
+            /** Specialty Label */
+            specialty_label: string;
+            /** Tenant Id */
+            tenant_id: string;
+        };
+        /** ProviderSpecialtyResponse */
+        ProviderSpecialtyResponse: {
+            /** Code */
+            code: string;
+            /** Id */
+            id: string;
+            /** Is Active */
+            is_active: boolean;
+            /** Label */
+            label: string;
         };
         /**
          * ProviderTier
@@ -9562,11 +10383,44 @@ export interface components {
          * @enum {string}
          */
         ProviderTier: "T1" | "T2" | "T3";
+        /**
+         * ProviderUpdate
+         * @description Partial update of ordinary contact and profile fields.
+         *
+         *     An omitted field stays unchanged; an explicit null clears a nullable field.
+         *     A protected field present in the body is rejected rather than ignored.
+         */
+        ProviderUpdate: {
+            /** Bio */
+            bio?: string | null;
+            /** Display Name */
+            display_name?: string | null;
+            /** Email */
+            email?: string | null;
+            /** License Info */
+            license_info?: {
+                [key: string]: unknown;
+            } | null;
+            /** Phone */
+            phone?: string | null;
+            region?: components["schemas"]["UgandaRegion"] | null;
+        };
         /** RateCardEntrySchema */
         RateCardEntrySchema: {
             rate: components["schemas"]["app__api__schemas__pricing_schemas__MoneySchema-Input"];
             /** Service Code */
             service_code: string;
+        };
+        /**
+         * ReasonRequest
+         * @description Every lifecycle command records why, per decision 8.
+         *
+         *     Whitespace is stripped before the length check, so a reason of spaces is a
+         *     422 from the schema rather than a 400 from the domain.
+         */
+        ReasonRequest: {
+            /** Reason */
+            reason: string;
         };
         /** ReferOutCaseRequest */
         ReferOutCaseRequest: {
@@ -9854,11 +10708,8 @@ export interface components {
          * @description Request schema for creating a service.
          */
         ServiceCreate: {
-            /**
-             * Category
-             * @description Service category
-             */
-            category?: string | null;
+            /** @description Programme category this service is delivered under */
+            category?: components["schemas"]["ServiceCategory"] | null;
             /**
              * Description
              * @description Service description
@@ -9922,11 +10773,8 @@ export interface components {
          * @description Response schema for service.
          */
         ServiceResponse: {
-            /**
-             * Category
-             * @description Service category
-             */
-            category?: string | null;
+            /** @description Programme category this service is delivered under */
+            category?: components["schemas"]["ServiceCategory"] | null;
             /**
              * Description
              * @description Service description
@@ -9987,6 +10835,11 @@ export interface components {
          */
         ServiceSessionCompleteRequest: {
             /**
+             * Case Id
+             * @description Clinical case to draw this session down against. Supplied by a caller that already holds clinical context; it cannot be inferred from the session, which carries an employer-side member id. Omit to leave the authorization untouched and consume it through the manual route.
+             */
+            case_id?: string | null;
+            /**
              * Duration
              * @description Session duration in minutes
              */
@@ -9996,6 +10849,14 @@ export interface components {
              * @description Session notes
              */
             notes: string;
+        };
+        /**
+         * ServiceSessionCompleteResponse
+         * @description A completed session and what the completion did to the authorization.
+         */
+        ServiceSessionCompleteResponse: {
+            drawdown: components["schemas"]["SessionDrawdownResponse"];
+            session: components["schemas"]["ServiceSessionResponse"];
         };
         /**
          * ServiceSessionCreate
@@ -10013,6 +10874,8 @@ export interface components {
             client_type?: components["schemas"]["ClientType"] | null;
             /** @description Clinical continuation outcome */
             clinical_outcome?: components["schemas"]["SessionClinicalStatus"] | null;
+            /** @description Direct or Organisation. Unknown is rejected: it belongs to historical import */
+            delivery_context: components["schemas"]["SessionDeliveryContext"];
             /**
              * Diagnosis Id
              * @description Diagnosis reference ID
@@ -10039,6 +10902,11 @@ export interface components {
              */
             location?: string | null;
             /**
+             * Member Id
+             * @description Member identifier
+             */
+            member_id: string;
+            /**
              * Partner Name
              * @description Partner name (couples/family sessions)
              */
@@ -10049,10 +10917,10 @@ export interface components {
              */
             partner_relationship?: string | null;
             /**
-             * Person Id
-             * @description Person identifier
+             * Provider Affiliation Id
+             * @description Required for Organisation delivery, forbidden otherwise
              */
-            person_id: string;
+            provider_affiliation_id?: string | null;
             /**
              * Provider Id
              * @description Provider (person) identifier
@@ -10151,6 +11019,8 @@ export interface components {
              * @description Completion date and time
              */
             completed_at?: string | null;
+            /** @description How this was delivered */
+            delivery_context: components["schemas"]["SessionDeliveryContext"];
             /**
              * Diagnosis Id
              * @description Diagnosis reference ID
@@ -10197,6 +11067,11 @@ export interface components {
              */
             location?: string | null;
             /**
+             * Member Id
+             * @description Member identifier
+             */
+            member_id: string;
+            /**
              * Notes
              * @description Session notes
              */
@@ -10212,15 +11087,20 @@ export interface components {
              */
             partner_relationship?: string | null;
             /**
-             * Person Id
-             * @description Person identifier
+             * Provider Affiliation Id
+             * @description The affiliation this session is attributed to, if any
              */
-            person_id: string;
+            provider_affiliation_id?: string | null;
             /**
              * Provider Id
              * @description Provider (person) identifier
              */
             provider_id: string;
+            /**
+             * Provider Organisation Id
+             * @description Resolved from this session's own affiliation, never from the practitioner's current affiliations
+             */
+            provider_organisation_id?: string | null;
             /**
              * Rate Ugx
              * @description Per-session rate in UGX
@@ -10337,11 +11217,8 @@ export interface components {
          * @description Request schema for updating service information.
          */
         ServiceUpdate: {
-            /**
-             * Category
-             * @description Service category
-             */
-            category?: string | null;
+            /** @description Programme category this service is delivered under */
+            category?: components["schemas"]["ServiceCategory"] | null;
             /**
              * Description
              * @description Service description
@@ -10391,6 +11268,115 @@ export interface components {
          */
         SessionClinicalStatus: "ToBeContinued" | "Referred" | "Completed";
         /**
+         * SessionDeliveryContext
+         * @description How the practitioner delivered, or will deliver, this session.
+         *
+         *     UNKNOWN describes a historical record whose source carries no evidence of
+         *     the arrangement. It is never accepted on a live booking; inferring direct
+         *     delivery from a missing value would assert something the source does not say.
+         * @enum {string}
+         */
+        SessionDeliveryContext: "Direct" | "Organisation" | "Unknown";
+        /**
+         * SessionDrawdownResponse
+         * @description What the completion did, or did not do, to the programme authorization.
+         */
+        SessionDrawdownResponse: {
+            /**
+             * Authorization Id
+             * @description Authorization consumed, if any
+             */
+            authorization_id?: string | null;
+            /**
+             * Consumed
+             * @description Whether a session was drawn down
+             */
+            consumed: boolean;
+            /**
+             * Reason
+             * @description Why no drawdown happened
+             */
+            reason?: string | null;
+            /**
+             * Sessions Remaining
+             * @description Remaining after the drawdown
+             */
+            sessions_remaining?: number | null;
+        };
+        /**
+         * SessionImportApplyResponse
+         * @description Outcome of applying a batch. `imported` is the only write count.
+         */
+        SessionImportApplyResponse: {
+            /** Batch Id */
+            batch_id: string;
+            /** Imported */
+            imported: number;
+            /** Not Importable */
+            not_importable: number;
+            /** Skipped Already Imported */
+            skipped_already_imported: number;
+        };
+        /** SessionImportBatchResponse */
+        SessionImportBatchResponse: {
+            /** Applied At */
+            applied_at: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** File Hash */
+            file_hash: string;
+            /** File Name */
+            file_name: string;
+            /** Id */
+            id: string;
+            /** Outcome Counts */
+            outcome_counts: {
+                [key: string]: number;
+            };
+            /** Row Count */
+            row_count: number;
+            /** Source Record Key Field */
+            source_record_key_field: string | null;
+            /** Source System */
+            source_system: string;
+            status: components["schemas"]["ImportBatchStatus"];
+            /** Tenant Id */
+            tenant_id: string;
+        };
+        /** SessionImportRowListResponse */
+        SessionImportRowListResponse: {
+            /** Has More */
+            has_more: boolean;
+            /** Items */
+            items: components["schemas"]["SessionImportRowPreview"][];
+            /** Limit */
+            limit: number;
+            /** Page */
+            page: number;
+            /** Total */
+            total: number;
+        };
+        /** SessionImportRowPreview */
+        SessionImportRowPreview: {
+            delivery_context: components["schemas"]["DeliveryContext"];
+            outcome: components["schemas"]["ImportRowOutcome"];
+            /** Provider Affiliation Id */
+            provider_affiliation_id: string | null;
+            /** Provider Id */
+            provider_id: string | null;
+            /** Raw Practitioner Name */
+            raw_practitioner_name: string | null;
+            /** Reasons */
+            reasons: string[];
+            /** Row Number */
+            row_number: number;
+            /** Session Date */
+            session_date: string | null;
+        };
+        /**
          * SessionStatus
          * @enum {string}
          */
@@ -10417,52 +11403,17 @@ export interface components {
             token: string;
         };
         /**
-         * StaffInfoSchema
-         * @description Staff information schema.
-         */
-        StaffInfoSchema: {
-            /**
-             * Can Manage Clients
-             * @description Can manage clients
-             * @default false
-             */
-            can_manage_clients: boolean;
-            /**
-             * Can Manage Services
-             * @description Can manage services
-             * @default false
-             */
-            can_manage_services: boolean;
-            /**
-             * Can View Reports
-             * @description Can view reports
-             * @default false
-             */
-            can_view_reports: boolean;
-            /**
-             * Client Id
-             * @description Client ID
-             */
-            client_id: string;
-            /**
-             * Department
-             * @description Department
-             */
-            department?: string | null;
-            /** @description Staff role */
-            role: components["schemas"]["StaffRole"];
-        };
-        /**
-         * StaffRole
-         * @enum {string}
-         */
-        StaffRole: "Admin" | "Manager" | "Staff" | "Volunteer";
-        /**
          * StageOfChange
          * @description Prochaska & DiClemente Transtheoretical Model stages.
          * @enum {string}
          */
         StageOfChange: "Precontemplation" | "Contemplation" | "Preparation" | "Action" | "Maintenance";
+        /** StatusCommand */
+        StatusCommand: {
+            /** Reason */
+            reason: string;
+            status: components["schemas"]["BaseStatus"];
+        };
         /**
          * SubscriptionTier
          * @enum {string}
@@ -10911,6 +11862,12 @@ export interface components {
             /** Provider Id */
             provider_id: string;
         };
+        /** TierCommand */
+        TierCommand: {
+            /** Reason */
+            reason: string;
+            tier: components["schemas"]["ProviderTier"];
+        };
         /**
          * TriageInstrumentCode
          * @description Versioned identifiers for the supported triage instruments.
@@ -11027,46 +11984,6 @@ export interface components {
             body: {
                 [key: string]: unknown;
             };
-        };
-        /**
-         * UpdateDependentInfoRequest
-         * @description Request schema for updating dependent information.
-         */
-        UpdateDependentInfoRequest: {
-            /** @description Dependent information (primary_employee_id, relationship, guardian_id) */
-            dependent_info: components["schemas"]["DependentInfoSchema"];
-        };
-        /**
-         * UpdateEmergencyContactRequest
-         * @description Request schema for updating emergency contact.
-         */
-        UpdateEmergencyContactRequest: {
-            /** @description Emergency contact information */
-            emergency_contact: components["schemas"]["EmergencyContactSchema"];
-        };
-        /**
-         * UpdateEmploymentInfoRequest
-         * @description Request schema for updating employment information.
-         */
-        UpdateEmploymentInfoRequest: {
-            /** @description Employment information */
-            employment_info: components["schemas"]["EmploymentInfoSchema"];
-        };
-        /**
-         * UpdateLicenseInfoRequest
-         * @description Request schema for updating license information.
-         */
-        UpdateLicenseInfoRequest: {
-            /** @description License information */
-            license_info: components["schemas"]["LicenseInfoSchema"];
-        };
-        /**
-         * UpdateStaffInfoRequest
-         * @description Request schema for updating staff information.
-         */
-        UpdateStaffInfoRequest: {
-            /** @description Staff information */
-            staff_info: components["schemas"]["StaffInfoSchema"];
         };
         /**
          * UserBanRequest
@@ -11382,11 +12299,6 @@ export interface components {
             /** Reason */
             reason: string;
         };
-        /**
-         * WorkStatus
-         * @enum {string}
-         */
-        WorkStatus: "Active" | "Inactive" | "On Leave" | "Terminated" | "Suspended" | "Resigned";
         /**
          * MoneySchema
          * @description Money value object schema for request/response.
@@ -12440,7 +13352,7 @@ export interface operations {
             };
         };
     };
-    enrol_persons_care_callback_campaigns__campaign_id__enrol_post: {
+    enrol_members_care_callback_campaigns__campaign_id__enrol_post: {
         parameters: {
             query?: never;
             header?: never;
@@ -12451,7 +13363,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["EnrolPersonsRequest"];
+                "application/json": components["schemas"]["EnrolMembersRequest"];
             };
         };
         responses: {
@@ -15463,6 +16375,177 @@ export interface operations {
             };
         };
     };
+    create_diagnosis_diagnoses_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DiagnosisCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DiagnosisResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_diagnosis_aliases_diagnoses_aliases_get: {
+        parameters: {
+            query?: {
+                /** @description Filter to mappings still awaiting sign-off, or those confirmed */
+                confidence?: components["schemas"]["AliasConfidence"] | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DiagnosisAliasResponse"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    upsert_diagnosis_alias_diagnoses_aliases_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DiagnosisAliasUpsert"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DiagnosisAliasResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    diagnosis_capabilities_diagnoses_capabilities_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DiagnosisCapabilitiesResponse"];
+                };
+            };
+        };
+    };
+    list_diagnosis_settings_diagnoses_settings_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DiagnosisOverlayResponse"][];
+                };
+            };
+        };
+    };
+    set_diagnosis_setting_diagnoses_settings_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DiagnosisOverlayUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DiagnosisOverlayResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     diagnosis_tree_diagnoses_tree_get: {
         parameters: {
             query?: {
@@ -15514,6 +16597,177 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["DiagnosisTypeResponse"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_diagnosis_type_diagnoses_types_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DiagnosisTypeCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DiagnosisTypeResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_diagnosis_type_diagnoses_types__type_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                type_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DiagnosisTypeUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DiagnosisTypeResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    set_diagnosis_type_active_diagnoses_types__type_id__active_post: {
+        parameters: {
+            query: {
+                /** @description Activate or retire the type */
+                is_active: boolean;
+            };
+            header?: never;
+            path: {
+                type_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DiagnosisTypeResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_diagnosis_diagnoses__diagnosis_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                diagnosis_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DiagnosisUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DiagnosisResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    set_diagnosis_active_diagnoses__diagnosis_id__active_post: {
+        parameters: {
+            query: {
+                /** @description Activate or retire the diagnosis */
+                is_active: boolean;
+            };
+            header?: never;
+            path: {
+                diagnosis_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DiagnosisResponse"];
                 };
             };
             /** @description Validation Error */
@@ -15594,6 +16848,41 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["DocumentCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DocumentResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    upload_contract_attachment_documents_contracts__contract_id__attachments_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                contract_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["Body_upload_contract_attachment_documents_contracts__contract_id__attachments_post"];
             };
         };
         responses: {
@@ -15737,6 +17026,35 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["DocumentResponse"];
                 };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    download_attachment_documents__document_id__download_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                document_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Validation Error */
             422: {
@@ -17517,7 +18835,7 @@ export interface operations {
                 status?: components["schemas"]["EligibilityStatus"] | null;
                 relation?: components["schemas"]["MemberRelation"] | null;
                 search?: string | null;
-                sort_by?: string;
+                sort_by?: "created_at" | "updated_at" | "employer_member_id" | "display_label" | "status" | "relation";
                 sort_desc?: boolean;
                 /** @description Page number */
                 page?: number;
@@ -17585,9 +18903,7 @@ export interface operations {
     };
     scan_member_duplicates_members_duplicates_get: {
         parameters: {
-            query?: {
-                client_id?: string | null;
-            };
+            query?: never;
             header?: never;
             path?: never;
             cookie?: never;
@@ -17601,15 +18917,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["MemberDuplicateListResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };
@@ -17643,6 +18950,62 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    import_members_members_import_post: {
+        parameters: {
+            query?: {
+                /** @description Preview only; set false to create members */
+                dry_run?: boolean;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["Body_import_members_members_import_post"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MemberImportResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    member_import_template_members_import_template_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
                 };
             };
         };
@@ -17713,6 +19076,72 @@ export interface operations {
             };
         };
     };
+    link_member_account_members__member_id__account_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                member_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MemberAccountLinkRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MemberResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    unlink_member_account_members__member_id__account_delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                member_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MemberResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     list_member_beneficiaries_members__member_id__beneficiaries_get: {
         parameters: {
             query?: never;
@@ -17731,6 +19160,41 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["MemberResponse"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    merge_members_members__member_id__merge_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                member_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MemberMergeRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MemberMergeResponse"];
                 };
             };
             /** @description Validation Error */
@@ -17894,6 +19358,42 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["MemberResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_member_sessions_members__member_id__sessions_get: {
+        parameters: {
+            query?: {
+                /** @description Page number */
+                page?: number;
+                /** @description Items per page */
+                limit?: number;
+            };
+            header?: never;
+            path: {
+                member_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ServiceSessionListResponse"];
                 };
             };
             /** @description Validation Error */
@@ -18483,6 +19983,8 @@ export interface operations {
             query?: {
                 /** @description Optional client scope for the check */
                 client_id?: string | null;
+                /** @description Service date to check; defaults to now */
+                scheduled_at?: string | null;
             };
             header?: never;
             path: {
@@ -18547,21 +20049,241 @@ export interface operations {
             };
         };
     };
-    list_persons_persons__get: {
+    list_affiliations_provider_affiliations_get: {
         parameters: {
             query: {
                 tenant_id: string;
-                /** @description Filter by person status */
-                status?: components["schemas"]["BaseStatus"] | null;
-                /** @description Filter by person type */
-                person_type?: components["schemas"]["PersonType"] | null;
-                /** @description Filter by client ID (employment_info.client_id) */
-                client_id?: string | null;
-                /** @description Search in user email */
+                provider_id?: string | null;
+                organisation_id?: string | null;
+                /** @description Affiliations covering this day, end-exclusive */
+                valid_at?: string | null;
+                include_ended?: boolean;
+                /** @description Page number */
+                page?: number;
+                /** @description Items per page */
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProviderAffiliationListResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_affiliation_provider_affiliations_post: {
+        parameters: {
+            query: {
+                /** @description Organisation the practitioner joins */
+                organisation_id: string;
+                tenant_id: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ProviderAffiliationCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProviderAffiliationResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    change_affiliation_end_provider_affiliations__affiliation_id__patch: {
+        parameters: {
+            query: {
+                tenant_id: string;
+            };
+            header?: never;
+            path: {
+                affiliation_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ProviderAffiliationEndUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProviderAffiliationResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_aliases_provider_aliases_get: {
+        parameters: {
+            query: {
+                tenant_id: string;
+                source_system?: string | null;
+                /** @description Filter the review queue by outcome */
+                state?: components["schemas"]["AliasResolutionState"] | null;
+                /** @description Page number */
+                page?: number;
+                /** @description Items per page */
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProviderAliasListResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    reject_alias_provider_aliases__alias_id__reject_post: {
+        parameters: {
+            query: {
+                tenant_id: string;
+            };
+            header?: never;
+            path: {
+                alias_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ProviderAliasRejectRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProviderAliasResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    resolve_alias_provider_aliases__alias_id__resolve_post: {
+        parameters: {
+            query: {
+                tenant_id: string;
+            };
+            header?: never;
+            path: {
+                alias_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ProviderAliasResolveRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProviderAliasResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_organisations_provider_organisations_get: {
+        parameters: {
+            query: {
+                tenant_id: string;
+                /** @description Matches name or registration number */
                 search?: string | null;
-                /** @description Field to sort by */
+                is_active?: boolean | null;
+                approval_status?: components["schemas"]["OrganisationApprovalStatus"] | null;
                 sort_by?: string;
-                /** @description Sort in descending order */
                 sort_desc?: boolean;
                 /** @description Page number */
                 page?: number;
@@ -18580,7 +20302,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["PersonListResponse"];
+                    "application/json": components["schemas"]["ProviderOrganisationListResponse"];
                 };
             };
             /** @description Validation Error */
@@ -18594,16 +20316,18 @@ export interface operations {
             };
         };
     };
-    create_person_persons__post: {
+    create_organisation_provider_organisations_post: {
         parameters: {
-            query?: never;
+            query: {
+                tenant_id: string;
+            };
             header?: never;
             path?: never;
             cookie?: never;
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["PersonCreate"];
+                "application/json": components["schemas"]["ProviderOrganisationCreate"];
             };
         };
         responses: {
@@ -18613,7 +20337,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["PersonResponse"];
+                    "application/json": components["schemas"]["ProviderOrganisationResponse"];
                 };
             };
             /** @description Validation Error */
@@ -18627,446 +20351,14 @@ export interface operations {
             };
         };
     };
-    get_person_by_user_id_persons_by_user__user_id__get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                user_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["PersonResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    get_persons_by_type_persons_tenant__tenant_id__type__person_type__get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                tenant_id: string;
-                person_type: components["schemas"]["PersonType"];
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["PersonResponse"][];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    get_person_persons__person_id__get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                person_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["PersonResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    activate_person_persons__person_id__activate_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                person_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["PersonResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    archive_person_persons__person_id__archive_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                person_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["PersonResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    deactivate_person_persons__person_id__deactivate_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                person_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["PersonDeactivateRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["PersonResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    update_dependent_info_persons__person_id__dependent_info_patch: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                person_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["UpdateDependentInfoRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["PersonResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    update_emergency_contact_persons__person_id__emergency_contact_patch: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                person_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["UpdateEmergencyContactRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["PersonResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    update_employment_info_persons__person_id__employment_info_patch: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                person_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["UpdateEmploymentInfoRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["PersonResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    update_license_info_persons__person_id__license_info_patch: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                person_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["UpdateLicenseInfoRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["PersonResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    update_provider_profile_persons__person_id__provider_profile_patch: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                person_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["ProviderProfileUpdate"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["PersonResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    restore_person_persons__person_id__restore_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                person_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["PersonResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    add_secondary_role_persons__person_id__secondary_role_post: {
+    get_organisation_provider_organisations__organisation_id__get: {
         parameters: {
             query: {
                 tenant_id: string;
             };
             header?: never;
             path: {
-                person_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["AddSecondaryRoleRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["PersonResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    remove_secondary_role_persons__person_id__secondary_role_delete: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                person_id: string;
+                organisation_id: string;
             };
             cookie?: never;
         };
@@ -19078,7 +20370,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["PersonResponse"];
+                    "application/json": components["schemas"]["ProviderOrganisationResponse"];
                 };
             };
             /** @description Validation Error */
@@ -19092,18 +20384,20 @@ export interface operations {
             };
         };
     };
-    update_staff_info_persons__person_id__staff_info_patch: {
+    update_organisation_provider_organisations__organisation_id__patch: {
         parameters: {
-            query?: never;
+            query: {
+                tenant_id: string;
+            };
             header?: never;
             path: {
-                person_id: string;
+                organisation_id: string;
             };
             cookie?: never;
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["UpdateStaffInfoRequest"];
+                "application/json": components["schemas"]["ProviderOrganisationUpdate"];
             };
         };
         responses: {
@@ -19113,7 +20407,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["PersonResponse"];
+                    "application/json": components["schemas"]["ProviderOrganisationResponse"];
                 };
             };
             /** @description Validation Error */
@@ -19127,18 +20421,21 @@ export interface operations {
             };
         };
     };
-    terminate_person_persons__person_id__terminate_post: {
+    run_approval_command_provider_organisations__organisation_id___command__post: {
         parameters: {
-            query?: never;
+            query: {
+                tenant_id: string;
+            };
             header?: never;
             path: {
-                person_id: string;
+                organisation_id: string;
+                command: string;
             };
             cookie?: never;
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["PersonTerminateRequest"];
+                "application/json": components["schemas"]["ReasonRequest"];
             };
         };
         responses: {
@@ -19148,7 +20445,554 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["PersonResponse"];
+                    "application/json": components["schemas"]["ProviderOrganisationResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_specialties_provider_specialties_get: {
+        parameters: {
+            query?: {
+                include_inactive?: boolean;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProviderSpecialtyResponse"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_specialty_provider_specialties_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ProviderSpecialtyCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProviderSpecialtyResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_links_provider_specialties_links_get: {
+        parameters: {
+            query: {
+                provider_id: string;
+                tenant_id: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProviderSpecialtyLinkResponse"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    add_link_provider_specialties_links_post: {
+        parameters: {
+            query: {
+                tenant_id: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ProviderSpecialtyLinkCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProviderSpecialtyLinkResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    remove_link_provider_specialties_links__link_id__delete: {
+        parameters: {
+            query: {
+                tenant_id: string;
+            };
+            header?: never;
+            path: {
+                link_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    retire_specialty_provider_specialties__specialty_id__retire_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                specialty_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProviderSpecialtyResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_providers_providers_get: {
+        parameters: {
+            query: {
+                tenant_id: string;
+                /** @description Matches display name or contact email */
+                search?: string | null;
+                tier?: components["schemas"]["ProviderTier"][];
+                region?: components["schemas"]["UgandaRegion"][];
+                panel_status?: components["schemas"]["PanelStatus"][];
+                accreditation_status?: components["schemas"]["AccreditationStatus"][];
+                status?: components["schemas"]["BaseStatus"][];
+                has_account?: boolean | null;
+                page?: number;
+                limit?: number;
+                sort_by?: string;
+                sort_desc?: boolean;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProviderListResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_provider_providers_post: {
+        parameters: {
+            query: {
+                tenant_id: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ProviderCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProviderResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_provider_providers__provider_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                provider_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProviderResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_provider_providers__provider_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                provider_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ProviderUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProviderResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    link_account_providers__provider_id__account_link_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                provider_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AccountLinkCommand"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProviderResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    unlink_account_providers__provider_id__account_link_delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                provider_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AccountUnlinkCommand"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProviderResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    change_accreditation_providers__provider_id__accreditation_patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                provider_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AccreditationCommand"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProviderResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    change_panel_status_providers__provider_id__panel_status_patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                provider_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PanelStatusCommand"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProviderResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    change_status_providers__provider_id__status_patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                provider_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StatusCommand"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProviderResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    change_tier_providers__provider_id__tier_patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                provider_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TierCommand"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProviderResponse"];
                 };
             };
             /** @description Validation Error */
@@ -19637,8 +21481,8 @@ export interface operations {
         parameters: {
             query: {
                 tenant_id: string;
-                /** @description Filter by person identifier */
-                person_id?: string | null;
+                /** @description Filter by member identifier */
+                member_id?: string | null;
                 /** @description Filter by provider identifier */
                 provider_id?: string | null;
                 /** @description Filter by service identifier */
@@ -19719,14 +21563,14 @@ export interface operations {
             };
         };
     };
-    get_sessions_by_person_service_sessions_person__person_id__get: {
+    get_sessions_by_member_service_sessions_member__member_id__get: {
         parameters: {
             query: {
                 tenant_id: string;
             };
             header?: never;
             path: {
-                person_id: string;
+                member_id: string;
             };
             cookie?: never;
         };
@@ -19971,7 +21815,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ServiceSessionResponse"];
+                    "application/json": components["schemas"]["ServiceSessionCompleteResponse"];
                 };
             };
             /** @description Validation Error */
@@ -20126,7 +21970,7 @@ export interface operations {
                 /** @description Search in service name */
                 search?: string | null;
                 /** @description Filter by category */
-                category?: string | null;
+                category?: components["schemas"]["ServiceCategory"] | null;
                 /** @description Filter by group service */
                 is_group_service?: boolean | null;
                 /** @description Field to sort by */
@@ -20480,6 +22324,149 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ServiceResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    stage_import_session_imports_post: {
+        parameters: {
+            query: {
+                tenant_id: string;
+                source_system: string;
+                /** @description Column holding a stable source id, if the source has one */
+                source_record_key_field?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["Body_stage_import_session_imports_post"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SessionImportBatchResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_batch_session_imports__batch_id__get: {
+        parameters: {
+            query: {
+                tenant_id: string;
+            };
+            header?: never;
+            path: {
+                batch_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SessionImportBatchResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    apply_batch_session_imports__batch_id__apply_post: {
+        parameters: {
+            query: {
+                tenant_id: string;
+            };
+            header?: never;
+            path: {
+                batch_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SessionImportApplyResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_rows_session_imports__batch_id__rows_get: {
+        parameters: {
+            query: {
+                tenant_id: string;
+                /** @description Filter the review queue */
+                outcome?: components["schemas"]["ImportRowOutcome"] | null;
+                /** @description Page number */
+                page?: number;
+                /** @description Items per page */
+                limit?: number;
+            };
+            header?: never;
+            path: {
+                batch_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SessionImportRowListResponse"];
                 };
             };
             /** @description Validation Error */

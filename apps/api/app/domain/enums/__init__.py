@@ -3,6 +3,7 @@
 """
 
 from app.domain.enums.clinical import (
+    AliasConfidence,
     AuthorizationStatus,
     CaseClosureReason,
     CaseReferralSource,
@@ -68,6 +69,7 @@ from app.domain.enums.provider import (
     AccreditationStatus,
     NonCompeteStatus,
     PanelStatus,
+    ProviderIdentityProvenance,
     ProviderTier,
     UgandaRegion,
 )
@@ -84,6 +86,7 @@ from app.domain.enums.session import (
     ServiceCategory,
     SessionCategory,
     SessionClinicalStatus,
+    SessionDeliveryContext,
     SessionStatus,
     SessionType,
 )
@@ -108,6 +111,7 @@ __all__ = [
     "CaringContactOutcome",
     "CaseClosureReason",
     "CaseReferralSource",
+    "AliasConfidence",
     "CaseStatus",
     "ClientTier",
     "ClientType",
@@ -145,6 +149,7 @@ __all__ = [
     "PersonType",
     "PresentingProblem",
     "PricingModel",
+    "ProviderIdentityProvenance",
     "ProviderTier",
     "RelationType",
     "ReportQueryType",
@@ -154,6 +159,7 @@ __all__ = [
     "ServiceCategory",
     "SessionCategory",
     "SessionClinicalStatus",
+    "SessionDeliveryContext",
     "SessionStatus",
     "SessionType",
     "StaffRole",

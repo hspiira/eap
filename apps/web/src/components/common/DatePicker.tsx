@@ -38,6 +38,8 @@ export function DatePicker({
 }: DatePickerProps) {
   const [open, setOpen] = useState(false)
   const selected = parseDayKey(value)
+  const currentYear = new Date().getFullYear()
+  const selectedYear = selected?.getFullYear() ?? currentYear
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -60,7 +62,16 @@ export function DatePicker({
       <PopoverContent className="w-[18rem] max-w-[calc(100vw-2rem)] rounded-none p-0" align="start">
         <Calendar
           mode="single"
+          captionLayout="dropdown"
+          defaultMonth={selected}
+          startMonth={new Date(Math.min(currentYear - 120, selectedYear), 0)}
+          endMonth={new Date(Math.max(currentYear + 20, selectedYear), 11)}
           className="w-full [--cell-size:2.5rem]"
+          classNames={{
+            dropdown_root: "relative rounded-none border border-fg/15",
+            caption_label:
+              "flex h-8 items-center gap-1 pl-2 pr-1 text-sm font-medium [&>svg]:size-3.5",
+          }}
           selected={selected}
           onSelect={(date) => {
             onChange(date ? toDayKey(date) : "")
