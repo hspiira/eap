@@ -92,10 +92,14 @@ async def run_async_migrations() -> None:
 def run_migrations_online() -> None:
     """Run migrations in 'online' mode.
 
-    In this scenario we need to create an Engine
-    and associate a connection with the context.
-
+    A caller may supply its own connection through ``config.attributes``, which
+    is how the migration tests drive the real chain into a scratch schema.
+    Otherwise this builds its own engine from the configured URL.
     """
+    connection = config.attributes.get("connection")
+    if connection is not None:
+        do_run_migrations(connection)
+        return
     asyncio.run(run_async_migrations())
 
 
