@@ -235,7 +235,11 @@ export function CompleteDialog({
   open: boolean
   onOpenChange: (open: boolean) => void
   defaultDuration: number
-  /** Narrows the case list to the session's client. Cases carry no member id. */
+  /**
+   * The session's client. Cases carry no member id, so this is the only link
+   * available. Undefined while the member is still loading, which suppresses
+   * the picker rather than offering every client's cases.
+   */
   clientId?: string | null
   onConfirm: (duration: number, notes: string, caseId?: string) => Promise<void>
 }) {
@@ -255,9 +259,12 @@ export function CompleteDialog({
     staleTime: 60_000,
   })
   const cases = useMemo(() => {
+    // Fail closed without a client. Drawing a session down against another
+    // client's authorization is worse than not drawing it down at all, and
+    // the caller cannot always tell the two lists apart.
+    if (!clientId) return []
     const rows = casesQuery.data ?? []
-    const live = rows.filter((c) => !CLOSED_CASE_STATUSES.includes(c.status))
-    return clientId ? live.filter((c) => c.client_id === clientId) : live
+    return rows.filter((c) => c.client_id === clientId && !CLOSED_CASE_STATUSES.includes(c.status))
   }, [casesQuery.data, clientId])
 
   useEffect(() => {

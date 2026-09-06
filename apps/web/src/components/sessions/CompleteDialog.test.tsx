@@ -85,13 +85,35 @@ describe("CompleteDialog drawdown", () => {
     const user = userEvent.setup()
     const onConfirm = vi.fn().mockResolvedValue(undefined)
     renderWithProviders(
-      <CompleteDialog open onOpenChange={vi.fn()} defaultDuration={60} onConfirm={onConfirm} />,
+      <CompleteDialog
+        open
+        onOpenChange={vi.fn()}
+        defaultDuration={60}
+        clientId="client-1"
+        onConfirm={onConfirm}
+      />,
     )
     await fillRequiredFields(user)
 
     await user.click(screen.getByRole("button", { name: "Complete session" }))
 
     await waitFor(() => expect(onConfirm).toHaveBeenCalledWith(45, "Attended", undefined))
+  })
+
+  it("offers no case while the session's client is still unknown", async () => {
+    // clientId is undefined until the member query resolves. Offering every
+    // client's cases here would let a user draw a session down against an
+    // unrelated client's authorization.
+    const user = userEvent.setup()
+    renderWithProviders(
+      <CompleteDialog open onOpenChange={vi.fn()} defaultDuration={60} onConfirm={vi.fn()} />,
+    )
+
+    await user.click(await screen.findByRole("combobox", { name: "Draw down against case" }))
+    const options = within(await screen.findByRole("listbox"))
+
+    expect(options.getByRole("option", { name: "No case" })).toBeInTheDocument()
+    expect(options.queryByRole("option", { name: /subject-aaa/ })).not.toBeInTheDocument()
   })
 
   it("does not offer or fetch cases without clinical scope", async () => {
