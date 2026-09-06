@@ -114,11 +114,12 @@ async def stage_import(
 
     existing = await imports.find_batch_by_hash(tenant, file_hash)
     if existing is not None:
+        message = f"This file was already staged as batch {existing.id.value}"
         raise DomainError(
-            f"This file was already staged as batch {existing.id.value}",
+            message,
             error_code="IMPORT_ALREADY_STAGED",
             http_status=409,
-            details={"batch_id": existing.id.value},
+            details={"file": message},
         )
 
     source_rows = parse_source_rows(content, source_record_key_field)

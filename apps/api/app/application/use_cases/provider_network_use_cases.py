@@ -61,12 +61,20 @@ class AffiliationAttributionConflictError(DomainError):
 
     def __init__(self, session_ids: Sequence[str]):
         self.session_ids = list(session_ids)
-        super().__init__(
+        listed = ", ".join(self.session_ids)
+        message = (
             f"{len(self.session_ids)} completed session(s) are attributed to this "
-            "affiliation beyond the new end date",
+            f"affiliation beyond the new end date: {listed}"
+        )
+        # Keyed by the field the caller can change. A key of "session_ids"
+        # serialised to a detail attached to a field of that name whose message
+        # was a Python list repr, which no form could attach and no human could
+        # read. The ids stay available, in the sentence.
+        super().__init__(
+            message,
             error_code="affiliation_change_would_orphan_attribution",
             http_status=409,
-            details={"session_ids": self.session_ids},
+            details={"valid_until": message},
         )
 
 
