@@ -69,6 +69,7 @@ from app.domain.enums.provider import (
     AccreditationStatus,
     NonCompeteStatus,
     PanelStatus,
+    ProviderIdentityProvenance,
     ProviderTier,
     UgandaRegion,
 )
@@ -147,6 +148,7 @@ __all__ = [
     "PersonType",
     "PresentingProblem",
     "PricingModel",
+    "ProviderIdentityProvenance",
     "ProviderTier",
     "RelationType",
     "ReportQueryType",
