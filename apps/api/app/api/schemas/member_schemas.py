@@ -185,6 +185,26 @@ class MemberMergeResponse(BaseModel):
     transferred: dict[str, int]
 
 
+class MemberDuplicateMember(BaseModel):
+    id: str
+    client_id: str
+    client_name: str | None = None
+    employer_member_id: str
+    display_label: str
+    relation: MemberRelation
+
+
+class MemberDuplicateCandidate(BaseModel):
+    first: MemberDuplicateMember
+    second: MemberDuplicateMember
+    reason: str
+
+
+class MemberDuplicateListResponse(BaseModel):
+    items: list[MemberDuplicateCandidate]
+    scanned: int
+
+
 class MemberImportRowPreview(BaseModel):
     row: int
     client_code: str | None

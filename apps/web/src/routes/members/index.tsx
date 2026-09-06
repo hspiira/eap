@@ -1,6 +1,6 @@
 import { useCallback, useState } from "react"
 
-import { useQueryClient } from "@tanstack/react-query"
+import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { createFileRoute, Link, useNavigate, useSearch } from "@tanstack/react-router"
 import {
   CheckCircle2,
@@ -8,15 +8,17 @@ import {
   Clock,
   Download,
   ExternalLink,
+  FileDown,
   FileUp,
   MoreHorizontal,
   PauseCircle,
   Plus,
+  ScanSearch,
   Users,
   XCircle,
 } from "lucide-react"
 
-import { membersApi } from "@/api/endpoints/members"
+import { type MemberDuplicateCandidate, membersApi } from "@/api/endpoints/members"
 import { EmptyState } from "@/components/common/EmptyState"
 import { EntityListView, type ListColumn } from "@/components/common/EntityListView"
 import { FilterBar, FilterChip, FilterSearch, FilterTrigger } from "@/components/common/FilterBar"
@@ -29,6 +31,13 @@ import { MemberMergeDialog } from "@/components/MemberMergeDialog"
 import { MemberImportDialog } from "@/components/members/MemberImportDialog"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -117,6 +126,7 @@ function MembersListPage() {
   const [editing, setEditing] = useState<Member | null>(null)
   const [mergeOpen, setMergeOpen] = useState(false)
   const [importOpen, setImportOpen] = useState(false)
+  const [duplicatesOpen, setDuplicatesOpen] = useState(false)
   const role = useCurrentRole()
   const query = useEntityList({
     resource: "members",
@@ -130,6 +140,11 @@ function MembersListPage() {
       ...list.sortParams,
     },
     listFn: membersApi.list,
+  })
+  const duplicatesQuery = useQuery({
+    queryKey: ["member-duplicates"],
+    queryFn: membersApi.scanDuplicates,
+    enabled: false,
   })
   const items = query.data?.items ?? []
   const selection = useTableSelection(items)
@@ -159,6 +174,10 @@ function MembersListPage() {
   const setStatus = (value: StatusFilter) => {
     list.setFilter("status", value === "all" ? undefined : value)
   }
+  const scanDuplicates = () => {
+    setDuplicatesOpen(true)
+    void duplicatesQuery.refetch()
+  }
   const hasFilters = Boolean(
     list.activeSearch || searchParams.relation || searchParams.status || searchParams.client_id,
   )
@@ -184,6 +203,28 @@ function MembersListPage() {
               )
             }
           />
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="h-7 gap-1.5 px-2"
+            onClick={() =>
+              void download(membersApi.getImportTemplate(), "members-import-template.csv")
+            }
+          >
+            <FileDown className="size-3.5" />
+            Template
+          </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="h-7 gap-1.5 px-2"
+            onClick={scanDuplicates}
+          >
+            <ScanSearch className="size-3.5" />
+            Find duplicates
+          </Button>
           {canWrite ? (
             <Button
               type="button"
@@ -243,6 +284,14 @@ function MembersListPage() {
         open={importOpen}
         onOpenChange={setImportOpen}
         onImported={() => void queryClient.invalidateQueries({ queryKey: ["members"] })}
+      />
+
+      <MemberDuplicateScanDialog
+        open={duplicatesOpen}
+        onOpenChange={setDuplicatesOpen}
+        loading={duplicatesQuery.isFetching}
+        scanned={duplicatesQuery.data?.scanned ?? 0}
+        items={duplicatesQuery.data?.items ?? []}
       />
 
       <MemberFormSheet
@@ -344,6 +393,66 @@ function MembersListPage() {
         }
       />
     </PageShell>
+  )
+}
+
+function MemberDuplicateScanDialog({
+  open,
+  onOpenChange,
+  loading,
+  scanned,
+  items,
+}: {
+  open: boolean
+  onOpenChange: (open: boolean) => void
+  loading: boolean
+  scanned: number
+  items: MemberDuplicateCandidate[]
+}) {
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-h-[80vh] overflow-y-auto sm:max-w-2xl">
+        <DialogHeader>
+          <DialogTitle>Duplicate member IDs</DialogTitle>
+          <DialogDescription>
+            {loading
+              ? "Scanning members…"
+              : `${items.length} exact matches in ${scanned} members. Only the same tenant, client, and Staff_ID are compared.`}
+          </DialogDescription>
+        </DialogHeader>
+        {!loading && items.length === 0 ? (
+          <p className="text-sm text-fg-muted">No duplicate Staff_IDs found.</p>
+        ) : (
+          <div className="space-y-2">
+            {items.map((item) => (
+              <div
+                key={`${item.first.id}-${item.second.id}`}
+                className="grid gap-3 rounded-md border p-3 sm:grid-cols-[1fr_auto_1fr] sm:items-center"
+              >
+                <MemberDuplicateCard member={item.first} />
+                <span className="text-center text-xs text-fg-muted">{item.reason}</span>
+                <MemberDuplicateCard member={item.second} />
+              </div>
+            ))}
+          </div>
+        )}
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+function MemberDuplicateCard({ member }: { member: MemberDuplicateCandidate["first"] }) {
+  return (
+    <Link
+      to="/members/$memberId"
+      params={{ memberId: member.id }}
+      className="min-w-0 rounded-sm hover:bg-surface-hover"
+    >
+      <p className="truncate text-sm font-medium text-fg">{member.display_label}</p>
+      <p className="truncate text-xs text-fg-muted">
+        {member.employer_member_id} · {member.client_name ?? member.client_id} · {member.relation}
+      </p>
+    </Link>
   )
 }
 

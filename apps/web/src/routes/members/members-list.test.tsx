@@ -8,6 +8,8 @@ import { renderWithProviders } from "@/test/utils"
 const mocks = vi.hoisted(() => ({
   list: vi.fn(),
   exportCsv: vi.fn(),
+  getImportTemplate: vi.fn(),
+  scanDuplicates: vi.fn(),
   canWrite: true,
   role: "Admin",
   search: {} as Record<string, string>,
@@ -72,6 +74,8 @@ beforeEach(() => {
     has_more: false,
   })
   mocks.exportCsv.mockResolvedValue(new Blob(["id\nmember-1"]))
+  mocks.getImportTemplate.mockResolvedValue(new Blob(["Company Code,Staff_ID\n"]))
+  mocks.scanDuplicates.mockResolvedValue({ items: [], scanned: 1 })
   Object.defineProperty(URL, "createObjectURL", {
     configurable: true,
     value: vi.fn(() => "blob:members"),

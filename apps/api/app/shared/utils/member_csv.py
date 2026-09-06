@@ -28,7 +28,12 @@ class MemberCsvRow:
     staff_number: str | None
     display_label: str | None
     work_email: str | None
+    personal_email: str | None
     gender: str | None
+    date_of_birth: str | None
+    phone: str | None
+    national_id: str | None
+    passport_number: str | None
     status: str | None
     relation: str | None
     primary_employee_member_id: str | None
@@ -63,7 +68,12 @@ def parse_member_csv(content: bytes) -> tuple[list[MemberCsvRow], list[dict[str,
             staff_number=_value(row, "staff_number"),
             display_label=_value(row, "name_of_employee", "display_label", "name"),
             work_email=_value(row, "email_address", "work_email", "email"),
+            personal_email=_value(row, "personal_email", "personal_email_address"),
             gender=_value(row, "gender"),
+            date_of_birth=_value(row, "date_of_birth", "dob"),
+            phone=_value(row, "phone", "phone_number", "mobile"),
+            national_id=_value(row, "national_id", "national_identification_number"),
+            passport_number=_value(row, "passport_number", "passport"),
             status=_value(row, "status"),
             relation=_value(row, "relation", "member_relation"),
             primary_employee_member_id=_value(

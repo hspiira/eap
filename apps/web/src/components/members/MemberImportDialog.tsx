@@ -38,26 +38,6 @@ interface MemberImportDialogProps {
   onImported: () => void
 }
 
-const TEMPLATE = [
-  "Company Code",
-  "Staff_ID",
-  "Name of Employee",
-  "Email Address",
-  "Gender",
-  "Status",
-  "Relation",
-  "Primary Staff ID",
-].join(",")
-
-function downloadTemplate() {
-  const url = URL.createObjectURL(new Blob([`${TEMPLATE}\n`], { type: "text/csv;charset=utf-8" }))
-  const anchor = document.createElement("a")
-  anchor.href = url
-  anchor.download = "members-template.csv"
-  anchor.click()
-  URL.revokeObjectURL(url)
-}
-
 function downloadIssues(issues: MemberImportResult["issues"]): void {
   const escape = (value: string) => `"${value.replaceAll('"', '""')}"`
   const csv = [
@@ -128,6 +108,20 @@ export function MemberImportDialog({ open, onOpenChange, onImported }: MemberImp
     setDecisions((current) => ({ ...current, [row]: value }))
   }
 
+  const downloadTemplate = async () => {
+    try {
+      const blob = await membersApi.getImportTemplate()
+      const url = URL.createObjectURL(blob)
+      const anchor = document.createElement("a")
+      anchor.href = url
+      anchor.download = "members-import-template.csv"
+      anchor.click()
+      URL.revokeObjectURL(url)
+    } catch (cause) {
+      toast.showError(normalizeErrorMessage(cause, "Could not download member template"))
+    }
+  }
+
   const importFile = async () => {
     if (!file || !preview) return
     setLoading(true)
@@ -171,7 +165,12 @@ export function MemberImportDialog({ open, onOpenChange, onImported }: MemberImp
           <div className="space-y-2">
             <div className="flex items-end justify-between gap-3">
               <Label htmlFor="member-import-file">CSV file</Label>
-              <Button type="button" variant="outline" size="sm" onClick={downloadTemplate}>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => void downloadTemplate()}
+              >
                 <Download className="mr-1.5 size-3.5" />
                 Template
               </Button>
@@ -187,9 +186,10 @@ export function MemberImportDialog({ open, onOpenChange, onImported }: MemberImp
               identity matching.
             </p>
             <p className="text-xs text-fg-muted">
-              Supported fields: Company Code, Staff_ID, Name of Employee, Email Address, Gender,
-              Status, Relation, and Primary Staff ID. Other workforce columns are ignored; files are
-              limited to 10 MB.
+              Supported fields: Company Code, Staff_ID, Staff Number, Name of Employee, Email
+              Address, Personal Email, Date of Birth (YYYY-MM-DD), Gender, Phone, National ID,
+              Passport Number, Status, Relation, and Primary Staff ID. Other workforce columns are
+              ignored; files are limited to 10 MB.
             </p>
           </div>
 

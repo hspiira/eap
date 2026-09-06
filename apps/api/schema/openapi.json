@@ -8100,6 +8100,91 @@
         "title": "MemberCreate",
         "type": "object"
       },
+      "MemberDuplicateCandidate": {
+        "properties": {
+          "first": {
+            "$ref": "#/components/schemas/MemberDuplicateMember"
+          },
+          "reason": {
+            "title": "Reason",
+            "type": "string"
+          },
+          "second": {
+            "$ref": "#/components/schemas/MemberDuplicateMember"
+          }
+        },
+        "required": [
+          "first",
+          "second",
+          "reason"
+        ],
+        "title": "MemberDuplicateCandidate",
+        "type": "object"
+      },
+      "MemberDuplicateListResponse": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/MemberDuplicateCandidate"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "scanned": {
+            "title": "Scanned",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "items",
+          "scanned"
+        ],
+        "title": "MemberDuplicateListResponse",
+        "type": "object"
+      },
+      "MemberDuplicateMember": {
+        "properties": {
+          "client_id": {
+            "title": "Client Id",
+            "type": "string"
+          },
+          "client_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Client Name"
+          },
+          "display_label": {
+            "title": "Display Label",
+            "type": "string"
+          },
+          "employer_member_id": {
+            "title": "Employer Member Id",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "relation": {
+            "$ref": "#/components/schemas/MemberRelation"
+          }
+        },
+        "required": [
+          "id",
+          "client_id",
+          "employer_member_id",
+          "display_label",
+          "relation"
+        ],
+        "title": "MemberDuplicateMember",
+        "type": "object"
+      },
       "MemberGender": {
         "description": "Optional demographic value captured for member-facing wellness context.",
         "enum": [
@@ -25196,6 +25281,33 @@
         ]
       }
     },
+    "/members/duplicates": {
+      "get": {
+        "description": "Find exact tenant/client/member-ID collisions without name or email matching.",
+        "operationId": "scan_member_duplicates_members_duplicates_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MemberDuplicateListResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Find members sharing an employer member ID",
+        "tags": [
+          "members"
+        ]
+      }
+    },
     "/members/export": {
       "get": {
         "operationId": "export_members_members_export_get",
@@ -25366,6 +25478,26 @@
           }
         ],
         "summary": "Import Members",
+        "tags": [
+          "members"
+        ]
+      }
+    },
+    "/members/import/template": {
+      "get": {
+        "description": "Return the supported member roster columns with one safe example row.",
+        "operationId": "member_import_template_members_import_template_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Download the member CSV import template",
         "tags": [
           "members"
         ]

@@ -9,6 +9,7 @@ import csv
 import io
 import json
 from collections.abc import Sequence
+from datetime import date
 from typing import Literal
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, UploadFile, status
@@ -33,6 +34,9 @@ from app.api.routes.service_sessions import to_service_session_response
 from app.api.schemas.member_schemas import (
     MemberAccountLinkRequest,
     MemberCreate,
+    MemberDuplicateCandidate,
+    MemberDuplicateListResponse,
+    MemberDuplicateMember,
     MemberImportResponse,
     MemberImportRowPreview,
     MemberListResponse,
@@ -472,6 +476,115 @@ async def export_members(
     )
 
 
+@router.get(
+    "/import/template",
+    summary="Download the member CSV import template",
+)
+async def member_import_template() -> StreamingResponse:
+    """Return the supported member roster columns with one safe example row."""
+    output = io.StringIO(newline="")
+    writer = csv.writer(output)
+    writer.writerow(
+        [
+            "Company Code",
+            "Staff_ID",
+            "Staff Number",
+            "Name of Employee",
+            "Email Address",
+            "Personal Email",
+            "Date of Birth",
+            "Gender",
+            "Phone",
+            "National ID",
+            "Passport Number",
+            "Status",
+            "Relation",
+            "Primary Staff ID",
+        ]
+    )
+    writer.writerow(
+        [
+            "EXM",
+            "EXM-001",
+            "001",
+            "Example Member",
+            "example@company.test",
+            "",
+            "1990-01-31",
+            "Female",
+            "+256700000000",
+            "",
+            "",
+            "Pending",
+            "Employee",
+            "",
+        ]
+    )
+    return StreamingResponse(
+        iter([output.getvalue()]),
+        media_type="text/csv",
+        headers={"Content-Disposition": 'attachment; filename="members-import-template.csv"'},
+    )
+
+
+@router.get(
+    "/duplicates",
+    response_model=MemberDuplicateListResponse,
+    summary="Find members sharing an employer member ID",
+)
+@readonly()
+async def scan_member_duplicates(
+    current_user: TokenData = Depends(get_current_user),
+    member_repo: EligibleMemberRepository = Depends(get_eligible_member_repository),
+    client_repo: ClientRepository = Depends(get_client_repository),
+) -> MemberDuplicateListResponse:
+    """Find exact tenant/client/member-ID collisions without name or email matching."""
+    members: list[EligibleMember] = []
+    while True:
+        batch = await member_repo.list_all(
+            TenantId(current_user.tenant_id),
+            limit=1000,
+            offset=len(members),
+            sort_by="created_at",
+            sort_desc=False,
+        )
+        members.extend(batch)
+        if len(batch) < 1000:
+            break
+
+    groups: dict[tuple[str, str, str], list[EligibleMember]] = {}
+    for member in members:
+        key = (member.client_id.value, member.employer_member_id.casefold(), member.tenant_id.value)
+        groups.setdefault(key, []).append(member)
+
+    client_names = await _client_names(client_repo, members)
+    candidates: list[MemberDuplicateCandidate] = []
+    for group in groups.values():
+        for first, second in zip(group, group[1:], strict=False):
+            candidates.append(
+                MemberDuplicateCandidate(
+                    first=MemberDuplicateMember(
+                        id=first.id.value,
+                        client_id=first.client_id.value,
+                        client_name=client_names.get(first.client_id.value),
+                        employer_member_id=first.employer_member_id,
+                        display_label=first.display_label,
+                        relation=first.relation,
+                    ),
+                    second=MemberDuplicateMember(
+                        id=second.id.value,
+                        client_id=second.client_id.value,
+                        client_name=client_names.get(second.client_id.value),
+                        employer_member_id=second.employer_member_id,
+                        display_label=second.display_label,
+                        relation=second.relation,
+                    ),
+                    reason="Same Staff_ID within the same client",
+                )
+            )
+    return MemberDuplicateListResponse(items=candidates[:100], scanned=len(members))
+
+
 @router.post("/import", response_model=MemberImportResponse)
 @transactional()
 async def import_members(
@@ -542,8 +655,13 @@ async def import_members(
                     employer_member_id=row.employer_member_id,
                     display_label=row.display_label or "",
                     work_email=row.work_email,
+                    personal_email=row.personal_email,
                     gender=(MemberGender(row.gender.title()) if row.gender else None),
+                    date_of_birth=(date.fromisoformat(row.date_of_birth) if row.date_of_birth else None),
+                    phone=row.phone,
                     staff_number=row.staff_number,
+                    national_id=row.national_id,
+                    passport_number=row.passport_number,
                     relation=relation,
                     primary_employee_member_id=row.primary_employee_member_id,
                 )

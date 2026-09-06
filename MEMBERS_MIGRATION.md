@@ -191,7 +191,12 @@ preview-first importer. Its safe mapping is:
 | `Staff_ID` | `employer_member_id` | Use the stable company-supplied identifier; do not create a second `external_id`. |
 | `Name of Employee` | `display_label` | Required member name. |
 | `Email Address` | `work_email` | Normalize `N/A` and blanks to null. |
+| `Personal Email` | `personal_email` | Optional personal contact; normalize `N/A` and blanks to null. |
+| `Date of Birth` | `date_of_birth` | Optional ISO date (`YYYY-MM-DD`). |
 | `Gender` | `gender` | Map only supported controlled values; review unknown values. |
+| `Phone` | `phone` | Optional contact number. |
+| `National ID` | `national_id` | Optional identification field. |
+| `Passport Number` | `passport_number` | Optional identification field. |
 | `Status` | member status | Map supported lifecycle values; review non-member statuses. |
 | `Staff Number` | import matching aid | Preserve for matching only unless the client confirms it is the canonical ID. |
 | `Job Title`, `Job Classification`, `Skill`, `Department`, `Unit`, `Contract type` | — | Exclude: these are employment-history/workforce fields, not wellness member data. |

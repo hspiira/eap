@@ -250,6 +250,30 @@ async def test_roster_preview_preserves_parser_issue_fields(api):
     ]
 
 
+async def test_member_import_template_is_server_generated(api):
+    response = await api.http.get("/members/import/template")
+
+    assert response.status_code == 200
+    assert response.headers["content-type"].startswith("text/csv")
+    assert response.text.splitlines()[0] == (
+        "Company Code,Staff_ID,Staff Number,Name of Employee,Email Address,Personal Email,"
+        "Date of Birth,Gender,Phone,National ID,Passport Number,Status,Relation,Primary Staff ID"
+    )
+    assert "Example Member" in response.text
+
+
+async def test_member_duplicate_scan_only_matches_exact_client_scoped_ids(api):
+    api.members.list_all.return_value = [member("m1"), member("m2", employer_member_id="m1")]
+
+    response = await api.http.get("/members/duplicates")
+
+    assert response.status_code == 200, response.text
+    body = response.json()
+    assert body["scanned"] == 2
+    assert len(body["items"]) == 1
+    assert body["items"][0]["reason"] == "Same Staff_ID within the same client"
+
+
 @pytest.mark.parametrize(
     "method,path,payload",
     [

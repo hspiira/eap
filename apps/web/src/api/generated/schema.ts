@@ -3233,6 +3233,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/members/duplicates": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Find members sharing an employer member ID
+         * @description Find exact tenant/client/member-ID collisions without name or email matching.
+         */
+        get: operations["scan_member_duplicates_members_duplicates_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/members/export": {
         parameters: {
             query?: never;
@@ -3264,6 +3284,26 @@ export interface paths {
          * @description Preview or import a roster using only explicit, stable member IDs.
          */
         post: operations["import_members_members_import_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/members/import/template": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Download the member CSV import template
+         * @description Return the supported member roster columns with one safe example row.
+         */
+        get: operations["member_import_template_members_import_template_get"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -8961,6 +9001,34 @@ export interface components {
             staff_number?: string | null;
             /** Work Email */
             work_email?: string | null;
+        };
+        /** MemberDuplicateCandidate */
+        MemberDuplicateCandidate: {
+            first: components["schemas"]["MemberDuplicateMember"];
+            /** Reason */
+            reason: string;
+            second: components["schemas"]["MemberDuplicateMember"];
+        };
+        /** MemberDuplicateListResponse */
+        MemberDuplicateListResponse: {
+            /** Items */
+            items: components["schemas"]["MemberDuplicateCandidate"][];
+            /** Scanned */
+            scanned: number;
+        };
+        /** MemberDuplicateMember */
+        MemberDuplicateMember: {
+            /** Client Id */
+            client_id: string;
+            /** Client Name */
+            client_name?: string | null;
+            /** Display Label */
+            display_label: string;
+            /** Employer Member Id */
+            employer_member_id: string;
+            /** Id */
+            id: string;
+            relation: components["schemas"]["MemberRelation"];
         };
         /**
          * MemberGender
@@ -17898,6 +17966,26 @@ export interface operations {
             };
         };
     };
+    scan_member_duplicates_members_duplicates_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MemberDuplicateListResponse"];
+                };
+            };
+        };
+    };
     export_members_members_export_get: {
         parameters: {
             query?: {
@@ -17963,6 +18051,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    member_import_template_members_import_template_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
                 };
             };
         };

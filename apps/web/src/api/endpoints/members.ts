@@ -68,7 +68,32 @@ export interface MemberImportResult {
   rows: MemberImportRow[]
 }
 
+export interface MemberDuplicateMember {
+  id: string
+  client_id: string
+  client_name?: string | null
+  employer_member_id: string
+  display_label: string
+  relation: MemberRelation
+}
+
+export interface MemberDuplicateCandidate {
+  first: MemberDuplicateMember
+  second: MemberDuplicateMember
+  reason: string
+}
+
 export const membersApi = {
+  async getImportTemplate(): Promise<Blob> {
+    return apiClient.getBlob("/members/import/template")
+  },
+
+  async scanDuplicates(): Promise<{ items: MemberDuplicateCandidate[]; scanned: number }> {
+    return apiClient.get<{ items: MemberDuplicateCandidate[]; scanned: number }>(
+      "/members/duplicates",
+    )
+  },
+
   async importRoster(
     file: File,
     dryRun = true,
