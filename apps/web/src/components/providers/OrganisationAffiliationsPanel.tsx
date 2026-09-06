@@ -36,7 +36,7 @@ export function OrganisationAffiliationsPanel({ organisationId }: { organisation
   const [providerId, setProviderId] = useState("")
   const [validFrom, setValidFrom] = useState("")
   const [validUntil, setValidUntil] = useState("")
-  const [conflict, setConflict] = useState<string | null>(null)
+  const [conflict, setConflict] = useState<{ field: string | null; message: string } | null>(null)
 
   const query = useQuery({
     queryKey: [
@@ -73,10 +73,12 @@ export function OrganisationAffiliationsPanel({ organisationId }: { organisation
       toast.showSuccess("Affiliation added")
     } catch (error) {
       if (isApiError(error) && error.status === 409) {
-        // The top-level message is the sentence naming the conflicting period.
-        // `details` currently carries the field name as a value rather than as
-        // a field error, so it is not readable text; see PROVIDERS_FRONTEND.md.
-        setConflict(error.message)
+        // The server names which end of the interval conflicts, so the message
+        // goes under that input. It falls back to the top-level sentence,
+        // which says the same thing.
+        const detail = error.fieldErrors ? Object.keys(error.fieldErrors)[0] : null
+        const field = detail === "valid_from" || detail === "valid_until" ? detail : null
+        setConflict({ field, message: error.message })
         return
       }
       toast.showError(normalizeErrorMessage(error, "Could not add the affiliation"))
@@ -135,18 +137,23 @@ export function OrganisationAffiliationsPanel({ organisationId }: { organisation
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-3.5">
-            {conflict ? (
+            {conflict && !conflict.field ? (
               <p
                 role="alert"
                 className="border border-danger/30 bg-danger-soft px-3 py-2 text-sm text-danger-fg"
               >
-                {conflict}
+                {conflict.message}
               </p>
             ) : null}
             <FormField label="Practitioner" required>
               <ProviderPicker value={providerId} onChange={setProviderId} />
             </FormField>
-            <FormField label="Starts on" required htmlFor="affiliation-from">
+            <FormField
+              label="Starts on"
+              required
+              error={conflict?.field === "valid_from" ? conflict.message : undefined}
+              htmlFor="affiliation-from"
+            >
               <Input
                 id="affiliation-from"
                 type="date"
@@ -158,6 +165,7 @@ export function OrganisationAffiliationsPanel({ organisationId }: { organisation
               label="Ends before"
               optional
               description="The last covered day is the day before this date. Leave empty for an open-ended affiliation."
+              error={conflict?.field === "valid_until" ? conflict.message : undefined}
               htmlFor="affiliation-until"
             >
               <Input

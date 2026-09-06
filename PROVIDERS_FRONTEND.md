@@ -80,7 +80,7 @@ From `apps/web`, on Node 26.7.0, pnpm 10.9.0, against the integrated head.
 | --- | --- | --- |
 | Types | `pnpm typecheck` | pass |
 | Lint | `pnpm lint` | pass |
-| Tests | `pnpm test` | 70 files, 534 tests, all passed |
+| Tests | `pnpm test` | 70 files, 535 tests, all passed |
 | Build | `pnpm build` | pass |
 | Contract drift | `pnpm contracts:check` | pass, exit 0: regeneration is a no-op |
 
@@ -174,33 +174,52 @@ catalogue endpoint itself answers 200.
 
 ## Findings from the running API
 
-Two behaviours differ from what was published in coordination. Neither is a
-frontend fault and neither blocks the UI, but both belong to their owners.
+Three behaviours differed from what was published. None was a frontend fault.
 
-1. **The affiliation overlap `details` array is not field errors.** The
-   published shape was
-   `[{"field": "valid_from", "message": "Overlaps affiliation <id> (...)", "code": "overlap"}]`.
-   The API returns
+1. **The affiliation overlap `details` array was not field errors.** The API
+   returned
    `[{"field": "field", "message": "valid_from", "code": null}, {"field": "conflicting_affiliation_id", "message": "<id>", "code": null}]`,
-   which is a key/value bag rather than a field error: `field` is the literal
-   string `"field"`, the message is the field's name, and `code` is null. Two
-   consequences. A form attaching errors by `details[].field` would attach one
-   to a field called `field`, which does not exist; the shared form hook now
-   routes an unattachable error to the form-level banner instead of swallowing
-   it, so this degrades rather than disappears. And rendering the detail
-   messages produces `"valid_from <id>"`, which is not a sentence. The readable
-   text is the top-level `message`, which is correct and complete, so the
-   affiliation form renders that. If `details` is corrected to carry
-   `valid_from` as the field with the sentence as the message, the form will
-   attach it to the date input without further change.
+   a key/value bag in which `field` was the literal string `"field"` and the
+   message was the field's name. Reported and fixed by the organisations task
+   in `46dbba7`, which now returns one entry keyed by the real field carrying
+   the same sentence as the top-level message. The affiliation form uses it:
+   the overlap message now appears under the date input the server names, and
+   falls back to a banner when no usable field is given.
 
-2. **A whitespace-only reason returns 400, not the documented 422, and carries
-   no `details`.** An empty string returns 422 with a `string_too_short` field
-   error, but `"   "` returns 400 `DOMAIN_ERROR` with an empty `details` array,
-   so nothing can be attached to the reason input. The command is correctly
-   refused either way. The reason dialogs disable their confirm button until
-   the reason is non-blank after trimming, so the UI does not reach this state;
-   it matters for any other client.
+2. **The same defect is live in the shared exception serialiser, and is not
+   fixed.** `EvexiaException.to_api_response` at
+   `apps/api/app/domain/exceptions.py:55` maps each `details` key to a field
+   and its value to that field's message. `ValidationException.__init__` at
+   the same file, line 72, builds `details = {"field": field}`, so **every**
+   `ValidationException` raised with a field produces
+   `{"field": "field", "message": "<the field's name>", "code": null}`: the
+   error attaches to a field called `field`, and the message is a field name
+   rather than a sentence. Three live call sites:
+   `app/api/routes/service_sessions.py:147` (`delivery_context` on a booking
+   that states Unknown delivery),
+   `app/application/use_cases/client_use_cases.py:102` (`code`) and
+   `:121` (`parent_client_id`). The first is in this module's own booking
+   path. The consequence is contained rather than silent, because the shared
+   form hook now routes an unattachable error to the form-level banner where
+   the correct top-level message is shown, but no such error reaches the input
+   it is about, in providers or anywhere else. Owned by the core task; the
+   organisations task fixed its own call site by not using the pattern, which
+   leaves the class itself. `to_api_response` also hardcodes `code` to null,
+   so no domain error carries a machine-readable code. Eligibility failures
+   are unaffected: they come from a different path and do carry codes, which
+   was confirmed against the running API.
+
+3. **A whitespace-only reason returns 400, not the documented 422, and carries
+   no `details`.** Traced to `_require_reason` at
+   `apps/api/app/domain/entities/provider.py:46`, which raises a `DomainError`
+   after the schema has let the whitespace through, so the practitioner
+   lifecycle commands answer 400 with an empty `details` array and nothing can
+   attach to the reason input. An empty string is caught earlier and returns
+   422 with a field error. The organisations task's own commands reject blank,
+   whitespace and tabs at the schema with 422, so this is the practitioner path
+   only. Owned by the core task. The reason dialogs disable their confirm
+   button until the reason is non-blank after trimming, so the UI does not
+   reach it; it matters for any other client.
 
 ## Carried items, with owners
 
@@ -208,7 +227,7 @@ frontend fault and neither blocks the UI, but both belong to their owners.
    organisation detail page resolves each one with a cached detail query.
    Requested of the organisations task; a `provider_display_name` would remove
    the per-row request.
-2. The two findings above, owned by the organisations and core tasks.
+2. Findings 2 and 3 above, both owned by the core task. Finding 1 is closed.
 3. Historical import and alias review have no UI, deliberately. See below.
 
 The two items previously carried here are closed: `PanelStatus` now has
