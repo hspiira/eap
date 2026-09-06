@@ -119,13 +119,23 @@ function ServiceSessionDetailPage() {
   )
 
   const confirmComplete = useCallback(
-    async (duration: number, notes: string) => {
+    async (duration: number, notes: string, caseId?: string) => {
       if (!session) return
-      const { drawdown } = await serviceSessionsApi.complete(session.id, { duration, notes })
+      const { drawdown } = await serviceSessionsApi.complete(session.id, {
+        duration,
+        notes,
+        case_id: caseId ?? null,
+      })
       await queryClient.invalidateQueries({ queryKey: ["service-sessions"] })
+      if (drawdown.consumed) {
+        showSuccess(`Session completed. ${drawdown.sessions_remaining} authorized sessions left.`)
+        return
+      }
+      // A named case that could not be drawn down is worth saying out loud:
+      // the session is complete either way, but the entitlement did not move.
       showSuccess(
-        drawdown.consumed
-          ? `Session completed. ${drawdown.sessions_remaining} authorized sessions left.`
+        caseId && drawdown.reason
+          ? `Session completed. Not drawn down: ${drawdown.reason}`
           : "Session completed",
       )
     },
@@ -217,6 +227,7 @@ function ServiceSessionDetailPage() {
         open={completeOpen}
         onOpenChange={setCompleteOpen}
         defaultDuration={service?.duration_minutes ?? 60}
+        clientId={member?.client_id}
         onConfirm={confirmComplete}
       />
       <CancelDialog open={cancelOpen} onOpenChange={setCancelOpen} onConfirm={confirmCancel} />

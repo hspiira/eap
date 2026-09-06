@@ -14,11 +14,13 @@ interface DetailRailProps {
   actionLoading: boolean
 }
 
-import { useEffect, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 
+import { useQuery } from "@tanstack/react-query"
 import { Link } from "@tanstack/react-router"
 import { CalendarClock, CalendarRange, Lock, Users, Wrench } from "lucide-react"
 
+import { casesApi } from "@/api/endpoints/cases"
 import { DetailCard, RailSection, Stat } from "@/components/common/DetailPrimitives"
 import { FormField } from "@/components/common/FormField"
 import { LifecycleActions } from "@/components/common/LifecycleActions"
@@ -33,10 +35,19 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
+import { useHasClinicalScope } from "@/hooks/useCanWrite"
 import { memberLabel } from "@/lib/display"
 import { formatDateTime } from "@/lib/format"
 import type { Member, Service, ServiceSession } from "@/types/entities"
+import { CaseStatus } from "@/types/enums"
 import type { LifecycleAction } from "@/utils/lifecycleConfig"
 import { getStatusLabel } from "@/utils/statusColors"
 
@@ -205,25 +216,55 @@ export function FeedbackPanel({
   )
 }
 
+const NO_CASE = "__none__"
+
+/** A closed case cannot absorb a drawdown, so it is not worth offering. */
+const CLOSED_CASE_STATUSES: ReadonlyArray<CaseStatus> = [
+  CaseStatus.CLOSED,
+  CaseStatus.REFERRED_OUT,
+  CaseStatus.NO_SHOW_CLOSED,
+]
+
 export function CompleteDialog({
   open,
   onOpenChange,
   defaultDuration,
+  clientId,
   onConfirm,
 }: {
   open: boolean
   onOpenChange: (open: boolean) => void
   defaultDuration: number
-  onConfirm: (duration: number, notes: string) => Promise<void>
+  /** Narrows the case list to the session's client. Cases carry no member id. */
+  clientId?: string | null
+  onConfirm: (duration: number, notes: string, caseId?: string) => Promise<void>
 }) {
   const [duration, setDuration] = useState(String(defaultDuration))
   const [notes, setNotes] = useState("")
+  const [caseId, setCaseId] = useState(NO_CASE)
   const [submitting, setSubmitting] = useState(false)
+
+  // Naming a case is what draws the session down against its authorization.
+  // Only a clinical-scoped user may list cases, and the API fails closed, so
+  // the picker is not rendered at all without the scope.
+  const { hasScope } = useHasClinicalScope()
+  const casesQuery = useQuery({
+    queryKey: ["cases", "list"],
+    queryFn: casesApi.list,
+    enabled: open && hasScope,
+    staleTime: 60_000,
+  })
+  const cases = useMemo(() => {
+    const rows = casesQuery.data ?? []
+    const live = rows.filter((c) => !CLOSED_CASE_STATUSES.includes(c.status))
+    return clientId ? live.filter((c) => c.client_id === clientId) : live
+  }, [casesQuery.data, clientId])
 
   useEffect(() => {
     if (open) {
       setDuration(String(defaultDuration))
       setNotes("")
+      setCaseId(NO_CASE)
     }
   }, [open, defaultDuration])
 
@@ -234,7 +275,7 @@ export function CompleteDialog({
     if (!valid) return
     setSubmitting(true)
     try {
-      await onConfirm(minutes, notes.trim())
+      await onConfirm(minutes, notes.trim(), caseId === NO_CASE ? undefined : caseId)
       onOpenChange(false)
     } finally {
       setSubmitting(false)
@@ -269,6 +310,29 @@ export function CompleteDialog({
               rows={3}
             />
           </FormField>
+          {hasScope ? (
+            <FormField
+              label="Draw down against case"
+              htmlFor="complete-case"
+              hint="Optional. Choosing a case spends one authorized session from it."
+            >
+              <Select value={caseId} onValueChange={setCaseId}>
+                <SelectTrigger id="complete-case" className="rounded-none">
+                  <SelectValue placeholder={casesQuery.isPending ? "Loading cases…" : "No case"} />
+                </SelectTrigger>
+                <SelectContent className="rounded-none">
+                  <SelectItem value={NO_CASE} className="rounded-none">
+                    No case
+                  </SelectItem>
+                  {cases.map((row) => (
+                    <SelectItem key={row.id} value={row.id} className="rounded-none">
+                      {row.clinical_subject_id} · {row.presenting_problem}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </FormField>
+          ) : null}
         </div>
         <DialogFooter>
           <Button

@@ -190,6 +190,10 @@ export function ServiceSessionFormSheet({
         if (__isBackfill && result?.id) {
           // A backfilled session is complete by definition. Duration comes
           // from the service's configured length; the reason becomes the note.
+          //
+          // No case_id, deliberately: a backfill records history that already
+          // happened, and spending a live authorization for it would double
+          // count against an entitlement the past session never used.
           const svc = await servicesApi.getById(body.service_id).catch(() => null)
           const completed = await serviceSessionsApi.complete(result.id, {
             duration: svc?.duration_minutes ?? 60,
