@@ -38,14 +38,13 @@ export const providerAffiliationsApi = {
     return apiClient.get<PaginatedResponse<ProviderAffiliation>>("/provider-affiliations", params)
   },
 
+  /** The organisation is a query parameter; the body carries the practitioner. */
   async create(
     organisationId: string,
     data: ProviderAffiliationCreateRequest,
   ): Promise<ProviderAffiliation> {
-    return apiClient.post<ProviderAffiliation>(
-      `/provider-organisations/${organisationId}/affiliations`,
-      data,
-    )
+    const query = new URLSearchParams({ organisation_id: organisationId })
+    return apiClient.post<ProviderAffiliation>(`/provider-affiliations?${query}`, data)
   },
 
   /**

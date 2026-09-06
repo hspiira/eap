@@ -28,14 +28,14 @@ import { normalizeErrorMessage } from "@/lib/errors"
 import { useEntityList } from "@/lib/queries"
 import { boolParam, enumOptions, enumParam, listSearchSchema } from "@/lib/search-params"
 import type { ProviderOrganisation } from "@/types/entities"
-import { ProviderApprovalStatus } from "@/types/enums"
+import { OrganisationApprovalStatus } from "@/types/enums"
 
-const APPROVAL_OPTIONS = enumOptions(ProviderApprovalStatus, "All approval states")
+const APPROVAL_OPTIONS = enumOptions(OrganisationApprovalStatus, "All approval states")
 
 export const Route = createFileRoute("/provider-organisations/")({
   component: ProviderOrganisationsListPage,
   validateSearch: listSearchSchema({
-    approval_status: enumParam(ProviderApprovalStatus),
+    approval_status: enumParam(OrganisationApprovalStatus),
     inactive: boolParam(),
   }),
 })

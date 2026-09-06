@@ -10,7 +10,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import type { ProviderAffiliation } from "@/types/entities"
-import { ProviderApprovalStatus, SessionDeliveryContext } from "@/types/enums"
+import { OrganisationApprovalStatus, SessionDeliveryContext } from "@/types/enums"
 
 /**
  * The wall-clock date of a `datetime-local` value.
@@ -28,7 +28,7 @@ type BookableContext = SessionDeliveryContext.DIRECT | SessionDeliveryContext.OR
 
 function optionLabel(affiliation: ProviderAffiliation): string {
   if (!affiliation.organisation_is_active) return `${affiliation.organisation_name} (inactive)`
-  if (affiliation.organisation_approval_status !== ProviderApprovalStatus.APPROVED) {
+  if (affiliation.organisation_approval_status !== OrganisationApprovalStatus.APPROVED) {
     return `${affiliation.organisation_name} (${affiliation.organisation_approval_status})`
   }
   return affiliation.organisation_name
