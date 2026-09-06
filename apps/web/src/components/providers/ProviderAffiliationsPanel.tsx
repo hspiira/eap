@@ -6,15 +6,8 @@ import { Link } from "@tanstack/react-router"
 import { providerAffiliationsApi } from "@/api/endpoints/provider-affiliations"
 import { DetailCard } from "@/components/common/DetailPrimitives"
 import { FormField } from "@/components/common/FormField"
+import { ReasonDialog } from "@/components/providers/ReasonDialog"
 import { Button } from "@/components/ui/button"
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { useToast } from "@/contexts/ToastContext"
 import { useCanWrite } from "@/hooks/useCanWrite"
@@ -63,10 +56,10 @@ export function ProviderAffiliationsPanel({ providerId }: { providerId: string }
     setEditing(affiliation)
   }
 
-  const save = async () => {
+  const save = async (reason: string) => {
     if (!editing) return
     try {
-      await providerAffiliationsApi.setValidUntil(editing.id, validUntil || null)
+      await providerAffiliationsApi.setValidUntil(editing.id, validUntil || null, reason)
       await queryClient.invalidateQueries({ queryKey: ["provider-affiliations"] })
       setEditing(null)
       toast.showSuccess("Affiliation updated")
@@ -135,38 +128,28 @@ export function ProviderAffiliationsPanel({ providerId }: { providerId: string }
         </ul>
       )}
 
-      <Dialog open={editing !== null} onOpenChange={(open) => (open ? null : setEditing(null))}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Set the end of this affiliation</DialogTitle>
-            <DialogDescription>
-              The practitioner and the firm cannot be changed. Only the end of the period is
-              editable, and the end date itself is not covered.
-            </DialogDescription>
-          </DialogHeader>
-          <FormField
-            label="Ends before"
-            optional
-            description="The last covered day is the day before this date. Leave empty for an open-ended affiliation."
-            htmlFor="affiliation-valid-until"
-          >
-            <Input
-              id="affiliation-valid-until"
-              type="date"
-              value={validUntil}
-              onChange={(event) => setValidUntil(event.target.value)}
-            />
-          </FormField>
-          <DialogFooter>
-            <Button type="button" variant="outline" size="sm" onClick={() => setEditing(null)}>
-              Cancel
-            </Button>
-            <Button type="button" size="sm" onClick={() => void save()}>
-              Save
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <ReasonDialog
+        open={editing !== null}
+        onOpenChange={(open) => (open ? null : setEditing(null))}
+        title="Set the end of this affiliation"
+        description="The practitioner and the firm cannot be changed. Only the end of the period is editable, and the end date itself is not covered. Moving an end date can affect sessions already attributed to this firm, so the change is recorded as a correction."
+        confirmLabel="Save"
+        onConfirm={save}
+      >
+        <FormField
+          label="Ends before"
+          optional
+          description="The last covered day is the day before this date. Leave empty for an open-ended affiliation."
+          htmlFor="affiliation-valid-until"
+        >
+          <Input
+            id="affiliation-valid-until"
+            type="date"
+            value={validUntil}
+            onChange={(event) => setValidUntil(event.target.value)}
+          />
+        </FormField>
+      </ReasonDialog>
     </DetailCard>
   )
 }

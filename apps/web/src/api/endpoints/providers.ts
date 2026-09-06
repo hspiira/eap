@@ -34,14 +34,18 @@ export interface ProviderListParams extends ListParams {
   has_account?: boolean
 }
 
-/** Fields a practitioner owns. Tier and region are required on create only. */
+/**
+ * Fields a practitioner owns. Tier and region are required on create only.
+ *
+ * Specialties are not here: they are catalogue links, written through
+ * `providerSpecialtiesApi`. Sending them on this path is rejected.
+ */
 export interface ProviderProfileInput {
   display_name?: string
   email?: string | null
   phone?: string | null
   region?: UgandaRegion
   bio?: string | null
-  specialties?: string[]
   license_info?: LicenseInfo | null
 }
 

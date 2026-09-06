@@ -107,13 +107,22 @@ describe("practitioner affiliations", () => {
     )
   })
 
-  it("edits only the end of an interval", async () => {
+  it("edits only the end of an interval, and records why", async () => {
     renderWithProviders(<ProviderAffiliationsPanel providerId="prv-1" />)
     fireEvent.click(await screen.findByRole("button", { name: /set end/i }))
     fireEvent.change(screen.getByLabelText(/ends before/i), { target: { value: "2026-09-01" } })
-    fireEvent.click(screen.getByRole("button", { name: /^save$/i }))
 
-    await waitFor(() => expect(mocks.setValidUntil).toHaveBeenCalledWith("aff-1", "2026-09-01"))
+    // Moving an end date can affect existing attribution, so it is a
+    // correction and the server requires a reason.
+    const save = screen.getByRole("button", { name: /^save$/i })
+    expect(save).toBeDisabled()
+
+    fireEvent.change(screen.getByLabelText(/reason/i), { target: { value: "Contract ended" } })
+    fireEvent.click(save)
+
+    await waitFor(() =>
+      expect(mocks.setValidUntil).toHaveBeenCalledWith("aff-1", "2026-09-01", "Contract ended"),
+    )
   })
 })
 

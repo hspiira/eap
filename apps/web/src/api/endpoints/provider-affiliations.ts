@@ -48,10 +48,19 @@ export const providerAffiliationsApi = {
     )
   },
 
-  /** Only the end of the interval is editable. */
-  async setValidUntil(id: string, validUntil: string | null): Promise<ProviderAffiliation> {
+  /**
+   * Only the end of the interval is editable, and the reason is required:
+   * moving an end date can invalidate attribution that already exists, which
+   * makes this a correction rather than an edit.
+   */
+  async setValidUntil(
+    id: string,
+    validUntil: string | null,
+    reason: string,
+  ): Promise<ProviderAffiliation> {
     return apiClient.patch<ProviderAffiliation>(`/provider-affiliations/${id}`, {
       valid_until: validUntil,
+      reason,
     })
   },
 }

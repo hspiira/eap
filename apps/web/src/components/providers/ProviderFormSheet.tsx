@@ -33,7 +33,6 @@ const providerSchema = z.object({
   tier: z.enum(ProviderTier),
   region: z.enum(UgandaRegion),
   bio: z.string(),
-  specialties: z.string(),
 })
 
 type ProviderFormValues = z.infer<typeof providerSchema>
@@ -45,7 +44,6 @@ const DEFAULTS: ProviderFormValues = {
   tier: ProviderTier.T2,
   region: UgandaRegion.CENTRAL,
   bio: "",
-  specialties: "",
 }
 
 /** Empty input clears a nullable field; the API reads null as "clear". */
@@ -54,16 +52,10 @@ function nullable(value: string): string | null {
   return trimmed ? trimmed : null
 }
 
-function parseSpecialties(value: string): string[] {
-  return value
-    .split(",")
-    .map((entry) => entry.trim())
-    .filter(Boolean)
-}
-
 /**
- * Ordinary fields only. Tier is absent on edit because the API rejects the key
- * outright: tier moves through the audited tier command, not general edit.
+ * Ordinary fields only. Tier and specialties are absent because the API
+ * rejects those keys outright: tier moves through the audited tier command,
+ * and specialties are catalogue links managed on the practitioner page.
  */
 function editPayload(values: ProviderFormValues): ProviderProfileInput {
   return {
@@ -72,7 +64,6 @@ function editPayload(values: ProviderFormValues): ProviderProfileInput {
     phone: nullable(values.phone),
     region: values.region,
     bio: nullable(values.bio),
-    specialties: parseSpecialties(values.specialties),
   }
 }
 
@@ -117,7 +108,6 @@ export function ProviderFormSheet({
       tier: p.provider_profile.tier,
       region: p.provider_profile.region,
       bio: p.provider_profile.bio ?? "",
-      specialties: p.provider_profile.specialties.join(", "),
     }),
     parsePayload: (values) => values,
     save: ({ payload, entity, isEdit }) =>
@@ -137,7 +127,7 @@ export function ProviderFormSheet({
       title={isEdit ? "Edit practitioner" : "New practitioner"}
       description={
         isEdit
-          ? "Name, contact details and profile. Tier, panel status, accreditation and record status change through their own actions on the practitioner page."
+          ? "Name, contact details and profile. Tier, panel status, accreditation, record status and specialties change through their own actions on the practitioner page."
           : "A practitioner does not need a login. Contact details are optional and can be added later."
       }
       size="lg"
@@ -226,20 +216,6 @@ export function ProviderFormSheet({
                 </SelectContent>
               </Select>
             )}
-          />
-        </FormField>
-
-        <FormField
-          label="Specialties"
-          optional
-          description="Comma separated."
-          error={errors.specialties?.message}
-          htmlFor="prv-specialties"
-        >
-          <Input
-            id="prv-specialties"
-            placeholder="Trauma, Substance use"
-            {...register("specialties")}
           />
         </FormField>
 

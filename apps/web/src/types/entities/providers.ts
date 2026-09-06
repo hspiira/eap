@@ -23,6 +23,12 @@ export interface ProviderProfile {
   panel_status: PanelStatus
   accreditation_authority?: string | null
   accreditation_expiry?: string | null
+  /**
+   * Legacy free-text list, read-only and not displayed. A practitioner's
+   * specialties are the catalogue links from
+   * `GET /provider-specialties/links`; this field becomes a projection of them
+   * when the typed profile migration lands.
+   */
   specialties: string[]
   bio?: string | null
 }

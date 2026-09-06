@@ -14,7 +14,7 @@ deployed are separate claims and are separated below.
 - Role: frontend, generated contracts, integrated user-flow verification.
 - Branch: `codex/providers-agent3-frontend`.
 - Worktree: `/Users/piira/Developer/sandbox/eap/wt-agent3`.
-- Base commit: `e672b6f`. Head at this writing: `92da242`.
+- Base commit: `e672b6f`.
 - Owned paths: `apps/web/`, `apps/web/src/routeTree.gen.ts`,
   `apps/web/src/api/generated/schema.ts`, `apps/api/schema/openapi.json`.
 - No backend source is edited here. Backend defects are reported to their owner
@@ -79,10 +79,10 @@ From `apps/web` at `92da242`, on Node 26.7.0, pnpm 10.9.0.
 | --- | --- | --- |
 | Types | `pnpm typecheck` | pass |
 | Lint | `pnpm lint` | pass |
-| Tests | `pnpm test` | 69 files, 522 tests, all passed |
+| Tests | `pnpm test` | 70 files, 528 tests, all passed |
 | Build | `pnpm build` | pass; regenerated `routeTree.gen.ts` |
 
-Baseline before this work was 486 tests. The 36 added tests cover: naming a
+Baseline before this work was 486 tests. The 42 added tests cover: naming a
 practitioner with no contact email and no account; server-side filters and sort
 reaching the API rather than a fetched page; paging past the first page while
 the total stays the full matching count; a viewer seeing no create action; a
@@ -97,7 +97,11 @@ unapproved firm warned about; ended affiliations included; only the interval end
 editable; the overlap rejection shown with its conflicting period; a booking
 refusing to submit without an explicit delivery context; direct delivery sent
 with a null affiliation; every eligibility reason listed; and unknown, missing,
-direct and organisation attribution each rendered distinctly.
+direct and organisation attribution each rendered distinctly; specialties
+read from the catalogue links rather than free text; a link to a retired
+specialty kept visible and marked retired; retired and already-linked entries
+absent from the picker; a specialty linked by catalogue id; and a viewer given
+no specialty controls.
 
 These are component tests against mocked endpoints. They establish the UI's own
 behaviour. They do not establish that any backend route exists or behaves this
@@ -134,56 +138,59 @@ way.
    organisation detail page resolves each one with a cached detail query.
    Requested of the organisations task; a `provider_display_name` would remove
    the per-row request.
-4. `PATCH /provider-affiliations/{id}` is the path assumed for editing an
-   interval end. The organisations task specified the field but not the path.
-   To confirm with them.
-5. Decision 2 requires that changing affiliation dates must not silently
-   invalidate completed attribution, and must either be rejected or carried in
-   an explicit correction. No contract was published for that case. The
-   interval-end form shows whatever the server returns, so a rejection is
-   displayed, but the behaviour is unspecified. For the organisations and core
-   tasks to settle, and for review to check.
-6. Specialties have two incompatible write paths and the conflict is open. See
-   the section below. Blocked, not mine to settle; the picker is unbuilt until
-   it is.
-7. Historical import and alias review have no UI, deliberately. See the
+4. Affiliation interval corrections are rejected, not corrected, when the new
+   interval would stop covering a completed session attributed to it. The core
+   owner ruled a 409 with `affiliation_change_would_orphan_attribution` and the
+   offending session ids in `details`, choosing decision 2's rejection half
+   because the privileged correction operation does not exist yet. The
+   interval-end form renders those reasons through the same list used for
+   eligibility failures. The correction path stays a phase 3 item.
+5. Historical import and alias review have no UI, deliberately. See the
    section below.
 
-## Open contract conflict: two write paths for specialties
+## Settled: one write path for specialties
 
-The practitioner contract makes `specialties: string[]` an editable key on
-`PATCH /providers/{id}`, a whole-list replace when present. The organisations
-contract, committed at `9e3d6b1` on
-`codex/providers-agent2-organisations`, makes the tenant's links the write
-path: `POST /provider-specialties/links` with a `specialty_id`, and
-`DELETE /provider-specialties/links/{link_id}`.
+The practitioner contract originally made `specialties: string[]` a writable
+key on general `PATCH /providers/{id}`, while the organisations contract made
+the tenant's catalogue links the write path. Both cannot be how a specialty is
+recorded, and the string list was raised as the wrong one:
 
-Both cannot be the way a specialty is recorded:
-
-- A `string[]` carries no catalogue id. Writing `["Trauma"]` either stores free
-  text or is matched by label, and decision 5 states plainly that name
+- A `string[]` carries no catalogue id, and decision 5 states that name
   normalization is not proof of identity.
-- Decision 5 says tenants select active entries "through their own provider
-  links", which is the link model.
-- Selecting a retired specialty is a 422 on the link path and unchecked on the
-  PATCH path, so the PATCH path bypasses a rule the other enforces.
+- Decision 5 has tenants select active entries "through their own provider
+  links".
+- Selecting a retired entry is rejected on the link path and unchecked on the
+  PATCH path, so the PATCH path bypassed a rule the other enforces.
 - A whole-list replace of strings cannot express keeping an existing link to a
-  retired specialty, which decision 5 requires: retired entries stay on
-  historical records but cannot be newly selected.
+  retired specialty, which decision 5 requires.
 
-Position taken, and raised with both owners: `specialties` should come off the
-general PATCH editable set and become read-only on the response, projected
-from the links, leaving the link endpoints as the only write path. That is the
-same shape already agreed for tier and accreditation, which are readable in
-`provider_profile` and not writable through general edit.
+The organisations owner supplied the deciding citation: decision 6 enumerates
+what becomes a typed profile field (tier, region, panel status, accreditation
+status, authority and expiry) and what stays as text or JSON (bio, licence
+details). Specialties are in neither list, so they are governed by decision 5,
+not preserved by decision 6.
 
-This is a judgement about which of two published contracts is right, not a
-citation that settles it. It is for the core and organisations owners to
-decide, and for review to check. Until it is decided the practitioner form
-still sends `specialties` as free text, because that is what the practitioner
-contract asks for. That is left visibly incomplete on purpose rather than
-resolved by picking a winner. The endpoint module and the link type are in
-place, so implementing the outcome is one commit either way.
+Resolved in favour of the link model. The core owner removed `specialties` from
+create and from the general PATCH editable set and added it to the protected
+fields, so sending it now returns 422 naming the link endpoints. The
+practitioner form no longer sends it, and the practitioner page reads
+specialties from `GET /provider-specialties/links?provider_id=`, adds them by
+catalogue id, and shows a link to a retired entry marked retired rather than
+hiding it.
+
+`provider_profile.specialties` on the response is still the stored legacy JSON
+list and is not yet a projection of the links; it becomes one when the typed
+profile migration lands in phase 4. It is therefore not displayed anywhere:
+showing both it and the links would put two sources on one screen that can
+disagree.
+
+One consequence, owned by the organisations task and recorded here because it
+bears on this decision: whichever migration removes the free-text field must
+not discard values silently. Decision 6 requires migrations to preserve every
+existing credential field and to reject invalid data with actionable row
+identifiers, and free text will not match catalogue codes. Their local audit
+found zero providers carrying specialty values, and other environments are
+unverified.
 
 ## Deliberately not built
 

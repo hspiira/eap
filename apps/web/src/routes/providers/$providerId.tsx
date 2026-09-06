@@ -17,6 +17,7 @@ import { ProviderAffiliationsPanel } from "@/components/providers/ProviderAffili
 import { ProviderFormSheet } from "@/components/providers/ProviderFormSheet"
 import { ProviderLifecyclePanel } from "@/components/providers/ProviderLifecyclePanel"
 import { ProviderNonCompetePanel } from "@/components/providers/ProviderNonCompetePanel"
+import { ProviderSpecialtiesPanel } from "@/components/providers/ProviderSpecialtiesPanel"
 import { Button } from "@/components/ui/button"
 import { useCanWrite } from "@/hooks/useCanWrite"
 import { useTabSearchParam } from "@/hooks/useTabSearchParam"
@@ -109,12 +110,12 @@ function ProviderDetailPage() {
                 <DetailRow label="Region" value={getStatusLabel(profile.region)} />
                 <DetailRow label="Contact email" value={provider.email ?? ""} />
                 <DetailRow label="Contact phone" value={provider.phone ?? ""} />
-                <DetailRow label="Specialties" value={profile.specialties.join(", ")} fullWidth />
                 <DetailRow label="Bio" value={profile.bio ?? ""} fullWidth />
               </DetailGrid>
             </DetailCard>
 
             <ProviderLifecyclePanel provider={provider} onChanged={refresh} />
+            <ProviderSpecialtiesPanel providerId={provider.id} />
             <ProviderAccountCard provider={provider} onChanged={refresh} />
 
             {provider.license_info ? (

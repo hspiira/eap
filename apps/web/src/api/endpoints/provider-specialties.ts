@@ -9,8 +9,9 @@
  * retired entry cannot be newly selected, and doing so is rejected.
  */
 
-import apiClient from "../client"
 import type { ProviderSpecialty, ProviderSpecialtyLink } from "@/types/entities"
+
+import apiClient from "../client"
 
 export const providerSpecialtiesApi = {
   /** The global catalogue. Retired entries are excluded unless asked for. */

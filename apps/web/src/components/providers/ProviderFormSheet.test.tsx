@@ -10,6 +10,7 @@ vi.mock("@/api/endpoints/providers", () => ({ providersApi: mocks }))
 
 const PROTECTED_KEYS = [
   "provider_profile",
+  "specialties",
   "tier",
   "panel_status",
   "accreditation_status",
@@ -102,14 +103,7 @@ describe("practitioner form", () => {
     for (const key of PROTECTED_KEYS) {
       expect(body, `general edit must not send ${key}`).not.toHaveProperty(key)
     }
-    expect(Object.keys(body).sort()).toEqual([
-      "bio",
-      "display_name",
-      "email",
-      "phone",
-      "region",
-      "specialties",
-    ])
+    expect(Object.keys(body).sort()).toEqual(["bio", "display_name", "email", "phone", "region"])
   })
 
   it("offers no tier control on edit, because tier is a lifecycle command", async () => {
