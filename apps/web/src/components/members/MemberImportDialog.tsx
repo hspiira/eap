@@ -186,6 +186,11 @@ export function MemberImportDialog({ open, onOpenChange, onImported }: MemberImp
               Company Code resolves the client. Staff Number is retained for reference, never
               identity matching.
             </p>
+            <p className="text-xs text-fg-muted">
+              Supported fields: Company Code, Staff_ID, Name of Employee, Email Address, Gender,
+              Status, Relation, and Primary Staff ID. Other workforce columns are ignored; files are
+              limited to 10 MB.
+            </p>
           </div>
 
           {loading && !preview ? (
