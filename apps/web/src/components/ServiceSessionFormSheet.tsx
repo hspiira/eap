@@ -1,3 +1,5 @@
+import { useState } from "react"
+
 import { useQuery } from "@tanstack/react-query"
 import { Controller } from "react-hook-form"
 import { z } from "zod"
@@ -11,6 +13,12 @@ import { FormField } from "@/components/common/FormField"
 import { FormSection } from "@/components/common/FormSection"
 import { SheetForm } from "@/components/common/SheetForm"
 import { CATEGORY_LABELS } from "@/components/ServiceFormSheet"
+import { DeliveryContextField } from "@/components/sessions/DeliveryContextField"
+import {
+  EligibilityFailureNotice,
+  eligibilityReasons,
+} from "@/components/sessions/EligibilityFailureNotice"
+import { StoredAttribution } from "@/components/sessions/SessionAttribution"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Input } from "@/components/ui/input"
 import {
@@ -24,14 +32,19 @@ import { useEntityFormSheet } from "@/hooks/useEntityFormSheet"
 import { memberLabel, nameInitials } from "@/lib/display"
 import { useEntityList } from "@/lib/queries"
 import { cn } from "@/lib/utils"
+import type { ErrorDetail } from "@/types/api"
 import type { Member, Service, ServiceSession } from "@/types/entities"
-import { ClientType, SessionCategory, SessionType } from "@/types/enums"
+import { ClientType, SessionCategory, SessionDeliveryContext, SessionType } from "@/types/enums"
 
 const schema = z
   .object({
     service_id: z.string().trim().min(1, "Service is required"),
     member_id: z.string().trim().min(1, "Member is required"),
-    service_provider_id: z.string().trim().min(1, "Provider is required"),
+    service_provider_id: z.string().trim().min(1, "Practitioner is required"),
+    delivery_context: z.enum([SessionDeliveryContext.DIRECT, SessionDeliveryContext.ORGANISATION], {
+      message: "Choose direct or organisation delivery",
+    }),
+    provider_affiliation_id: z.string().optional(),
     scheduled_at: z
       .string()
       .min(1, "Scheduled time is required")
@@ -52,6 +65,15 @@ const schema = z
     is_backfill: z.boolean().optional(),
     backfill_reason: z.string().optional(),
   })
+  .refine(
+    (d) =>
+      d.delivery_context !== SessionDeliveryContext.ORGANISATION ||
+      Boolean(d.provider_affiliation_id?.trim()),
+    {
+      path: ["provider_affiliation_id"],
+      message: "Choose the organisation this session is delivered through",
+    },
+  )
   .refine((d) => !d.is_backfill || new Date(d.scheduled_at).getTime() <= Date.now(), {
     path: ["scheduled_at"],
     message: "Backfilled sessions must be in the past",
@@ -76,6 +98,8 @@ const EMPTY: Values = {
   service_id: "",
   member_id: "",
   service_provider_id: "",
+  delivery_context: undefined as unknown as Values["delivery_context"],
+  provider_affiliation_id: "",
   scheduled_at: "",
   location: "",
   notes: "",
@@ -92,6 +116,19 @@ const EMPTY: Values = {
   diagnosis_type_id: null,
   is_backfill: false,
   backfill_reason: "",
+}
+
+/**
+ * The create body plus the agreed delivery-context fields.
+ *
+ * `ServiceSessionCreate` is generated from `apps/api/schema/openapi.json`,
+ * which does not carry these two fields yet. The extension is explicit so it
+ * can be deleted in the same commit that regenerates the contract; the literal
+ * values are guarded by `enums.contract.test.ts` once the API declares them.
+ */
+type SessionCreateBody = Parameters<typeof serviceSessionsApi.create>[0] & {
+  delivery_context: SessionDeliveryContext
+  provider_affiliation_id: string | null
 }
 
 interface ServiceSessionFormSheetProps {
@@ -122,11 +159,12 @@ export function ServiceSessionFormSheet({
 }: ServiceSessionFormSheetProps) {
   const lockedServiceId = serviceId ?? session?.service_id
   const lockedMemberId = memberId ?? session?.member_id
+  const [ineligible, setIneligible] = useState<ErrorDetail[] | null>(null)
 
   const { register, control, formState, submit, serverError, setValue, watch, isEdit } =
     useEntityFormSheet<
       Values,
-      Parameters<typeof serviceSessionsApi.create>[0] & {
+      SessionCreateBody & {
         __isBackfill?: boolean
         __backfillReason?: string | null
         __notes?: string
@@ -154,6 +192,11 @@ export function ServiceSessionFormSheet({
           service_id: values.service_id,
           member_id: values.member_id,
           provider_id: values.service_provider_id,
+          delivery_context: values.delivery_context,
+          provider_affiliation_id:
+            values.delivery_context === SessionDeliveryContext.ORGANISATION
+              ? (values.provider_affiliation_id?.trim() ?? null)
+              : null,
           scheduled_at: new Date(values.scheduled_at).toISOString(),
           location: values.location?.trim() || null,
           category: values.category ?? undefined,
@@ -177,17 +220,29 @@ export function ServiceSessionFormSheet({
         if (isEdit && entity) {
           // PATCH takes the clinical/admin fields (+ notes); scheduling is
           // immutable here: reschedule is its own transition on the detail page.
+          //
+          // Attribution is stripped too: changing which practitioner or
+          // affiliation delivered a session is a privileged, audited
+          // correction, not a general edit.
           const {
             service_id: _s,
             member_id: _p,
             provider_id: _pr,
+            delivery_context: _dc,
+            provider_affiliation_id: _af,
             scheduled_at: _at,
             session_number: _sn,
             ...updatable
           } = body
           return serviceSessionsApi.update(entity.id, { ...updatable, notes: __notes })
         }
-        let result = await serviceSessionsApi.create(body)
+        setIneligible(null)
+        let result = await serviceSessionsApi.create(body).catch((error: unknown) => {
+          // Rendered as its own list rather than one message: the server sends
+          // every reason, and the form-level banner shows only the last.
+          setIneligible(eligibilityReasons(error))
+          throw error
+        })
         if (__isBackfill && result?.id) {
           // A backfilled session is complete by definition. Duration comes
           // from the service's configured length; the reason becomes the note.
@@ -238,6 +293,8 @@ export function ServiceSessionFormSheet({
       submitLabel={isEdit ? "Save changes" : watchedBackfill ? "Log session" : "Create session"}
       submittingLabel={isEdit ? "Saving…" : watchedBackfill ? "Logging…" : "Creating…"}
     >
+      {ineligible ? <EligibilityFailureNotice reasons={ineligible} /> : null}
+
       <FormSection title="Service">
         <FormField label="Service" required error={errors.service_id?.message}>
           {lockedServiceId ? (
@@ -347,19 +404,44 @@ export function ServiceSessionFormSheet({
         ) : null}
       </FormSection>
 
-      <FormSection title="Provider" description="The counsellor or clinic delivering the session.">
-        <FormField label="Provider" required error={errors.service_provider_id?.message}>
+      <FormSection
+        title="Practitioner"
+        description="Who delivers the session, and whether they deliver it directly or for a supplier firm."
+      >
+        <FormField label="Practitioner" required error={errors.service_provider_id?.message}>
           <ProviderPicker
             value={watchedProvider ?? ""}
-            onChange={(id) =>
-              setValue("service_provider_id", id, {
+            onChange={(id) => {
+              setValue("service_provider_id", id, { shouldValidate: true, shouldDirty: true })
+              setValue("provider_affiliation_id", "", { shouldDirty: true })
+            }}
+          />
+        </FormField>
+        <Input type="hidden" {...register("service_provider_id")} />
+        {isEdit ? (
+          <StoredAttribution session={session ?? null} />
+        ) : (
+          <DeliveryContextField
+            providerId={watchedProvider ?? ""}
+            scheduledAt={watch("scheduled_at") ?? ""}
+            context={watch("delivery_context")}
+            affiliationId={watch("provider_affiliation_id") ?? ""}
+            onContextChange={(value) => {
+              setValue("delivery_context", value, { shouldValidate: true, shouldDirty: true })
+              if (value !== SessionDeliveryContext.ORGANISATION) {
+                setValue("provider_affiliation_id", "", { shouldDirty: true })
+              }
+            }}
+            onAffiliationChange={(value) =>
+              setValue("provider_affiliation_id", value, {
                 shouldValidate: true,
                 shouldDirty: true,
               })
             }
+            contextError={errors.delivery_context?.message}
+            affiliationError={errors.provider_affiliation_id?.message}
           />
-        </FormField>
-        <Input type="hidden" {...register("service_provider_id")} />
+        )}
         <div className="grid grid-cols-2 gap-3">
           <FormField label="Rate (UGX)" optional error={errors.rate_ugx?.message} htmlFor="ss-rate">
             <Input id="ss-rate" type="number" min={0} {...register("rate_ugx")} />
@@ -515,6 +597,8 @@ function toFormValues(s: ServiceSession): Values {
     service_id: s.service_id,
     member_id: s.member_id,
     service_provider_id: s.provider_id ?? "",
+    delivery_context: deliveryContextForForm(s.delivery_context),
+    provider_affiliation_id: s.provider_affiliation_id ?? "",
     scheduled_at: toLocalDatetime(s.scheduled_at),
     location: s.location ?? "",
     notes: s.notes ?? "",
@@ -532,6 +616,19 @@ function toFormValues(s: ServiceSession): Values {
     is_backfill: false,
     backfill_reason: "",
   }
+}
+
+/**
+ * The form offers only direct and organisation delivery. A stored `Unknown`
+ * has no form value: it is a historical record whose source does not say, and
+ * defaulting it to direct would invent evidence.
+ */
+function deliveryContextForForm(
+  stored: SessionDeliveryContext | null | undefined,
+): Values["delivery_context"] {
+  return stored === SessionDeliveryContext.DIRECT || stored === SessionDeliveryContext.ORGANISATION
+    ? stored
+    : (undefined as unknown as Values["delivery_context"])
 }
 
 function toLocalDatetime(iso: string): string {

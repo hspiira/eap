@@ -29,6 +29,7 @@ import { Route as KpisRouteImport } from './routes/kpis'
 import { Route as MeRouteImport } from './routes/me'
 import { Route as MembersRouteImport } from './routes/members'
 import { Route as PersonsRouteImport } from './routes/persons'
+import { Route as ProviderOrganisationsRouteImport } from './routes/provider-organisations'
 import { Route as ProvidersRouteImport } from './routes/providers'
 import { Route as ReportsRouteImport } from './routes/reports'
 import { Route as ServiceAssignmentsRouteImport } from './routes/service-assignments'
@@ -63,6 +64,8 @@ import { Route as MembersMemberIdRouteImport } from './routes/members/$memberId'
 import { Route as PersonsIndexRouteImport } from './routes/persons/index'
 import { Route as PersonsPersonIdRouteImport } from './routes/persons/$personId'
 import { Route as PersonsNewRouteImport } from './routes/persons/new'
+import { Route as ProviderOrganisationsIndexRouteImport } from './routes/provider-organisations/index'
+import { Route as ProviderOrganisationsOrganisationIdRouteImport } from './routes/provider-organisations/$organisationId'
 import { Route as ProvidersIndexRouteImport } from './routes/providers/index'
 import { Route as ProvidersProviderIdRouteImport } from './routes/providers/$providerId'
 import { Route as ReportsIndexRouteImport } from './routes/reports/index'
@@ -190,6 +193,11 @@ const MembersRoute = MembersRouteImport.update({
 const PersonsRoute = PersonsRouteImport.update({
   id: '/persons',
   path: '/persons',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ProviderOrganisationsRoute = ProviderOrganisationsRouteImport.update({
+  id: '/provider-organisations',
+  path: '/provider-organisations',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ProvidersRoute = ProvidersRouteImport.update({
@@ -362,6 +370,18 @@ const PersonsNewRoute = PersonsNewRouteImport.update({
   path: '/new',
   getParentRoute: () => PersonsRoute,
 } as any)
+const ProviderOrganisationsIndexRoute =
+  ProviderOrganisationsIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => ProviderOrganisationsRoute,
+  } as any)
+const ProviderOrganisationsOrganisationIdRoute =
+  ProviderOrganisationsOrganisationIdRouteImport.update({
+    id: '/$organisationId',
+    path: '/$organisationId',
+    getParentRoute: () => ProviderOrganisationsRoute,
+  } as any)
 const ProvidersIndexRoute = ProvidersIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -528,6 +548,7 @@ export interface FileRoutesByFullPath {
   '/me': typeof MeRoute
   '/members': typeof MembersRouteWithChildren
   '/persons': typeof PersonsRouteWithChildren
+  '/provider-organisations': typeof ProviderOrganisationsRouteWithChildren
   '/providers': typeof ProvidersRouteWithChildren
   '/reports': typeof ReportsRouteWithChildren
   '/service-assignments': typeof ServiceAssignmentsRouteWithChildren
@@ -554,6 +575,7 @@ export interface FileRoutesByFullPath {
   '/members/$memberId': typeof MembersMemberIdRoute
   '/persons/$personId': typeof PersonsPersonIdRoute
   '/persons/new': typeof PersonsNewRoute
+  '/provider-organisations/$organisationId': typeof ProviderOrganisationsOrganisationIdRoute
   '/providers/$providerId': typeof ProvidersProviderIdRoute
   '/reports/$templateSlug': typeof ReportsTemplateSlugRoute
   '/service-assignments/$assignmentId': typeof ServiceAssignmentsAssignmentIdRoute
@@ -578,6 +600,7 @@ export interface FileRoutesByFullPath {
   '/incidents/': typeof IncidentsIndexRoute
   '/members/': typeof MembersIndexRoute
   '/persons/': typeof PersonsIndexRoute
+  '/provider-organisations/': typeof ProviderOrganisationsIndexRoute
   '/providers/': typeof ProvidersIndexRoute
   '/reports/': typeof ReportsIndexRoute
   '/service-assignments/': typeof ServiceAssignmentsIndexRoute
@@ -622,6 +645,7 @@ export interface FileRoutesByTo {
   '/members/$memberId': typeof MembersMemberIdRoute
   '/persons/$personId': typeof PersonsPersonIdRoute
   '/persons/new': typeof PersonsNewRoute
+  '/provider-organisations/$organisationId': typeof ProviderOrganisationsOrganisationIdRoute
   '/providers/$providerId': typeof ProvidersProviderIdRoute
   '/reports/$templateSlug': typeof ReportsTemplateSlugRoute
   '/service-assignments/$assignmentId': typeof ServiceAssignmentsAssignmentIdRoute
@@ -646,6 +670,7 @@ export interface FileRoutesByTo {
   '/incidents': typeof IncidentsIndexRoute
   '/members': typeof MembersIndexRoute
   '/persons': typeof PersonsIndexRoute
+  '/provider-organisations': typeof ProviderOrganisationsIndexRoute
   '/providers': typeof ProvidersIndexRoute
   '/reports': typeof ReportsIndexRoute
   '/service-assignments': typeof ServiceAssignmentsIndexRoute
@@ -681,6 +706,7 @@ export interface FileRoutesById {
   '/me': typeof MeRoute
   '/members': typeof MembersRouteWithChildren
   '/persons': typeof PersonsRouteWithChildren
+  '/provider-organisations': typeof ProviderOrganisationsRouteWithChildren
   '/providers': typeof ProvidersRouteWithChildren
   '/reports': typeof ReportsRouteWithChildren
   '/service-assignments': typeof ServiceAssignmentsRouteWithChildren
@@ -707,6 +733,7 @@ export interface FileRoutesById {
   '/members/$memberId': typeof MembersMemberIdRoute
   '/persons/$personId': typeof PersonsPersonIdRoute
   '/persons/new': typeof PersonsNewRoute
+  '/provider-organisations/$organisationId': typeof ProviderOrganisationsOrganisationIdRoute
   '/providers/$providerId': typeof ProvidersProviderIdRoute
   '/reports/$templateSlug': typeof ReportsTemplateSlugRoute
   '/service-assignments/$assignmentId': typeof ServiceAssignmentsAssignmentIdRoute
@@ -731,6 +758,7 @@ export interface FileRoutesById {
   '/incidents/': typeof IncidentsIndexRoute
   '/members/': typeof MembersIndexRoute
   '/persons/': typeof PersonsIndexRoute
+  '/provider-organisations/': typeof ProviderOrganisationsIndexRoute
   '/providers/': typeof ProvidersIndexRoute
   '/reports/': typeof ReportsIndexRoute
   '/service-assignments/': typeof ServiceAssignmentsIndexRoute
@@ -767,6 +795,7 @@ export interface FileRouteTypes {
     | '/me'
     | '/members'
     | '/persons'
+    | '/provider-organisations'
     | '/providers'
     | '/reports'
     | '/service-assignments'
@@ -793,6 +822,7 @@ export interface FileRouteTypes {
     | '/members/$memberId'
     | '/persons/$personId'
     | '/persons/new'
+    | '/provider-organisations/$organisationId'
     | '/providers/$providerId'
     | '/reports/$templateSlug'
     | '/service-assignments/$assignmentId'
@@ -817,6 +847,7 @@ export interface FileRouteTypes {
     | '/incidents/'
     | '/members/'
     | '/persons/'
+    | '/provider-organisations/'
     | '/providers/'
     | '/reports/'
     | '/service-assignments/'
@@ -861,6 +892,7 @@ export interface FileRouteTypes {
     | '/members/$memberId'
     | '/persons/$personId'
     | '/persons/new'
+    | '/provider-organisations/$organisationId'
     | '/providers/$providerId'
     | '/reports/$templateSlug'
     | '/service-assignments/$assignmentId'
@@ -885,6 +917,7 @@ export interface FileRouteTypes {
     | '/incidents'
     | '/members'
     | '/persons'
+    | '/provider-organisations'
     | '/providers'
     | '/reports'
     | '/service-assignments'
@@ -919,6 +952,7 @@ export interface FileRouteTypes {
     | '/me'
     | '/members'
     | '/persons'
+    | '/provider-organisations'
     | '/providers'
     | '/reports'
     | '/service-assignments'
@@ -945,6 +979,7 @@ export interface FileRouteTypes {
     | '/members/$memberId'
     | '/persons/$personId'
     | '/persons/new'
+    | '/provider-organisations/$organisationId'
     | '/providers/$providerId'
     | '/reports/$templateSlug'
     | '/service-assignments/$assignmentId'
@@ -969,6 +1004,7 @@ export interface FileRouteTypes {
     | '/incidents/'
     | '/members/'
     | '/persons/'
+    | '/provider-organisations/'
     | '/providers/'
     | '/reports/'
     | '/service-assignments/'
@@ -1004,6 +1040,7 @@ export interface RootRouteChildren {
   MeRoute: typeof MeRoute
   MembersRoute: typeof MembersRouteWithChildren
   PersonsRoute: typeof PersonsRouteWithChildren
+  ProviderOrganisationsRoute: typeof ProviderOrganisationsRouteWithChildren
   ProvidersRoute: typeof ProvidersRouteWithChildren
   ReportsRoute: typeof ReportsRouteWithChildren
   ServiceAssignmentsRoute: typeof ServiceAssignmentsRouteWithChildren
@@ -1159,6 +1196,13 @@ declare module '@tanstack/react-router' {
       path: '/persons'
       fullPath: '/persons'
       preLoaderRoute: typeof PersonsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/provider-organisations': {
+      id: '/provider-organisations'
+      path: '/provider-organisations'
+      fullPath: '/provider-organisations'
+      preLoaderRoute: typeof ProviderOrganisationsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/providers': {
@@ -1398,6 +1442,20 @@ declare module '@tanstack/react-router' {
       fullPath: '/persons/new'
       preLoaderRoute: typeof PersonsNewRouteImport
       parentRoute: typeof PersonsRoute
+    }
+    '/provider-organisations/': {
+      id: '/provider-organisations/'
+      path: '/'
+      fullPath: '/provider-organisations/'
+      preLoaderRoute: typeof ProviderOrganisationsIndexRouteImport
+      parentRoute: typeof ProviderOrganisationsRoute
+    }
+    '/provider-organisations/$organisationId': {
+      id: '/provider-organisations/$organisationId'
+      path: '/$organisationId'
+      fullPath: '/provider-organisations/$organisationId'
+      preLoaderRoute: typeof ProviderOrganisationsOrganisationIdRouteImport
+      parentRoute: typeof ProviderOrganisationsRoute
     }
     '/providers/': {
       id: '/providers/'
@@ -1738,6 +1796,22 @@ const PersonsRouteChildren: PersonsRouteChildren = {
 const PersonsRouteWithChildren =
   PersonsRoute._addFileChildren(PersonsRouteChildren)
 
+interface ProviderOrganisationsRouteChildren {
+  ProviderOrganisationsOrganisationIdRoute: typeof ProviderOrganisationsOrganisationIdRoute
+  ProviderOrganisationsIndexRoute: typeof ProviderOrganisationsIndexRoute
+}
+
+const ProviderOrganisationsRouteChildren: ProviderOrganisationsRouteChildren = {
+  ProviderOrganisationsOrganisationIdRoute:
+    ProviderOrganisationsOrganisationIdRoute,
+  ProviderOrganisationsIndexRoute: ProviderOrganisationsIndexRoute,
+}
+
+const ProviderOrganisationsRouteWithChildren =
+  ProviderOrganisationsRoute._addFileChildren(
+    ProviderOrganisationsRouteChildren,
+  )
+
 interface ProvidersRouteChildren {
   ProvidersProviderIdRoute: typeof ProvidersProviderIdRoute
   ProvidersIndexRoute: typeof ProvidersIndexRoute
@@ -1876,6 +1950,7 @@ const rootRouteChildren: RootRouteChildren = {
   MeRoute: MeRoute,
   MembersRoute: MembersRouteWithChildren,
   PersonsRoute: PersonsRouteWithChildren,
+  ProviderOrganisationsRoute: ProviderOrganisationsRouteWithChildren,
   ProvidersRoute: ProvidersRouteWithChildren,
   ReportsRoute: ReportsRouteWithChildren,
   ServiceAssignmentsRoute: ServiceAssignmentsRouteWithChildren,

@@ -322,13 +322,22 @@ export enum ProviderTier {
   T3 = "T3",
 }
 
-export enum ProviderRegion {
-  KAMPALA = "Kampala",
+/**
+ * Region a practitioner covers: mirrors BE `UgandaRegion`.
+ *
+ * The earlier `ProviderRegion` listed "Kampala" and "Remote / Telehealth",
+ * neither of which the API accepts, and omitted three real regions. See
+ * `UgandaRegion` in `src/api/generated/schema.ts`.
+ */
+export enum UgandaRegion {
   CENTRAL = "Central",
+  KAMPALA_METRO = "KampalaMetro",
   EASTERN = "Eastern",
-  WESTERN = "Western",
   NORTHERN = "Northern",
-  REMOTE = "Remote / Telehealth",
+  WEST_NILE = "WestNile",
+  WESTERN = "Western",
+  SOUTH_WESTERN = "SouthWestern",
+  KARAMOJA = "Karamoja",
 }
 
 /**
@@ -344,11 +353,40 @@ export enum AccreditationStatus {
 
 /**
  * Whether a provider is currently on the active panel, mirrors BE `PanelStatus`.
+ *
+ * Only `ACTIVE` is panel-eligible for a booking. A `Pending` member is agreed
+ * for phase 2 so a new practitioner is not shown as `REMOVED`; it lands here
+ * with the regenerated contract, because `enums.contract.test.ts` checks this
+ * enum against `apps/api/schema/openapi.json` in both directions.
  */
 export enum PanelStatus {
   ACTIVE = "Active",
   SUSPENDED = "Suspended",
   REMOVED = "Removed",
+}
+
+/**
+ * Supplier approval of a provider organisation: mirrors BE
+ * `ProviderApprovalStatus`. Independent of `is_active`; an organisation may
+ * deliver only when it is active and approved.
+ */
+export enum ProviderApprovalStatus {
+  PENDING = "Pending",
+  APPROVED = "Approved",
+  SUSPENDED = "Suspended",
+  REVOKED = "Revoked",
+}
+
+/**
+ * How a session was delivered: mirrors BE `DeliveryContext`.
+ *
+ * `UNKNOWN` belongs to historical records whose source evidence does not say.
+ * It is never selectable on a new booking and must never be shown as `DIRECT`.
+ */
+export enum SessionDeliveryContext {
+  DIRECT = "Direct",
+  ORGANISATION = "Organisation",
+  UNKNOWN = "Unknown",
 }
 
 /**

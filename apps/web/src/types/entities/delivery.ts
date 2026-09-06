@@ -8,6 +8,7 @@ import type {
   ServiceCategory,
   SessionCategory,
   SessionClinicalStatus,
+  SessionDeliveryContext,
   SessionStatus,
   SessionType,
 } from "../enums"
@@ -36,6 +37,20 @@ export interface ServiceSession extends BaseEntity {
   service_id: string
   member_id: string
   provider_id?: string | null
+  /**
+   * How the session was delivered. `Unknown` belongs to historical records
+   * whose source does not say, and must be shown as unknown rather than
+   * treated as direct delivery.
+   */
+  delivery_context?: SessionDeliveryContext | null
+  /** The affiliation this session was delivered under, for `Organisation`. */
+  provider_affiliation_id?: string | null
+  /**
+   * Read from the session's own stored affiliation, never from the
+   * practitioner's current affiliations, so moving firms does not reattribute
+   * a past session. Null for direct and unknown delivery.
+   */
+  provider_organisation_id?: string | null
   status: SessionStatus
   scheduled_at: string
   completed_at?: string | null

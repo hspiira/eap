@@ -467,11 +467,13 @@ class ApiClient {
   }
 
   /**
-   * DELETE request
+   * DELETE request. `data` is for the few commands that delete a link and
+   * require a reason for the audit trail.
    */
-  async delete<T>(endpoint: string, options?: RequestOptions): Promise<T> {
+  async delete<T>(endpoint: string, data?: unknown, options?: RequestOptions): Promise<T> {
     return this.request<T>(endpoint, {
       method: "DELETE",
+      body: data ? JSON.stringify(data) : undefined,
       ...options,
     })
   }

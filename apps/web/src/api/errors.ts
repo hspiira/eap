@@ -2,7 +2,7 @@
  * Response body -> ApiError normalization. Pure functions: no client state.
  */
 
-import type { FieldErrors } from "@/types/api"
+import type { ErrorDetail, FieldErrors } from "@/types/api"
 import { ApiError } from "@/types/api"
 
 export async function parseError(response: Response): Promise<ApiError> {
@@ -15,10 +15,11 @@ export async function parseError(response: Response): Promise<ApiError> {
 
   const message = normalizeErrorMessageBody(body, response)
   const errorCode = normalizeErrorCodeBody(body, response.status)
-  const fieldErrors = normalizeFieldErrorsBody(body)
+  const details = normalizeErrorDetailsBody(body)
+  const fieldErrors = collapseFieldErrors(details)
   const data = normalizeErrorDataBody(body)
 
-  return new ApiError(message, errorCode, response.status, fieldErrors, data)
+  return new ApiError(message, errorCode, response.status, fieldErrors, data, details)
 }
 
 /**
@@ -84,27 +85,34 @@ function normalizeErrorCodeBody(body: unknown, status: number): string {
   }
 }
 
-function normalizeFieldErrorsBody(body: unknown): FieldErrors | undefined {
+function readString(source: Record<string, unknown>, key: string): string | null {
+  const value = source[key]
+  return typeof value === "string" && value ? value : null
+}
+
+/** The server's `details` array, kept whole so repeated fields are not lost. */
+function normalizeErrorDetailsBody(body: unknown): ErrorDetail[] | undefined {
   if (!body || typeof body !== "object") return undefined
-  const b = body as Record<string, unknown>
-  const details = b.details
+  const details = (body as Record<string, unknown>).details
   if (!Array.isArray(details)) return undefined
+  const out: ErrorDetail[] = []
+  for (const entry of details) {
+    if (!entry || typeof entry !== "object") continue
+    const d = entry as Record<string, unknown>
+    const message = readString(d, "message")
+    const field = readString(d, "field")
+    if (!message && !field) continue
+    out.push({ field, message: message ?? String(entry), code: readString(d, "code") })
+  }
+  return out.length > 0 ? out : undefined
+}
+
+/** One message per field, for attaching to form inputs. Later entries win. */
+function collapseFieldErrors(details: ErrorDetail[] | undefined): FieldErrors | undefined {
+  if (!details) return undefined
   const acc: FieldErrors = {}
-  for (const d of details) {
-    if (
-      d &&
-      typeof d === "object" &&
-      d !== null &&
-      "field" in d &&
-      (d as { field: unknown }).field
-    ) {
-      const field = String((d as { field: unknown }).field)
-      const msg =
-        typeof (d as { message?: unknown }).message === "string"
-          ? (d as { message: string }).message
-          : String(d)
-      acc[field] = msg
-    }
+  for (const detail of details) {
+    if (detail.field) acc[detail.field] = detail.message
   }
   return Object.keys(acc).length > 0 ? acc : undefined
 }
