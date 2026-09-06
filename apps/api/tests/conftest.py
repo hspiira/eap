@@ -1247,6 +1247,7 @@ async def test_service_session(
             "provider_id": session_test_provider["id"],
             "member_id": session_test_client_person["id"],
             "scheduled_at": scheduled_at,
+            "delivery_context": "Direct",
             "location": "Office A",
         },
     )
@@ -1275,6 +1276,7 @@ async def test_service_session_2(
             "provider_id": session_test_provider["id"],
             "member_id": session_test_client_person["id"],
             "scheduled_at": scheduled_at,
+            "delivery_context": "Direct",
             "location": "Office B",
         },
     )

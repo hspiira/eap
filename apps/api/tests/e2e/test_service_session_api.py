@@ -43,6 +43,7 @@ class TestCreateServiceSession:
                 "provider_id": session_test_provider["id"],
                 "member_id": session_test_client_person["id"],
                 "scheduled_at": scheduled_at,
+                "delivery_context": "Direct",
                 "location": "Conference Room A",
             },
         )
@@ -74,6 +75,7 @@ class TestCreateServiceSession:
                 "provider_id": session_test_provider["id"],
                 "member_id": session_test_client_person["id"],
                 "scheduled_at": scheduled_at,
+                "delivery_context": "Direct",
             },
         )
 
@@ -534,6 +536,7 @@ class TestServiceSessionLifecycleFlow:
                 "provider_id": session_test_provider["id"],
                 "member_id": session_test_client_person["id"],
                 "scheduled_at": scheduled_at,
+                "delivery_context": "Direct",
                 "location": "Initial Location",
             },
         )
@@ -583,6 +586,7 @@ class TestServiceSessionLifecycleFlow:
                 "provider_id": session_test_provider["id"],
                 "member_id": session_test_client_person["id"],
                 "scheduled_at": scheduled_at,
+                "delivery_context": "Direct",
             },
         )
         session_id = create_response.json()["id"]

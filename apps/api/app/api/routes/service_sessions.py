@@ -453,13 +453,31 @@ async def reschedule_service_session(
     session: ServiceSessionEntity = Depends(get_service_session_for_current_tenant),
     session_repo: ServiceSessionRepository = Depends(get_service_session_repository),
     provider_repo: ProviderRepository = Depends(get_provider_repository),
+    affiliation_repo: ProviderAffiliationRepository = Depends(get_provider_affiliation_repository),
+    organisation_repo: ProviderOrganisationRepository = Depends(
+        get_provider_organisation_repository
+    ),
     attribution_reader: SessionAttributionReader = Depends(get_session_attribution_reader),
     audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
 ):
-    """Reschedule a service session, re-checking eligibility for the new date."""
+    """Reschedule a service session, re-checking eligibility for the new date.
+
+    The whole gate is reapplied, not just the practitioner's half: an
+    affiliation valid at the original time need not cover the new one.
+    """
     new_scheduled_at = ensure_utc(body.new_scheduled_at)
-    await _require_bookable(provider_repo, session.tenant_id, session.provider_id, new_scheduled_at)
+    _reject_unknown_context(session.delivery_context)
+    await _require_bookable(
+        provider_repo,
+        session.tenant_id,
+        session.provider_id,
+        new_scheduled_at,
+        delivery_context=session.delivery_context,
+        affiliation_id=session.provider_affiliation_id,
+        affiliation_repo=affiliation_repo,
+        organisation_repo=organisation_repo,
+    )
     use_case = TransitionUseCase(session_repo, "Session")
     session = await use_case.execute(
         session.id,

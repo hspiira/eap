@@ -20,6 +20,7 @@ from app.api.dependencies.provider_network import (
     get_provider_organisation_repository,
 )
 from app.api.routes.service_sessions import router
+from app.core.authorization import get_service_session_for_current_tenant
 from app.core.database import get_db
 from app.core.exception_handlers import register_exception_handlers
 from app.core.security import TokenData, get_current_user
@@ -29,6 +30,7 @@ from app.domain.enums import (
     BaseStatus,
     PanelStatus,
     ProviderTier,
+    SessionDeliveryContext,
     UgandaRegion,
 )
 from app.domain.enums.provider_network import OrganisationApprovalStatus
@@ -37,6 +39,7 @@ from app.domain.value_objects.core import (
     EligibleMemberId,
     ProviderId,
     ProviderProfile,
+    SessionId,
     TenantId,
     UserId,
 )
@@ -110,6 +113,7 @@ async def api():
     }.items():
         app.dependency_overrides[dep] = (lambda v: lambda: v)(value)
     app.dependency_overrides[get_current_user] = lambda: state.user
+    state.app = app
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as http:
         state.http = http
         yield state
@@ -440,3 +444,79 @@ async def test_organisation_delivery_succeeds_and_reports_its_own_organisation(a
     assert body["delivery_context"] == "Organisation"
     assert body["provider_affiliation_id"] == "aff-1"
     assert body["provider_organisation_id"] == "org-1"
+
+
+# ---------------------------------------------------------------------------
+# Rescheduling reapplies the whole gate, not just the practitioner's half.
+# The route once called the gate without its delivery arguments at all, and
+# only the e2e suite caught it, so these pin every branch at the unit level.
+# ---------------------------------------------------------------------------
+
+
+def _scheduled_session(*, delivery_context="Direct", affiliation_id=None) -> SimpleNamespace:
+    return SimpleNamespace(
+        id=SessionId("sess-1"),
+        tenant_id=TenantId("t1"),
+        provider_id=ProviderId("p1"),
+        delivery_context=SessionDeliveryContext(delivery_context),
+        provider_affiliation_id=affiliation_id,
+    )
+
+
+def _use_session(api, session) -> None:
+    api.app.dependency_overrides[get_service_session_for_current_tenant] = lambda: session
+
+
+async def _reschedule(api):
+    return await api.http.post(
+        "/service-sessions/sess-1/reschedule",
+        json={"new_scheduled_at": "2026-10-01T09:00:00Z"},
+    )
+
+
+def _codes(response) -> set[str]:
+    return {d["code"] for d in response.json()["details"]}
+
+
+async def test_reschedule_reapplies_the_practitioner_gate(api):
+    _use_session(api, _scheduled_session())
+    suspended = _bookable_provider()
+    suspended.change_panel_status(PanelStatus.SUSPENDED, UserId("admin"), "Quality review")
+    api.providers.get_for_booking.return_value = suspended
+
+    response = await _reschedule(api)
+
+    assert response.status_code == 409, response.text
+    assert "panel_not_active" in _codes(response)
+
+
+async def test_reschedule_reapplies_the_affiliation_check_for_the_new_date(api):
+    """An affiliation valid at the original time need not cover the new one."""
+    _use_session(api, _scheduled_session(delivery_context="Organisation", affiliation_id="aff-1"))
+    api.affiliations.get_valid_affiliation.return_value = None
+
+    response = await _reschedule(api)
+
+    assert response.status_code == 409, response.text
+    assert "affiliation_not_valid_at_time" in _codes(response)
+
+
+async def test_reschedule_reapplies_the_organisation_check(api):
+    _use_session(api, _scheduled_session(delivery_context="Organisation", affiliation_id="aff-1"))
+    api.organisations.get_organisation.return_value = SimpleNamespace(
+        is_active=True, approval_status=_NOT_APPROVED
+    )
+
+    response = await _reschedule(api)
+
+    assert response.status_code == 409, response.text
+    assert "organisation_not_approved" in _codes(response)
+
+
+async def test_reschedule_refuses_a_session_of_unknown_delivery(api):
+    """A historical record describes the past; it is not reschedulable."""
+    _use_session(api, _scheduled_session(delivery_context="Unknown"))
+
+    response = await _reschedule(api)
+
+    assert response.status_code in {400, 422}, response.text
