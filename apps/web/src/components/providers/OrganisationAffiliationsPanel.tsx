@@ -73,7 +73,10 @@ export function OrganisationAffiliationsPanel({ organisationId }: { organisation
       toast.showSuccess("Affiliation added")
     } catch (error) {
       if (isApiError(error) && error.status === 409) {
-        setConflict(error.details?.map((detail) => detail.message).join(" ") ?? error.message)
+        // The top-level message is the sentence naming the conflicting period.
+        // `details` currently carries the field name as a value rather than as
+        // a field error, so it is not readable text; see PROVIDERS_FRONTEND.md.
+        setConflict(error.message)
         return
       }
       toast.showError(normalizeErrorMessage(error, "Could not add the affiliation"))

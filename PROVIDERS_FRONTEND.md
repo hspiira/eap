@@ -14,7 +14,8 @@ deployed are separate claims and are separated below.
 - Role: frontend, generated contracts, integrated user-flow verification.
 - Branch: `codex/providers-agent3-frontend`.
 - Worktree: `/Users/piira/Developer/sandbox/eap/wt-agent3`.
-- Base commit: `e672b6f`.
+- Base commit: `e672b6f`. Generated contracts come from the integrated
+  branch head named by the integration owner.
 - Owned paths: `apps/web/`, `apps/web/src/routeTree.gen.ts`,
   `apps/web/src/api/generated/schema.ts`, `apps/api/schema/openapi.json`.
 - No backend source is edited here. Backend defects are reported to their owner
@@ -73,20 +74,21 @@ Against the agreed contracts. Commits are on the branch above.
 
 ## Checks run
 
-From `apps/web` at `92da242`, on Node 26.7.0, pnpm 10.9.0.
+From `apps/web`, on Node 26.7.0, pnpm 10.9.0, against the integrated head.
 
 | Check | Command | Result |
 | --- | --- | --- |
 | Types | `pnpm typecheck` | pass |
 | Lint | `pnpm lint` | pass |
-| Tests | `pnpm test` | 70 files, 528 tests, all passed |
-| Build | `pnpm build` | pass; regenerated `routeTree.gen.ts` |
+| Tests | `pnpm test` | 70 files, 534 tests, all passed |
+| Build | `pnpm build` | pass |
+| Contract drift | `pnpm contracts:check` | pass, exit 0: regeneration is a no-op |
 
-Baseline before this work was 486 tests. The 42 added tests cover: naming a
+Baseline before this work was 486 tests. The added tests cover: naming a
 practitioner with no contact email and no account; server-side filters and sort
 reaching the API rather than a fetched page; paging past the first page while
 the total stays the full matching count; a viewer seeing no create action; a
-general edit sending exactly the six ordinary keys and no lifecycle key; no
+general edit sending exactly the five ordinary keys and no lifecycle key; no
 tier control on edit; clearing optional contacts to null; email validation; a
 lifecycle command refusing to send without a reason and sending the reason when
 given; a non-admin seeing no lifecycle or account controls; an absent
@@ -94,59 +96,126 @@ accreditation expiry reading as not on record; a practitioner staying visible
 when their linked account cannot be read; end-exclusive interval labelling;
 open-ended affiliations; concurrent affiliations with different firms; an
 unapproved firm warned about; ended affiliations included; only the interval end
-editable; the overlap rejection shown with its conflicting period; a booking
-refusing to submit without an explicit delivery context; direct delivery sent
-with a null affiliation; every eligibility reason listed; and unknown, missing,
-direct and organisation attribution each rendered distinctly; specialties
-read from the catalogue links rather than free text; a link to a retired
-specialty kept visible and marked retired; retired and already-linked entries
-absent from the picker; a specialty linked by catalogue id; and a viewer given
-no specialty controls.
+editable, with a reason; the overlap rejection shown with its conflicting
+period; a booking refusing to submit without an explicit delivery context;
+direct delivery sent with a null affiliation; every eligibility reason listed;
+unknown, missing, direct and organisation attribution each rendered distinctly;
+specialties read from the catalogue links rather than free text; a link to a
+retired specialty kept visible and marked retired; retired and already-linked
+entries absent from the picker; a specialty linked by catalogue id; and a viewer
+given no specialty controls.
 
 These are component tests against mocked endpoints. They establish the UI's own
-behaviour. They do not establish that any backend route exists or behaves this
-way.
+behaviour, not the API's.
+
+## Verified against a running API
+
+Separate from the mocked tests above. A dedicated database, `eap_agent3_web`,
+was created for this so no other worker's fixtures were touched.
+
+- The full Alembic chain applied to an empty PostgreSQL database and reported a
+  single head, `a1p3d0d2e4f6`.
+- The API was started against that database and driven over HTTP with the same
+  requests and in the same order the web app issues them. 51 of 54 behavioural
+  checks passed; the three that did not are recorded below and two of them are
+  findings rather than frontend faults.
+
+Confirmed against the real API, not a mock:
+
+- A practitioner is created with no account and no contact details, and comes
+  back off-panel and unaccredited rather than active.
+- General `PATCH` rejects `tier` and `specialties` with 422, and clears
+  `email` and `phone` when sent explicit nulls.
+- Each lifecycle command applies with a reason; a Viewer receives 403 for both
+  a lifecycle command and an ordinary edit.
+- The directory returns `total` 25 while serving 10 rows, page 3 differs from
+  page 1, and `region`, `search` and `has_account` filter server-side.
+- An organisation starts `Pending` and active, refuses `approval_status` on
+  `PATCH`, and approves through its command.
+- An affiliation reports the firm's name and current approval, rejects an
+  overlapping period with 409, and permits a concurrent affiliation with a
+  different firm.
+- `valid_at=2026-06-30` includes an interval ending `2026-07-01`, and
+  `valid_at=2026-07-01` excludes it. The end-exclusive rule holds at the
+  boundary.
+- A live booking rejects `Unknown` delivery with 422, and refuses direct
+  delivery that cites an affiliation with `affiliation_not_permitted_for_direct`.
+- **The delivering organisation is present on every read, not only on create.**
+  Checked on the create response, the detail route, the list route and the
+  by-practitioner route. This was the defect the integration owner asked to have
+  confirmed.
+- Suspending a practitioner refuses a new booking with `PROVIDER_NOT_ELIGIBLE`
+  and `panel_not_active`, and leaves the completed session's organisation
+  attribution untouched.
+- Moving an affiliation's end to a date that still covers its attributed
+  session is accepted with a reason.
+- Account linking is Admin-only, a second practitioner linking the same account
+  gets 409, and unlinking leaves the practitioner readable.
+
+The eligibility rejection body was captured from the running API and matches
+what the booking form renders: every reason arrives as its own `details` entry
+under `field: "eligibility"` with a stable `code`.
+
+Not covered by this run: the specialty link flow, because the global catalogue
+is empty on a fresh database and the vocabulary is seeded separately. The
+catalogue endpoint itself answers 200.
 
 ## Not yet verified
 
-- No generated contract has been regenerated or committed. `pnpm contracts:sync`
-  runs only against the backend commit the integration owner names, at the
-  directory, attribution and review gates. `apps/api/schema/openapi.json` and
-  `apps/web/src/api/generated/schema.ts` are untouched on this branch.
-- No flow has been exercised against a running API. Every route this work calls
-  except `GET /providers`, `GET /providers/{id}` and the non-compete and session
-  routes is part of the contract still being implemented.
-- The user-flow list in the execution prompt (creation without a login,
-  clearable optional contacts, account permissions, lifecycle reasons, listing
-  beyond the first 100 providers, multiple affiliations, explicit session
-  attribution, suspended and ineligible booking errors) is covered by mocked
-  component tests and is pending real integrated verification at the review
-  gate.
+- The verification above drove the API directly over HTTP with the requests the
+  web app issues. It did not drive the browser, so it establishes that the
+  contract behaves as the UI expects, not that the rendered screens behave
+  correctly end to end. The component tests cover the rendering side.
+- Nothing has been checked against a deployed environment. The database used
+  was created empty for this purpose; target-environment contents and applied
+  revisions remain unverified, as `PROVIDERS_MIGRATION.md` records.
+- The specialty catalogue is empty on a fresh database, so linking a specialty
+  is covered only by mocked tests.
+
+## Findings from the running API
+
+Two behaviours differ from what was published in coordination. Neither is a
+frontend fault and neither blocks the UI, but both belong to their owners.
+
+1. **The affiliation overlap `details` array is not field errors.** The
+   published shape was
+   `[{"field": "valid_from", "message": "Overlaps affiliation <id> (...)", "code": "overlap"}]`.
+   The API returns
+   `[{"field": "field", "message": "valid_from", "code": null}, {"field": "conflicting_affiliation_id", "message": "<id>", "code": null}]`,
+   which is a key/value bag rather than a field error: `field` is the literal
+   string `"field"`, the message is the field's name, and `code` is null. Two
+   consequences. A form attaching errors by `details[].field` would attach one
+   to a field called `field`, which does not exist; the shared form hook now
+   routes an unattachable error to the form-level banner instead of swallowing
+   it, so this degrades rather than disappears. And rendering the detail
+   messages produces `"valid_from <id>"`, which is not a sentence. The readable
+   text is the top-level `message`, which is correct and complete, so the
+   affiliation form renders that. If `details` is corrected to carry
+   `valid_from` as the field with the sentence as the message, the form will
+   attach it to the date input without further change.
+
+2. **A whitespace-only reason returns 400, not the documented 422, and carries
+   no `details`.** An empty string returns 422 with a `string_too_short` field
+   error, but `"   "` returns 400 `DOMAIN_ERROR` with an empty `details` array,
+   so nothing can be attached to the reason input. The command is correctly
+   refused either way. The reason dialogs disable their confirm button until
+   the reason is non-blank after trimming, so the UI does not reach this state;
+   it matters for any other client.
 
 ## Carried items, with owners
 
-1. `PanelStatus` is missing the agreed `Pending` member. `enums.contract.test.ts`
-   compares this enum against `apps/api/schema/openapi.json` in both
-   directions, so the value lands with the regenerated contract. Mine, at the
-   directory gate.
-2. `ServiceSessionCreate` does not carry `delivery_context` or
-   `provider_affiliation_id`. `SessionCreateBody` in
-   `apps/web/src/components/ServiceSessionFormSheet.tsx` declares them
-   explicitly; delete the extension when the contract is regenerated. Mine, at
-   the attribution gate.
-3. `ProviderAffiliationResponse` carries no practitioner name, so the
+1. `ProviderAffiliationResponse` carries no practitioner name, so the
    organisation detail page resolves each one with a cached detail query.
    Requested of the organisations task; a `provider_display_name` would remove
    the per-row request.
-4. Affiliation interval corrections are rejected, not corrected, when the new
-   interval would stop covering a completed session attributed to it. The core
-   owner ruled a 409 with `affiliation_change_would_orphan_attribution` and the
-   offending session ids in `details`, choosing decision 2's rejection half
-   because the privileged correction operation does not exist yet. The
-   interval-end form renders those reasons through the same list used for
-   eligibility failures. The correction path stays a phase 3 item.
-5. Historical import and alias review have no UI, deliberately. See the
-   section below.
+2. The two findings above, owned by the organisations and core tasks.
+3. Historical import and alias review have no UI, deliberately. See below.
+
+The two items previously carried here are closed: `PanelStatus` now has
+`Pending` and the `SessionCreateBody` extension is deleted, both against the
+generated contract. `ProviderApprovalStatus` was also renamed
+`OrganisationApprovalStatus`, which is what the API calls it; under the wrong
+name the bidirectional enum check had been silently skipping it.
 
 ## Settled: one write path for specialties
 
@@ -211,21 +280,24 @@ automatic-resolution endpoint, by design, and decision 5 forbids one.
 
 ## Backend defects found and reported
 
-1. `GET /providers` at `apps/api/app/api/routes/providers.py:47` declares only
-   `tenant_id`, `limit` and `offset`. Both `page` and `search`, which the web
-   app sent, were dropped by FastAPI. Two consequences: the directory had no
-   reachable second page, and `ProviderPicker`'s search box was inert. Reported
-   to and confirmed by the core task; closed by the phase 2 listing contract.
-2. `apps/web/src/routes/service-sessions/$sessionId.tsx:88` resolved a session's
-   practitioner through that same ignored `search`, so it requested one
-   arbitrary row and matched nothing, and the session detail page showed no
-   practitioner. Frontend, mine, fixed in `92da242` by reading
-   `GET /providers/{id}` directly.
-3. `ProviderRegion` in `apps/web/src/types/enums.ts` offered "Kampala" and
-   "Remote / Telehealth", neither of which the API accepts, and omitted three
-   real regions. Harmless only because the filter ran in the browser; a
-   server-side filter would have returned 422. Frontend, mine, fixed in
-   `e60b9b6` against `UgandaRegion` in the generated contract.
+1. `GET /providers` declared only `tenant_id`, `limit` and `offset`, so the
+   `page` and `search` the web app sent were dropped by FastAPI. The directory
+   had no reachable second page and `ProviderPicker`'s search was inert.
+   Reported to and fixed by the core task; the directory now filters, sorts and
+   pages server-side, confirmed against the running API.
+2. `apps/web/src/routes/service-sessions/$sessionId.tsx` resolved a session's
+   practitioner through that same ignored `search`, requesting one arbitrary
+   row and matching nothing, so no practitioner was shown. Frontend, mine,
+   fixed by reading `GET /providers/{id}` directly.
+3. `ProviderRegion` offered "Kampala" and "Remote / Telehealth", neither of
+   which the API accepts, and omitted three real regions. Frontend, mine, fixed
+   against `UgandaRegion` in the generated contract.
+4. Affiliation creation was posting to
+   `/provider-organisations/{id}/affiliations`, a path that does not exist: the
+   route is `POST /provider-affiliations` with the organisation as a query
+   parameter. It would have returned 404. Frontend, mine, found by generating
+   the contract and checking every provider route the web app calls against it
+   by path, method and request body. The other nineteen matched.
 
 ## Out of scope here
 
