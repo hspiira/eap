@@ -8,6 +8,7 @@ import {
   Clock,
   Download,
   ExternalLink,
+  FileUp,
   MoreHorizontal,
   PauseCircle,
   Plus,
@@ -25,6 +26,7 @@ import { SelectionBar } from "@/components/common/SelectionBar"
 import { ROW_BORDER } from "@/components/common/tableStyles"
 import { MemberFormSheet } from "@/components/MemberFormSheet"
 import { MemberMergeDialog } from "@/components/MemberMergeDialog"
+import { MemberImportDialog } from "@/components/members/MemberImportDialog"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import {
@@ -114,6 +116,7 @@ function MembersListPage() {
   const toast = useToast()
   const [editing, setEditing] = useState<Member | null>(null)
   const [mergeOpen, setMergeOpen] = useState(false)
+  const [importOpen, setImportOpen] = useState(false)
   const role = useCurrentRole()
   const query = useEntityList({
     resource: "members",
@@ -183,6 +186,18 @@ function MembersListPage() {
           />
           {canWrite ? (
             <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="h-7 gap-1.5 rounded-none px-2"
+              onClick={() => setImportOpen(true)}
+            >
+              <FileUp className="size-3.5" />
+              Import
+            </Button>
+          ) : null}
+          {canWrite ? (
+            <Button
               size="sm"
               className="h-7 gap-1.5 rounded-none px-2.5"
               onClick={() => list.setAddOpen(true)}
@@ -223,6 +238,12 @@ function MembersListPage() {
           placeholder="Search members…"
         />
       </FilterBar>
+
+      <MemberImportDialog
+        open={importOpen}
+        onOpenChange={setImportOpen}
+        onImported={() => void queryClient.invalidateQueries({ queryKey: ["members"] })}
+      />
 
       <MemberFormSheet
         open={list.addOpen || editing !== null}

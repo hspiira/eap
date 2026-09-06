@@ -52,7 +52,7 @@ from app.core.security import TokenData, get_current_user
 from app.domain.entities.client import ClientEntity
 from app.domain.entities.eligible_member import EligibleMember
 from app.domain.entities.member_next_of_kin import MemberNextOfKin
-from app.domain.enums import EligibilityStatus, MemberRelation, TenantRole
+from app.domain.enums import EligibilityStatus, MemberGender, MemberRelation, TenantRole
 from app.domain.repositories.client_repository import ClientRepository
 from app.domain.repositories.eligible_member_repository import (
     ClinicalSubjectRepository,
@@ -91,6 +91,7 @@ def _member_import_row(
         client_code=row.client_code,
         client_name=client_name,
         employer_member_id=row.employer_member_id,
+        staff_number=row.staff_number,
         display_label=row.display_label,
         state=state,
         message=message,
@@ -526,6 +527,8 @@ async def import_members(
                     employer_member_id=row.employer_member_id,
                     display_label=row.display_label or "",
                     work_email=row.work_email,
+                    gender=(MemberGender(row.gender.title()) if row.gender else None),
+                    staff_number=row.staff_number,
                     relation=relation,
                     primary_employee_member_id=row.primary_employee_member_id,
                 )
@@ -553,6 +556,13 @@ async def import_members(
     use_case = EnrolEligibleMemberUseCase(member_repo, subject_repo, link_repo)
     for row, _client, data in prepared:
         member, _ = await _enrol(use_case, data, current_user, row.employer_member_id or "")
+        imported_status = (row.status or "Pending").strip().casefold()
+        if imported_status == EligibilityStatus.ACTIVE.value.casefold():
+            member.reinstate()
+        elif imported_status == EligibilityStatus.SUSPENDED.value.casefold():
+            member.suspend()
+        elif imported_status == EligibilityStatus.TERMINATED.value.casefold():
+            member.terminate()
         member.record_import()
         await member_repo.save(member)
         await record_member_change(

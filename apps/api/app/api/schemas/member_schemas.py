@@ -190,6 +190,7 @@ class MemberImportRowPreview(BaseModel):
     client_code: str | None
     client_name: str | None
     employer_member_id: str | None
+    staff_number: str | None = None
     display_label: str | None
     state: str
     message: str | None = None

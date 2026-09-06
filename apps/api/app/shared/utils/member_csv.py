@@ -25,6 +25,7 @@ class MemberCsvRow:
     row_number: int
     client_code: str | None
     employer_member_id: str | None
+    staff_number: str | None
     display_label: str | None
     work_email: str | None
     gender: str | None
@@ -59,6 +60,7 @@ def parse_member_csv(content: bytes) -> tuple[list[MemberCsvRow], list[dict[str,
             # payroll-scoped and may be blank/reused; only an explicit Staff_ID or
             # employer_member_id is safe for idempotent roster imports.
             employer_member_id=_value(row, "staff_id", "employer_member_id"),
+            staff_number=_value(row, "staff_number"),
             display_label=_value(row, "name_of_employee", "display_label", "name"),
             work_email=_value(row, "email_address", "work_email", "email"),
             gender=_value(row, "gender"),

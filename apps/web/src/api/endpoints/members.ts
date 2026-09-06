@@ -42,24 +42,32 @@ export interface MemberNextOfKinRequest {
   is_primary?: boolean
 }
 
+export interface MemberImportRow {
+  row: number
+  client_code: string | null
+  client_name: string | null
+  employer_member_id: string | null
+  staff_number?: string | null
+  display_label: string | null
+  state: string
+  message?: string | null
+}
+
+export interface MemberImportResult {
+  imported: number
+  skipped: number
+  failed: number
+  rows: MemberImportRow[]
+}
+
 export const membersApi = {
-  async importRoster(file: File, dryRun = true): Promise<{
-    imported: number
-    skipped: number
-    failed: number
-    rows: Array<{
-      row: number
-      client_code: string | null
-      client_name: string | null
-      employer_member_id: string | null
-      display_label: string | null
-      state: string
-      message?: string | null
-    }>
-  }> {
+  async importRoster(file: File, dryRun = true): Promise<MemberImportResult> {
     const body = new FormData()
     body.append("file", file)
-    return apiClient.post(`/members/import?dry_run=${dryRun}`, body)
+    return apiClient.postFormData<MemberImportResult>(
+      `/members/import?dry_run=${String(dryRun)}`,
+      body,
+    )
   },
 
   async list(params?: MemberListParams): Promise<PaginatedResponse<Member>> {
