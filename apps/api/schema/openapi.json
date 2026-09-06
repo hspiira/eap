@@ -8192,6 +8192,17 @@
             "title": "Row",
             "type": "integer"
           },
+          "staff_number": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Staff Number"
+          },
           "state": {
             "title": "State",
             "type": "string"

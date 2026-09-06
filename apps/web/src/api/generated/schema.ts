@@ -8988,6 +8988,8 @@ export interface components {
             message?: string | null;
             /** Row */
             row: number;
+            /** Staff Number */
+            staff_number?: string | null;
             /** State */
             state: string;
         };
