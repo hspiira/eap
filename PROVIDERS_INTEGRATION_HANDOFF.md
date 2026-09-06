@@ -11,8 +11,8 @@ deployed, pushed, or applied to any database other than a local throwaway.
     Branch:   codex/providers-agent1-core
     Worktree: /Users/piira/Developer/sandbox/eap/wt-agent1
     Base:     e672b6f
-    Head:     7cb7fb5
-    Commits:  34 (31 non-merge, 3 merges)
+    Head:     60b1279
+    Commits:  40 (35 non-merge, 5 merges)
 
 Included, by merge:
 
@@ -20,7 +20,7 @@ Included, by merge:
   organisations, dated affiliations, the specialty vocabulary, tenant- and
   source-scoped aliases, staged historical import, and migration
   `a2n1o0r2k4s6`.
-- `codex/providers-agent3-frontend`, through `b5bf6b2`: the practitioner
+- `codex/providers-agent3-frontend`, through `ef9d1b7`: the practitioner
   directory and forms, organisation and affiliation management, delivery
   context on booking, and the specialty picker. Merged with no conflicts.
 
@@ -82,12 +82,9 @@ makes `email` and `user_id` nullable, `ServiceSessionCreate` requires
 `delivery_context`, the session response carries all three attribution fields,
 and `GET /providers` takes `search`, `page`, `limit`, `sort_by` and `sort_desc`.
 
-One regeneration is outstanding. `ed91f56` changed the reschedule route after
-agent 3 generated, so a fresh `pnpm contracts` produces a one-line diff in
-`openapi.json` and three in `schema.ts`, all of it that route's description.
-CI's contract job compares a fresh generation against the committed one and
-would fail on it. Agent 3 owns those files and has been asked to regenerate
-from the current head; this was not hand-edited.
+Regenerated again in `ef9d1b7` after `ed91f56` changed the reschedule route.
+A fresh `pnpm contracts` on the assembled head now produces no diff, so CI's
+contract job passes. Neither artifact was hand-edited by this agent.
 
 Breaking:
 
@@ -124,9 +121,11 @@ and `provider_organisation_id` on the session response.
 
 ## Blockers and gaps, stated plainly
 
-- **No contract regeneration and no real user-flow verification.** Every web
-  check is against mocked endpoints. Nothing has been exercised against a
-  running API.
+- **Partial real user-flow verification.** Agent 3 drove 54 checks over HTTP
+  against a running API on a dedicated database, and 51 passed. The three that
+  did not are the specialty link flow, which cannot run because the global
+  catalogue is empty on a fresh database; it remains covered by mocked tests
+  only. Everything else in the web suite is mocked.
 - **Applying a staged import imports zero rows.** Staging and review work. A
   staged row cannot name a member or a service, because neither aggregate has a
   reconciliation mechanism for this extract. Decided out of scope, unowned.

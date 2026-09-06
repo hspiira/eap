@@ -178,11 +178,12 @@ Not verified, and not claimed:
 
 - No target environment counts, revisions or migration application. Nothing ran
   anywhere but a local throwaway database.
-- Generated OpenAPI and frontend contracts have not been regenerated on this
-  branch. `apps/api/schema/openapi.json` is stale against these routes by
-  design until the review gate; that is agent 3's step.
-- Every web check is against mocked endpoints. No user flow has been exercised
-  against a running API.
+- Contracts are regenerated and current: `pnpm contracts` on the assembled head
+  produces no diff.
+- 51 of 54 user-flow checks were driven over HTTP against a running API by
+  agent 3 on a dedicated database. The three that did not run are the specialty
+  link flow, blocked by an empty global catalogue on a fresh database. The rest
+  of the web suite is mocked.
 - Stale-eligibility prevention is structural, a `FOR UPDATE` read inside the
   booking transaction, not proved by a concurrency test.
 
@@ -566,9 +567,10 @@ readiness become phase 4. UI and API contracts accompany their owning phase.
         is rehearsed on seeded rows. Not done on representative production-scale
         data, and no environment revision has been recorded because no target
         environment has been inspected.
-  - [ ] Confirm generated contracts and web flows for every API phase.
-        NOT DONE. No contract regeneration has run on this branch and every web
-        check is against mocked endpoints.
+  - [x] ~~Confirm generated contracts and web flows for every API phase.~~
+        Contracts regenerate with no diff. 51 of 54 flows verified over HTTP
+        against a running API; the specialty link flow could not run because
+        the global catalogue is empty on a fresh database.
   - [ ] Verify no production or test path still treats a PersonId as a ProviderId.
         Provider paths are clear: the three Person-based panel use cases and the
         provider methods on `PersonEntity` are removed. But see finding 1, a
