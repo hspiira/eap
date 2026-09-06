@@ -9,6 +9,47 @@ each implementation commit; strike completed tasks through rather than deleting
 them. Implemented, tested, and applied to a database are separate claims.
 Execution ownership and agent prompts are in `PROVIDERS_EXECUTION.md`.
 
+## Status at a glance
+
+Merged into `chore/monorepo`. Implemented and tested locally. Nothing is
+deployed, and no database other than a local throwaway has been touched.
+
+### Done
+
+- Practitioner identity independent of a login: owned name and contact details,
+  optional account link, at most one account per practitioner per tenant.
+- One audited command per lifecycle change. Panel, tier, accreditation and
+  activation each require a reason, are Admin-only, and are no-ops when nothing
+  changes. General PATCH is partial and rejects all eight protected fields.
+- Tenant equality enforced by composite database keys, not only by validation.
+- One booking eligibility policy, applied by the preview endpoint and by every
+  write path inside its own transaction under a row lock.
+- Explicit session delivery context, with attribution read from the session's
+  own affiliation so moving firms cannot rewrite past delivery.
+- Organisations, dated affiliations, the specialty vocabulary, source-scoped
+  aliases and staged historical import.
+- Practitioner directory with server-side search, filters, sorting, paging and
+  accurate totals, plus the frontend for all of the above.
+- The Person-based panel operations are retired and their coverage ported.
+
+### To fix, with an owner where one exists
+
+Nobody should read the phase list below as "nearly finished". These are the
+real remaining items.
+
+| Item | Owner | Note |
+| --- | --- | --- |
+| Typed profile promotion | provider module | Tier, region, panel and accreditation still live in the `provider_profile` JSON column. |
+| Suspension does not flag future bookings for review | provider module | Decision 7 requires it. Unimplemented. |
+| Attribution correction path | provider module | Only the rejection half of decision 2 is built. |
+| Member and service identity for the historical extract | **unowned** | Until it exists, applying a staged import imports zero rows. |
+| A `PersonId` carrying a user id | clinical case module | `case.py:79`, `case_use_cases.py:107`. Blocks closing the phase 5 PersonId check. |
+| Twenty mutating routes with no Viewer guard | session and care-callback modules | Pre-existing. Two in provider scope were fixed; the rest change authorization in modules this migration does not own. |
+| `NotFoundError` details are diagnostics presented as field errors | shared error handling | Affects every 404 in the app. |
+| Alias review queue is API-only | product owner | An operator cannot resolve an ambiguous name without direct API calls. |
+| Stale eligibility is prevented structurally | provider module | A `FOR UPDATE` read, not proved by a concurrency test. |
+| Migration rehearsal on production-scale data | deploying agent | Rehearsed on seeded rows only. |
+
 The product owner confirmed the original organisation/practitioner split,
 tenant ownership, controlled specialties, optional accounts, and typed profile
 fields. On 2026-09-06 the user delegated resolution of the remaining design
