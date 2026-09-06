@@ -7,6 +7,7 @@ from app.api.dependencies import (
     PageParams,
     get_audit_event_handler,
     get_care_callback_campaign_repository,
+    get_eligible_member_repository,
     get_outreach_record_repository,
     pagination,
 )
@@ -15,7 +16,7 @@ from app.api.schemas.care_callback_schemas import (
     CareCallbackCampaignCreate,
     CareCallbackCampaignResponse,
     CounsellorPoolUpdate,
-    EnrolPersonsRequest,
+    EnrolMembersRequest,
     OutreachAssignRequest,
     OutreachEscalate,
     OutreachRecordResponse,
@@ -47,12 +48,14 @@ from app.domain.repositories.care_callback_repository import (
     CareCallbackCampaignRepository,
     OutreachRecordRepository,
 )
+from app.domain.repositories.eligible_member_repository import EligibleMemberRepository
 from app.domain.services.triage_scoring import CATALOGUE, get_instrument
 from app.domain.value_objects.core import (
     CareCallbackCampaignId,
     ClientId,
+    EligibleMemberId,
     OutreachRecordId,
-    PersonId,
+    ProviderId,
     TenantId,
     UserId,
 )
@@ -89,7 +92,7 @@ def _to_outreach_response(r: OutreachRecord) -> OutreachRecordResponse:
         id=r.id.value,
         tenant_id=r.tenant_id.value,
         campaign_id=r.campaign_id.value,
-        person_id=r.person_id.value,
+        member_id=r.member_id.value,
         counsellor_id=r.counsellor_id.value if r.counsellor_id else None,
         status=r.status,
         contact_attempts=r.contact_attempts,
@@ -132,7 +135,7 @@ async def create_campaign(
         period_start=data.period_start,
         period_end=data.period_end,
         target_count=data.target_count,
-        counsellor_pool=tuple(PersonId(p) for p in data.counsellor_pool),
+        counsellor_pool=tuple(ProviderId(p) for p in data.counsellor_pool),
         created_by=UserId(current_user.user_id),
         sampling_notes=data.sampling_notes,
     )
@@ -228,7 +231,7 @@ async def update_counsellor_pool(
     campaign = await use_case.execute(
         CareCallbackCampaignId(campaign_id),
         CareCallbackCampaignTransition.UPDATE_COUNSELLOR_POOL,
-        pool=tuple(PersonId(p) for p in data.counsellor_pool),
+        pool=tuple(ProviderId(p) for p in data.counsellor_pool),
     )
     await audit_change(campaign, audit_handler, current_user, request)
     return _to_campaign_response(campaign)
@@ -293,21 +296,34 @@ async def list_campaigns(
     "/care-callback-campaigns/{campaign_id}/enrol",
     response_model=list[OutreachRecordResponse],
     status_code=status.HTTP_201_CREATED,
-    summary="Bulk-enrol persons into a campaign",
+    summary="Bulk-enrol members into a campaign",
 )
 @transactional()
-async def enrol_persons(
+async def enrol_members(
     campaign_id: str,
-    data: EnrolPersonsRequest,
+    data: EnrolMembersRequest,
     request: Request,
     current_user: TokenData = Depends(get_current_user),
     campaign_repo: CareCallbackCampaignRepository = Depends(get_care_callback_campaign_repository),
     outreach_repo: OutreachRecordRepository = Depends(get_outreach_record_repository),
+    member_repo: EligibleMemberRepository = Depends(get_eligible_member_repository),
     db: AsyncSession = Depends(get_db),
 ):
+    campaign = await campaign_repo.get_by_id(CareCallbackCampaignId(campaign_id))
+    if campaign is None:
+        raise HTTPException(status_code=404, detail="Care Callback campaign not found")
+    member_ids = [EligibleMemberId(p) for p in data.member_ids]
+    for member_id in member_ids:
+        member = await member_repo.get_by_id(member_id)
+        if (
+            member is None
+            or member.tenant_id != campaign.tenant_id
+            or member.client_id != campaign.client_id
+        ):
+            raise HTTPException(status_code=404, detail="Member not found in campaign client")
     records = await EnrolPersonsInCampaignUseCase(campaign_repo, outreach_repo).execute(
         campaign_id=CareCallbackCampaignId(campaign_id),
-        person_ids=[PersonId(p) for p in data.person_ids],
+        member_ids=member_ids,
     )
     return [_to_outreach_response(r) for r in records]
 
@@ -331,7 +347,7 @@ async def assign_outreach(
     record = await use_case.execute(
         OutreachRecordId(outreach_id),
         OutreachTransition.ASSIGN,
-        counsellor_id=PersonId(data.counsellor_id),
+        counsellor_id=ProviderId(data.counsellor_id),
     )
     await audit_change(record, audit_handler, current_user, request)
     return _to_outreach_response(record)

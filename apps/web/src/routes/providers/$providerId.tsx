@@ -65,7 +65,7 @@ function ProviderDetailPage() {
             Providers
           </Link>
           <div className="flex flex-wrap items-center gap-2">
-            <h1 className="text-base font-semibold text-fg font-mono">{p.id}</h1>
+            <h1 className="text-base font-semibold text-fg">{p.display_name || p.email}</h1>
             <ProviderTierBadge tier={profile.tier} />
             <span className="inline-flex items-center px-2 py-0.5 text-xs font-medium border border-fg/20 bg-surface text-fg rounded-none">
               {profile.region}

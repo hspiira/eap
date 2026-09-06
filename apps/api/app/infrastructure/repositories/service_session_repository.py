@@ -18,7 +18,7 @@ from app.domain.repositories.service_session_repository import (
 )
 from app.domain.value_objects.core import (
     EligibleMemberId,
-    PersonId,
+    ProviderId,
     ServiceId,
     SessionId,
     TenantId,
@@ -71,7 +71,7 @@ class ServiceSessionRepositoryImpl(
         return [self._to_entity(model) for model in models]
 
     async def get_by_provider_id(
-        self, tenant_id: TenantId, provider_id: PersonId
+        self, tenant_id: TenantId, provider_id: ProviderId
     ) -> list[ServiceSessionEntity]:
         """Get all sessions for a provider within tenant, excluding soft-deleted."""
         stmt = select(ServiceSessionModel).where(
@@ -101,7 +101,7 @@ class ServiceSessionRepositoryImpl(
     def _base_filters(
         self,
         member_id: EligibleMemberId | None,
-        provider_id: PersonId | None,
+        provider_id: ProviderId | None,
         service_id: ServiceId | None,
         status: SessionStatus | None,
     ) -> dict[str, Any]:
@@ -138,7 +138,7 @@ class ServiceSessionRepositoryImpl(
         self,
         tenant_id: TenantId,
         member_id: EligibleMemberId | None = None,
-        provider_id: PersonId | None = None,
+        provider_id: ProviderId | None = None,
         service_id: ServiceId | None = None,
         status: SessionStatus | None = None,
         scheduled_from: datetime | None = None,
@@ -165,7 +165,7 @@ class ServiceSessionRepositoryImpl(
         self,
         tenant_id: TenantId,
         member_id: EligibleMemberId | None = None,
-        provider_id: PersonId | None = None,
+        provider_id: ProviderId | None = None,
         service_id: ServiceId | None = None,
         status: SessionStatus | None = None,
         scheduled_from: datetime | None = None,

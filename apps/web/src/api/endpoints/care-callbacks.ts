@@ -7,7 +7,7 @@
  *   Triage    → `/triage/instruments*`, `/outreach-records/{id}/triage*`
  *
  * No `require_clinical_scope` on any of these; Care Callbacks is not behind
- * the clinical privacy wall (person_id is a real reference, unlike Case's
+ * the clinical privacy wall (member_id is a real reference, unlike Case's
  * pseudonymous clinical_subject_id).
  *
  * `getAggregate` stays fixture-only: the k-anon aggregate report widget
@@ -137,10 +137,10 @@ export const careCallbacksApi = {
     })
   },
 
-  /** Enrols persons into the campaign as new Pending outreach records. */
-  async enrol(campaignId: string, personIds: string[]): Promise<void> {
+  /** Enrols members into the campaign as new Pending outreach records. */
+  async enrol(campaignId: string, memberIds: string[]): Promise<void> {
     return apiClient.post<void>(`/care-callback-campaigns/${campaignId}/enrol`, {
-      person_ids: personIds,
+      member_ids: memberIds,
     })
   },
 

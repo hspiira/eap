@@ -37,7 +37,7 @@ export function Hero({
         <Phone className="size-4" />
       </span>
       <h1 className="shrink truncate text-sm font-semibold leading-tight text-fg font-mono">
-        {outreach.person_id}
+        {outreach.member_id}
       </h1>
       {campaignName ? (
         <Link
@@ -171,17 +171,17 @@ export function DetailRail({
 
       <RailSection title="Person">
         <Link
-          to="/persons/$personId"
-          params={{ personId: outreach.person_id }}
+          to="/members/$memberId"
+          params={{ memberId: outreach.member_id }}
           className="flex items-center gap-2.5 rounded-sm border border-fg/10 bg-surface px-3 py-2 transition-colors hover:border-fg/25"
         >
           <span
             aria-hidden
             className="grid size-7 shrink-0 place-items-center bg-primary/10 text-[10px] font-semibold text-primary"
           >
-            {outreach.person_id.slice(0, 2).toUpperCase()}
+            {outreach.member_id.slice(0, 2).toUpperCase()}
           </span>
-          <p className="truncate font-mono text-[11px] text-fg-muted">{outreach.person_id}</p>
+          <p className="truncate font-mono text-[11px] text-fg-muted">{outreach.member_id}</p>
         </Link>
       </RailSection>
     </div>

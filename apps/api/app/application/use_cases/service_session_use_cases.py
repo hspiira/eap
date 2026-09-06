@@ -21,7 +21,7 @@ from app.domain.repositories.service_session_repository import (
 )
 from app.domain.value_objects.core import (
     EligibleMemberId,
-    PersonId,
+    ProviderId,
     ServiceId,
     SessionId,
     TenantId,
@@ -42,7 +42,7 @@ class CreateServiceSessionUseCase(BaseUseCase[ServiceSessionEntity, SessionId]):
         session_id: SessionId,
         tenant_id: TenantId,
         service_id: ServiceId,
-        provider_id: PersonId,
+        provider_id: ProviderId,
         member_id: EligibleMemberId,
         scheduled_at: datetime,
         location: str | None = None,
@@ -166,7 +166,7 @@ class GetServiceSessionUseCase(BaseUseCase[ServiceSessionEntity, SessionId]):
         return await self.session_repository.get_by_member_id(tenant_id, member_id)
 
     async def execute_by_provider(
-        self, tenant_id: TenantId, provider_id: PersonId
+        self, tenant_id: TenantId, provider_id: ProviderId
     ) -> list[ServiceSessionEntity]:
         """Get all sessions for a provider."""
         return await self.session_repository.get_by_provider_id(tenant_id, provider_id)

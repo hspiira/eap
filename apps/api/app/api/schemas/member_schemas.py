@@ -183,3 +183,20 @@ class MemberMergeResponse(BaseModel):
     member: MemberResponse
     source_member_id: str
     transferred: dict[str, int]
+
+
+class MemberImportRowPreview(BaseModel):
+    row: int
+    client_code: str | None
+    client_name: str | None
+    employer_member_id: str | None
+    display_label: str | None
+    state: str
+    message: str | None = None
+
+
+class MemberImportResponse(BaseModel):
+    imported: int
+    skipped: int
+    failed: int
+    rows: list[MemberImportRowPreview]

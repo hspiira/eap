@@ -10,19 +10,13 @@
  * eligibility) and `non-compete-clauses.ts`.
  */
 
-import { PersonType } from "@/types/enums"
-
-import type { ListParams, PaginatedResponse, Person, Provider } from "../types"
-import { personsApi } from "./persons"
+import apiClient from "../client"
+import type { ListParams, PaginatedResponse, Provider } from "../types"
 
 export interface ProviderListParams extends ListParams {
   status?: string
   /** Free-text search in user email (delegated to persons.list). */
   search?: string
-}
-
-function isProvider(p: Person): p is Provider {
-  return p.person_type === PersonType.SERVICE_PROVIDER && p.provider_profile != null
 }
 
 export const providersApi = {
@@ -34,28 +28,10 @@ export const providersApi = {
    * tier/region filter to `/persons?person_type=ServiceProvider`.
    */
   async list(params: ProviderListParams = {}): Promise<PaginatedResponse<Provider>> {
-    const page = await personsApi.list({
-      ...params,
-      person_type: PersonType.SERVICE_PROVIDER,
-    })
-    const providers = page.items.filter(isProvider)
-    return {
-      ...page,
-      items: providers,
-      // total/has_more come from BE; if profile-less providers were dropped,
-      // those counts are slightly optimistic, but acceptable for v1.
-    }
+    return apiClient.get<PaginatedResponse<Provider>>("/providers", params)
   },
 
   async getById(id: string): Promise<Provider> {
-    const person = await personsApi.getById(id)
-    if (!isProvider(person)) {
-      throw new Error(
-        `Person ${id} is not a service provider (type=${person.person_type}, profile=${
-          person.provider_profile == null ? "missing" : "present"
-        })`,
-      )
-    }
-    return person
+    return apiClient.get<Provider>(`/providers/${id}`)
   },
 }

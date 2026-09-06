@@ -43,6 +43,25 @@ export interface MemberNextOfKinRequest {
 }
 
 export const membersApi = {
+  async importRoster(file: File, dryRun = true): Promise<{
+    imported: number
+    skipped: number
+    failed: number
+    rows: Array<{
+      row: number
+      client_code: string | null
+      client_name: string | null
+      employer_member_id: string | null
+      display_label: string | null
+      state: string
+      message?: string | null
+    }>
+  }> {
+    const body = new FormData()
+    body.append("file", file)
+    return apiClient.post(`/members/import?dry_run=${dryRun}`, body)
+  },
+
   async list(params?: MemberListParams): Promise<PaginatedResponse<Member>> {
     return apiClient.get<PaginatedResponse<Member>>("/members", params)
   },

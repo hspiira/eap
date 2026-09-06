@@ -16,7 +16,13 @@ from app.domain.enums import (
 )
 from app.domain.events import DomainEvent, SessionCancelled, SessionCompleted, SessionRescheduled
 from app.domain.exceptions import ConflictError, DomainError
-from app.domain.value_objects.core import EligibleMemberId, PersonId, ServiceId, SessionId, TenantId
+from app.domain.value_objects.core import (
+    EligibleMemberId,
+    ProviderId,
+    ServiceId,
+    SessionId,
+    TenantId,
+)
 from app.shared.utils.datetime import utc_now
 
 
@@ -26,7 +32,7 @@ class ServiceSessionEntity:
     id: SessionId
     tenant_id: TenantId
     service_id: ServiceId
-    provider_id: PersonId
+    provider_id: ProviderId
     member_id: EligibleMemberId
     scheduled_at: datetime
     status: SessionStatus

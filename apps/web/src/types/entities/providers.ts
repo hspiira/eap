@@ -5,7 +5,7 @@ import type {
   ProviderRegion,
   ProviderTier,
 } from "../enums"
-import type { Person } from "./identity"
+import type { LicenseInfo } from "./identity"
 
 /**
  * Service provider (counsellor / agency / clinic): D-Provider v1.
@@ -13,9 +13,7 @@ import type { Person } from "./identity"
 /**
  * Provider panel profile: mirrors BE `ProviderProfileSchema`.
  *
- * On the BE, a "provider" is a Person whose `person_type=SERVICE_PROVIDER`
- * AND whose `provider_profile` is set. The profile is the panel-specific
- * data: tier, region, accreditation, panel status, specialties.
+ * Providers are persisted independently from client members and platform staff.
  */
 export interface ProviderProfile {
   tier: ProviderTier
@@ -50,11 +48,19 @@ export interface NonCompeteClause {
 }
 
 /**
- * Provider view = Person with required provider_profile. Use this when the
- * caller has already filtered persons to SERVICE_PROVIDER + non-null profile.
+ * Provider view with its required panel profile.
  */
-export type Provider = Person & {
+export interface Provider {
+  id: string
+  tenant_id: string
+  user_id: string
+  display_name?: string | null
+  email: string
+  status: string
   provider_profile: ProviderProfile
+  license_info?: LicenseInfo | null
+  created_at: string
+  updated_at: string
 }
 
 /**

@@ -6,7 +6,7 @@ from app.domain.repositories.base_repository import BaseRepository
 from app.domain.value_objects.core import (
     CareCallbackCampaignId,
     OutreachRecordId,
-    PersonId,
+    ProviderId,
     TenantId,
 )
 
@@ -30,7 +30,7 @@ class OutreachRecordRepository(BaseRepository[OutreachRecord, OutreachRecordId])
     async def list_for_counsellor(
         self,
         tenant_id: TenantId,
-        counsellor_id: PersonId,
+        counsellor_id: ProviderId,
         *,
         limit: int = 100,
     ) -> list[OutreachRecord]: ...

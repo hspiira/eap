@@ -61,7 +61,7 @@ from app.api.dependencies.privacy import (
     get_dsar_request_repository,
     get_dsar_tombstoner,
 )
-from app.api.dependencies.provider import get_non_compete_clause_repository
+from app.api.dependencies.provider import get_non_compete_clause_repository, get_provider_repository
 from app.api.dependencies.reporting import (
     get_report_query_runner,
     get_report_run_repository,
@@ -107,6 +107,7 @@ __all__ = [
     "get_kpi_assignment_repository",
     "get_kpi_repository",
     "get_non_compete_clause_repository",
+    "get_provider_repository",
     "get_outbox_repository",
     "get_outreach_record_repository",
     "get_password_set_token_repository",

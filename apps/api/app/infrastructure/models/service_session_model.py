@@ -69,7 +69,7 @@ class ServiceSessionModel(CuidMixin, TenantMixin, Base, TimestampMixin, SoftDele
 
     # Relationships
     service_id: Mapped[str] = mapped_column(String(25), nullable=False, index=True)
-    provider_id: Mapped[str] = mapped_column(ForeignKey("persons.id"), nullable=False, index=True)
+    provider_id: Mapped[str] = mapped_column(ForeignKey("providers.id"), nullable=False, index=True)
     member_id: Mapped[str] = mapped_column(
         ForeignKey("eligible_members.id"), nullable=False, index=True
     )

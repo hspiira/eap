@@ -15,7 +15,7 @@ from app.domain.enums import (
 )
 from app.domain.value_objects.core import (
     EligibleMemberId,
-    PersonId,
+    ProviderId,
     ServiceId,
     SessionId,
     TenantId,
@@ -42,7 +42,7 @@ class ServiceSessionMapper:
         session_id = SessionId(model.id)
         tenant_id = TenantId(model.tenant_id)
         service_id = ServiceId(model.service_id)
-        provider_id = PersonId(model.provider_id)
+        provider_id = ProviderId(model.provider_id)
         member_id = EligibleMemberId(model.member_id)
 
         # Reconstruct enums

@@ -30,8 +30,8 @@ from app.api.routes.kpis import router as kpis_router
 from app.api.routes.members import router as members_router
 from app.api.routes.non_compete_clauses import router as non_compete_router
 from app.api.routes.panel import router as panel_router
-from app.api.routes.persons import router as persons_router
 from app.api.routes.pricing import router as pricing_router
+from app.api.routes.providers import router as providers_router
 from app.api.routes.reports import router as reports_router
 from app.api.routes.service_assignments import router as service_assignments_router
 from app.api.routes.service_sessions import router as service_sessions_router
@@ -47,7 +47,7 @@ def register_routers(app: FastAPI) -> None:
     app.include_router(auth_azure_router)
     app.include_router(tenants_router)
     app.include_router(users_router)
-    app.include_router(persons_router)
+    app.include_router(providers_router)
     app.include_router(clients_router)
     app.include_router(industries_router)
     app.include_router(client_tags_router)
@@ -103,7 +103,7 @@ __all__ = [
     "members_router",
     "non_compete_router",
     "panel_router",
-    "persons_router",
+    "providers_router",
     "pricing_router",
     "register_routers",
     "reports_router",

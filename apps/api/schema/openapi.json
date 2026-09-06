@@ -308,53 +308,6 @@
         "title": "ActivityUpdate",
         "type": "object"
       },
-      "AddSecondaryRoleRequest": {
-        "description": "Request schema for adding a secondary role.",
-        "properties": {
-          "employment_info": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/EmploymentInfoSchema"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "description": "Employment info (for CLIENT_EMPLOYEE role)"
-          },
-          "license_info": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/LicenseInfoSchema"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "description": "License info (for SERVICE_PROVIDER role)"
-          },
-          "role": {
-            "$ref": "#/components/schemas/PersonType",
-            "description": "Secondary person type"
-          },
-          "staff_info": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/StaffInfoSchema"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "description": "Staff info (for PLATFORM_STAFF role)"
-          }
-        },
-        "required": [
-          "role"
-        ],
-        "title": "AddSecondaryRoleRequest",
-        "type": "object"
-      },
       "AddressCreate": {
         "description": "Address for creation.",
         "properties": {
@@ -1019,6 +972,21 @@
           "file"
         ],
         "title": "Body_import_clients_clients_import_post",
+        "type": "object"
+      },
+      "Body_import_members_members_import_post": {
+        "properties": {
+          "file": {
+            "contentMediaType": "application/octet-stream",
+            "description": "UTF-8 client member roster CSV",
+            "title": "File",
+            "type": "string"
+          }
+        },
+        "required": [
+          "file"
+        ],
+        "title": "Body_import_members_members_import_post",
         "type": "object"
       },
       "Body_queue_client_import_clients_import_jobs_post": {
@@ -4713,39 +4681,6 @@
         "title": "DeliverableStatusUpdate",
         "type": "object"
       },
-      "DependentInfoSchema": {
-        "additionalProperties": false,
-        "description": "Dependent information schema.",
-        "properties": {
-          "guardian_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "description": "Guardian user ID",
-            "title": "Guardian Id"
-          },
-          "primary_employee_id": {
-            "description": "Primary employee person ID",
-            "title": "Primary Employee Id",
-            "type": "string"
-          },
-          "relationship": {
-            "$ref": "#/components/schemas/RelationType",
-            "description": "Relationship type"
-          }
-        },
-        "required": [
-          "primary_employee_id",
-          "relationship"
-        ],
-        "title": "DependentInfoSchema",
-        "type": "object"
-      },
       "DiagnosisAliasResponse": {
         "properties": {
           "confidence": {
@@ -6284,194 +6219,6 @@
         "title": "EligibleMemberResponse",
         "type": "object"
       },
-      "EmergencyContactSchema": {
-        "additionalProperties": false,
-        "description": "Emergency contact schema.",
-        "properties": {
-          "email": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "description": "Email address",
-            "title": "Email"
-          },
-          "name": {
-            "description": "Contact name",
-            "title": "Name",
-            "type": "string"
-          },
-          "phone": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "description": "Phone number",
-            "title": "Phone"
-          }
-        },
-        "required": [
-          "name"
-        ],
-        "title": "EmergencyContactSchema",
-        "type": "object"
-      },
-      "EmploymentInfoCreateSchema": {
-        "additionalProperties": false,
-        "description": "Employment information for creating a person (employee_code is generated).",
-        "properties": {
-          "client_id": {
-            "description": "Client identifier",
-            "title": "Client Id",
-            "type": "string"
-          },
-          "department": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "description": "Department",
-            "title": "Department"
-          },
-          "employee_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "description": "External employee ID (optional)",
-            "title": "Employee Id"
-          },
-          "end_date": {
-            "anyOf": [
-              {
-                "format": "date",
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "description": "Employment end date",
-            "title": "End Date"
-          },
-          "role": {
-            "description": "Job role",
-            "title": "Role",
-            "type": "string"
-          },
-          "start_date": {
-            "description": "Employment start date",
-            "format": "date",
-            "title": "Start Date",
-            "type": "string"
-          },
-          "status": {
-            "$ref": "#/components/schemas/WorkStatus",
-            "description": "Work status"
-          }
-        },
-        "required": [
-          "client_id",
-          "role",
-          "start_date",
-          "status"
-        ],
-        "title": "EmploymentInfoCreateSchema",
-        "type": "object"
-      },
-      "EmploymentInfoSchema": {
-        "additionalProperties": false,
-        "description": "Employment information schema.",
-        "properties": {
-          "client_id": {
-            "description": "Client identifier",
-            "title": "Client Id",
-            "type": "string"
-          },
-          "department": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "description": "Department",
-            "title": "Department"
-          },
-          "employee_code": {
-            "description": "Employee code (format: CLIENT-FAMILY-MEMBER, e.g., MNT-00-00)",
-            "title": "Employee Code",
-            "type": "string"
-          },
-          "employee_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "description": "External employee ID (optional)",
-            "title": "Employee Id"
-          },
-          "end_date": {
-            "anyOf": [
-              {
-                "format": "date",
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "description": "Employment end date",
-            "title": "End Date"
-          },
-          "role": {
-            "description": "Job role",
-            "title": "Role",
-            "type": "string"
-          },
-          "start_date": {
-            "description": "Employment start date",
-            "format": "date",
-            "title": "Start Date",
-            "type": "string"
-          },
-          "status": {
-            "$ref": "#/components/schemas/WorkStatus",
-            "description": "Work status"
-          }
-        },
-        "required": [
-          "client_id",
-          "employee_code",
-          "role",
-          "start_date",
-          "status"
-        ],
-        "title": "EmploymentInfoSchema",
-        "type": "object"
-      },
       "EngagementCreate": {
         "properties": {
           "client_id": {
@@ -6776,21 +6523,21 @@
         "title": "EngagementSummaryResponse",
         "type": "object"
       },
-      "EnrolPersonsRequest": {
+      "EnrolMembersRequest": {
         "properties": {
-          "person_ids": {
+          "member_ids": {
             "items": {
               "type": "string"
             },
             "minItems": 1,
-            "title": "Person Ids",
+            "title": "Member Ids",
             "type": "array"
           }
         },
         "required": [
-          "person_ids"
+          "member_ids"
         ],
-        "title": "EnrolPersonsRequest",
+        "title": "EnrolMembersRequest",
         "type": "object"
       },
       "EntityChangeListResponse": {
@@ -8028,41 +7775,6 @@
         "title": "Language",
         "type": "string"
       },
-      "LicenseInfoSchema": {
-        "additionalProperties": false,
-        "description": "License information schema.",
-        "properties": {
-          "expiry_date": {
-            "anyOf": [
-              {
-                "format": "date",
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "description": "License expiry date",
-            "title": "Expiry Date"
-          },
-          "issuing_authority": {
-            "description": "Issuing authority",
-            "title": "Issuing Authority",
-            "type": "string"
-          },
-          "number": {
-            "description": "License number",
-            "title": "Number",
-            "type": "string"
-          }
-        },
-        "required": [
-          "number",
-          "issuing_authority"
-        ],
-        "title": "LicenseInfoSchema",
-        "type": "object"
-      },
       "LoginRequest": {
         "description": "Request schema for user login.",
         "properties": {
@@ -8387,6 +8099,114 @@
         ],
         "title": "MemberGender",
         "type": "string"
+      },
+      "MemberImportResponse": {
+        "properties": {
+          "failed": {
+            "title": "Failed",
+            "type": "integer"
+          },
+          "imported": {
+            "title": "Imported",
+            "type": "integer"
+          },
+          "rows": {
+            "items": {
+              "$ref": "#/components/schemas/MemberImportRowPreview"
+            },
+            "title": "Rows",
+            "type": "array"
+          },
+          "skipped": {
+            "title": "Skipped",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "imported",
+          "skipped",
+          "failed",
+          "rows"
+        ],
+        "title": "MemberImportResponse",
+        "type": "object"
+      },
+      "MemberImportRowPreview": {
+        "properties": {
+          "client_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Client Code"
+          },
+          "client_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Client Name"
+          },
+          "display_label": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Display Label"
+          },
+          "employer_member_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Employer Member Id"
+          },
+          "message": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Message"
+          },
+          "row": {
+            "title": "Row",
+            "type": "integer"
+          },
+          "state": {
+            "title": "State",
+            "type": "string"
+          }
+        },
+        "required": [
+          "row",
+          "client_code",
+          "client_name",
+          "employer_member_id",
+          "display_label",
+          "state"
+        ],
+        "title": "MemberImportRowPreview",
+        "type": "object"
       },
       "MemberListResponse": {
         "properties": {
@@ -9443,6 +9263,10 @@
             ],
             "title": "Last Attempted At"
           },
+          "member_id": {
+            "title": "Member Id",
+            "type": "string"
+          },
           "notes": {
             "anyOf": [
               {
@@ -9453,10 +9277,6 @@
               }
             ],
             "title": "Notes"
-          },
-          "person_id": {
-            "title": "Person Id",
-            "type": "string"
           },
           "status": {
             "$ref": "#/components/schemas/OutreachStatus"
@@ -9496,7 +9316,7 @@
           "id",
           "tenant_id",
           "campaign_id",
-          "person_id",
+          "member_id",
           "counsellor_id",
           "status",
           "contact_attempts",
@@ -9575,306 +9395,6 @@
         "title": "PaymentStatus",
         "type": "string"
       },
-      "PersonCreate": {
-        "additionalProperties": false,
-        "description": "Request schema for creating a person.\n\nPersons are created after a User exists. Provide user_id and tenant_id;\nthen either employment_info (for CLIENT_EMPLOYEE) or dependent_info (for DEPENDENT).",
-        "properties": {
-          "dependent_info": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/DependentInfoSchema"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "description": "Required for DEPENDENT"
-          },
-          "employment_info": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/EmploymentInfoCreateSchema"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "description": "Required for CLIENT_EMPLOYEE"
-          },
-          "family_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "description": "Family identifier (optional, for CLIENT_EMPLOYEE)",
-            "title": "Family Id"
-          },
-          "person_type": {
-            "$ref": "#/components/schemas/PersonType",
-            "description": "Primary person type (CLIENT_EMPLOYEE or DEPENDENT)"
-          },
-          "tenant_id": {
-            "description": "Tenant identifier",
-            "title": "Tenant Id",
-            "type": "string"
-          },
-          "user_id": {
-            "description": "User identifier (user must exist)",
-            "title": "User Id",
-            "type": "string"
-          }
-        },
-        "required": [
-          "person_type",
-          "user_id",
-          "tenant_id"
-        ],
-        "title": "PersonCreate",
-        "type": "object"
-      },
-      "PersonDeactivateRequest": {
-        "additionalProperties": false,
-        "description": "Request schema for deactivating a person.",
-        "properties": {
-          "reason": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "description": "Deactivation reason",
-            "title": "Reason"
-          }
-        },
-        "title": "PersonDeactivateRequest",
-        "type": "object"
-      },
-      "PersonListResponse": {
-        "description": "Response schema for person list.",
-        "properties": {
-          "has_more": {
-            "description": "Whether there are more items",
-            "title": "Has More",
-            "type": "boolean"
-          },
-          "items": {
-            "description": "List of persons",
-            "items": {
-              "$ref": "#/components/schemas/PersonResponse"
-            },
-            "title": "Items",
-            "type": "array"
-          },
-          "limit": {
-            "description": "Items per page",
-            "title": "Limit",
-            "type": "integer"
-          },
-          "page": {
-            "description": "Current page number",
-            "title": "Page",
-            "type": "integer"
-          },
-          "total": {
-            "description": "Total number of persons matching filters",
-            "title": "Total",
-            "type": "integer"
-          }
-        },
-        "required": [
-          "items",
-          "total",
-          "page",
-          "limit",
-          "has_more"
-        ],
-        "title": "PersonListResponse",
-        "type": "object"
-      },
-      "PersonResponse": {
-        "description": "Response schema for person.",
-        "properties": {
-          "dependent_info": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/DependentInfoSchema"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "description": "Dependent information"
-          },
-          "emergency_contact": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/EmergencyContactSchema"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "description": "Emergency contact"
-          },
-          "employment_info": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/EmploymentInfoSchema"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "description": "Employment information"
-          },
-          "family_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "description": "Family identifier (points to primary employee)",
-            "title": "Family Id"
-          },
-          "id": {
-            "description": "Person identifier",
-            "title": "Id",
-            "type": "string"
-          },
-          "is_dual_role": {
-            "description": "Whether person has dual role",
-            "title": "Is Dual Role",
-            "type": "boolean"
-          },
-          "is_eligible_for_services": {
-            "description": "Eligible for services",
-            "title": "Is Eligible For Services",
-            "type": "boolean"
-          },
-          "last_service_date": {
-            "anyOf": [
-              {
-                "format": "date",
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "description": "Last service date",
-            "title": "Last Service Date"
-          },
-          "license_info": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/LicenseInfoSchema"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "description": "License information"
-          },
-          "person_type": {
-            "$ref": "#/components/schemas/PersonType",
-            "description": "Primary person type"
-          },
-          "provider_profile": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/ProviderProfileSchema"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "description": "Provider panel profile. Populated when person_type is SERVICE_PROVIDER. Carries tier, region, accreditation, panel status, specialties."
-          },
-          "secondary_person_type": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/PersonType"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "description": "Secondary person type"
-          },
-          "staff_info": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/StaffInfoSchema"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "description": "Staff information"
-          },
-          "status": {
-            "$ref": "#/components/schemas/BaseStatus",
-            "description": "Person status"
-          },
-          "tenant_id": {
-            "description": "Tenant identifier",
-            "title": "Tenant Id",
-            "type": "string"
-          },
-          "user_id": {
-            "description": "User identifier",
-            "title": "User Id",
-            "type": "string"
-          }
-        },
-        "required": [
-          "id",
-          "tenant_id",
-          "user_id",
-          "person_type",
-          "is_dual_role",
-          "status",
-          "is_eligible_for_services"
-        ],
-        "title": "PersonResponse",
-        "type": "object"
-      },
-      "PersonTerminateRequest": {
-        "description": "Request schema for terminating a person.",
-        "properties": {
-          "reason": {
-            "description": "Termination reason",
-            "minLength": 1,
-            "title": "Reason",
-            "type": "string"
-          }
-        },
-        "required": [
-          "reason"
-        ],
-        "title": "PersonTerminateRequest",
-        "type": "object"
-      },
-      "PersonType": {
-        "enum": [
-          "PlatformStaff",
-          "ClientEmployee",
-          "Dependent",
-          "ServiceProvider"
-        ],
-        "title": "PersonType",
-        "type": "string"
-      },
       "PresentingProblem": {
         "description": "Top-level category of the presenting concern at intake.",
         "enum": [
@@ -9946,6 +9466,35 @@
         "title": "ProgrammeCapInput",
         "type": "object"
       },
+      "ProviderCreate": {
+        "properties": {
+          "license_info": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "License Info"
+          },
+          "provider_profile": {
+            "$ref": "#/components/schemas/ProviderProfileSchema"
+          },
+          "user_id": {
+            "title": "User Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "user_id",
+          "provider_profile"
+        ],
+        "title": "ProviderCreate",
+        "type": "object"
+      },
       "ProviderEligibilityResponse": {
         "properties": {
           "binding_non_compete_count": {
@@ -10000,6 +9549,32 @@
           "reasons"
         ],
         "title": "ProviderEligibilityResponse",
+        "type": "object"
+      },
+      "ProviderListResponse": {
+        "properties": {
+          "has_more": {
+            "title": "Has More",
+            "type": "boolean"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/ProviderResponse"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "items",
+          "total",
+          "has_more"
+        ],
+        "title": "ProviderListResponse",
         "type": "object"
       },
       "ProviderProfileSchema": {
@@ -10067,17 +9642,76 @@
         "title": "ProviderProfileSchema",
         "type": "object"
       },
-      "ProviderProfileUpdate": {
+      "ProviderResponse": {
         "properties": {
-          "profile": {
-            "$ref": "#/components/schemas/ProviderProfileSchema",
-            "description": "Replacement provider profile"
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "display_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Display Name"
+          },
+          "email": {
+            "title": "Email",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "license_info": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "License Info"
+          },
+          "provider_profile": {
+            "$ref": "#/components/schemas/ProviderProfileSchema"
+          },
+          "status": {
+            "$ref": "#/components/schemas/BaseStatus"
+          },
+          "tenant_id": {
+            "title": "Tenant Id",
+            "type": "string"
+          },
+          "updated_at": {
+            "format": "date-time",
+            "title": "Updated At",
+            "type": "string"
+          },
+          "user_id": {
+            "title": "User Id",
+            "type": "string"
           }
         },
         "required": [
-          "profile"
+          "id",
+          "tenant_id",
+          "user_id",
+          "display_name",
+          "email",
+          "status",
+          "provider_profile",
+          "created_at",
+          "updated_at"
         ],
-        "title": "ProviderProfileUpdate",
+        "title": "ProviderResponse",
         "type": "object"
       },
       "ProviderTier": {
@@ -10089,6 +9723,44 @@
         ],
         "title": "ProviderTier",
         "type": "string"
+      },
+      "ProviderUpdate": {
+        "properties": {
+          "license_info": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "License Info"
+          },
+          "provider_profile": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ProviderProfileSchema"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "status": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/BaseStatus"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "title": "ProviderUpdate",
+        "type": "object"
       },
       "RateCardEntrySchema": {
         "properties": {
@@ -11872,67 +11544,6 @@
         "title": "SetInitialPasswordRequest",
         "type": "object"
       },
-      "StaffInfoSchema": {
-        "additionalProperties": false,
-        "description": "Staff information schema.",
-        "properties": {
-          "can_manage_clients": {
-            "default": false,
-            "description": "Can manage clients",
-            "title": "Can Manage Clients",
-            "type": "boolean"
-          },
-          "can_manage_services": {
-            "default": false,
-            "description": "Can manage services",
-            "title": "Can Manage Services",
-            "type": "boolean"
-          },
-          "can_view_reports": {
-            "default": false,
-            "description": "Can view reports",
-            "title": "Can View Reports",
-            "type": "boolean"
-          },
-          "client_id": {
-            "description": "Client ID",
-            "title": "Client Id",
-            "type": "string"
-          },
-          "department": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "description": "Department",
-            "title": "Department"
-          },
-          "role": {
-            "$ref": "#/components/schemas/StaffRole",
-            "description": "Staff role"
-          }
-        },
-        "required": [
-          "role",
-          "client_id"
-        ],
-        "title": "StaffInfoSchema",
-        "type": "object"
-      },
-      "StaffRole": {
-        "enum": [
-          "Admin",
-          "Manager",
-          "Staff",
-          "Volunteer"
-        ],
-        "title": "StaffRole",
-        "type": "string"
-      },
       "StageOfChange": {
         "description": "Prochaska & DiClemente Transtheoretical Model stages.",
         "enum": [
@@ -13071,77 +12682,6 @@
         "title": "UpdateClinicalNoteBodyRequest",
         "type": "object"
       },
-      "UpdateDependentInfoRequest": {
-        "additionalProperties": false,
-        "description": "Request schema for updating dependent information.",
-        "properties": {
-          "dependent_info": {
-            "$ref": "#/components/schemas/DependentInfoSchema",
-            "description": "Dependent information (primary_employee_id, relationship, guardian_id)"
-          }
-        },
-        "required": [
-          "dependent_info"
-        ],
-        "title": "UpdateDependentInfoRequest",
-        "type": "object"
-      },
-      "UpdateEmergencyContactRequest": {
-        "description": "Request schema for updating emergency contact.",
-        "properties": {
-          "emergency_contact": {
-            "$ref": "#/components/schemas/EmergencyContactSchema",
-            "description": "Emergency contact information"
-          }
-        },
-        "required": [
-          "emergency_contact"
-        ],
-        "title": "UpdateEmergencyContactRequest",
-        "type": "object"
-      },
-      "UpdateEmploymentInfoRequest": {
-        "description": "Request schema for updating employment information.",
-        "properties": {
-          "employment_info": {
-            "$ref": "#/components/schemas/EmploymentInfoSchema",
-            "description": "Employment information"
-          }
-        },
-        "required": [
-          "employment_info"
-        ],
-        "title": "UpdateEmploymentInfoRequest",
-        "type": "object"
-      },
-      "UpdateLicenseInfoRequest": {
-        "description": "Request schema for updating license information.",
-        "properties": {
-          "license_info": {
-            "$ref": "#/components/schemas/LicenseInfoSchema",
-            "description": "License information"
-          }
-        },
-        "required": [
-          "license_info"
-        ],
-        "title": "UpdateLicenseInfoRequest",
-        "type": "object"
-      },
-      "UpdateStaffInfoRequest": {
-        "description": "Request schema for updating staff information.",
-        "properties": {
-          "staff_info": {
-            "$ref": "#/components/schemas/StaffInfoSchema",
-            "description": "Staff information"
-          }
-        },
-        "required": [
-          "staff_info"
-        ],
-        "title": "UpdateStaffInfoRequest",
-        "type": "object"
-      },
       "UserBanRequest": {
         "description": "Request schema for banning a user.",
         "properties": {
@@ -13784,18 +13324,6 @@
         ],
         "title": "WithdrawConsentRequest",
         "type": "object"
-      },
-      "WorkStatus": {
-        "enum": [
-          "Active",
-          "Inactive",
-          "On Leave",
-          "Terminated",
-          "Suspended",
-          "Resigned"
-        ],
-        "title": "WorkStatus",
-        "type": "string"
       },
       "app__api__schemas__contract_schemas__MoneySchema": {
         "description": "Money value object schema for request/response.",
@@ -15773,7 +15301,7 @@
     },
     "/care-callback-campaigns/{campaign_id}/enrol": {
       "post": {
-        "operationId": "enrol_persons_care_callback_campaigns__campaign_id__enrol_post",
+        "operationId": "enrol_members_care_callback_campaigns__campaign_id__enrol_post",
         "parameters": [
           {
             "in": "path",
@@ -15789,7 +15317,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/EnrolPersonsRequest"
+                "$ref": "#/components/schemas/EnrolMembersRequest"
               }
             }
           },
@@ -15803,7 +15331,7 @@
                   "items": {
                     "$ref": "#/components/schemas/OutreachRecordResponse"
                   },
-                  "title": "Response Enrol Persons Care Callback Campaigns  Campaign Id  Enrol Post",
+                  "title": "Response Enrol Members Care Callback Campaigns  Campaign Id  Enrol Post",
                   "type": "array"
                 }
               }
@@ -15826,7 +15354,7 @@
             "HTTPBearer": []
           }
         ],
-        "summary": "Bulk-enrol persons into a campaign",
+        "summary": "Bulk-enrol members into a campaign",
         "tags": [
           "care-callbacks"
         ]
@@ -25718,6 +25246,67 @@
         ]
       }
     },
+    "/members/import": {
+      "post": {
+        "description": "Preview or import a roster using only explicit, stable member IDs.",
+        "operationId": "import_members_members_import_post",
+        "parameters": [
+          {
+            "description": "Preview only; set false to create members",
+            "in": "query",
+            "name": "dry_run",
+            "required": false,
+            "schema": {
+              "default": true,
+              "description": "Preview only; set false to create members",
+              "title": "Dry Run",
+              "type": "boolean"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_import_members_members_import_post"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MemberImportResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Import Members",
+        "tags": [
+          "members"
+        ]
+      }
+    },
     "/members/{member_id}": {
       "get": {
         "operationId": "get_member_members__member_id__get",
@@ -27398,10 +26987,9 @@
         ]
       }
     },
-    "/persons/": {
+    "/providers": {
       "get": {
-        "description": "List persons with filtering, searching, and pagination.",
-        "operationId": "list_persons_persons__get",
+        "operationId": "list_providers_providers_get",
         "parameters": [
           {
             "in": "query",
@@ -27413,125 +27001,25 @@
             }
           },
           {
-            "description": "Filter by person status",
-            "in": "query",
-            "name": "status",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "$ref": "#/components/schemas/BaseStatus"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "description": "Filter by person status",
-              "title": "Status"
-            }
-          },
-          {
-            "description": "Filter by person type",
-            "in": "query",
-            "name": "person_type",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "$ref": "#/components/schemas/PersonType"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "description": "Filter by person type",
-              "title": "Person Type"
-            }
-          },
-          {
-            "description": "Filter by client ID (employment_info.client_id)",
-            "in": "query",
-            "name": "client_id",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "description": "Filter by client ID (employment_info.client_id)",
-              "title": "Client Id"
-            }
-          },
-          {
-            "description": "Search in user email",
-            "in": "query",
-            "name": "search",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "description": "Search in user email",
-              "title": "Search"
-            }
-          },
-          {
-            "description": "Field to sort by",
-            "in": "query",
-            "name": "sort_by",
-            "required": false,
-            "schema": {
-              "default": "created_at",
-              "description": "Field to sort by",
-              "title": "Sort By",
-              "type": "string"
-            }
-          },
-          {
-            "description": "Sort in descending order",
-            "in": "query",
-            "name": "sort_desc",
-            "required": false,
-            "schema": {
-              "default": true,
-              "description": "Sort in descending order",
-              "title": "Sort Desc",
-              "type": "boolean"
-            }
-          },
-          {
-            "description": "Page number",
-            "in": "query",
-            "name": "page",
-            "required": false,
-            "schema": {
-              "default": 1,
-              "description": "Page number",
-              "minimum": 1,
-              "title": "Page",
-              "type": "integer"
-            }
-          },
-          {
-            "description": "Items per page",
             "in": "query",
             "name": "limit",
             "required": false,
             "schema": {
-              "default": 20,
-              "description": "Items per page",
-              "maximum": 100,
+              "default": 100,
+              "maximum": 200,
               "minimum": 1,
               "title": "Limit",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "offset",
+            "required": false,
+            "schema": {
+              "default": 0,
+              "minimum": 0,
+              "title": "Offset",
               "type": "integer"
             }
           }
@@ -27541,7 +27029,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/PersonListResponse"
+                  "$ref": "#/components/schemas/ProviderListResponse"
                 }
               }
             },
@@ -27563,19 +27051,29 @@
             "HTTPBearer": []
           }
         ],
-        "summary": "List persons with filtering and pagination",
+        "summary": "List independent providers",
         "tags": [
-          "persons"
+          "providers"
         ]
       },
       "post": {
-        "description": "Create a new person (CLIENT_EMPLOYEE or DEPENDENT).\n\nThe user identified by user_id must already exist. Persons are created after\nuser registration; provide the existing user_id and type-specific payload.",
-        "operationId": "create_person_persons__post",
+        "operationId": "create_provider_providers_post",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "tenant_id",
+            "required": true,
+            "schema": {
+              "title": "Tenant Id",
+              "type": "string"
+            }
+          }
+        ],
         "requestBody": {
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/PersonCreate"
+                "$ref": "#/components/schemas/ProviderCreate"
               }
             }
           },
@@ -27586,7 +27084,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/PersonResponse"
+                  "$ref": "#/components/schemas/ProviderResponse"
                 }
               }
             },
@@ -27608,23 +27106,22 @@
             "HTTPBearer": []
           }
         ],
-        "summary": "Create a new person",
+        "summary": "Create Provider",
         "tags": [
-          "persons"
+          "providers"
         ]
       }
     },
-    "/persons/by-user/{user_id}": {
+    "/providers/{provider_id}": {
       "get": {
-        "description": "Get person by user ID.",
-        "operationId": "get_person_by_user_id_persons_by_user__user_id__get",
+        "operationId": "get_provider_providers__provider_id__get",
         "parameters": [
           {
             "in": "path",
-            "name": "user_id",
+            "name": "provider_id",
             "required": true,
             "schema": {
-              "title": "User Id",
+              "title": "Provider Id",
               "type": "string"
             }
           }
@@ -27634,7 +27131,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/PersonResponse"
+                  "$ref": "#/components/schemas/ProviderResponse"
                 }
               }
             },
@@ -27656,735 +27153,20 @@
             "HTTPBearer": []
           }
         ],
-        "summary": "Get person by user ID",
+        "summary": "Get Provider",
         "tags": [
-          "persons"
-        ]
-      }
-    },
-    "/persons/tenant/{tenant_id}/type/{person_type}": {
-      "get": {
-        "description": "Get all persons of a specific type within a tenant.",
-        "operationId": "get_persons_by_type_persons_tenant__tenant_id__type__person_type__get",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "tenant_id",
-            "required": true,
-            "schema": {
-              "title": "Tenant Id",
-              "type": "string"
-            }
-          },
-          {
-            "in": "path",
-            "name": "person_type",
-            "required": true,
-            "schema": {
-              "$ref": "#/components/schemas/PersonType"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "items": {
-                    "$ref": "#/components/schemas/PersonResponse"
-                  },
-                  "title": "Response Get Persons By Type Persons Tenant  Tenant Id  Type  Person Type  Get",
-                  "type": "array"
-                }
-              }
-            },
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ],
-        "summary": "Get persons by type",
-        "tags": [
-          "persons"
-        ]
-      }
-    },
-    "/persons/{person_id}": {
-      "get": {
-        "description": "Get person by ID.",
-        "operationId": "get_person_persons__person_id__get",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "person_id",
-            "required": true,
-            "schema": {
-              "title": "Person Id",
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/PersonResponse"
-                }
-              }
-            },
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ],
-        "summary": "Get person by ID",
-        "tags": [
-          "persons"
-        ]
-      }
-    },
-    "/persons/{person_id}/activate": {
-      "post": {
-        "description": "Activate a person.",
-        "operationId": "activate_person_persons__person_id__activate_post",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "person_id",
-            "required": true,
-            "schema": {
-              "title": "Person Id",
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/PersonResponse"
-                }
-              }
-            },
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ],
-        "summary": "Activate a person",
-        "tags": [
-          "persons"
-        ]
-      }
-    },
-    "/persons/{person_id}/archive": {
-      "post": {
-        "description": "Archive a person.",
-        "operationId": "archive_person_persons__person_id__archive_post",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "person_id",
-            "required": true,
-            "schema": {
-              "title": "Person Id",
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/PersonResponse"
-                }
-              }
-            },
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ],
-        "summary": "Archive a person",
-        "tags": [
-          "persons"
-        ]
-      }
-    },
-    "/persons/{person_id}/deactivate": {
-      "post": {
-        "description": "Deactivate a person.",
-        "operationId": "deactivate_person_persons__person_id__deactivate_post",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "person_id",
-            "required": true,
-            "schema": {
-              "title": "Person Id",
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/PersonDeactivateRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/PersonResponse"
-                }
-              }
-            },
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ],
-        "summary": "Deactivate a person",
-        "tags": [
-          "persons"
-        ]
-      }
-    },
-    "/persons/{person_id}/dependent-info": {
-      "patch": {
-        "description": "Update dependent information for a person (must be DEPENDENT type).",
-        "operationId": "update_dependent_info_persons__person_id__dependent_info_patch",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "person_id",
-            "required": true,
-            "schema": {
-              "title": "Person Id",
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/UpdateDependentInfoRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/PersonResponse"
-                }
-              }
-            },
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ],
-        "summary": "Update dependent information",
-        "tags": [
-          "persons"
-        ]
-      }
-    },
-    "/persons/{person_id}/emergency-contact": {
-      "patch": {
-        "description": "Update emergency contact for a person.",
-        "operationId": "update_emergency_contact_persons__person_id__emergency_contact_patch",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "person_id",
-            "required": true,
-            "schema": {
-              "title": "Person Id",
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/UpdateEmergencyContactRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/PersonResponse"
-                }
-              }
-            },
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ],
-        "summary": "Update emergency contact",
-        "tags": [
-          "persons"
-        ]
-      }
-    },
-    "/persons/{person_id}/employment-info": {
-      "patch": {
-        "description": "Update employment information for a person.",
-        "operationId": "update_employment_info_persons__person_id__employment_info_patch",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "person_id",
-            "required": true,
-            "schema": {
-              "title": "Person Id",
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/UpdateEmploymentInfoRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/PersonResponse"
-                }
-              }
-            },
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ],
-        "summary": "Update employment information",
-        "tags": [
-          "persons"
-        ]
-      }
-    },
-    "/persons/{person_id}/license-info": {
-      "patch": {
-        "description": "Update license information for a person.",
-        "operationId": "update_license_info_persons__person_id__license_info_patch",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "person_id",
-            "required": true,
-            "schema": {
-              "title": "Person Id",
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/UpdateLicenseInfoRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/PersonResponse"
-                }
-              }
-            },
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ],
-        "summary": "Update license information",
-        "tags": [
-          "persons"
-        ]
-      }
-    },
-    "/persons/{person_id}/provider-profile": {
-      "patch": {
-        "operationId": "update_provider_profile_persons__person_id__provider_profile_patch",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "person_id",
-            "required": true,
-            "schema": {
-              "title": "Person Id",
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/ProviderProfileUpdate"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/PersonResponse"
-                }
-              }
-            },
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ],
-        "summary": "Set or replace the provider panel profile",
-        "tags": [
-          "persons"
-        ]
-      }
-    },
-    "/persons/{person_id}/restore": {
-      "post": {
-        "description": "Restore an archived person to active status.",
-        "operationId": "restore_person_persons__person_id__restore_post",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "person_id",
-            "required": true,
-            "schema": {
-              "title": "Person Id",
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/PersonResponse"
-                }
-              }
-            },
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ],
-        "summary": "Restore a person",
-        "tags": [
-          "persons"
-        ]
-      }
-    },
-    "/persons/{person_id}/secondary-role": {
-      "delete": {
-        "description": "Remove secondary role from a person.",
-        "operationId": "remove_secondary_role_persons__person_id__secondary_role_delete",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "person_id",
-            "required": true,
-            "schema": {
-              "title": "Person Id",
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/PersonResponse"
-                }
-              }
-            },
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ],
-        "summary": "Remove secondary role from a person",
-        "tags": [
-          "persons"
+          "providers"
         ]
       },
-      "post": {
-        "description": "Add a secondary role to a person.",
-        "operationId": "add_secondary_role_persons__person_id__secondary_role_post",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "person_id",
-            "required": true,
-            "schema": {
-              "title": "Person Id",
-              "type": "string"
-            }
-          },
-          {
-            "in": "query",
-            "name": "tenant_id",
-            "required": true,
-            "schema": {
-              "title": "Tenant Id",
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/AddSecondaryRoleRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/PersonResponse"
-                }
-              }
-            },
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ],
-        "summary": "Add secondary role to a person",
-        "tags": [
-          "persons"
-        ]
-      }
-    },
-    "/persons/{person_id}/staff-info": {
       "patch": {
-        "description": "Update staff information for a person.",
-        "operationId": "update_staff_info_persons__person_id__staff_info_patch",
+        "operationId": "update_provider_providers__provider_id__patch",
         "parameters": [
           {
             "in": "path",
-            "name": "person_id",
+            "name": "provider_id",
             "required": true,
             "schema": {
-              "title": "Person Id",
+              "title": "Provider Id",
               "type": "string"
             }
           }
@@ -28393,7 +27175,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/UpdateStaffInfoRequest"
+                "$ref": "#/components/schemas/ProviderUpdate"
               }
             }
           },
@@ -28404,7 +27186,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/PersonResponse"
+                  "$ref": "#/components/schemas/ProviderResponse"
                 }
               }
             },
@@ -28426,67 +27208,9 @@
             "HTTPBearer": []
           }
         ],
-        "summary": "Update staff information",
+        "summary": "Update Provider",
         "tags": [
-          "persons"
-        ]
-      }
-    },
-    "/persons/{person_id}/terminate": {
-      "post": {
-        "description": "Terminate a person.",
-        "operationId": "terminate_person_persons__person_id__terminate_post",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "person_id",
-            "required": true,
-            "schema": {
-              "title": "Person Id",
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/PersonTerminateRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/PersonResponse"
-                }
-              }
-            },
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ],
-        "summary": "Terminate a person",
-        "tags": [
-          "persons"
+          "providers"
         ]
       }
     },

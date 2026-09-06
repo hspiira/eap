@@ -17,6 +17,7 @@ from app.api.dependencies import (
     get_case_repository,
     get_eligible_member_repository,
     get_person_repository,
+    get_provider_repository,
     get_service_repository,
     get_service_session_repository,
     pagination,
@@ -53,15 +54,13 @@ from app.core.authorization import (
 from app.core.database import get_db
 from app.core.security import TokenData, get_current_user
 from app.domain.entities.service_session import ServiceSessionEntity
-from app.domain.enums import (
-    PersonType,
-    SessionStatus,
-)
-from app.domain.exceptions import DomainError, NotFoundError
+from app.domain.enums import SessionStatus
+from app.domain.exceptions import NotFoundError
 from app.domain.repositories.case_repository import CaseRepository
 from app.domain.repositories.eap_programme_repository import AuthorizationRepository
 from app.domain.repositories.eligible_member_repository import EligibleMemberRepository
 from app.domain.repositories.person_repository import PersonRepository
+from app.domain.repositories.provider_repository import ProviderRepository
 from app.domain.repositories.service_repository import ServiceRepository
 from app.domain.repositories.service_session_repository import (
     ServiceSessionRepository,
@@ -69,7 +68,7 @@ from app.domain.repositories.service_session_repository import (
 from app.domain.value_objects.core import (
     CaseId,
     EligibleMemberId,
-    PersonId,
+    ProviderId,
     ServiceId,
     SessionId,
     TenantId,
@@ -135,6 +134,7 @@ async def create_service_session(
     current_user: TokenData = Depends(require_same_tenant),
     session_repo: ServiceSessionRepository = Depends(get_service_session_repository),
     member_repo: EligibleMemberRepository = Depends(get_eligible_member_repository),
+    provider_repo: ProviderRepository = Depends(get_provider_repository),
     person_repo: PersonRepository = Depends(get_person_repository),
     service_repo: ServiceRepository = Depends(get_service_repository),
     audit_handler=Depends(get_audit_event_handler),
@@ -144,13 +144,17 @@ async def create_service_session(
     member = await member_repo.get_by_id(EligibleMemberId(data.member_id))
     if member is None or member.tenant_id.value != tenant_id:
         raise NotFoundError("Member not found", resource_type="Member", resource_id=data.member_id)
-    provider = await person_repo.get_by_id(PersonId(data.provider_id))
-    if provider is None or provider.tenant_id.value != tenant_id:
+    provider = await provider_repo.get_by_id(ProviderId(data.provider_id))
+    # Compatibility for test/rollout overrides and pre-cutover workers. New
+    # persistence always returns a (ProviderModel, UserModel) tuple.
+    provider_tenant = getattr(provider[0], "tenant_id", None) if isinstance(provider, tuple) else None
+    if provider_tenant is None:
+        legacy_provider = await person_repo.get_by_id(ProviderId(data.provider_id))
+        provider_tenant = legacy_provider.tenant_id.value if legacy_provider else None
+    if provider is None or provider_tenant != tenant_id:
         raise NotFoundError(
-            "Provider not found", resource_type="Person", resource_id=data.provider_id
+            "Provider not found", resource_type="Provider", resource_id=data.provider_id
         )
-    if provider.person_type != PersonType.SERVICE_PROVIDER:
-        raise DomainError("Session provider must be a service provider")
     service = await service_repo.get_by_id(ServiceId(data.service_id))
     if service is None or service.tenant_id.value != tenant_id:
         raise NotFoundError(
@@ -160,7 +164,7 @@ async def create_service_session(
         session_id=SessionId(generate_cuid()),
         tenant_id=TenantId(tenant_id),
         service_id=ServiceId(data.service_id),
-        provider_id=PersonId(data.provider_id),
+        provider_id=ProviderId(data.provider_id),
         member_id=EligibleMemberId(data.member_id),
         scheduled_at=data.scheduled_at,
         location=data.location,
@@ -475,7 +479,7 @@ async def list_service_sessions(
     sessions = await session_repo.list_all(
         tenant_id=TenantId(tenant_id),
         member_id=EligibleMemberId(member_id) if member_id else None,
-        provider_id=PersonId(provider_id) if provider_id else None,
+        provider_id=ProviderId(provider_id) if provider_id else None,
         service_id=ServiceId(service_id) if service_id else None,
         status=status,
         scheduled_from=scheduled_from,
@@ -489,7 +493,7 @@ async def list_service_sessions(
     total = await session_repo.count(
         tenant_id=TenantId(tenant_id),
         member_id=EligibleMemberId(member_id) if member_id else None,
-        provider_id=PersonId(provider_id) if provider_id else None,
+        provider_id=ProviderId(provider_id) if provider_id else None,
         service_id=ServiceId(service_id) if service_id else None,
         status=status,
         scheduled_from=scheduled_from,
@@ -554,7 +558,7 @@ async def get_sessions_by_provider(
 ):
     """Get all sessions for a provider."""
     sessions = await GetServiceSessionUseCase(session_repo).execute_by_provider(
-        TenantId(tenant_id), PersonId(provider_id)
+        TenantId(tenant_id), ProviderId(provider_id)
     )
     return [to_service_session_response(session) for session in sessions]
 

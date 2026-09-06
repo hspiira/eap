@@ -12,7 +12,13 @@ from datetime import datetime
 from app.domain.entities.service_session import ServiceSessionEntity
 from app.domain.enums import SessionStatus
 from app.domain.repositories.base_repository import BaseRepository
-from app.domain.value_objects.core import EligibleMemberId, PersonId, ServiceId, SessionId, TenantId
+from app.domain.value_objects.core import (
+    EligibleMemberId,
+    ProviderId,
+    ServiceId,
+    SessionId,
+    TenantId,
+)
 
 
 class ServiceSessionRepository(BaseRepository[ServiceSessionEntity, SessionId]):
@@ -41,7 +47,7 @@ class ServiceSessionRepository(BaseRepository[ServiceSessionEntity, SessionId]):
 
     @abstractmethod
     async def get_by_provider_id(
-        self, tenant_id: TenantId, provider_id: PersonId
+        self, tenant_id: TenantId, provider_id: ProviderId
     ) -> list[ServiceSessionEntity]:
         """
         Get all sessions for a provider within a tenant.
@@ -76,7 +82,7 @@ class ServiceSessionRepository(BaseRepository[ServiceSessionEntity, SessionId]):
         self,
         tenant_id: TenantId,
         member_id: EligibleMemberId | None = None,
-        provider_id: PersonId | None = None,
+        provider_id: ProviderId | None = None,
         service_id: ServiceId | None = None,
         status: SessionStatus | None = None,
         scheduled_from: datetime | None = None,
@@ -111,7 +117,7 @@ class ServiceSessionRepository(BaseRepository[ServiceSessionEntity, SessionId]):
         self,
         tenant_id: TenantId,
         member_id: EligibleMemberId | None = None,
-        provider_id: PersonId | None = None,
+        provider_id: ProviderId | None = None,
         service_id: ServiceId | None = None,
         status: SessionStatus | None = None,
         scheduled_from: datetime | None = None,

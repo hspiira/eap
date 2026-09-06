@@ -10,7 +10,7 @@ import io
 from collections.abc import Sequence
 from typing import Literal
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile, status
 from pydantic import ValidationError
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -32,6 +32,8 @@ from app.api.routes.service_sessions import to_service_session_response
 from app.api.schemas.member_schemas import (
     MemberAccountLinkRequest,
     MemberCreate,
+    MemberImportResponse,
+    MemberImportRowPreview,
     MemberListResponse,
     MemberMergeRequest,
     MemberMergeResponse,
@@ -72,8 +74,27 @@ from app.domain.value_objects.core import (
 from app.shared.decorators import readonly, transactional
 from app.shared.utils.datetime import utc_now
 from app.shared.utils.generators import generate_cuid
+from app.shared.utils.member_csv import MemberCsvRow, parse_member_csv
 
 router = APIRouter(prefix="/members", tags=["members"])
+
+
+def _member_import_row(
+    row: MemberCsvRow,
+    *,
+    client_name: str | None = None,
+    state: str = "new",
+    message: str | None = None,
+) -> MemberImportRowPreview:
+    return MemberImportRowPreview(
+        row=row.row_number,
+        client_code=row.client_code,
+        client_name=client_name,
+        employer_member_id=row.employer_member_id,
+        display_label=row.display_label,
+        state=state,
+        message=message,
+    )
 
 
 def _response(member: EligibleMember, client_name: str | None = None) -> MemberResponse:
@@ -444,6 +465,106 @@ async def export_members(
         iter([output.getvalue()]),
         media_type="text/csv",
         headers={"Content-Disposition": 'attachment; filename="members.csv"'},
+    )
+
+
+@router.post("/import", response_model=MemberImportResponse)
+@transactional()
+async def import_members(
+    file: UploadFile = File(..., description="UTF-8 client member roster CSV"),
+    dry_run: bool = Query(True, description="Preview only; set false to create members"),
+    current_user: TokenData = Depends(require_not_viewer),
+    member_repo: EligibleMemberRepository = Depends(get_eligible_member_repository),
+    client_repo: ClientRepository = Depends(get_client_repository),
+    subject_repo: ClinicalSubjectRepository = Depends(get_clinical_subject_repository),
+    link_repo: EligibleMemberClinicalLinkRepository = Depends(
+        get_eligible_member_clinical_link_repository
+    ),
+    outbox: OutboxRepository = Depends(get_outbox_repository),
+    db: AsyncSession = Depends(get_db),
+):
+    """Preview or import a roster using only explicit, stable member IDs."""
+    if not file.filename or not file.filename.lower().endswith(".csv"):
+        raise HTTPException(status_code=415, detail="Only CSV files are supported")
+    content = await file.read()
+    if len(content) > 10 * 1024 * 1024:
+        raise HTTPException(status_code=413, detail="Member roster CSV must be 10 MB or smaller")
+    try:
+        rows, parse_issues = parse_member_csv(content)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+    previews: dict[int, MemberImportRowPreview] = {}
+    errors: dict[int, str] = {
+        int(issue["row"]): str(issue["message"]) for issue in parse_issues
+    }
+    prepared: list[tuple[MemberCsvRow, ClientEntity, MemberCreate]] = []
+    seen: set[tuple[str, str]] = set()
+    for row in rows:
+        client = await client_repo.get_by_code(
+            TenantId(current_user.tenant_id), row.client_code or ""
+        ) if row.client_code else None
+        message = errors.get(row.row_number)
+        if message is None and client is None:
+            message = "Company Code does not resolve to a client in this tenant"
+        key = (client.id.value, row.employer_member_id or "") if client else None
+        if message is None and key in seen:
+            message = "Staff_ID is duplicated in this file for this client"
+        if message is None and key:
+            seen.add(key)
+            existing = await member_repo.find_by_employer_member_id(
+                TenantId(current_user.tenant_id), client.id, row.employer_member_id or ""
+            )
+            if existing is not None:
+                message = "Staff_ID already exists for this client"
+        data: MemberCreate | None = None
+        if message is None and client is not None:
+            try:
+                relation = MemberRelation(row.relation or MemberRelation.EMPLOYEE.value)
+                data = MemberCreate(
+                    client_id=client.id.value,
+                    employer_member_id=row.employer_member_id,
+                    display_label=row.display_label or "",
+                    work_email=row.work_email,
+                    relation=relation,
+                    primary_employee_member_id=row.primary_employee_member_id,
+                )
+            except (ValueError, ValidationError) as exc:
+                message = str(exc).split("\n", 1)[-1]
+        state = "invalid" if message else "ready"
+        previews[row.row_number] = _member_import_row(
+            row, client_name=client.name if client else None, state=state, message=message
+        )
+        if data is not None and message is None:
+            prepared.append((row, client, data))
+
+    if errors or any(preview.state == "invalid" for preview in previews.values()):
+        return MemberImportResponse(
+            imported=0,
+            skipped=0,
+            failed=sum(preview.state == "invalid" for preview in previews.values()),
+            rows=list(previews.values()),
+        )
+    if dry_run:
+        return MemberImportResponse(
+            imported=len(prepared), skipped=0, failed=0, rows=list(previews.values())
+        )
+
+    use_case = EnrolEligibleMemberUseCase(member_repo, subject_repo, link_repo)
+    for row, _client, data in prepared:
+        member, _ = await _enrol(use_case, data, current_user, row.employer_member_id or "")
+        member.record_import()
+        await member_repo.save(member)
+        await record_member_change(
+            outbox,
+            tenant_id=current_user.tenant_id,
+            user_id=current_user.user_id,
+            resource_id=member.id.value,
+            action="CREATE",
+            operation="Imported",
+        )
+    return MemberImportResponse(
+        imported=len(prepared), skipped=0, failed=0, rows=list(previews.values())
     )
 
 

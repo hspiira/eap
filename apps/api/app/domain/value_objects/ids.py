@@ -36,6 +36,11 @@ class PersonId(Id):
 
 
 @dataclass(frozen=True)
+class ProviderId(Id):
+    pass
+
+
+@dataclass(frozen=True)
 class ContractId(Id):
     pass
 

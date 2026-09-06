@@ -63,6 +63,7 @@ from app.infrastructure.models.non_compete_clause_model import NonCompeteClauseM
 from app.infrastructure.models.outbox_model import OutboxEventModel
 from app.infrastructure.models.password_set_token_model import PasswordSetTokenModel
 from app.infrastructure.models.person_model import PersonModel
+from app.infrastructure.models.provider_model import ProviderModel
 from app.infrastructure.models.report_model import (
     ReportRunModel,
     ReportTemplateModel,
@@ -123,6 +124,7 @@ __all__ = [
     "OutreachRecordModel",
     "PasswordSetTokenModel",
     "PersonModel",
+    "ProviderModel",
     "ProviderProfileDict",
     "ReportRunModel",
     "ReportTemplateModel",

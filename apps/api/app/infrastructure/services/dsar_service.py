@@ -66,7 +66,7 @@ class SqlDSARDataCollector:
                 await self._session.execute(
                     select(OutreachRecordModel).where(
                         OutreachRecordModel.tenant_id == tenant_id.value,
-                        OutreachRecordModel.person_id == subject_person_id.value,
+                        OutreachRecordModel.member_id == subject_person_id.value,
                     )
                 )
             )

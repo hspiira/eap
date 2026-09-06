@@ -7,6 +7,7 @@ import { personsApi } from "@/api/endpoints/persons"
 import { providersApi } from "@/api/endpoints/providers"
 import { servicesApi } from "@/api/endpoints/services"
 import { usersApi } from "@/api/endpoints/users"
+import { CATEGORY_LABELS } from "@/components/ServiceFormSheet"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { useDebouncedValue } from "@/hooks/useDebouncedValue"
@@ -188,12 +189,16 @@ export function ServicePicker({
         <PickerRow
           initials="SV"
           primary={s.name}
-          secondary={s.service_type ?? s.category ?? "-"}
+          secondary={s.category ? CATEGORY_LABELS[s.category] : "-"}
           size="md"
         />
       )}
       renderRow={(s) => (
-        <PickerRow initials="SV" primary={s.name} secondary={s.service_type ?? s.category ?? "-"} />
+        <PickerRow
+          initials="SV"
+          primary={s.name}
+          secondary={s.category ? CATEGORY_LABELS[s.category] : "-"}
+        />
       )}
     />
   )
@@ -328,7 +333,7 @@ export function ProviderPicker({
       renderSelected={(p) => (
         <PickerRow
           initials="PR"
-          primary={p.id}
+          primary={p.display_name || p.email}
           secondary={`${p.provider_profile.tier} · ${p.provider_profile.region}`}
           size="md"
         />
@@ -336,7 +341,7 @@ export function ProviderPicker({
       renderRow={(p) => (
         <PickerRow
           initials="PR"
-          primary={p.id}
+          primary={p.display_name || p.email}
           secondary={`${p.provider_profile.tier} · ${p.provider_profile.region}`}
         />
       )}

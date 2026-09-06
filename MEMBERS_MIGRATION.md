@@ -20,7 +20,8 @@ employment history; only optional client-supplied identifiers belong here.
 
 ## Decisions
 
-- Keep `/persons` as a compatibility API/UI path during the first migration.
+- ~~Keep `/persons` as a compatibility API/UI path during the first migration.~~
+  Removed after the provider and callback cutovers.
 - Use “Members” in product-facing labels and documentation.
 - Do not require a User account for every member.
 - Keep provider and platform-staff records out of the member workflows.
@@ -62,7 +63,7 @@ employment history; only optional client-supplied identifiers belong here.
   - [x] ~~Replace client-list legacy employee counts with canonical member counts.~~ The Employees column counts employee members across roster statuses; the `staff_count` API field remains compatible. Saving a member invalidates the client list.
   - [x] ~~Delete the unused legacy staff summary card and its design inventory entry.~~
   - [x] ~~Allow direct month/year selection in the shared date picker.~~ Existing dates open at their saved month; tests cover dates 3, 5, 10, 20 and 30 years ago and future dates.
-  - [x] ~~Rename visible Persons language to Members.~~ Primary navigation now points to `/members`; `/persons` remains available as a compatibility route.
+  - [x] ~~Rename visible Persons language to Members.~~ Primary navigation now points to `/members`; the former `/persons` route is retired.
   - [x] ~~Remove provider/platform-staff options from member UI.~~ The member form has only employee/beneficiary relationships and optional contact data.
   - [x] ~~Add member profile, eligibility, and beneficiary views.~~ The detail view shows both beneficiary directions.
   - [x] ~~Add account access and service history only with real data and authorization workflows.~~ The account panel explicitly links one existing tenant User and grants no permissions; only administrators can change it. Service history reads canonical member sessions and requires Clinical scope.
@@ -70,25 +71,24 @@ employment history; only optional client-supplied identifiers belong here.
   - [x] ~~Add next-of-kin management to member detail.~~ Authorized users can add, edit, mark primary, and remove contacts; viewers retain read-only access.
   - [x] ~~Add working selection and export.~~ Duplicate/merge remains deferred until it has an identity policy and an atomic backend contract.
 - [x] ~~Phase 4 — Provider and staff boundaries~~
-  - [x] ~~Resolve legacy Person-to-Member identity mapping and service-session linkage.~~ The user confirmed there is no legacy data. Replaced the bridge plan with an empty-table cutover: session subjects reference Members, providers remain Persons, and migration refuses any populated service-session table. No name/email matching, bridge table or compatibility reads were added.
-  - [x] ~~Verify counsellors use provider organisation/practitioner workflows.~~ Product navigation and session links use the Providers workspace. Its current persistence is still a `ServiceProvider` Person and remains an explicit provider-domain migration, not a Member responsibility.
+  - [x] ~~Resolve legacy Person-to-Member identity mapping and service-session linkage.~~ The user confirmed there is no legacy data. Replaced the bridge plan with an empty-table cutover: session subjects reference Members and migration refuses any populated service-session table. No name/email matching, bridge table or compatibility reads were added.
+  - [x] ~~Verify counsellors use provider organisation/practitioner workflows.~~ Providers now have independent persistence and the Providers workspace no longer calls `/persons`.
   - [x] ~~Verify tenant staff use Users & Invitations.~~ User detail no longer fetches or displays a legacy Person profile; roles and access scopes remain in the Users workflow.
-  - [x] ~~Remove obsolete person-module references from docs and navigation.~~ Deleted the client/staff Persons list UI and its stale tests, replaced the list/new URLs with compatibility redirects, and removed Persons from the command palette and dashboard. The detail compatibility screen remains only because care callbacks still link Person subjects.
+  - [x] ~~Remove obsolete person-module references from docs and navigation.~~ Deleted the client/staff Persons list UI and its stale tests; Persons is removed from navigation and API registration.
 - [x] ~~Phase 5 — Contracts, docs, tests, and cleanup~~
   - [x] ~~Regenerate OpenAPI and frontend contracts.~~ OpenAPI and TypeScript artifacts were regenerated after adding the next-of-kin endpoints.
   - [x] ~~Add backend authorization, tenant-isolation, and eligibility tests.~~ Route, domain, and focused persistence coverage is included.
   - [x] ~~Add merge tests with the reviewed merge workflow.~~ Route tests cover explicit selection, admin authorization, client isolation, self-merge rejection, transfer results and audit events; repository invariants are enforced under row locks.
   - [x] ~~Add frontend list/form/detail/export tests.~~ Focused Members interaction coverage is included.
   - [x] ~~Update module READMEs and code-quality docs.~~ Member boundary documentation is being added; legacy person references remain only where compatibility is intentional.
-  - [x] ~~Decide when `/persons` compatibility aliases can be removed.~~ Remove them only after provider persistence no longer uses `ServiceProvider` Persons and care callbacks reference Members. The client/staff list is retired now; the API and detail compatibility path remain until both concrete consumers migrate.
+  - [x] ~~Decide when `/persons` compatibility aliases can be removed.~~ Removed once providers were independent and care callbacks referenced Members.
 
 ## Implementation notes
 
-CSV import remains a separate deferred ingestion phase because the sample file
-does not contain a safe canonical identifier for every client. The current
-provider implementation still uses `/persons` with `ServiceProvider` profiles;
-an independent practitioner model is not implemented and must not be reported
-as complete.
+CSV import is preview-first and accepts only an explicit, stable `Staff_ID` /
+`employer_member_id`; `Staff Number` is never used as an identity fallback.
+Rows are tenant/client resolved, duplicate checked, and either all committed or
+returned with row-level errors. The sample's `IDI-` placeholders are rejected.
 
 Update this log after each phase. Include migrations, compatibility decisions,
 tests run, and any follow-up work that remains.
@@ -139,7 +139,7 @@ Current handoff status:
 - [x] ~~Update historical import mappings to canonical member IDs.~~ The
   validator resolves company member codes within the canonical client ID;
   identical codes in different clients cannot match accidentally. The CLI
-  remains validation-only, not a completed importer or roster-import workflow.
+  now provides the validation core used by the preview-first roster importer.
 - [x] ~~Redesign the client Members tab.~~ Name-first roster table, contact
   details, relationship/status filters, debounced search, server pagination,
   loading/error/empty states and contextual member creation.
@@ -167,15 +167,23 @@ Current handoff status:
   contracts pass. Browser visual QA was not available. The build reports an
   existing Vite-builder version warning; no dependency changes were made.
 
-Still deferred outside this migration's completed phases: CSV roster import,
-independent provider/practitioner persistence, care-callback subject migration,
-and final `/persons` API/detail removal. The last two are the explicit removal
-gate, not unfinished Member behavior.
+The remaining retirement slices are now complete:
+
+- [x] ~~CSV roster import~~ — `POST /members/import` previews by default and
+  commits only with `dry_run=false`; strict stable-ID validation, duplicate
+  review, tenant/client resolution, and audit events are included.
+- [x] ~~Independent provider/practitioner persistence~~ — providers have their
+  own table, repository, `/providers` API, frontend endpoint, and service-session
+  foreign key. The clean cutover refuses populated sessions.
+- [x] ~~Care-callback subject migration~~ — outreach records use `member_id`
+  and an `eligible_members` FK; enrolment/search/detail links use Members.
+- [x] ~~Final `/persons` API removal~~ — the legacy Persons router is no longer
+  registered. Provider/session/callback paths no longer require its API.
 
 ## Deferred import phase
 
-The sample roster at `/Users/piira/Downloads/persons.csv` is intentionally not
-implemented yet. Its safe initial mapping is:
+The sample roster at `/Users/piira/Downloads/persons.csv` is handled by the
+preview-first importer. Its safe mapping is:
 
 | Sample column | Member field | Decision |
 | --- | --- | --- |

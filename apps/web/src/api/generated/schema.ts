@@ -575,8 +575,8 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Bulk-enrol persons into a campaign */
-        post: operations["enrol_persons_care_callback_campaigns__campaign_id__enrol_post"];
+        /** Bulk-enrol members into a campaign */
+        post: operations["enrol_members_care_callback_campaigns__campaign_id__enrol_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -3250,6 +3250,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/members/import": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Import Members
+         * @description Preview or import a roster using only explicit, stable member IDs.
+         */
+        post: operations["import_members_members_import_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/members/{member_id}": {
         parameters: {
             query?: never;
@@ -3713,332 +3733,40 @@ export interface paths {
         patch: operations["change_provider_tier_panel__provider_id__tier_patch"];
         trace?: never;
     };
-    "/persons/": {
+    "/providers": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        /**
-         * List persons with filtering and pagination
-         * @description List persons with filtering, searching, and pagination.
-         */
-        get: operations["list_persons_persons__get"];
+        /** List independent providers */
+        get: operations["list_providers_providers_get"];
         put?: never;
-        /**
-         * Create a new person
-         * @description Create a new person (CLIENT_EMPLOYEE or DEPENDENT).
-         *
-         *     The user identified by user_id must already exist. Persons are created after
-         *     user registration; provide the existing user_id and type-specific payload.
-         */
-        post: operations["create_person_persons__post"];
+        /** Create Provider */
+        post: operations["create_provider_providers_post"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/persons/by-user/{user_id}": {
+    "/providers/{provider_id}": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        /**
-         * Get person by user ID
-         * @description Get person by user ID.
-         */
-        get: operations["get_person_by_user_id_persons_by_user__user_id__get"];
+        /** Get Provider */
+        get: operations["get_provider_providers__provider_id__get"];
         put?: never;
         post?: never;
         delete?: never;
         options?: never;
         head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/persons/tenant/{tenant_id}/type/{person_type}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Get persons by type
-         * @description Get all persons of a specific type within a tenant.
-         */
-        get: operations["get_persons_by_type_persons_tenant__tenant_id__type__person_type__get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/persons/{person_id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Get person by ID
-         * @description Get person by ID.
-         */
-        get: operations["get_person_persons__person_id__get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/persons/{person_id}/activate": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Activate a person
-         * @description Activate a person.
-         */
-        post: operations["activate_person_persons__person_id__activate_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/persons/{person_id}/archive": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Archive a person
-         * @description Archive a person.
-         */
-        post: operations["archive_person_persons__person_id__archive_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/persons/{person_id}/deactivate": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Deactivate a person
-         * @description Deactivate a person.
-         */
-        post: operations["deactivate_person_persons__person_id__deactivate_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/persons/{person_id}/dependent-info": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        /**
-         * Update dependent information
-         * @description Update dependent information for a person (must be DEPENDENT type).
-         */
-        patch: operations["update_dependent_info_persons__person_id__dependent_info_patch"];
-        trace?: never;
-    };
-    "/persons/{person_id}/emergency-contact": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        /**
-         * Update emergency contact
-         * @description Update emergency contact for a person.
-         */
-        patch: operations["update_emergency_contact_persons__person_id__emergency_contact_patch"];
-        trace?: never;
-    };
-    "/persons/{person_id}/employment-info": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        /**
-         * Update employment information
-         * @description Update employment information for a person.
-         */
-        patch: operations["update_employment_info_persons__person_id__employment_info_patch"];
-        trace?: never;
-    };
-    "/persons/{person_id}/license-info": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        /**
-         * Update license information
-         * @description Update license information for a person.
-         */
-        patch: operations["update_license_info_persons__person_id__license_info_patch"];
-        trace?: never;
-    };
-    "/persons/{person_id}/provider-profile": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        /** Set or replace the provider panel profile */
-        patch: operations["update_provider_profile_persons__person_id__provider_profile_patch"];
-        trace?: never;
-    };
-    "/persons/{person_id}/restore": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Restore a person
-         * @description Restore an archived person to active status.
-         */
-        post: operations["restore_person_persons__person_id__restore_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/persons/{person_id}/secondary-role": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Add secondary role to a person
-         * @description Add a secondary role to a person.
-         */
-        post: operations["add_secondary_role_persons__person_id__secondary_role_post"];
-        /**
-         * Remove secondary role from a person
-         * @description Remove secondary role from a person.
-         */
-        delete: operations["remove_secondary_role_persons__person_id__secondary_role_delete"];
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/persons/{person_id}/staff-info": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        /**
-         * Update staff information
-         * @description Update staff information for a person.
-         */
-        patch: operations["update_staff_info_persons__person_id__staff_info_patch"];
-        trace?: never;
-    };
-    "/persons/{person_id}/terminate": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Terminate a person
-         * @description Terminate a person.
-         */
-        post: operations["terminate_person_persons__person_id__terminate_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
+        /** Update Provider */
+        patch: operations["update_provider_providers__provider_id__patch"];
         trace?: never;
     };
     "/reports/runs/{run_id}": {
@@ -5661,20 +5389,6 @@ export interface components {
             outcome?: string | null;
         };
         /**
-         * AddSecondaryRoleRequest
-         * @description Request schema for adding a secondary role.
-         */
-        AddSecondaryRoleRequest: {
-            /** @description Employment info (for CLIENT_EMPLOYEE role) */
-            employment_info?: components["schemas"]["EmploymentInfoSchema"] | null;
-            /** @description License info (for SERVICE_PROVIDER role) */
-            license_info?: components["schemas"]["LicenseInfoSchema"] | null;
-            /** @description Secondary person type */
-            role: components["schemas"]["PersonType"];
-            /** @description Staff info (for PLATFORM_STAFF role) */
-            staff_info?: components["schemas"]["StaffInfoSchema"] | null;
-        };
-        /**
          * AddressCreate
          * @description Address for creation.
          */
@@ -5992,6 +5706,14 @@ export interface components {
             /**
              * File
              * @description UTF-8 CSV using the client import template
+             */
+            file: string;
+        };
+        /** Body_import_members_members_import_post */
+        Body_import_members_members_import_post: {
+            /**
+             * File
+             * @description UTF-8 client member roster CSV
              */
             file: string;
         };
@@ -7648,24 +7370,6 @@ export interface components {
         DeliverableStatusUpdate: {
             status: components["schemas"]["DeliverableStatus"];
         };
-        /**
-         * DependentInfoSchema
-         * @description Dependent information schema.
-         */
-        DependentInfoSchema: {
-            /**
-             * Guardian Id
-             * @description Guardian user ID
-             */
-            guardian_id?: string | null;
-            /**
-             * Primary Employee Id
-             * @description Primary employee person ID
-             */
-            primary_employee_id: string;
-            /** @description Relationship type */
-            relationship: components["schemas"]["RelationType"];
-        };
         /** DiagnosisAliasResponse */
         DiagnosisAliasResponse: {
             /** Confidence */
@@ -8370,110 +8074,6 @@ export interface components {
              */
             updated_at: string;
         };
-        /**
-         * EmergencyContactSchema
-         * @description Emergency contact schema.
-         */
-        EmergencyContactSchema: {
-            /**
-             * Email
-             * @description Email address
-             */
-            email?: string | null;
-            /**
-             * Name
-             * @description Contact name
-             */
-            name: string;
-            /**
-             * Phone
-             * @description Phone number
-             */
-            phone?: string | null;
-        };
-        /**
-         * EmploymentInfoCreateSchema
-         * @description Employment information for creating a person (employee_code is generated).
-         */
-        EmploymentInfoCreateSchema: {
-            /**
-             * Client Id
-             * @description Client identifier
-             */
-            client_id: string;
-            /**
-             * Department
-             * @description Department
-             */
-            department?: string | null;
-            /**
-             * Employee Id
-             * @description External employee ID (optional)
-             */
-            employee_id?: string | null;
-            /**
-             * End Date
-             * @description Employment end date
-             */
-            end_date?: string | null;
-            /**
-             * Role
-             * @description Job role
-             */
-            role: string;
-            /**
-             * Start Date
-             * Format: date
-             * @description Employment start date
-             */
-            start_date: string;
-            /** @description Work status */
-            status: components["schemas"]["WorkStatus"];
-        };
-        /**
-         * EmploymentInfoSchema
-         * @description Employment information schema.
-         */
-        EmploymentInfoSchema: {
-            /**
-             * Client Id
-             * @description Client identifier
-             */
-            client_id: string;
-            /**
-             * Department
-             * @description Department
-             */
-            department?: string | null;
-            /**
-             * Employee Code
-             * @description Employee code (format: CLIENT-FAMILY-MEMBER, e.g., MNT-00-00)
-             */
-            employee_code: string;
-            /**
-             * Employee Id
-             * @description External employee ID (optional)
-             */
-            employee_id?: string | null;
-            /**
-             * End Date
-             * @description Employment end date
-             */
-            end_date?: string | null;
-            /**
-             * Role
-             * @description Job role
-             */
-            role: string;
-            /**
-             * Start Date
-             * Format: date
-             * @description Employment start date
-             */
-            start_date: string;
-            /** @description Work status */
-            status: components["schemas"]["WorkStatus"];
-        };
         /** EngagementCreate */
         EngagementCreate: {
             /** Client Id */
@@ -8563,10 +8163,10 @@ export interface components {
             /** Total Hours */
             total_hours: number;
         };
-        /** EnrolPersonsRequest */
-        EnrolPersonsRequest: {
-            /** Person Ids */
-            person_ids: string[];
+        /** EnrolMembersRequest */
+        EnrolMembersRequest: {
+            /** Member Ids */
+            member_ids: string[];
         };
         /**
          * EntityChangeListResponse
@@ -9209,27 +8809,6 @@ export interface components {
          */
         Language: "en" | "es" | "fr" | "de" | "it" | "pt" | "zh" | "ja" | "ko";
         /**
-         * LicenseInfoSchema
-         * @description License information schema.
-         */
-        LicenseInfoSchema: {
-            /**
-             * Expiry Date
-             * @description License expiry date
-             */
-            expiry_date?: string | null;
-            /**
-             * Issuing Authority
-             * @description Issuing authority
-             */
-            issuing_authority: string;
-            /**
-             * Number
-             * @description License number
-             */
-            number: string;
-        };
-        /**
          * LoginRequest
          * @description Request schema for user login.
          */
@@ -9384,6 +8963,34 @@ export interface components {
          * @enum {string}
          */
         MemberGender: "Female" | "Male" | "NonBinary" | "PreferNotToSay" | "Unknown";
+        /** MemberImportResponse */
+        MemberImportResponse: {
+            /** Failed */
+            failed: number;
+            /** Imported */
+            imported: number;
+            /** Rows */
+            rows: components["schemas"]["MemberImportRowPreview"][];
+            /** Skipped */
+            skipped: number;
+        };
+        /** MemberImportRowPreview */
+        MemberImportRowPreview: {
+            /** Client Code */
+            client_code: string | null;
+            /** Client Name */
+            client_name: string | null;
+            /** Display Label */
+            display_label: string | null;
+            /** Employer Member Id */
+            employer_member_id: string | null;
+            /** Message */
+            message?: string | null;
+            /** Row */
+            row: number;
+            /** State */
+            state: string;
+        };
         /** MemberListResponse */
         MemberListResponse: {
             /** Has More */
@@ -9730,10 +9337,10 @@ export interface components {
             id: string;
             /** Last Attempted At */
             last_attempted_at: string | null;
+            /** Member Id */
+            member_id: string;
             /** Notes */
             notes: string | null;
-            /** Person Id */
-            person_id: string;
             status: components["schemas"]["OutreachStatus"];
             /** Tenant Id */
             tenant_id: string;
@@ -9774,153 +9381,6 @@ export interface components {
          */
         PaymentStatus: "Pending" | "Paid" | "Overdue" | "Cancelled" | "Refunded";
         /**
-         * PersonCreate
-         * @description Request schema for creating a person.
-         *
-         *     Persons are created after a User exists. Provide user_id and tenant_id;
-         *     then either employment_info (for CLIENT_EMPLOYEE) or dependent_info (for DEPENDENT).
-         */
-        PersonCreate: {
-            /** @description Required for DEPENDENT */
-            dependent_info?: components["schemas"]["DependentInfoSchema"] | null;
-            /** @description Required for CLIENT_EMPLOYEE */
-            employment_info?: components["schemas"]["EmploymentInfoCreateSchema"] | null;
-            /**
-             * Family Id
-             * @description Family identifier (optional, for CLIENT_EMPLOYEE)
-             */
-            family_id?: string | null;
-            /** @description Primary person type (CLIENT_EMPLOYEE or DEPENDENT) */
-            person_type: components["schemas"]["PersonType"];
-            /**
-             * Tenant Id
-             * @description Tenant identifier
-             */
-            tenant_id: string;
-            /**
-             * User Id
-             * @description User identifier (user must exist)
-             */
-            user_id: string;
-        };
-        /**
-         * PersonDeactivateRequest
-         * @description Request schema for deactivating a person.
-         */
-        PersonDeactivateRequest: {
-            /**
-             * Reason
-             * @description Deactivation reason
-             */
-            reason?: string | null;
-        };
-        /**
-         * PersonListResponse
-         * @description Response schema for person list.
-         */
-        PersonListResponse: {
-            /**
-             * Has More
-             * @description Whether there are more items
-             */
-            has_more: boolean;
-            /**
-             * Items
-             * @description List of persons
-             */
-            items: components["schemas"]["PersonResponse"][];
-            /**
-             * Limit
-             * @description Items per page
-             */
-            limit: number;
-            /**
-             * Page
-             * @description Current page number
-             */
-            page: number;
-            /**
-             * Total
-             * @description Total number of persons matching filters
-             */
-            total: number;
-        };
-        /**
-         * PersonResponse
-         * @description Response schema for person.
-         */
-        PersonResponse: {
-            /** @description Dependent information */
-            dependent_info?: components["schemas"]["DependentInfoSchema"] | null;
-            /** @description Emergency contact */
-            emergency_contact?: components["schemas"]["EmergencyContactSchema"] | null;
-            /** @description Employment information */
-            employment_info?: components["schemas"]["EmploymentInfoSchema"] | null;
-            /**
-             * Family Id
-             * @description Family identifier (points to primary employee)
-             */
-            family_id?: string | null;
-            /**
-             * Id
-             * @description Person identifier
-             */
-            id: string;
-            /**
-             * Is Dual Role
-             * @description Whether person has dual role
-             */
-            is_dual_role: boolean;
-            /**
-             * Is Eligible For Services
-             * @description Eligible for services
-             */
-            is_eligible_for_services: boolean;
-            /**
-             * Last Service Date
-             * @description Last service date
-             */
-            last_service_date?: string | null;
-            /** @description License information */
-            license_info?: components["schemas"]["LicenseInfoSchema"] | null;
-            /** @description Primary person type */
-            person_type: components["schemas"]["PersonType"];
-            /** @description Provider panel profile. Populated when person_type is SERVICE_PROVIDER. Carries tier, region, accreditation, panel status, specialties. */
-            provider_profile?: components["schemas"]["ProviderProfileSchema"] | null;
-            /** @description Secondary person type */
-            secondary_person_type?: components["schemas"]["PersonType"] | null;
-            /** @description Staff information */
-            staff_info?: components["schemas"]["StaffInfoSchema"] | null;
-            /** @description Person status */
-            status: components["schemas"]["BaseStatus"];
-            /**
-             * Tenant Id
-             * @description Tenant identifier
-             */
-            tenant_id: string;
-            /**
-             * User Id
-             * @description User identifier
-             */
-            user_id: string;
-        };
-        /**
-         * PersonTerminateRequest
-         * @description Request schema for terminating a person.
-         */
-        PersonTerminateRequest: {
-            /**
-             * Reason
-             * @description Termination reason
-             */
-            reason: string;
-        };
-        /**
-         * PersonType
-         * @enum {string}
-         */
-        PersonType: "PlatformStaff" | "ClientEmployee" | "Dependent" | "ServiceProvider";
-        /**
          * PresentingProblem
          * @description Top-level category of the presenting concern at intake.
          * @enum {string}
@@ -9948,6 +9408,16 @@ export interface components {
             per_year?: number | null;
             service_category: components["schemas"]["ServiceCategory"];
         };
+        /** ProviderCreate */
+        ProviderCreate: {
+            /** License Info */
+            license_info?: {
+                [key: string]: unknown;
+            } | null;
+            provider_profile: components["schemas"]["ProviderProfileSchema"];
+            /** User Id */
+            user_id: string;
+        };
         /** ProviderEligibilityResponse */
         ProviderEligibilityResponse: {
             /** Binding Non Compete Count */
@@ -9965,6 +9435,15 @@ export interface components {
             /** Reasons */
             reasons: string[];
         };
+        /** ProviderListResponse */
+        ProviderListResponse: {
+            /** Has More */
+            has_more: boolean;
+            /** Items */
+            items: components["schemas"]["ProviderResponse"][];
+            /** Total */
+            total: number;
+        };
         /** ProviderProfileSchema */
         ProviderProfileSchema: {
             /** Accreditation Authority */
@@ -9981,10 +9460,34 @@ export interface components {
             specialties?: string[];
             tier: components["schemas"]["ProviderTier"];
         };
-        /** ProviderProfileUpdate */
-        ProviderProfileUpdate: {
-            /** @description Replacement provider profile */
-            profile: components["schemas"]["ProviderProfileSchema"];
+        /** ProviderResponse */
+        ProviderResponse: {
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Display Name */
+            display_name: string | null;
+            /** Email */
+            email: string;
+            /** Id */
+            id: string;
+            /** License Info */
+            license_info?: {
+                [key: string]: unknown;
+            } | null;
+            provider_profile: components["schemas"]["ProviderProfileSchema"];
+            status: components["schemas"]["BaseStatus"];
+            /** Tenant Id */
+            tenant_id: string;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+            /** User Id */
+            user_id: string;
         };
         /**
          * ProviderTier
@@ -9992,6 +9495,15 @@ export interface components {
          * @enum {string}
          */
         ProviderTier: "T1" | "T2" | "T3";
+        /** ProviderUpdate */
+        ProviderUpdate: {
+            /** License Info */
+            license_info?: {
+                [key: string]: unknown;
+            } | null;
+            provider_profile?: components["schemas"]["ProviderProfileSchema"] | null;
+            status?: components["schemas"]["BaseStatus"] | null;
+        };
         /** RateCardEntrySchema */
         RateCardEntrySchema: {
             rate: components["schemas"]["app__api__schemas__pricing_schemas__MoneySchema-Input"];
@@ -10877,47 +10389,6 @@ export interface components {
             token: string;
         };
         /**
-         * StaffInfoSchema
-         * @description Staff information schema.
-         */
-        StaffInfoSchema: {
-            /**
-             * Can Manage Clients
-             * @description Can manage clients
-             * @default false
-             */
-            can_manage_clients: boolean;
-            /**
-             * Can Manage Services
-             * @description Can manage services
-             * @default false
-             */
-            can_manage_services: boolean;
-            /**
-             * Can View Reports
-             * @description Can view reports
-             * @default false
-             */
-            can_view_reports: boolean;
-            /**
-             * Client Id
-             * @description Client ID
-             */
-            client_id: string;
-            /**
-             * Department
-             * @description Department
-             */
-            department?: string | null;
-            /** @description Staff role */
-            role: components["schemas"]["StaffRole"];
-        };
-        /**
-         * StaffRole
-         * @enum {string}
-         */
-        StaffRole: "Admin" | "Manager" | "Staff" | "Volunteer";
-        /**
          * StageOfChange
          * @description Prochaska & DiClemente Transtheoretical Model stages.
          * @enum {string}
@@ -11489,46 +10960,6 @@ export interface components {
             };
         };
         /**
-         * UpdateDependentInfoRequest
-         * @description Request schema for updating dependent information.
-         */
-        UpdateDependentInfoRequest: {
-            /** @description Dependent information (primary_employee_id, relationship, guardian_id) */
-            dependent_info: components["schemas"]["DependentInfoSchema"];
-        };
-        /**
-         * UpdateEmergencyContactRequest
-         * @description Request schema for updating emergency contact.
-         */
-        UpdateEmergencyContactRequest: {
-            /** @description Emergency contact information */
-            emergency_contact: components["schemas"]["EmergencyContactSchema"];
-        };
-        /**
-         * UpdateEmploymentInfoRequest
-         * @description Request schema for updating employment information.
-         */
-        UpdateEmploymentInfoRequest: {
-            /** @description Employment information */
-            employment_info: components["schemas"]["EmploymentInfoSchema"];
-        };
-        /**
-         * UpdateLicenseInfoRequest
-         * @description Request schema for updating license information.
-         */
-        UpdateLicenseInfoRequest: {
-            /** @description License information */
-            license_info: components["schemas"]["LicenseInfoSchema"];
-        };
-        /**
-         * UpdateStaffInfoRequest
-         * @description Request schema for updating staff information.
-         */
-        UpdateStaffInfoRequest: {
-            /** @description Staff information */
-            staff_info: components["schemas"]["StaffInfoSchema"];
-        };
-        /**
          * UserBanRequest
          * @description Request schema for banning a user.
          */
@@ -11842,11 +11273,6 @@ export interface components {
             /** Reason */
             reason: string;
         };
-        /**
-         * WorkStatus
-         * @enum {string}
-         */
-        WorkStatus: "Active" | "Inactive" | "On Leave" | "Terminated" | "Suspended" | "Resigned";
         /**
          * MoneySchema
          * @description Money value object schema for request/response.
@@ -12900,7 +12326,7 @@ export interface operations {
             };
         };
     };
-    enrol_persons_care_callback_campaigns__campaign_id__enrol_post: {
+    enrol_members_care_callback_campaigns__campaign_id__enrol_post: {
         parameters: {
             query?: never;
             header?: never;
@@ -12911,7 +12337,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["EnrolPersonsRequest"];
+                "application/json": components["schemas"]["EnrolMembersRequest"];
             };
         };
         responses: {
@@ -18482,6 +17908,42 @@ export interface operations {
             };
         };
     };
+    import_members_members_import_post: {
+        parameters: {
+            query?: {
+                /** @description Preview only; set false to create members */
+                dry_run?: boolean;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["Body_import_members_members_import_post"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MemberImportResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     get_member_members__member_id__get: {
         parameters: {
             query?: never;
@@ -19519,26 +18981,12 @@ export interface operations {
             };
         };
     };
-    list_persons_persons__get: {
+    list_providers_providers_get: {
         parameters: {
             query: {
                 tenant_id: string;
-                /** @description Filter by person status */
-                status?: components["schemas"]["BaseStatus"] | null;
-                /** @description Filter by person type */
-                person_type?: components["schemas"]["PersonType"] | null;
-                /** @description Filter by client ID (employment_info.client_id) */
-                client_id?: string | null;
-                /** @description Search in user email */
-                search?: string | null;
-                /** @description Field to sort by */
-                sort_by?: string;
-                /** @description Sort in descending order */
-                sort_desc?: boolean;
-                /** @description Page number */
-                page?: number;
-                /** @description Items per page */
                 limit?: number;
+                offset?: number;
             };
             header?: never;
             path?: never;
@@ -19552,7 +19000,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["PersonListResponse"];
+                    "application/json": components["schemas"]["ProviderListResponse"];
                 };
             };
             /** @description Validation Error */
@@ -19566,16 +19014,18 @@ export interface operations {
             };
         };
     };
-    create_person_persons__post: {
+    create_provider_providers_post: {
         parameters: {
-            query?: never;
+            query: {
+                tenant_id: string;
+            };
             header?: never;
             path?: never;
             cookie?: never;
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["PersonCreate"];
+                "application/json": components["schemas"]["ProviderCreate"];
             };
         };
         responses: {
@@ -19585,7 +19035,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["PersonResponse"];
+                    "application/json": components["schemas"]["ProviderResponse"];
                 };
             };
             /** @description Validation Error */
@@ -19599,12 +19049,12 @@ export interface operations {
             };
         };
     };
-    get_person_by_user_id_persons_by_user__user_id__get: {
+    get_provider_providers__provider_id__get: {
         parameters: {
             query?: never;
             header?: never;
             path: {
-                user_id: string;
+                provider_id: string;
             };
             cookie?: never;
         };
@@ -19616,7 +19066,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["PersonResponse"];
+                    "application/json": components["schemas"]["ProviderResponse"];
                 };
             };
             /** @description Validation Error */
@@ -19630,143 +19080,18 @@ export interface operations {
             };
         };
     };
-    get_persons_by_type_persons_tenant__tenant_id__type__person_type__get: {
+    update_provider_providers__provider_id__patch: {
         parameters: {
             query?: never;
             header?: never;
             path: {
-                tenant_id: string;
-                person_type: components["schemas"]["PersonType"];
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["PersonResponse"][];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    get_person_persons__person_id__get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                person_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["PersonResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    activate_person_persons__person_id__activate_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                person_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["PersonResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    archive_person_persons__person_id__archive_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                person_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["PersonResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    deactivate_person_persons__person_id__deactivate_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                person_id: string;
+                provider_id: string;
             };
             cookie?: never;
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["PersonDeactivateRequest"];
+                "application/json": components["schemas"]["ProviderUpdate"];
             };
         };
         responses: {
@@ -19776,351 +19101,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["PersonResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    update_dependent_info_persons__person_id__dependent_info_patch: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                person_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["UpdateDependentInfoRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["PersonResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    update_emergency_contact_persons__person_id__emergency_contact_patch: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                person_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["UpdateEmergencyContactRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["PersonResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    update_employment_info_persons__person_id__employment_info_patch: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                person_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["UpdateEmploymentInfoRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["PersonResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    update_license_info_persons__person_id__license_info_patch: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                person_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["UpdateLicenseInfoRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["PersonResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    update_provider_profile_persons__person_id__provider_profile_patch: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                person_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["ProviderProfileUpdate"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["PersonResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    restore_person_persons__person_id__restore_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                person_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["PersonResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    add_secondary_role_persons__person_id__secondary_role_post: {
-        parameters: {
-            query: {
-                tenant_id: string;
-            };
-            header?: never;
-            path: {
-                person_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["AddSecondaryRoleRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["PersonResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    remove_secondary_role_persons__person_id__secondary_role_delete: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                person_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["PersonResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    update_staff_info_persons__person_id__staff_info_patch: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                person_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["UpdateStaffInfoRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["PersonResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    terminate_person_persons__person_id__terminate_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                person_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["PersonTerminateRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["PersonResponse"];
+                    "application/json": components["schemas"]["ProviderResponse"];
                 };
             };
             /** @description Validation Error */
