@@ -56,7 +56,7 @@ export interface PaginationParams {
  */
 export interface FilterParams {
   search?: string // Text search
-  status?: string // Status enum value
+  status?: string | string[] // Status enum value, or several for a repeatable filter
   sort_by?: string // Field name to sort by
   sort_desc?: boolean // Descending order
   date_from?: string // ISO 8601 date
@@ -134,7 +134,24 @@ export interface FieldErrors {
 }
 
 /**
- * API error with status code
+ * One entry of the API's `details` array.
+ *
+ * `code` is the stable machine-readable key; `message` is display text and may
+ * change. Several entries can share a `field`, which is why `details` is kept
+ * as a list alongside the collapsed `fieldErrors` map.
+ */
+export interface ErrorDetail {
+  field: string | null
+  message: string
+  code: string | null
+}
+
+/**
+ * API error with status code.
+ *
+ * `fieldErrors` is the one-message-per-field view a form needs. `details` is
+ * the server's full list: a rejection can carry several reasons under the same
+ * field, and collapsing them would drop all but the last.
  */
 export class ApiError extends Error {
   constructor(
@@ -143,6 +160,7 @@ export class ApiError extends Error {
     public status: number,
     public fieldErrors?: FieldErrors,
     public data?: Record<string, unknown>,
+    public details?: ErrorDetail[],
   ) {
     super(message)
     this.name = "ApiError"

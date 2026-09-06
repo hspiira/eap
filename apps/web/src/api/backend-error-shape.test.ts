@@ -64,4 +64,29 @@ describe("backend error bodies as actually emitted", () => {
     expect(err.status).toBe(422)
     expect(err.fieldErrors).toBeTruthy()
   })
+
+  it("409 PROVIDER_NOT_ELIGIBLE keeps every reason sharing one field", async () => {
+    const err = await parseError(
+      res(409, {
+        error: "PROVIDER_NOT_ELIGIBLE",
+        message: "Provider is not eligible for this booking",
+        details: [
+          { field: "provider_id", message: "prv_123", code: "provider_id" },
+          { field: "eligibility", message: "Panel status is Suspended", code: "panel_not_active" },
+          { field: "eligibility", message: "Accreditation expired", code: "accreditation_expired" },
+        ],
+        timestamp: "2026-09-06T00:00:00Z",
+        request_id: "r4",
+        path: "/service-sessions",
+      }),
+    )
+    expect(err.code).toBe("PROVIDER_NOT_ELIGIBLE")
+    expect(err.details?.map((d) => d.code)).toEqual([
+      "provider_id",
+      "panel_not_active",
+      "accreditation_expired",
+    ])
+    // fieldErrors keeps one message per field; details is what preserves both reasons.
+    expect(err.fieldErrors?.eligibility).toBe("Accreditation expired")
+  })
 })
