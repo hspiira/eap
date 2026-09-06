@@ -13,6 +13,8 @@ not, which is exactly what an attribute test cannot see.
 The guard is agent 2's, adopted for these errors.
 """
 
+import re
+
 import pytest
 
 from app.domain.exceptions import (
@@ -25,6 +27,41 @@ from app.domain.services.provider_eligibility import (
     EligibilityReason,
     ProviderNotEligibleError,
 )
+
+_IDENTIFIER = re.compile(r"^[A-Za-z0-9_-]+$")
+
+# Details whose message is an identifier rather than prose, deliberately.
+#
+# provider_id names the subject of an eligibility refusal so a client can tell
+# which practitioner was refused. resource_type and resource_id are NotFoundError's
+# diagnostic context rather than form fields at all: the serialiser presents
+# every details entry as a field error, so they arrive looking like one. That
+# is shared behaviour across every 404 in the app and is not repaired here.
+_IDENTIFIER_FIELDS = {
+    "provider_id",
+    "user_id",
+    "provider_affiliation_id",
+    "resource_id",
+    "resource_type",
+}
+
+
+def _is_prose(message: str) -> bool:
+    """Whether a message reads as text a person can act on.
+
+    Not a length rule: "Provider not found" is complete. A word count is the
+    wrong test entirely, because "batch b-1" passes one and is exactly the
+    shape being guarded against. Two alphabetic words is the weakest rule that
+    rejects an identifier paired with a label.
+    """
+    stripped = message.strip()
+    if not stripped or stripped[0] in "[{(":
+        return False
+    if _IDENTIFIER.match(stripped):
+        return False
+    words = [token for token in re.findall(r"[A-Za-z]+", stripped) if len(token) > 1]
+    return len(words) >= 2
+
 
 _CLIENT_FIELDS = {
     "provider_id",
@@ -79,21 +116,22 @@ class TestEveryProviderErrorBody:
                 "which is not a field a client can render against"
             )
 
-    def test_detail_messages_read_as_sentences_or_identifiers(self, error):
-        """A message is either prose or a deliberate identifier, never a repr."""
+    def test_detail_messages_read_as_prose_except_on_identifier_fields(self, error):
+        """A bare id is only acceptable where the field is an id."""
         for detail in error.to_api_response().get("details", []):
-            message = detail["message"]
+            message, field = detail["message"], detail["field"]
             assert message, f"{error.error_code} has an empty detail message"
-            assert not message.startswith("["), "a list repr reached a detail message"
-            assert not message.startswith("{"), "a dict repr reached a detail message"
+            if field in _IDENTIFIER_FIELDS:
+                assert not message.strip()[0:1] in ("[", "{"), "a repr reached an id field"
+                continue
+            assert _is_prose(message), (
+                f"{error.error_code} puts {message!r} on {field!r}, which is not "
+                "something a person can act on"
+            )
 
     def test_the_top_level_message_stands_alone(self, error):
-        """A client that ignores details still gets a usable sentence.
-
-        Three words, not four: "Provider not found" is complete. The check is
-        against a bare id or a single word, not against brevity.
-        """
-        assert len(error.to_api_response()["message"].split()) >= 3
+        """A client that ignores details still gets a usable sentence."""
+        assert _is_prose(error.to_api_response()["message"])
 
     def test_the_error_code_is_present(self, error):
         assert error.to_api_response()["error"] == error.error_code
@@ -135,3 +173,49 @@ class TestValidationExceptionShape:
 
         assert detail["field"] == "delivery_context"
         assert detail["message"] == "Delivery context is required"
+
+
+class TestTheProsePredicateDiscriminates:
+    """Without these the predicate could be weakened to always return True and
+    every other case in this file would still pass. A check nothing exercises
+    proves nothing, which is the gap that let the original defect through."""
+
+    @pytest.mark.parametrize(
+        "message",
+        [
+            "prov-1",
+            "delivery_context",
+            "['sess-1', 'sess-2']",
+            "{'batch_id': 'b-1'}",
+            "batch b-1",
+            "",
+            "   ",
+            "Suspended",
+        ],
+        ids=[
+            "bare-cuid",
+            "field-name",
+            "list-repr",
+            "dict-repr",
+            "label-plus-id",
+            "empty",
+            "whitespace",
+            "single-word",
+        ],
+    )
+    def test_it_rejects_what_actually_reached_a_message_field(self, message):
+        assert _is_prose(message) is False
+
+    @pytest.mark.parametrize(
+        "message",
+        [
+            "Provider not found",
+            "Panel status is Suspended, not Active",
+            "This change requires a non-blank reason",
+            "2 completed session(s) are attributed to this affiliation beyond the new end date",
+            "Accreditation expired on 2026-01-01.",
+        ],
+        ids=["short", "with-comma", "plain", "leading-digit", "trailing-date"],
+    )
+    def test_it_accepts_a_message_a_person_can_act_on(self, message):
+        assert _is_prose(message) is True
