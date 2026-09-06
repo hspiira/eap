@@ -248,7 +248,7 @@ export function TenantFormSheet({ open, onOpenChange, tenant, onSaved }: TenantF
       <FormField
         label="Custom branding"
         optional
-        description="Allow the tenant to upload their own logo and override theme colours."
+        description="Allow the tenant to use custom branding and override theme colours."
         error={errors.custom_branding?.message}
         htmlFor="tenant-branding"
       >
