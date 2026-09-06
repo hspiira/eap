@@ -35,10 +35,12 @@ import {
 } from "@/components/ui/table"
 import { useToast } from "@/contexts/ToastContext"
 import { useTabSearchParam } from "@/hooks/useTabSearchParam"
+import { termLabel, termTone } from "@/lib/contract-term"
 import { nameInitials } from "@/lib/display"
 import { normalizeErrorMessage } from "@/lib/errors"
 import { addYearsToDay, daysBetweenDays, formatDay } from "@/lib/format"
 import { entityDetailKey, entityListKey, useEntityDetail } from "@/lib/queries"
+import { cn } from "@/lib/utils"
 import type { Client, Contract, ServiceAssignment } from "@/types/entities"
 import type { LifecycleAction } from "@/utils/lifecycleConfig"
 
@@ -202,18 +204,21 @@ function ContractDetailPage() {
                     ) : null}
                   </DetailCard>
 
-                  <DetailCard title="Identity">
+                  <DetailCard title="Signature">
                     <DetailGrid>
-                      <DetailRow
-                        label="Reference"
-                        value={<span className="font-mono">{contract.id}</span>}
-                      />
+                      <DetailRow label="Signed by" value={contract.signed_by || "-"} />
+                      <DetailRow label="Signed on" value={formatDay(contract.signed_at)} />
                       <DetailRow
                         label="Contract ID"
                         value={<span className="font-mono text-xs">{contract.id}</span>}
                         fullWidth
                       />
                     </DetailGrid>
+                    {contract.termination_reason ? (
+                      <p className="mt-3 text-xs text-danger">
+                        Terminated: {contract.termination_reason}
+                      </p>
+                    ) : null}
                   </DetailCard>
                 </div>
               </TabPanel>
@@ -232,10 +237,15 @@ function ContractDetailPage() {
               <TabPanel value="billing">
                 <DetailCard title="Billing terms">
                   <DetailGrid>
-                    <DetailRow label="Frequency" value={contract.payment_frequency} />
-                    <DetailRow label="Payment status" value={contract.payment_status} />
                     <DetailRow label="Amount" value={formatMoney(contract)} />
-                    <DetailRow label="Currency" value={contract.billing_rate.currency} />
+                    <DetailRow label="Frequency" value={contract.payment_frequency} />
+                    <DetailRow
+                      label="Payment status"
+                      value={<StatusBadge status={contract.payment_status} />}
+                    />
+                    <DetailRow label="Auto-renew" value={contract.is_auto_renew ? "Yes" : "No"} />
+                    <DetailRow label="Last billed" value={formatDay(contract.last_billing_date)} />
+                    <DetailRow label="Next billing" value={formatDay(contract.next_billing_date)} />
                   </DetailGrid>
                 </DetailCard>
               </TabPanel>
@@ -333,12 +343,15 @@ function DetailRail({ contract, client, onAction, actionLoading }: DetailRailPro
         )}
       </RailSection>
 
-      <RailSection title="Billing snapshot">
-        <DetailGrid>
-          <DetailRow label="Amount" value={formatMoney(contract)} />
-          <DetailRow label="Frequency" value={contract.payment_frequency} />
-          <DetailRow label="Payment" value={contract.payment_status} fullWidth />
-        </DetailGrid>
+      <RailSection title="At a glance">
+        <p className="tabular-nums text-lg font-semibold leading-tight text-fg">
+          {formatMoney(contract)}
+        </p>
+        <p className="mt-0.5 text-xs text-fg-muted">{contract.payment_frequency}</p>
+        <div className="mt-3 flex items-center gap-2">
+          <StatusBadge status={contract.payment_status} size="sm" />
+          <span className={cn("text-xs", termTone(contract))}>{termLabel(contract)}</span>
+        </div>
       </RailSection>
 
       <RailSection title="Lifecycle">

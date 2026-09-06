@@ -35,6 +35,7 @@ import {
 } from "@/components/ui/table"
 import { useCanWrite } from "@/hooks/useCanWrite"
 import { useListPage } from "@/hooks/useListPage"
+import { termLabel, termTone } from "@/lib/contract-term"
 import { normalizeErrorMessage } from "@/lib/errors"
 import { formatDay } from "@/lib/format"
 import { useEntityList } from "@/lib/queries"
@@ -202,7 +203,7 @@ function ContractsListPage() {
       <div className="flex min-h-0 flex-1 flex-col bg-bg">
         {loading ? (
           <div className="flex-1 overflow-auto p-5">
-            <TableSkeleton cols={6} />
+            <TableSkeleton cols={8} />
           </div>
         ) : error ? (
           <ErrorState message={error} onRetry={() => void query.refetch()} />
@@ -231,18 +232,19 @@ function ContractsListPage() {
                 <TableHeader className={STICKY_TABLE_HEAD}>
                   <TableRow className={`hover:bg-transparent ${ROW_BORDER}`}>
                     <TableHead>
-                      <SortHeader field="contract_number" sort={sort} onToggle={toggleSort}>
-                        Number
+                      <SortHeader field="created_at" sort={sort} onToggle={toggleSort}>
+                        Contract
                       </SortHeader>
                     </TableHead>
-                    <TableHead>
-                      <SortHeader field="client_id" sort={sort} onToggle={toggleSort}>
-                        Client
-                      </SortHeader>
-                    </TableHead>
+                    <TableHead className="text-fg/65">Client</TableHead>
                     <TableHead>
                       <SortHeader field="status" sort={sort} onToggle={toggleSort}>
                         Status
+                      </SortHeader>
+                    </TableHead>
+                    <TableHead>
+                      <SortHeader field="payment_status" sort={sort} onToggle={toggleSort}>
+                        Payment
                       </SortHeader>
                     </TableHead>
                     <TableHead>
@@ -255,7 +257,7 @@ function ContractsListPage() {
                         End / Renewal
                       </SortHeader>
                     </TableHead>
-                    <TableHead className="text-fg/65">Billing</TableHead>
+                    <TableHead className="text-right text-fg/65">Billing</TableHead>
                     <TableHead className="w-16 text-right text-fg/65">
                       <span className="sr-only">Actions</span>
                     </TableHead>
@@ -313,16 +315,17 @@ function ContractRow({ row, clientsById }: { row: Contract; clientsById: Map<str
       <TableCell>
         <StatusBadge status={row.status} />
       </TableCell>
+      <TableCell>
+        <StatusBadge status={row.payment_status} />
+      </TableCell>
       <TableCell className="text-sm text-fg/75">{formatDay(row.period.start_date)}</TableCell>
       <TableCell>
         <span className="block min-w-0">
           <span className="block truncate text-sm text-fg">{formatDay(row.period.end_date)}</span>
-          <span className="block truncate text-xs text-fg-muted">
-            {row.is_auto_renew ? "Renews" : "Ends"}
-          </span>
+          <span className={cn("block truncate text-xs", termTone(row))}>{termLabel(row)}</span>
         </span>
       </TableCell>
-      <TableCell>
+      <TableCell className="text-right">
         <span className="block min-w-0">
           <span className="block truncate tabular-nums text-sm text-fg">{billing.amount}</span>
           <span className="block truncate text-xs text-fg-muted">{billing.frequency}</span>
