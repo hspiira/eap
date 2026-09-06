@@ -520,3 +520,14 @@ async def test_reschedule_refuses_a_session_of_unknown_delivery(api):
     response = await _reschedule(api)
 
     assert response.status_code in {400, 422}, response.text
+
+
+async def test_a_viewer_cannot_reschedule(api):
+    """Decision 7: Viewers cannot mutate. Rescheduling is a mutation."""
+    _use_session(api, _scheduled_session())
+    api.user.role = "Viewer"
+
+    response = await _reschedule(api)
+
+    assert response.status_code == 403, response.text
+    api.sessions.save.assert_not_awaited()

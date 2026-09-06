@@ -39,7 +39,7 @@ from app.application.use_cases.transitions import (
     OutreachTransition,
     TransitionUseCase,
 )
-from app.core.authorization import require_same_tenant
+from app.core.authorization import require_not_viewer, require_same_tenant
 from app.core.database import get_db
 from app.core.security import TokenData, get_current_user
 from app.domain.entities.care_callback_campaign import CareCallbackCampaign
@@ -335,6 +335,7 @@ async def enrol_members(
 @router.post(
     "/outreach-records/{outreach_id}/assign",
     response_model=OutreachRecordResponse,
+    dependencies=[Depends(require_not_viewer)],
     summary="Assign an outreach record to a counsellor",
 )
 @transactional()

@@ -443,6 +443,7 @@ async def cancel_service_session(
 @router.post(
     "/{session_id}/reschedule",
     response_model=ServiceSessionResponse,
+    dependencies=[Depends(require_not_viewer)],
     summary="Reschedule a service session",
 )
 @transactional()
