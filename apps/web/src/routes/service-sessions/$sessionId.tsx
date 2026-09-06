@@ -15,6 +15,7 @@ import { EmptyState } from "@/components/common/EmptyState"
 import { PageShell } from "@/components/common/PageShell"
 import { StatusBadge } from "@/components/common/StatusBadge"
 import { Tab, TabPanel, Tabs, TabsList } from "@/components/common/Tabs"
+import { CATEGORY_LABELS } from "@/components/ServiceFormSheet"
 import { ServiceSessionFormSheet } from "@/components/ServiceSessionFormSheet"
 import {
   CancelDialog,
@@ -332,7 +333,7 @@ function ServiceSessionDetailPage() {
                         <div className="min-w-0 flex-1">
                           <p className="truncate text-sm font-medium text-fg">{service.name}</p>
                           <p className="truncate text-[11px] text-fg-muted">
-                            {service.service_type ?? "-"}
+                            {service.category ? CATEGORY_LABELS[service.category] : "-"}
                           </p>
                         </div>
                       </Link>

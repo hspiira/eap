@@ -411,6 +411,21 @@ class TestUpdateService:
         data = response.json()
         assert data["duration_minutes"] == 90
 
+    async def test_clear_nullable_service_fields(self, client: AsyncClient, test_service: dict):
+        """Test clearing nullable service fields during an update."""
+        service_id = test_service["id"]
+
+        response = await client.patch(
+            f"/services/{service_id}",
+            json={"description": None, "category": None, "duration_minutes": None},
+        )
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["description"] is None
+        assert data["category"] is None
+        assert data["duration_minutes"] is None
+
     async def test_update_service_not_found(self, client: AsyncClient):
         """Test updating non-existent service returns 404."""
         response = await client.patch(

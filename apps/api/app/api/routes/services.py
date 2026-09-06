@@ -200,11 +200,7 @@ async def update_service(
 ):
     """Update service basic information."""
     service = await UpdateServiceUseCase(service_repo).execute(
-        service.id,
-        name=data.name,
-        description=data.description,
-        category=data.category,
-        duration_minutes=data.duration_minutes,
+        service.id, **data.model_dump(exclude_unset=True)
     )
     await audit_change(service, audit_handler, current_user, request)
     return _to_service_response(service)

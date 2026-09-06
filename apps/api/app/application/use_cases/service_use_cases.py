@@ -16,6 +16,13 @@ from app.shared.utils.datetime import utc_now
 # Lifecycle dispatched via TransitionUseCase + ServiceTransition.
 
 
+class _Unset:
+    pass
+
+
+_UNSET = _Unset()
+
+
 class CreateServiceUseCase(BaseUseCase[ServiceEntity, ServiceId]):
     """Use case for creating a new service."""
 
@@ -74,20 +81,20 @@ class UpdateServiceUseCase(BaseUseCase[ServiceEntity, ServiceId]):
         self,
         service_id: ServiceId,
         name: str | None = None,
-        description: str | None = None,
-        category: ServiceCategory | None = None,
-        duration_minutes: int | None = None,
+        description: str | None | _Unset = _UNSET,
+        category: ServiceCategory | None | _Unset = _UNSET,
+        duration_minutes: int | None | _Unset = _UNSET,
     ) -> ServiceEntity:
         """Update service information."""
         service = await self._get_entity_or_raise(service_id, "Service")
 
         if name is not None:
             service.update_name(name)
-        if description is not None:
+        if not isinstance(description, _Unset):
             service.update_description(description)
-        if category is not None:
+        if not isinstance(category, _Unset):
             service.update_category(category)
-        if duration_minutes is not None:
+        if not isinstance(duration_minutes, _Unset):
             service.update_duration(duration_minutes)
 
         return await self._save_and_publish_events(service)

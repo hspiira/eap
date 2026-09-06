@@ -26,16 +26,6 @@ export interface Service extends BaseEntity {
   is_group_service?: boolean
   /** Group session capacity cap per BE `ServiceResponse.max_participants`. */
   max_participants?: number | null
-  /** @deprecated Not on BE: kept temporarily for legacy callers; will be removed. */
-  service_type?: string | null
-  /** @deprecated Use `is_group_service` + `max_participants`. */
-  group_settings?: {
-    max_group_size?: number | null
-    min_group_size?: number | null
-    allow_group_sessions?: boolean
-  } | null
-  /** @deprecated Not on BE response. */
-  metadata?: Record<string, unknown> | null
 }
 
 /**

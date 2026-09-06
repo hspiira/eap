@@ -25,6 +25,7 @@ import { DetailCard, RailSection, Stat } from "@/components/common/DetailPrimiti
 import { FormField } from "@/components/common/FormField"
 import { LifecycleActions } from "@/components/common/LifecycleActions"
 import { StatusBadge } from "@/components/common/StatusBadge"
+import { CATEGORY_LABELS } from "@/components/ServiceFormSheet"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -131,7 +132,9 @@ export function DetailRail({ session, service, member, onAction, actionLoading }
               </span>
               <div className="min-w-0 flex-1">
                 <p className="truncate text-sm font-medium text-fg">{service.name}</p>
-                <p className="truncate text-[11px] text-fg-muted">{service.service_type ?? "-"}</p>
+                <p className="truncate text-[11px] text-fg-muted">
+                  {service.category ? CATEGORY_LABELS[service.category] : "-"}
+                </p>
               </div>
             </Link>
           ) : null}

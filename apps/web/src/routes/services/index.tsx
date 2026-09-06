@@ -11,7 +11,7 @@ import { TableSkeleton } from "@/components/common/PageSkeletons"
 import { SortHeader } from "@/components/common/SortHeader"
 import { StatusBadge } from "@/components/common/StatusBadge"
 import { STICKY_TABLE_HEAD } from "@/components/common/tableStyles"
-import { humanizeServiceType, ServiceFormSheet } from "@/components/ServiceFormSheet"
+import { CATEGORY_LABELS, ServiceFormSheet } from "@/components/ServiceFormSheet"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import {
@@ -200,8 +200,8 @@ function ServicesListPage() {
                       </SortHeader>
                     </TableHead>
                     <TableHead>
-                      <SortHeader field="service_type" sort={sort} onToggle={toggleSort}>
-                        Type
+                      <SortHeader field="category" sort={sort} onToggle={toggleSort}>
+                        Category
                       </SortHeader>
                     </TableHead>
                     <TableHead>
@@ -269,9 +269,9 @@ function ServiceRow({ row }: { row: Service }) {
         </Link>
       </TableCell>
       <TableCell>
-        {row.service_type ? (
+        {row.category ? (
           <span className="inline-flex items-center rounded-sm border border-fg/15 bg-bg px-1.5 py-0.5 text-[11px] font-medium text-fg/75">
-            {humanizeServiceType(row.service_type)}
+            {CATEGORY_LABELS[row.category]}
           </span>
         ) : (
           <span className="text-fg-subtle">-</span>

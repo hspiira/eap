@@ -19,6 +19,7 @@ vi.mock("@/api/endpoints/services", () => ({
           id: "sv_1",
           name: "Short-term counselling",
           status: "Active",
+          category: "ShortTermCounselling",
           is_group_service: false,
           created_at: "2026-01-05T00:00:00Z",
           updated_at: "2026-01-05T00:00:00Z",
@@ -38,5 +39,6 @@ describe("services list: happy path", () => {
   it("renders the service by name", async () => {
     const screen = renderWithProviders(<Page />)
     expect(await screen.findByText("Short-term counselling")).toBeInTheDocument()
+    expect(screen.getByText("Short term counselling")).toBeInTheDocument()
   })
 })

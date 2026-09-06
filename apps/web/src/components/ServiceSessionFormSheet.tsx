@@ -10,6 +10,7 @@ import { MemberPicker, ProviderPicker, ServicePicker } from "@/components/common
 import { FormField } from "@/components/common/FormField"
 import { FormSection } from "@/components/common/FormSection"
 import { SheetForm } from "@/components/common/SheetForm"
+import { CATEGORY_LABELS } from "@/components/ServiceFormSheet"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Input } from "@/components/ui/input"
 import {
@@ -556,6 +557,7 @@ function LockedServiceSummary({
     enabled,
   })
   const resolved = service ?? (detail.data?.items ?? []).find((s) => s.id === serviceId) ?? null
+  const categoryLabel = resolved?.category ? CATEGORY_LABELS[resolved.category] : null
   return (
     <div className="flex items-center gap-2.5 rounded-sm border border-fg/15 bg-surface px-3 py-2">
       <span
@@ -568,13 +570,8 @@ function LockedServiceSummary({
         <p className="truncate text-sm font-medium text-fg">
           {resolved?.name ?? "Selected service"}
         </p>
-        <p
-          className={cn(
-            "truncate text-[11px] text-fg-muted",
-            !resolved?.service_type && "font-mono",
-          )}
-        >
-          {resolved?.service_type ?? serviceId.slice(0, 8)}
+        <p className={cn("truncate text-[11px] text-fg-muted", !categoryLabel && "font-mono")}>
+          {categoryLabel ?? serviceId.slice(0, 8)}
         </p>
       </div>
       <span className="shrink-0 rounded-sm border border-fg/15 bg-bg px-1.5 py-0.5 text-[10px] font-medium tracking-wide text-fg-muted">

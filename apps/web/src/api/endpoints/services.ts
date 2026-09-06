@@ -8,6 +8,7 @@
  */
 
 import type { ServiceCreate, ServiceUpdate, ServiceUpdateGroupSettings } from "@/api/generated"
+import type { ServiceCategory } from "@/types/enums"
 
 import apiClient from "../client"
 import type { ListParams, PaginatedResponse, Service } from "../types"
@@ -18,7 +19,7 @@ export type GroupSettingsUpdate = ServiceUpdateGroupSettings
 
 /** Mirrors the query params on `GET /services/` in the BE OpenAPI schema. */
 export interface ServiceListParams extends ListParams {
-  category?: string
+  category?: ServiceCategory
   is_group_service?: boolean
 }
 

@@ -42,12 +42,12 @@ const schema = z.object({
   duration_minutes: z
     .string()
     .optional()
-    .refine((v) => !v || /^\d+$/.test(v), "Must be a positive integer"),
+    .refine((v) => !v || /^[1-9]\d*$/.test(v), "Must be a positive integer"),
   is_group_service: z.boolean().optional(),
   max_participants: z
     .string()
     .optional()
-    .refine((v) => !v || /^\d+$/.test(v), "Must be a positive integer"),
+    .refine((v) => !v || /^[1-9]\d*$/.test(v), "Must be a positive integer"),
 })
 
 type Values = z.infer<typeof schema>
@@ -238,11 +238,4 @@ function toFormValues(s: Service): Values {
     is_group_service: Boolean(s.is_group_service),
     max_participants: s.max_participants != null ? String(s.max_participants) : "",
   }
-}
-
-export function humanizeServiceType(value: string): string {
-  return value
-    .split("_")
-    .map((w) => w[0] + w.slice(1).toLowerCase())
-    .join(" ")
 }

@@ -44,6 +44,8 @@ beforeEach(() => {
       {
         id: "prov-1",
         person_type: "Provider",
+        display_name: "Dr Alice Nakato",
+        email: "alice.nakato@example.com",
         provider_profile: { tier: "Senior", region: "Kampala" },
       },
     ],
@@ -60,14 +62,10 @@ afterEach(() => {
 /** Provider is required, so every create-path test has to choose one. */
 async function chooseProvider() {
   const search = screen.getByPlaceholderText(/search providers/i)
-  fireEvent.change(search, { target: { value: "prov" } })
+  fireEvent.change(search, { target: { value: "Nakato" } })
   await new Promise((r) => setTimeout(r, 400))
 
-  console.log(
-    "PICKER:",
-    screen.getByPlaceholderText(/search providers/i).parentElement?.textContent,
-  )
-  const option = await screen.findByText("prov-1")
+  const option = await screen.findByText("Dr Alice Nakato")
   fireEvent.click(option)
 }
 

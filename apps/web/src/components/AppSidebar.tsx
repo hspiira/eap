@@ -6,7 +6,6 @@ import {
   Building2,
   Calendar,
   ClipboardCheck,
-  FileCheck,
   FileSignature,
   FolderOpen,
   Handshake,
@@ -20,6 +19,7 @@ import {
   Stethoscope,
   Tag,
   UserCog,
+  UserRound,
   Users,
 } from "lucide-react"
 
@@ -64,6 +64,7 @@ const MAIN_ITEMS: ReadonlyArray<NavItem> = [
   { to: "/clients", label: "Clients", icon: Building2 },
   { to: "/members", label: "Members", icon: Users },
   { to: "/contacts", label: "Contacts", icon: Users, flag: "contacts" },
+  { to: "/providers", label: "Providers", icon: UserRound },
   { to: "/service-sessions", label: "Sessions", icon: Calendar },
   { to: "/cases", label: "Cases", icon: HeartPulse, clinicalScope: true },
   { to: "/care-callbacks", label: "Campaigns", icon: PhoneCall, comingSoon: "campaigns" },
@@ -76,7 +77,6 @@ const MAIN_ITEMS: ReadonlyArray<NavItem> = [
   { to: "/surveys", label: "Surveys", icon: MessageSquare, comingSoon: "surveys" },
   { to: "/engagements", label: "Engagements", icon: Handshake, comingSoon: "engagements" },
   { to: "/contracts", label: "Contracts", icon: FileSignature },
-  { to: "/service-assignments", label: "Assignments", icon: FileCheck },
   { to: "/services", label: "Services", icon: Briefcase },
   { to: "/kpis", label: "KPIs", icon: BarChart3, flag: "kpis" },
   { to: "/documents", label: "Documents", icon: FolderOpen, flag: "documents" },
