@@ -105,6 +105,23 @@ export interface ProviderSpecialty {
 }
 
 /**
+ * A tenant's link between one of its practitioners and a catalogue entry.
+ *
+ * `specialty_is_active` false means the entry was retired after this link was
+ * made. The link is kept and still shown, but the entry cannot be selected
+ * again.
+ */
+export interface ProviderSpecialtyLink {
+  id: string
+  tenant_id: string
+  provider_id: string
+  specialty_id: string
+  specialty_code: string
+  specialty_label: string
+  specialty_is_active: boolean
+}
+
+/**
  * A non-compete clause restricting a provider from working with certain
  * clients. Mirrors BE `NonCompeteResponse`.
  */
