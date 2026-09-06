@@ -26,6 +26,10 @@ import { FormField } from "@/components/common/FormField"
 import { LifecycleActions } from "@/components/common/LifecycleActions"
 import { StatusBadge } from "@/components/common/StatusBadge"
 import { CATEGORY_LABELS } from "@/components/ServiceFormSheet"
+import {
+  EligibilityFailureNotice,
+  eligibilityReasons,
+} from "@/components/sessions/EligibilityFailureNotice"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -46,7 +50,9 @@ import {
 import { Textarea } from "@/components/ui/textarea"
 import { useHasClinicalScope } from "@/hooks/useCanWrite"
 import { memberLabel } from "@/lib/display"
+import { normalizeErrorMessage } from "@/lib/errors"
 import { formatDateTime } from "@/lib/format"
+import type { ErrorDetail } from "@/types/api"
 import type { Member, Service, ServiceSession } from "@/types/entities"
 import { CaseStatus } from "@/types/enums"
 import type { LifecycleAction } from "@/utils/lifecycleConfig"
@@ -442,20 +448,33 @@ export function RescheduleDialog({
   const [scheduled, setScheduled] = useState(toLocalDatetime(currentISO))
   const [notes, setNotes] = useState("")
   const [submitting, setSubmitting] = useState(false)
+  const [refused, setRefused] = useState<ErrorDetail[] | null>(null)
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     if (open) {
       setScheduled(toLocalDatetime(currentISO))
       setNotes("")
+      setRefused(null)
+      setError(null)
     }
   }, [open, currentISO])
 
+  // Rescheduling reapplies the booking gate, so a new time can be refused for
+  // the practitioner or for the affiliation that no longer covers it. The
+  // dialog stays open and shows why, rather than closing as if it had worked.
   const handleConfirm = async () => {
     if (!scheduled) return
     setSubmitting(true)
+    setRefused(null)
+    setError(null)
     try {
       await onConfirm(new Date(scheduled).toISOString(), notes)
       onOpenChange(false)
+    } catch (err) {
+      const reasons = eligibilityReasons(err)
+      if (reasons) setRefused(reasons)
+      else setError(normalizeErrorMessage(err, "Could not reschedule this session"))
     } finally {
       setSubmitting(false)
     }
@@ -472,6 +491,15 @@ export function RescheduleDialog({
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-3">
+          {refused ? <EligibilityFailureNotice reasons={refused} /> : null}
+          {error ? (
+            <p
+              role="alert"
+              className="border border-danger/30 bg-danger-soft px-3 py-2 text-sm text-danger-fg"
+            >
+              {error}
+            </p>
+          ) : null}
           <FormField label="New scheduled time" required htmlFor="reschedule-when">
             <Input
               id="reschedule-when"

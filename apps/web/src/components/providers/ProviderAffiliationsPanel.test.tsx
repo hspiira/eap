@@ -128,14 +128,20 @@ describe("practitioner affiliations", () => {
 
 describe("organisation affiliations", () => {
   it("shows the server's overlap rejection with the conflicting period", async () => {
+    // Shape captured from the running API: the sentence is the top-level
+    // message, and `details` carries the field name as a value.
     mocks.create.mockRejectedValue(
-      new ApiError("Overlapping affiliation", "AFFILIATION_OVERLAP", 409, undefined, undefined, [
-        {
-          field: "valid_from",
-          message: "Overlaps affiliation aff-9 (2026-01-01 to 2026-06-01)",
-          code: "overlap",
-        },
-      ]),
+      new ApiError(
+        "Overlaps affiliation aff-9 (2026-01-01 to 2026-06-01)",
+        "AFFILIATION_OVERLAP",
+        409,
+        undefined,
+        undefined,
+        [
+          { field: "field", message: "valid_from", code: null },
+          { field: "conflicting_affiliation_id", message: "aff-9", code: null },
+        ],
+      ),
     )
     renderWithProviders(<OrganisationAffiliationsPanel organisationId="org-1" />)
 

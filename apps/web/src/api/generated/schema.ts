@@ -4587,6 +4587,9 @@ export interface paths {
         /**
          * Reschedule a service session
          * @description Reschedule a service session, re-checking eligibility for the new date.
+         *
+         *     The whole gate is reapplied, not just the practitioner's half: an
+         *     affiliation valid at the original time need not cover the new one.
          */
         post: operations["reschedule_service_session_service_sessions__session_id__reschedule_post"];
         delete?: never;
