@@ -5,7 +5,6 @@ from collections.abc import Sequence
 import sqlalchemy as sa
 
 from alembic import op
-from app.domain.enums import BaseStatus
 
 revision: str = "e5g7i9k1m3o5"
 down_revision: str | Sequence[str] | None = "d4f6a8b0c2e4"
@@ -26,11 +25,7 @@ def upgrade() -> None:
         sa.Column("id", sa.String(length=25), nullable=False),
         sa.Column("tenant_id", sa.String(length=25), nullable=False),
         sa.Column("user_id", sa.String(length=25), nullable=False),
-        sa.Column(
-            "status",
-            sa.Enum(BaseStatus, name="basestatus", create_type=False, values_callable=lambda x: [e.value for e in x]),
-            nullable=False,
-        ),
+        sa.Column("status", sa.String(length=50), nullable=False),
         sa.Column("license_info", sa.JSON(), nullable=True),
         sa.Column("provider_profile", sa.JSON(), nullable=True),
         sa.Column("created_at", sa.DateTime(timezone=True), nullable=False),

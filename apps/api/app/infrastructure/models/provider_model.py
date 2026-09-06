@@ -1,12 +1,13 @@
 """Independent provider/practitioner persistence."""
 
-from sqlalchemy import JSON, Enum, ForeignKey, String
+from sqlalchemy import JSON, ForeignKey, String
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.domain.enums import BaseStatus
 from app.infrastructure.models.base import (
     Base,
     CuidMixin,
+    EnumValueType,
     SoftDeleteMixin,
     TenantMixin,
     TimestampMixin,
@@ -20,7 +21,7 @@ class ProviderModel(CuidMixin, TenantMixin, Base, TimestampMixin, SoftDeleteMixi
         String(25), ForeignKey("users.id", ondelete="RESTRICT"), nullable=False, index=True
     )
     status: Mapped[BaseStatus] = mapped_column(
-        Enum(BaseStatus, name="basestatus", create_type=False, values_callable=lambda x: [e.value for e in x]),
+        EnumValueType(BaseStatus),
         nullable=False,
         default=BaseStatus.PENDING,
     )

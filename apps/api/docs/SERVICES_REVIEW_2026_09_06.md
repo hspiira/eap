@@ -192,7 +192,11 @@ The dev database was one migration behind, so `c1e4a7b9d2f6` was applied to it
 during this check. The row confirmed while testing was reset, leaving the
 counts as they started: 42 confirmed, 4 inferred.
 
-Worth noting: the later migrations in the chain currently fail on this database
-(`CREATE TYPE basestatus` already exists), which is unrelated to this work but
-means `alembic upgrade head` does not complete there today.
+One caveat on that: `alembic upgrade head` does not currently complete against
+the dev database, failing on `CREATE TYPE basestatus` already existing. That is
+local state rather than a defect in the chain. Checked by upgrading a fresh
+database from empty to head, which applies every revision including
+`c1e4a7b9d2f6` and lands on 42 confirmed and 4 inferred aliases. `alembic heads`
+reports a single head, so the two migrations added in parallel here did not
+fork it.
 
