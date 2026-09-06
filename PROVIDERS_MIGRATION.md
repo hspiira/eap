@@ -1,7 +1,10 @@
 # Provider module migration
 
 Decision record and implementation handoff for the provider module. Updated
-2026-09-06 against commit `3b4daed`. Track this document in git. Update it with
+2026-09-06 against the assembled integration branch `codex/providers-agent1-core`.
+The evidence in "Current implementation and evidence" below describes the
+earlier baseline at `3b4daed`; what this branch changed is recorded under
+"Phase 1 to 4 verification". Track this document in git. Update it with
 each implementation commit; strike completed tasks through rather than deleting
 them. Implemented, tested, and applied to a database are separate claims.
 Execution ownership and agent prompts are in `PROVIDERS_EXECUTION.md`.
@@ -67,30 +70,116 @@ Sources: `apps/api/app/domain/entities/provider.py:15`,
 ### Verification record
 
 The earlier handoff reports local counts of zero providers, service sessions,
-and non-compete clauses, with `eap_v2` predating the providers table. This review
-has not rerun that database audit. Other environments remain unverified; no
-migration may assume they are empty.
+and non-compete clauses, with `eap_v2` predating the providers table. This
+review has not rerun that database audit. Other environments remain unverified;
+no migration may assume they are empty.
 
 The earlier baseline records 1,538 API tests collected and 486 web tests passed
 on 2026-09-06. Collection is not a passing backend suite.
 
-The focused provider review ran 47 tests successfully and skipped two PostgreSQL
-migration tests because `MEMBER_TEST_DATABASE_URL` was unset. The selected files
-were `test_provider_audit.py`, `test_provider_mapper.py`,
-`test_provider_profile.py`, `test_panel_use_cases.py`, `test_session_members.py`,
-`test_audit_coverage.py`, and `test_provider_reference_migration.py`.
+### Findings referred to review, 2026-09-06
 
-Direct API reproductions with mocked persistence established:
+Discovered while checking for other paths where a rule holds in one place and
+not others. Neither is repaired on this branch; both are recorded rather than
+left unattended.
 
-- Provider create returned 201 with zero audit-handler calls.
-- General provider patch changed tier without a reason, returned 200, and made
-  zero audit-handler calls.
-- A Viewer changed a tier through the actual app's panel route and received 200.
+1. A `PersonId` carries a user id in the clinical case module.
+   `Case.assigned_counsellor_id` is typed `PersonId` at
+   `apps/api/app/domain/entities/case.py:79`, and `apps/api/app/api/routes/cases.py:164`
+   wraps the request value in `PersonId`. But
+   `apps/api/app/application/use_cases/case_use_cases.py:107` reads it as
+   `UserId(counsellor_id.value)` and requires a user with Clinical access, so
+   the value is a user id wearing a `PersonId` label. This is the same class of
+   confusion as phase 5's check that no path treats a `PersonId` as a
+   `ProviderId`, and it is why that check should not be closed by inspecting
+   provider code alone. Not repaired here: the fix changes the clinical
+   aggregate, its persistence and its routes, which this migration does not own.
+   Needs an owner in the clinical module.
 
-The migration rejection fixture creates one invalid outreach row and no clause,
-but expects `1 non-compete and 1 outreach`. Replaying its preflight query against
-an in-memory SQLite fixture produced `0 non-compete and 1 outreach`. This checks
-the rejection message, not PostgreSQL DDL or migration-chain correctness.
+2. Member and service identity have no reconciliation mechanism for the
+   historical extract. Practitioner identity does, through tenant- and
+   source-scoped aliases. A staged import row can name a resolved practitioner
+   but cannot name a member or a service, so no row is importable. Decided out
+   of scope for this release: this document's own import prerequisites do not
+   include member or service identity, and building a matcher inside the import
+   module would create a second source of identity truth for two aggregates the
+   provider module does not own. Unowned and unscoped, recorded so that
+   "staging and review work" is not read as "import works".
+
+3. Three times in this branch a rule was correct in one path and absent in
+   another: the panel routes that started this migration, the delivering
+   organisation resolved only on the create response, and the booking gate
+   applied on session creation but not on reschedule. All three are fixed. The
+   pattern is worth the reviewer's attention rather than the three instances.
+
+### Phase 1 to 4 verification, 2026-09-06
+
+Recorded by the provider-core and integration agent on branch
+`codex/providers-agent1-core`, worktree `/Users/piira/Developer/sandbox/eap/wt-agent1`,
+base `e672b6f`. Implemented and locally tested. Not deployed, not pushed, and
+applied to no database other than the local throwaway `eap_test_agent1`.
+
+Checks run on the assembled branch:
+
+- `ruff check app tests scripts`: passed.
+- `ruff format --check app tests scripts`: 596 files already formatted.
+- `lint-imports`: 3 contracts kept, 0 broken.
+- `pyright_gate.py --run app/domain`: gate OK for `app/domain`.
+- `pytest tests/unit` with the 60% coverage gate: 1411 passed, 65.9% coverage.
+- `pytest tests --ignore=tests/unit` with every database URL set: 506 passed,
+  1 xfailed, 0 skipped. The zero matters: eight of those tests skipped silently
+  before `IMPORT_TEST_DATABASE_URL` and `OUTBOX_TEST_DATABASE_URL` were wired.
+- `alembic upgrade head` on an empty database, then `downgrade f6a8c0e2b4d6`,
+  then `upgrade head` again: all applied, single head throughout, 68 revisions.
+
+Migration order on the assembled branch, one chain, one head:
+
+    f6a8c0e2b4d6 -> a1p1c0d2e4f6 -> a1p2i0d2e4f6 -> a2n1o0r2k4s6 -> a1p3d0d2e4f6
+
+Evidence for the four reviewed defects:
+
+- Viewer mutation. Refused with 403 on every provider and panel mutation, and
+  separately for non-Admin roles on the four lifecycle commands. Proved at the
+  route, and against PostgreSQL in `test_provider_audit_persistence.py`, which
+  asserts the stored row is unchanged and no outbox row exists after refusal.
+- Silent create and PATCH audits. Both now emit. The persistence test drains
+  the outbox and asserts the `audit_logs` row with its tenant, actor, resource
+  and IP. A separate test injects a commit failure after the audit enqueue and
+  asserts the state change, the outbox row and the audit row are all absent.
+- Missing tenant constraints. `a1p1c0d2e4f6` keys non-compete, outreach and
+  session provider references and the account link on `(tenant_id, id)`;
+  `a1p3d0d2e4f6` keys session attribution on
+  `(tenant_id, affiliation_id, provider_id)`. Each test asserts the specific
+  constraint name that rejected the write, so a NOT NULL violation in a fixture
+  cannot pass for a working key. Replacing one composite key with an
+  existence-only key was verified to make two tests fail.
+- Invalid migration test fixture. The fixture that built three stub tables and
+  expected `1 non-compete and 1 outreach` from data containing no clause is
+  deleted. Its replacement upgrades the real chain into a scratch schema, and
+  `alembic/env.py` now honours an injected connection, which is what makes the
+  real chain drivable from a test.
+
+Migration rehearsal on populated data:
+
+- Seeded at `a1p1c0d2e4f6`, then upgraded. The backfill takes the display name
+  and email from the linked account, records `BackfilledFromUser` provenance,
+  and preserves the existing link, status and credential profile.
+- It refuses rather than inventing: a linked account with no display name, and
+  two practitioners sharing one account, each abort the upgrade with the
+  offending row identifiers.
+- An existing session becomes `Unknown` delivery, not `Direct`.
+
+Not verified, and not claimed:
+
+- No target environment counts, revisions or migration application. Nothing ran
+  anywhere but a local throwaway database.
+- Generated OpenAPI and frontend contracts have not been regenerated on this
+  branch. `apps/api/schema/openapi.json` is stale against these routes by
+  design until the review gate; that is agent 3's step.
+- Every web check is against mocked endpoints. No user flow has been exercised
+  against a running API.
+- Stale-eligibility prevention is structural, a `FOR UPDATE` read inside the
+  booking transaction, not proved by a concurrency test.
 
 ## Adopted decisions
 
@@ -349,8 +438,11 @@ readiness become phase 4. UI and API contracts accompany their owning phase.
   - [x] ~~Record the provider architecture and original baseline.~~ Updated above.
   - [x] ~~Record the earlier local data audit and its limitations.~~ Not rerun.
   - [x] ~~Record focused review verification.~~ 47 passed, 2 skipped; see above.
-  - [ ] Locate the referenced external SAD and record any conflicts.
+  - [ ] Locate the referenced external SAD and record any conflicts. Not found;
+        not invented.
   - [ ] Record target-environment counts and migration state before deployment.
+        Not done. No environment other than a local throwaway database has been
+        inspected or migrated by this work.
 
 - [ ] Phase 1 - Repair the boundary and mutation controls
   - [x] ~~Add ProviderEntity, mapper and typed repository; remove the session
@@ -359,55 +451,126 @@ readiness become phase 4. UI and API contracts accompany their owning phase.
         Implemented in `f6a8c0e2b4d6`; target application unverified.
   - [x] ~~Emit tier and panel events and call the audit handler.~~ Handler calls
         tested; this does not establish auditing of all provider mutations.
-  - [ ] Enforce composite tenant constraints and validate outreach assignments.
-  - [ ] Restrict lifecycle commands to Admins and reject Viewer writes.
-  - [ ] Add creation/update audit events, partial PATCH and protected-field rejection.
-  - [ ] Replace Person-based panel operations and port behavioural coverage.
-  - [ ] Enforce the practitioner eligibility gate on current booking/outreach
-        writes; extend that same policy with affiliations in phase 3.
-  - [ ] Correct the stale `providers.ts` module comment.
-  - [ ] Correct the migration rejection fixture and require PostgreSQL CI coverage.
-  - [ ] Prove forbidden writes do not save, audits persist with changes, and
-        failures roll back both state and audit records.
+  - [x] ~~Enforce composite tenant constraints and validate outreach assignments.~~
+        `a1p1c0d2e4f6`. Outreach assignment loads the counsellor in tenant scope
+        and applies the booking gate.
+  - [x] ~~Restrict lifecycle commands to Admins and reject Viewer writes.~~
+  - [x] ~~Add creation/update audit events, partial PATCH and protected-field rejection.~~
+        Eight protected keys rejected with 422 naming the command to use instead.
+  - [x] ~~Replace Person-based panel operations and port behavioural coverage.~~
+        `panel_use_cases.py` and the Person provider methods removed after
+        tracing callers; their cases run against the provider aggregate.
+  - [x] ~~Enforce the practitioner eligibility gate on current booking/outreach
+        writes;~~ extended with affiliations in phase 3 as planned. One policy,
+        applied under a row lock inside the write transaction.
+  - [ ] Correct the stale `providers.ts` module comment. Agent 3 owns the file
+        and reports it done in `7d914be`; not independently verified here.
+  - [x] ~~Correct the migration rejection fixture and require PostgreSQL CI coverage.~~
+        CI sets every database URL and `REQUIRE_DATABASE_TESTS` turns a missing
+        one into a failure.
+  - [x] ~~Prove forbidden writes do not save, audits persist with changes, and
+        failures roll back both state and audit records.~~ Against PostgreSQL.
   - [ ] Record contract changes and target migration rehearsal separately.
+        Contracts published to agents 2 and 3; generation is agent 3's at the
+        review gate. Local rehearsal recorded above; no target environment
+        has been touched.
 
 - [ ] Phase 2 - Independent practitioner identity and usable directory
-  - [ ] Add owned name/contact fields, nullable account link and link uniqueness.
-  - [ ] Add Admin-only account linking/unlinking and preserve directory visibility
-        after account removal.
-  - [ ] Add create/edit forms, server-side filters, search, pagination and totals.
+  - [x] ~~Add owned name/contact fields, nullable account link and link uniqueness.~~
+        `a1p2i0d2e4f6`. Partial unique index on `(tenant_id, user_id)` where the
+        link is non-null, so unlinked practitioners do not collide.
+  - [x] ~~Add Admin-only account linking/unlinking and preserve directory visibility
+        after account removal.~~ Unlink keeps the record and its sessions.
+  - [x] ~~Add create/edit forms,~~ agent 3, mocked tests only.
+        ~~server-side filters, search, pagination and totals.~~ Backend: search,
+        five repeatable filters, `has_account`, `page`/`limit`, `sort_by`/
+        `sort_desc`, `total` counted over the full filtered set.
   - [x] ~~Use a human-readable detail heading.~~ Existing display name/email heading.
   - [ ] Regenerate contracts; test creation without a login and account-link
         authorization, cross-tenant rejection, and full-dataset filtering.
+        Backend cases pass. Contract regeneration has not run.
 
 - [ ] Phase 3 - Organisations, affiliations and session attribution
-  - [ ] Add organisation entity, mapper, repository, CRUD and management UI.
-  - [ ] Add dated affiliations, pair-overlap constraints and composite references.
-  - [ ] Add explicit session delivery context and immutable affiliation attribution.
-  - [ ] Extend the booking policy with organisation approval and affiliation validity.
+  - [x] ~~Add organisation entity, mapper, repository, CRUD and management UI.~~
+        Backend agent 2; UI agent 3, mocked tests only.
+  - [x] ~~Add dated affiliations, pair-overlap constraints and composite references.~~
+        `a2n1o0r2k4s6`. Start-inclusive, end-exclusive; adjacency is not overlap.
+  - [x] ~~Add explicit session delivery context and immutable affiliation attribution.~~
+        `a1p3d0d2e4f6`. Composite FK on `(tenant_id, affiliation_id, provider_id)`
+        and a check keeping context and reference consistent both ways. Existing
+        rows became Unknown, not Direct.
+  - [x] ~~Extend the booking policy with organisation approval and affiliation validity.~~
+        One policy extended, not a second one. Organisation active and approved
+        stay separate reason codes.
   - [ ] Validate reassignment/corrections and retain referenced history.
+        Partially done. Narrowing an affiliation interval that would orphan a
+        completed session is refused with
+        `affiliation_change_would_orphan_attribution`; the guard is tested
+        against PostgreSQL including the Kampala midnight boundary. The
+        privileged correction path decision 2 also permits, recording the prior
+        attribution and reason, is NOT built. Rejection is the implemented half.
   - [ ] Regenerate contracts; prove concurrent affiliations work and moving firms
         does not reattribute old sessions; preserve unknown historical context.
+        Attribution reads the session's own affiliation on every response, so
+        moving firms cannot reattribute. Contract regeneration has not run.
 
 - [ ] Phase 4 - Typed profile, eligibility and import readiness
   - [ ] Promote structured credential/profile fields with validating migrations.
-  - [ ] Add global specialties, tenant-owned links and platform write controls.
-  - [ ] Add source-scoped aliases with explicit reconciliation and ambiguity handling.
+        NOT DONE. Tier, region, panel status, accreditation status, authority
+        and expiry are still in the `provider_profile` JSON column. The mapper
+        is the single place the filters reach into that JSON, so the promotion
+        changes one function, but the migration is not written. Eligibility
+        reads typed enum values off the parsed profile rather than raw JSON, so
+        decision 6's "eligibility must not read business rules from that
+        free-form JSON" holds in behaviour; the storage change does not.
+  - [x] ~~Add global specialties, tenant-owned links and platform write controls.~~
+        Agent 2. Retired entries stay on records and are refused for new
+        selection. `specialties` is not writable through the practitioner PATCH.
+  - [x] ~~Add source-scoped aliases with explicit reconciliation and ambiguity handling.~~
+        Agent 2. Missing, unmapped and ambiguous stay separate outcomes.
   - [ ] Move the shared booking/outreach policy to the typed profile fields.
+        Blocked on the promotion above. The policy is already shared by every
+        write path; only its storage is untyped.
   - [ ] Add future-booking review on suspension and eligibility rechecks on changes.
-  - [ ] Add Admin-only historical staging/import with provenance and idempotency.
+        NOT DONE. Suspension changes panel status but does not flag affected
+        future bookings for review, so decision 7's "a suspension flags affected
+        future bookings for review" is unimplemented. Rescheduling does recheck
+        the whole gate; delivery start does not.
+  - [x] ~~Add Admin-only historical staging/import with provenance and idempotency.~~
+        Staging, review outcomes and the Admin-only contract are agent 2's.
+        `RecordHistoricalSessionUseCase` is the write path: it does not consult
+        the booking gate, refuses a future date, an unresolved or cross-tenant
+        practitioner and an inconsistent context, and performs no billing,
+        drawdown or completion side effects. Applying imports zero rows today
+        because a staged row cannot name a member or a service. See finding 2;
+        that is a real gap, not a passing importer.
   - [ ] Regenerate contracts; test expiry boundaries, organisation suspension,
-        stale eligibility, imports for currently inactive practitioners, rejection
-        of future bookings through import, and missing/ambiguous source data.
+        stale eligibility, imports for currently inactive practitioners,
+        rejection of future bookings through import, and missing/ambiguous
+        source data. Contract regeneration has NOT run. All listed cases are
+        covered except stale eligibility, which is prevented structurally
+        rather than by a concurrency test.
   - [ ] Complete source audit and reconciliation before any real session import.
+        Not started. No session data has been imported.
 
 - [ ] Phase 5 - Release evidence and cleanup
   - [ ] Verify the full migration chain on representative PostgreSQL data and
         retain diagnostics, rollback/restore notes, and environment revisions.
+        Partially done. The chain applies to head on an empty database, the
+        provider migrations downgrade and re-upgrade, and the identity backfill
+        is rehearsed on seeded rows. Not done on representative production-scale
+        data, and no environment revision has been recorded because no target
+        environment has been inspected.
   - [ ] Confirm generated contracts and web flows for every API phase.
+        NOT DONE. No contract regeneration has run on this branch and every web
+        check is against mocked endpoints.
   - [ ] Verify no production or test path still treats a PersonId as a ProviderId.
+        Provider paths are clear: the three Person-based panel use cases and the
+        provider methods on `PersonEntity` are removed. But see finding 1, a
+        `PersonId` carrying a user id in the clinical case module, which is why
+        this item should not be closed from provider code alone.
   - [ ] Update module documentation and record deployed behaviour separately
-        from this design's remaining unchecked tasks.
+        from this design's remaining unchecked tasks. Nothing is deployed.
 
 ## Remaining risks and ownership
 
@@ -424,3 +587,16 @@ responsibility of the agent taking each phase, which must record its evidence.
   documentation owner should record them if supplied, without inventing either.
 - Supplier contracts and shared cross-tenant practitioner identity are deferred
   capabilities requiring their own design if the product owner requests them.
+- Alias reconciliation is API-only. No review queue is exposed in the UI, which
+  is consistent with keeping import tooling backend-owned, but it means an
+  operator cannot resolve an ambiguous name without direct API calls. A product
+  owner should decide whether that is acceptable for the first import.
+- Member and service identity for the historical extract have no owner. See
+  finding 2. Until they do, applying a staged batch imports nothing.
+- The privileged attribution-correction path from decision 2 is not built. Only
+  the rejection half is implemented.
+- `apps/api/alembic` is outside the ruff gate, which scopes to `app tests
+  scripts`. 65 pre-existing migrations would need reformatting to bring it in.
+  Deliberately deferred rather than done in a release that is already extending
+  the chain; the migrations that matter here are covered by tests that execute
+  them.
