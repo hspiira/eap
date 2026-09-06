@@ -23,6 +23,7 @@ import { ErrorState } from "@/components/common/ErrorState"
 import { IconButton } from "@/components/common/IconButton"
 import { PageShell } from "@/components/common/PageShell"
 import { TableSkeleton } from "@/components/common/PageSkeletons"
+import { AliasReviewPanel } from "@/components/diagnoses/AliasReviewPanel"
 import { DiagnosisFormSheet } from "@/components/DiagnosisFormSheet"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -183,6 +184,10 @@ function DiagnosesPage() {
             {canManage ? " · shared across all tenants" : ""}
           </p>
         </div>
+
+        {/* Legacy mappings nobody has signed off. Above the tree because it is
+            a queue that should empty, not part of browsing the taxonomy. */}
+        {canManage && !loading && !error ? <AliasReviewPanel tree={tree} /> : null}
 
         {loading ? (
           <div className="p-5">

@@ -8,6 +8,8 @@ vi.mock("@/api/endpoints/diagnoses", () => ({
     capabilities: vi.fn(),
     listOverlay: vi.fn(),
     setOverlay: vi.fn(),
+    listAliases: vi.fn(),
+    upsertAlias: vi.fn(),
   },
 }))
 
@@ -68,6 +70,7 @@ function renderPage() {
 
 beforeEach(() => {
   vi.clearAllMocks()
+  vi.mocked(diagnosesApi.listAliases).mockResolvedValue([])
   vi.mocked(diagnosesApi.setOverlay).mockResolvedValue({
     diagnosis_type_id: "t_a",
     diagnosis_id: null,
@@ -214,5 +217,44 @@ describe("diagnoses admin page", () => {
 
     await waitFor(() => expect(screen.getByText("Relationship Abuse")).toBeInTheDocument())
     expect(screen.getByText(/renamed from Gender-Based Violence/i)).toBeInTheDocument()
+  })
+
+  it("shows the alias review queue to a platform admin", async () => {
+    vi.mocked(diagnosesApi.getTree).mockResolvedValue(TREE)
+    vi.mocked(diagnosesApi.capabilities).mockResolvedValue({
+      can_manage_taxonomy: true,
+      can_manage_overlay: false,
+    })
+    vi.mocked(diagnosesApi.listAliases).mockResolvedValue([
+      {
+        id: "dxa_inf_0000",
+        raw_value: "Personality",
+        normalised_key: "personality",
+        diagnosis_type_id: "t_gbv",
+        diagnosis_id: null,
+        source: "inferred_review_2026_09",
+        confidence: "inferred",
+      },
+    ])
+
+    renderPage()
+
+    expect(await screen.findByText(/awaiting review/i)).toBeInTheDocument()
+    expect(screen.getByText("Personality")).toBeInTheDocument()
+  })
+
+  it("does not fetch aliases for a caller who cannot manage the taxonomy", async () => {
+    // The alias list is platform-gated; asking would only earn a 403.
+    vi.mocked(diagnosesApi.getTree).mockResolvedValue(TREE)
+    vi.mocked(diagnosesApi.capabilities).mockResolvedValue({
+      can_manage_taxonomy: false,
+      can_manage_overlay: true,
+    })
+    vi.mocked(diagnosesApi.listOverlay).mockResolvedValue([])
+
+    renderPage()
+
+    await waitFor(() => expect(screen.getByText("Gender-Based Violence")).toBeInTheDocument())
+    expect(diagnosesApi.listAliases).not.toHaveBeenCalled()
   })
 })
