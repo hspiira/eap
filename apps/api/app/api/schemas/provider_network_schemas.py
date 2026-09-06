@@ -98,9 +98,15 @@ class ProviderAffiliationCreate(BaseModel):
 
 
 class ProviderAffiliationEndUpdate(ReasonRequest):
-    """Only the end date moves. The practitioner and organisation are immutable."""
+    """Move the end date. The practitioner and organisation are immutable.
 
-    valid_until: date | None = None
+    `valid_until` is required even though it is nullable. Defaulting it would
+    make an omitted field indistinguishable from an explicit null, so a caller
+    sending only a reason would silently reopen a closed affiliation. Send null
+    deliberately to make it open-ended.
+    """
+
+    valid_until: date | None = Field(...)
 
 
 class ProviderAffiliationResponse(BaseModel):

@@ -191,3 +191,34 @@ class TestTenantScoping:
         api.repo.get_organisation.return_value = None
         response = await api.http.get(f"/provider-organisations/org-1?tenant_id={TENANT}")
         assert response.status_code == 404
+
+
+class TestAffiliationEndUpdateShape:
+    """An omitted end date must not read as an explicit null.
+
+    Sending only a reason previously set valid_until to None, silently
+    reopening a closed affiliation indefinitely. It is the same
+    omitted-versus-null defect that PATCH /services carried.
+    """
+
+    def test_valid_until_is_required_even_though_it_is_nullable(self):
+        from app.api.schemas.provider_network_schemas import ProviderAffiliationEndUpdate
+
+        assert set(ProviderAffiliationEndUpdate.model_json_schema()["required"]) == {
+            "reason",
+            "valid_until",
+        }
+
+    def test_sending_only_a_reason_is_rejected(self):
+        import pytest as _pytest
+        from pydantic import ValidationError
+
+        from app.api.schemas.provider_network_schemas import ProviderAffiliationEndUpdate
+
+        with _pytest.raises(ValidationError):
+            ProviderAffiliationEndUpdate(reason="Fixing a typo")
+
+    def test_an_explicit_null_still_means_open_ended(self):
+        from app.api.schemas.provider_network_schemas import ProviderAffiliationEndUpdate
+
+        assert ProviderAffiliationEndUpdate(reason="Extend", valid_until=None).valid_until is None
