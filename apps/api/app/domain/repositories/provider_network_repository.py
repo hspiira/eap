@@ -51,6 +51,16 @@ class ProviderOrganisationRepository(ABC):
         """Filtered page plus the full matching count, filtered in SQL."""
 
     @abstractmethod
+    async def get_organisations_by_ids(
+        self, tenant_id: TenantId, organisation_ids: Sequence[ProviderOrganisationId]
+    ) -> dict[str, ProviderOrganisationEntity]:
+        """One query for many organisations, keyed by id.
+
+        Lets an affiliation listing carry organisation labels without a request
+        per affiliation.
+        """
+
+    @abstractmethod
     async def save_organisation(self, organisation: ProviderOrganisationEntity) -> None: ...
 
     @abstractmethod

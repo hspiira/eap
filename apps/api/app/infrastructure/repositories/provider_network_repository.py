@@ -91,6 +91,20 @@ class ProviderOrganisationRepositoryImpl(ProviderOrganisationRepository):
         rows = await self.session.scalars(statement.limit(limit).offset(offset))
         return [ProviderOrganisationMapper.to_entity(m) for m in rows], total
 
+    async def get_organisations_by_ids(
+        self, tenant_id: TenantId, organisation_ids: Sequence[ProviderOrganisationId]
+    ) -> dict[str, ProviderOrganisationEntity]:
+        values = [o.value for o in organisation_ids]
+        if not values:
+            return {}
+        rows = await self.session.scalars(
+            select(ProviderOrganisationModel).where(
+                ProviderOrganisationModel.tenant_id == tenant_id.value,
+                ProviderOrganisationModel.id.in_(values),
+            )
+        )
+        return {m.id: ProviderOrganisationMapper.to_entity(m) for m in rows}
+
     async def save_organisation(self, organisation: ProviderOrganisationEntity) -> None:
         await self.session.merge(ProviderOrganisationMapper.to_model(organisation))
         await self.session.flush()
