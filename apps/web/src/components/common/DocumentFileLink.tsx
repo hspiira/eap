@@ -25,10 +25,34 @@ export function DocumentFileLink({ document }: { document: Document }) {
       setPending(false)
     }
   }
-  if (document.file_url) return <a href={document.file_url} target="_blank" rel="noreferrer" className="text-sm text-primary hover:underline">Open file</a>
+  if (document.file_url)
+    return (
+      <a
+        href={document.file_url}
+        target="_blank"
+        rel="noreferrer"
+        className="text-sm text-primary hover:underline"
+      >
+        Open file
+      </a>
+    )
   if (!document.file_path) return <span className="text-xs text-fg-muted">File unavailable</span>
-  return <div className="text-right">
-    <Button size="sm" variant="outline" disabled={pending} onClick={() => void download()} aria-label={`Download ${document.name}`}>{pending ? "Downloading…" : "Download"}</Button>
-    {error && <p role="alert" className="mt-2 text-xs text-danger-fg">{error}</p>}
-  </div>
+  return (
+    <div className="text-right">
+      <Button
+        size="sm"
+        variant="outline"
+        disabled={pending}
+        onClick={() => void download()}
+        aria-label={`Download ${document.name}`}
+      >
+        {pending ? "Downloading…" : "Download"}
+      </Button>
+      {error && (
+        <p role="alert" className="mt-2 text-xs text-danger-fg">
+          {error}
+        </p>
+      )}
+    </div>
+  )
 }

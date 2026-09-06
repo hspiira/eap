@@ -79,7 +79,10 @@ function DiagnosesPage() {
     const q = search.trim().toLowerCase()
     if (!q) return all
     return all
-      .map((t) => ({ ...t, diagnoses: t.diagnoses.filter((d) => d.name.toLowerCase().includes(q)) }))
+      .map((t) => ({
+        ...t,
+        diagnoses: t.diagnoses.filter((d) => d.name.toLowerCase().includes(q)),
+      }))
       .filter((t) => t.name.toLowerCase().includes(q) || t.diagnoses.length > 0)
   }, [tree, search])
 
@@ -329,12 +332,8 @@ function RowActions({
           onClick={() => onSetVisible(hidden)}
         />
       )}
-      {canManage && (
-        <IconButton label="Edit shared row" icon={Pencil} onClick={onEdit} />
-      )}
-      {onAdd && (
-        <IconButton label="Add diagnosis" icon={Plus} onClick={onAdd} />
-      )}
+      {canManage && <IconButton label="Edit shared row" icon={Pencil} onClick={onEdit} />}
+      {onAdd && <IconButton label="Add diagnosis" icon={Plus} onClick={onAdd} />}
     </div>
   )
 }

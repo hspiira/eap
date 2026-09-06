@@ -99,22 +99,39 @@ beforeEach(() => {
 describe("client members integration", () => {
   it("searches within the client and supports relationship filters and pagination", async () => {
     mocks.listMembers.mockImplementation(async (params) => ({
-      ...emptyRoster, items: [makeMember({display_label: params.search || "Amina Namukasa"})], total: 45,
+      ...emptyRoster,
+      items: [makeMember({ display_label: params.search || "Amina Namukasa" })],
+      total: 45,
     }))
     const user = userEvent.setup()
     renderWithProviders(<Page />)
-    await screen.findByRole("link", {name: "Amina Namukasa"})
-    await user.click(screen.getByRole("button", {name: "Next"}))
-    await waitFor(() => expect(mocks.listMembers).toHaveBeenCalledWith(expect.objectContaining({client_id: "client-1", page: 2, limit: 20})))
-    await user.type(screen.getByRole("textbox", {name: "Search members"}), "Grace")
-    await screen.findByRole("link", {name: "Grace"})
-    expect(mocks.listMembers).toHaveBeenLastCalledWith(expect.objectContaining({client_id: "client-1", search: "Grace", page: 1}))
-    await user.click(screen.getByRole("combobox", {name: "Relationship"}))
-    await user.click(screen.getByRole("option", {name: "Child"}))
-    await waitFor(() => expect(mocks.listMembers).toHaveBeenLastCalledWith(expect.objectContaining({client_id: "client-1", search: "Grace", relation: "Child", page: 1})))
-    await user.click(screen.getByRole("button", {name: "Clear filters"}))
-    await screen.findByRole("link", {name: "Amina Namukasa"})
-    expect(screen.getByRole("textbox", {name: "Search members"})).toHaveValue("")
+    await screen.findByRole("link", { name: "Amina Namukasa" })
+    await user.click(screen.getByRole("button", { name: "Next" }))
+    await waitFor(() =>
+      expect(mocks.listMembers).toHaveBeenCalledWith(
+        expect.objectContaining({ client_id: "client-1", page: 2, limit: 20 }),
+      ),
+    )
+    await user.type(screen.getByRole("textbox", { name: "Search members" }), "Grace")
+    await screen.findByRole("link", { name: "Grace" })
+    expect(mocks.listMembers).toHaveBeenLastCalledWith(
+      expect.objectContaining({ client_id: "client-1", search: "Grace", page: 1 }),
+    )
+    await user.click(screen.getByRole("combobox", { name: "Relationship" }))
+    await user.click(screen.getByRole("option", { name: "Child" }))
+    await waitFor(() =>
+      expect(mocks.listMembers).toHaveBeenLastCalledWith(
+        expect.objectContaining({
+          client_id: "client-1",
+          search: "Grace",
+          relation: "Child",
+          page: 1,
+        }),
+      ),
+    )
+    await user.click(screen.getByRole("button", { name: "Clear filters" }))
+    await screen.findByRole("link", { name: "Amina Namukasa" })
+    expect(screen.getByRole("textbox", { name: "Search members" })).toHaveValue("")
   })
 
   it("hides completed setup from overview and retains it in the setup tab after reload", async () => {

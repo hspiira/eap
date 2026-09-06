@@ -77,10 +77,7 @@ export const diagnosesApi = {
   },
 
   async setDiagnosisActive(diagnosisId: string, isActive: boolean): Promise<Diagnosis> {
-    return apiClient.post<Diagnosis>(
-      `/diagnoses/${diagnosisId}/active?is_active=${isActive}`,
-      {},
-    )
+    return apiClient.post<Diagnosis>(`/diagnoses/${diagnosisId}/active?is_active=${isActive}`, {})
   },
 
   // Tenant overlay: tenant admin.

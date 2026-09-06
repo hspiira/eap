@@ -2,7 +2,9 @@ import apiClient from "../client"
 import type { Document, ListParams, PaginatedResponse } from "../types"
 
 export const documentsApi = {
-  async list(params?: ListParams & { client_id?: string; contract_id?: string }): Promise<PaginatedResponse<Document>> {
+  async list(
+    params?: ListParams & { client_id?: string; contract_id?: string },
+  ): Promise<PaginatedResponse<Document>> {
     return apiClient.get<PaginatedResponse<Document>>("/documents", params)
   },
   async uploadContractAttachment(contractId: string, file: File): Promise<Document> {

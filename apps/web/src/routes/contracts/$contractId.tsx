@@ -47,7 +47,13 @@ export const Route = createFileRoute("/contracts/$contractId")({
 })
 
 type TabValue = "overview" | "services" | "attachments" | "billing" | "history"
-const TAB_VALUES: ReadonlyArray<TabValue> = ["overview", "services", "attachments", "billing", "history"]
+const TAB_VALUES: ReadonlyArray<TabValue> = [
+  "overview",
+  "services",
+  "attachments",
+  "billing",
+  "history",
+]
 
 function ContractDetailPage() {
   const { contractId } = Route.useParams()
@@ -220,7 +226,9 @@ function ContractDetailPage() {
                 />
               </TabPanel>
 
-              <TabPanel value="attachments"><ContractAttachments key={contractId} contractId={contractId} /></TabPanel>
+              <TabPanel value="attachments">
+                <ContractAttachments key={contractId} contractId={contractId} />
+              </TabPanel>
               <TabPanel value="billing">
                 <DetailCard title="Billing terms">
                   <DetailGrid>
