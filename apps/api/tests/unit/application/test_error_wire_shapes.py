@@ -8,6 +8,7 @@ auditing after their report. Pinning the wire shape rather than the exception's
 attributes is what makes a fourth visible.
 """
 
+import re
 from datetime import UTC, date, datetime
 
 import pytest
@@ -38,6 +39,24 @@ _FORM_FIELDS = {
     "file",
     "specialty_id",
 }
+
+
+_IDENTIFIER = re.compile(r"^[A-Za-z0-9_-]+$")
+
+
+def _is_prose(message: str) -> bool:
+    """Whether a message reads as text a person can act on.
+
+    Rejects the three things that actually reached message fields here: a bare
+    identifier, a Python list or dict repr, and a single token. Deliberately
+    not a length rule, since "Provider not found" is complete.
+    """
+    stripped = message.strip()
+    if not stripped or stripped[0] in "[{(":
+        return False
+    if _IDENTIFIER.match(stripped):
+        return False
+    return len(stripped.split()) >= 2
 
 
 def _affiliation() -> ProviderAffiliationEntity:
@@ -80,15 +99,18 @@ class TestEveryErrorBody:
     def test_detail_messages_read_as_sentences(self, error):
         """Not a bare id, and not a Python repr."""
         for detail in error.to_api_response().get("details", []):
-            message = detail["message"]
-            assert " " in message, f"{error.error_code} detail message is not a sentence"
-            assert not message.startswith("["), "a list repr reached a detail message"
-            assert message[0].isupper() or message[0].isdigit()
+            assert _is_prose(detail["message"]), (
+                f"{error.error_code} detail message is not prose: {detail['message']!r}"
+            )
 
     def test_the_top_level_message_stands_alone(self, error):
-        """A client that ignores details still gets a usable sentence."""
-        message = error.to_api_response()["message"]
-        assert len(message.split()) >= 4
+        """A client that ignores details still gets a usable sentence.
+
+        Checks that the message is prose, not that it is long. A word count
+        rejects "Provider not found", which is complete and usable; the defect
+        being guarded against is a bare id or a repr reaching a message field.
+        """
+        assert _is_prose(error.to_api_response()["message"])
 
     def test_the_error_code_is_present(self, error):
         assert error.to_api_response()["error"] == error.error_code
@@ -104,3 +126,40 @@ class TestAttributionConflictKeepsTheIds:
     def test_it_attaches_to_the_field_the_caller_changed(self):
         body = AffiliationAttributionConflictError(["sess-1"]).to_api_response()
         assert body["details"][0]["field"] == "valid_until"
+
+
+class TestTheProseCheckDiscriminates:
+    """The guard is only worth having if it rejects what actually went wrong.
+
+    Each rejected case below is a message shape that reached a real response
+    body in this module before the fixes: a bare cuid, a list repr, and a field
+    name used as a message.
+    """
+
+    @pytest.mark.parametrize(
+        "message",
+        [
+            "b-1",
+            "m14ugxdtikwlm7ole6oiyihy",
+            "valid_from",
+            "['sess-1', 'sess-2']",
+            "{'field': 'valid_from'}",
+            "",
+            "   ",
+        ],
+    )
+    def test_it_rejects_what_is_not_prose(self, message):
+        assert _is_prose(message) is False
+
+    @pytest.mark.parametrize(
+        "message",
+        [
+            "Provider not found",
+            "Import batch not found",
+            "Overlaps affiliation aff-1 (2026-01-01 to 2026-07-01)",
+            "2 completed session(s) are attributed to this affiliation",
+        ],
+    )
+    def test_it_accepts_usable_messages_including_short_ones(self, message):
+        """A word count would have rejected the first two."""
+        assert _is_prose(message) is True
