@@ -4,6 +4,10 @@ A review of `apps/api/docs/SERVICES_MODULE.md` and the untracked
 `SERVICES_MIGRATION.md` against the code as it stands, and what I recommend
 doing next.
 
+**Status: all four recommendations have since been implemented.** Section 3 is
+kept as written, with the commit that closed each one noted inline, because the
+reasoning for the order is worth more than a list of done items.
+
 Every claim below was checked against the repository or the local database,
 not taken from the documents. Where the documents are accurate I say so
 briefly; the value here is in the three places they are not.
@@ -82,7 +86,7 @@ migration rather than this one.
 
 ## 3. What I recommend, in order
 
-### First: make drawdown reachable (2.1)
+### First: make drawdown reachable (2.1). Done, `36b5bfa`
 
 Two options, and I would do the first.
 
@@ -98,7 +102,12 @@ not assume drawdown is live.
 
 Either way, correct the phase 2 entry. Right now it reads as done.
 
-### Second: settle questions 4 and 5, or time-box them
+**Outcome:** option (a). The completion dialog offers the live cases for the
+session's client, behind clinical scope. Backfill still sends no case, which is
+deliberate and now commented: it records history that already happened, so
+drawing down a live authorization would double count.
+
+### Second: settle questions 4 and 5, or time-box them. Done, `7bc3daf`
 
 These are the only things standing between phase 5 and closure, and they are
 not engineering work. Four alias rows and the `Others` bucket are rejected at
@@ -110,18 +119,31 @@ Recommend: ask for a decision with a deadline, and if none arrives, load the
 four rows as `confidence = 'inferred'` so they are importable and filterable for
 later review, rather than blocking the whole legacy import on five values.
 
-### Third: unify the platform gate (2.2)
+**Outcome:** loaded as `inferred` in migration `c1e4a7b9d2f6`. The deeper fix
+was that adding any alias required a migration, so `GET`/`PUT
+/diagnoses/aliases` now exist and a reviewer can correct a mapping without a
+deploy. `Others` and the values that are not diagnoses stay unmapped.
+
+### Third: unify the platform gate (2.2). Done, `2e82313`
 
 Replace both copies with the capabilities endpoint, or at minimum make
 `RequirePlatformAdmin` fail closed to match the API. Small, contained, and it
 removes a documented inconsistency before someone builds a third copy.
 
-### Fourth, and only if asked: reordering UI
+**Outcome:** `/auth/me` now carries `is_platform_admin`, derived server-side,
+and both gates read it. The env var is no longer consulted by either.
+
+### Fourth, and only if asked: reordering UI. Done, `8dd6b6a`
 
 The API supports `sort_order`; the page has no drag affordance. This is the
 lowest-value item on the list. It is cosmetic, it is correctly recorded as
 deferred, and it should not jump the queue ahead of a feature that does not
 work end to end.
+
+**Outcome:** done last, as move up/down rather than drag. Keyboard-reachable
+and screen-reader labelled without a new dependency. Every sibling position is
+written, because a null `sort_order` means inherit and a partial write would
+leave the moved row tied with rows that still inherit.
 
 ## 4. What I would not do
 
