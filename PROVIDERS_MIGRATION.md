@@ -132,6 +132,10 @@ Checks run on the assembled branch:
   before `IMPORT_TEST_DATABASE_URL` and `OUTBOX_TEST_DATABASE_URL` were wired.
 - `alembic upgrade head` on an empty database, then `downgrade f6a8c0e2b4d6`,
   then `upgrade head` again: all applied, single head throughout, 68 revisions.
+- `pnpm typecheck:web`, `pnpm lint:web`, `pnpm test:web` on the assembled
+  branch after merging the frontend: typecheck and lint clean, 70 files and
+  528 tests passed. These are agent 3's tests run here to confirm the merge,
+  and every one is against mocked endpoints.
 
 Migration order on the assembled branch, one chain, one head:
 
