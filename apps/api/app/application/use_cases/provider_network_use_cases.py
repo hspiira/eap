@@ -1,5 +1,6 @@
 """Application operations for organisations and dated affiliations."""
 
+from collections.abc import Sequence
 from dataclasses import dataclass
 from datetime import date
 
@@ -7,6 +8,9 @@ from app.domain.entities.provider_affiliation import ProviderAffiliationEntity
 from app.domain.entities.provider_organisation import ProviderOrganisationEntity
 from app.domain.enums.provider_network import OrganisationApprovalStatus
 from app.domain.exceptions import DomainError, NotFoundError
+from app.domain.repositories.affiliation_attribution_guard import (
+    AffiliationAttributionGuard,
+)
 from app.domain.repositories.provider_network_repository import (
     ProviderAffiliationRepository,
     ProviderOrganisationRepository,
@@ -40,6 +44,25 @@ class AffiliationOverlapError(DomainError):
             error_code="AFFILIATION_OVERLAP",
             http_status=409,
             details={"field": field, "conflicting_affiliation_id": conflict.id.value},
+        )
+
+
+class AffiliationAttributionConflictError(DomainError):
+    """Narrowing the interval would orphan completed session attribution.
+
+    Decision 2 allows rejection or an explicit audited correction. This release
+    rejects, because the correction path needs a privileged operation recording
+    the prior attribution and reason, and that does not exist yet.
+    """
+
+    def __init__(self, session_ids: Sequence[str]):
+        self.session_ids = list(session_ids)
+        super().__init__(
+            f"{len(self.session_ids)} completed session(s) are attributed to this "
+            "affiliation beyond the new end date",
+            error_code="affiliation_change_would_orphan_attribution",
+            http_status=409,
+            details={"session_ids": self.session_ids},
         )
 
 
@@ -207,10 +230,19 @@ class CreateAffiliationUseCase:
 
 
 class ChangeAffiliationEndUseCase:
-    """Moves only the end date. The practitioner and organisation are immutable."""
+    """Moves only the end date. The practitioner and organisation are immutable.
 
-    def __init__(self, affiliations: ProviderAffiliationRepository):
+    The guard is required rather than optional: an omitted check would silently
+    invalidate completed attribution, which is the failure decision 2 names.
+    """
+
+    def __init__(
+        self,
+        affiliations: ProviderAffiliationRepository,
+        attribution_guard: AffiliationAttributionGuard,
+    ):
         self._affiliations = affiliations
+        self._attribution_guard = attribution_guard
 
     async def execute(
         self,
@@ -238,6 +270,11 @@ class ChangeAffiliationEndUseCase:
         )
         if conflicts:
             raise AffiliationOverlapError(conflicts[0], "valid_until")
+        orphaned = await self._attribution_guard.sessions_orphaned_by(
+            tenant_id, affiliation_id, new_valid_until=valid_until
+        )
+        if orphaned:
+            raise AffiliationAttributionConflictError(orphaned)
         affiliation.change_end(valid_until, actor, reason)
         await self._affiliations.save_affiliation(affiliation)
         return affiliation

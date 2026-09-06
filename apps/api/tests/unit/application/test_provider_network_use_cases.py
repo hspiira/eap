@@ -6,6 +6,7 @@ from unittest.mock import AsyncMock
 import pytest
 
 from app.application.use_cases.provider_network_use_cases import (
+    AffiliationAttributionConflictError,
     AffiliationOverlapError,
     ChangeAffiliationEndUseCase,
     CreateAffiliationUseCase,
@@ -190,12 +191,18 @@ class TestCreateAffiliation:
         affiliations.find_overlapping.assert_not_awaited()
 
 
+def _guard(orphaned=()):
+    guard = AsyncMock()
+    guard.sessions_orphaned_by.return_value = list(orphaned)
+    return guard
+
+
 class TestChangeAffiliationEnd:
     async def test_moving_the_end_excludes_the_affiliation_from_its_own_check(self):
         affiliations = AsyncMock()
         affiliations.get_affiliation.return_value = _existing()
         affiliations.find_overlapping.return_value = []
-        await ChangeAffiliationEndUseCase(affiliations).execute(
+        await ChangeAffiliationEndUseCase(affiliations, _guard()).execute(
             TENANT,
             ProviderAffiliationId("aff-existing"),
             valid_until=date(2026, 9, 1),
@@ -212,7 +219,7 @@ class TestChangeAffiliationEnd:
             _existing(valid_from=date(2026, 9, 1), valid_until=None)
         ]
         with pytest.raises(AffiliationOverlapError):
-            await ChangeAffiliationEndUseCase(affiliations).execute(
+            await ChangeAffiliationEndUseCase(affiliations, _guard()).execute(
                 TENANT,
                 ProviderAffiliationId("aff-existing"),
                 valid_until=date(2026, 12, 1),
@@ -221,11 +228,62 @@ class TestChangeAffiliationEnd:
             )
         affiliations.save_affiliation.assert_not_awaited()
 
+    async def test_narrowing_that_would_orphan_attribution_is_rejected(self):
+        """Decision 2 forbids silently invalidating completed attribution."""
+        affiliations = AsyncMock()
+        affiliations.get_affiliation.return_value = _existing()
+        affiliations.find_overlapping.return_value = []
+        with pytest.raises(AffiliationAttributionConflictError) as caught:
+            await ChangeAffiliationEndUseCase(affiliations, _guard(("sess-1", "sess-2"))).execute(
+                TENANT,
+                ProviderAffiliationId("aff-existing"),
+                valid_until=date(2026, 2, 1),
+                actor=ACTOR,
+                reason="Shorten",
+            )
+        affiliations.save_affiliation.assert_not_awaited()
+        assert caught.value.http_status == 409
+        assert caught.value.error_code == "affiliation_change_would_orphan_attribution"
+        assert caught.value.session_ids == ["sess-1", "sess-2"]
+
+    async def test_the_guard_is_asked_about_the_new_end_date(self):
+        affiliations = AsyncMock()
+        affiliations.get_affiliation.return_value = _existing()
+        affiliations.find_overlapping.return_value = []
+        guard = _guard()
+        await ChangeAffiliationEndUseCase(affiliations, guard).execute(
+            TENANT,
+            ProviderAffiliationId("aff-existing"),
+            valid_until=date(2026, 9, 1),
+            actor=ACTOR,
+            reason="Extend",
+        )
+        _, kwargs = guard.sessions_orphaned_by.call_args
+        assert kwargs["new_valid_until"] == date(2026, 9, 1)
+
+    async def test_the_overlap_check_runs_before_the_guard(self):
+        """An overlapping interval is rejected without querying sessions."""
+        affiliations = AsyncMock()
+        affiliations.get_affiliation.return_value = _existing()
+        affiliations.find_overlapping.return_value = [
+            _existing(valid_from=date(2026, 9, 1), valid_until=None)
+        ]
+        guard = _guard()
+        with pytest.raises(AffiliationOverlapError):
+            await ChangeAffiliationEndUseCase(affiliations, guard).execute(
+                TENANT,
+                ProviderAffiliationId("aff-existing"),
+                valid_until=date(2026, 12, 1),
+                actor=ACTOR,
+                reason="Extend",
+            )
+        guard.sessions_orphaned_by.assert_not_awaited()
+
     async def test_a_missing_affiliation_is_a_not_found(self):
         affiliations = AsyncMock()
         affiliations.get_affiliation.return_value = None
         with pytest.raises(NotFoundError):
-            await ChangeAffiliationEndUseCase(affiliations).execute(
+            await ChangeAffiliationEndUseCase(affiliations, _guard()).execute(
                 TENANT,
                 ProviderAffiliationId("nope"),
                 valid_until=None,
@@ -238,7 +296,7 @@ class TestChangeAffiliationEnd:
         affiliations.get_affiliation.return_value = _existing()
         affiliations.find_overlapping.return_value = []
         with pytest.raises(DomainError):
-            await ChangeAffiliationEndUseCase(affiliations).execute(
+            await ChangeAffiliationEndUseCase(affiliations, _guard()).execute(
                 TENANT,
                 ProviderAffiliationId("aff-existing"),
                 valid_until=date(2026, 9, 1),

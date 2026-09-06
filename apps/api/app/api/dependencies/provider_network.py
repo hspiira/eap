@@ -9,6 +9,7 @@ from fastapi import Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
+from app.domain.exceptions import DomainError
 from app.domain.repositories.provider_network_repository import (
     ProviderAffiliationRepository,
     ProviderAliasRepository,
@@ -66,3 +67,28 @@ async def get_session_import_repository(
     )
 
     return SessionImportRepositoryImpl(db)
+
+
+class UnwiredAttributionGuard:
+    """Refuses to narrow an interval until agent 1's real check is registered.
+
+    Failing closed rather than open: an unguarded narrowing silently invalidates
+    completed attribution, which decision 2 forbids. Widening is safe and is
+    allowed through, so only the risky direction is blocked.
+
+    Agent 1 replaces this by overriding get_affiliation_attribution_guard.
+    """
+
+    async def sessions_orphaned_by(self, tenant_id, affiliation_id, *, new_valid_until):
+        if new_valid_until is None:
+            return []
+        raise DomainError(
+            "Cannot verify whether this change would orphan completed session "
+            "attribution: the attribution check is not wired yet",
+            error_code="attribution_check_unavailable",
+            http_status=503,
+        )
+
+
+async def get_affiliation_attribution_guard() -> UnwiredAttributionGuard:
+    return UnwiredAttributionGuard()

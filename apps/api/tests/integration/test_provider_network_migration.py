@@ -41,10 +41,7 @@ _EXPECTED = {
 
 
 def _migration():
-    path = (
-        Path(__file__).parents[2]
-        / "alembic/versions/a2n1o0r2k4s6_provider_network_tables.py"
-    )
+    path = Path(__file__).parents[2] / "alembic/versions/a2n1o0r2k4s6_provider_network_tables.py"
     spec = importlib.util.spec_from_file_location("provider_network_migration", path)
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)

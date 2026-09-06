@@ -12,6 +12,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.api.dependencies import get_audit_event_handler
 from app.api.dependencies.pagination import PageParams, pagination
 from app.api.dependencies.provider_network import (
+    get_affiliation_attribution_guard,
     get_provider_affiliation_repository,
     get_provider_organisation_repository,
 )
@@ -166,11 +167,16 @@ async def change_affiliation_end(
     current_user: TokenData = Depends(require_same_tenant),
     repo: ProviderAffiliationRepository = Depends(get_provider_affiliation_repository),
     organisations: ProviderOrganisationRepository = Depends(get_provider_organisation_repository),
+    attribution_guard=Depends(get_affiliation_attribution_guard),
     audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
 ):
-    """Moves the end date only. The practitioner and organisation are immutable."""
-    affiliation = await ChangeAffiliationEndUseCase(repo).execute(
+    """Moves the end date only. The practitioner and organisation are immutable.
+
+    Narrowing is rejected with 409 when it would stop covering a session
+    already attributed to this affiliation.
+    """
+    affiliation = await ChangeAffiliationEndUseCase(repo, attribution_guard).execute(
         TenantId(tenant_id),
         ProviderAffiliationId(affiliation_id),
         valid_until=data.valid_until,
