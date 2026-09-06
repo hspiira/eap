@@ -41,7 +41,7 @@ const contractSchema = z
       .trim()
       .min(1, "Billing amount is required")
       .refine((v) => /^\d+(\.\d+)?$/.test(v) && Number(v) > 0, "Must be a positive number"),
-    currency: z.string().trim().length(3, "Use the ISO 3-letter currency code (e.g. KES, USD)"),
+    currency: z.string().trim().length(3, "Use the ISO 3-letter currency code (e.g. UGX, KES)"),
     payment_frequency: z.enum(FREQUENCY_VALUES as readonly [string, ...string[]], {
       message: "Payment frequency is required",
     }),
@@ -59,7 +59,7 @@ const EMPTY: ContractFormValues = {
   start_date: "",
   end_date: "",
   billing_amount: "",
-  currency: "KES",
+  currency: "UGX",
   payment_frequency: PaymentFrequency.MONTHLY,
   is_auto_renew: false,
 }
@@ -97,7 +97,7 @@ export function ContractFormSheet({
       // Read straight off the wire shape. These previously read top-level
       // start_date/billing_amount/currency/billing_frequency, none of which the
       // BE sends, so editing a contract opened a blank form and saving it reset
-      // the currency to the KES default.
+      // the currency to the UGX default.
       toFormValues: (c) => ({
         client_id: c.client_id,
         start_date: c.period.start_date,
@@ -266,7 +266,7 @@ export function ContractFormSheet({
           >
             <Input
               id="cf-currency"
-              placeholder="KES"
+              placeholder="UGX"
               maxLength={3}
               className="uppercase"
               {...register("currency")}
