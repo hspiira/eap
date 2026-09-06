@@ -36,14 +36,12 @@ describe("member forms", () => {
   it("creates a roster member with contextual client and blank optional fields as null", async () => {
     const user = userEvent.setup()
     renderWithProviders(<MemberFormSheet open onOpenChange={vi.fn()} clientId="client-1" />)
-    await user.type(screen.getByRole("textbox", { name: "Member code" }), " HR-1 ")
     await user.type(screen.getByRole("textbox", { name: "Name" }), " Amina ")
     await user.click(screen.getByRole("button", { name: "Add member" }))
     await waitFor(() =>
       expect(api.create).toHaveBeenCalledWith(
         expect.objectContaining({
           client_id: "client-1",
-          employer_member_id: "HR-1",
           display_label: "Amina",
           relation: "Employee",
           primary_employee_member_id: null,
@@ -57,20 +55,19 @@ describe("member forms", () => {
     )
   })
 
-  it("requires a name but lets the server issue the member code", async () => {
+  it("never offers a member code field, leaving the server to issue one", async () => {
     const user = userEvent.setup()
     renderWithProviders(<MemberFormSheet open onOpenChange={vi.fn()} clientId="client-1" />)
+    expect(screen.queryByRole("textbox", { name: "Member code" })).toBeNull()
+
     await user.click(screen.getByRole("button", { name: "Add member" }))
     expect(await screen.findByText("Name is required")).toBeInTheDocument()
     expect(api.create).not.toHaveBeenCalled()
 
     await user.type(screen.getByRole("textbox", { name: "Name" }), "Amina")
     await user.click(screen.getByRole("button", { name: "Add member" }))
-    await waitFor(() =>
-      expect(api.create).toHaveBeenCalledWith(
-        expect.objectContaining({ employer_member_id: null, display_label: "Amina" }),
-      ),
-    )
+    await waitFor(() => expect(api.create).toHaveBeenCalled())
+    expect(api.create.mock.calls[0][0]).not.toHaveProperty("employer_member_id")
   })
 
   it("sends the optional identification numbers when they are filled in", async () => {
@@ -103,6 +100,29 @@ describe("member forms", () => {
       expect(api.update).toHaveBeenCalledWith("member-1", expect.objectContaining({ phone: null })),
     )
     expect(api.update.mock.calls[0][1]).not.toHaveProperty("client_id")
+  })
+
+  it("shows the issued member code on edit as read-only text, not an input", async () => {
+    renderWithProviders(
+      <MemberFormSheet
+        open
+        onOpenChange={vi.fn()}
+        member={makeMember({ employer_member_id: "ACME-007" })}
+      />,
+    )
+    expect(screen.getByText("ACME-007")).toBeInTheDocument()
+    expect(screen.queryByRole("textbox", { name: "Member code" })).toBeNull()
+  })
+
+  it("leaves the member code out of an update payload", async () => {
+    const user = userEvent.setup()
+    renderWithProviders(
+      <MemberFormSheet open onOpenChange={vi.fn()} member={makeMember({ phone: "123" })} />,
+    )
+    await user.clear(screen.getByLabelText("Phone", { exact: true }))
+    await user.click(screen.getByRole("button", { name: "Save changes" }))
+    await waitFor(() => expect(api.update).toHaveBeenCalled())
+    expect(api.update.mock.calls[0][1]).not.toHaveProperty("employer_member_id")
   })
 
   it("requires a next-of-kin contact method", async () => {

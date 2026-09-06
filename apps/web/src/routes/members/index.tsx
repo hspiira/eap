@@ -349,9 +349,7 @@ function MemberRow({
       <TableCell className="max-w-[14rem] truncate py-1.5 text-sm font-medium text-fg">
         {label}
       </TableCell>
-      <TableCell className="py-1.5 font-mono text-xs text-fg/60">
-        {member.employer_member_id}
-      </TableCell>
+      <TableCell className="py-1.5 text-xs text-fg/70">{member.employer_member_id}</TableCell>
       <TableCell className="py-1.5 text-xs text-fg/70">{member.relation}</TableCell>
       <TableCell className="max-w-[12rem] truncate py-1.5 text-xs text-fg/70">
         {member.client_name ?? "-"}

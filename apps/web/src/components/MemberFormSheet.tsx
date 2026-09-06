@@ -49,7 +49,6 @@ const optionalEmail = () =>
 const memberSchema = z
   .object({
     client_id: z.string().trim().min(1, "Client is required"),
-    employer_member_id: optionalText(),
     relation: z.enum(RELATION_VALUES),
     primary_employee_member_id: optionalText(),
     work_email: optionalEmail(),
@@ -76,7 +75,6 @@ type MemberFormValues = z.infer<typeof memberSchema>
 
 const EMPTY: MemberFormValues = {
   client_id: "",
-  employer_member_id: "",
   relation: MemberRelation.EMPLOYEE,
   primary_employee_member_id: "",
   work_email: "",
@@ -167,7 +165,6 @@ export function MemberFormSheet({
 function toValues(member: Member): MemberFormValues {
   return {
     client_id: member.client_id,
-    employer_member_id: member.employer_member_id,
     relation: member.relation,
     primary_employee_member_id: member.primary_employee_member_id ?? "",
     work_email: member.work_email ?? "",
@@ -185,7 +182,6 @@ function toValues(member: Member): MemberFormValues {
 function toRequest(values: MemberFormValues) {
   return {
     client_id: values.client_id.trim(),
-    employer_member_id: optionalValue(values.employer_member_id),
     relation: values.relation,
     primary_employee_member_id:
       values.relation === MemberRelation.EMPLOYEE
@@ -290,24 +286,13 @@ function MemberIdentityFields({
           </div>
         </FormField>
       )}
-      <FormField
-        label="Member code"
-        htmlFor="member-code"
-        hint={
-          member
-            ? "Changing this breaks references in exports already shared with the client."
-            : `Leave blank to issue the next code automatically${
-                resolvedClient ? ` (${resolvedClient.code}-001, -002, …)` : ""
-              }.`
-        }
-        error={errors.employer_member_id?.message}
-      >
-        <Input
-          id="member-code"
-          {...form.register("employer_member_id")}
-          placeholder={resolvedClient ? `${resolvedClient.code}-001` : "Auto-generated"}
-        />
-      </FormField>
+      {member && (
+        <FormField label="Member code" hint="Issued by the system and not editable.">
+          <div className="border border-fg/15 bg-surface px-3 py-2 text-sm text-fg">
+            {member.employer_member_id}
+          </div>
+        </FormField>
+      )}
       <FormField label="Name" htmlFor="member-name" required error={errors.display_label?.message}>
         <Input
           id="member-name"

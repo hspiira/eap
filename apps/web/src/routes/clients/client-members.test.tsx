@@ -214,7 +214,6 @@ describe("client members integration", () => {
     await user.click(screen.getByRole("button", { name: "Add member" }))
     const form = within(screen.getByRole("dialog"))
     expect(form.getByRole("textbox", { name: "Client" })).toHaveValue("client-1")
-    await user.type(form.getByRole("textbox", { name: "Member code" }), "HR-1")
     await user.type(form.getByRole("textbox", { name: "Name" }), "Amina Namukasa")
     mocks.listMembers.mockResolvedValue({ ...emptyRoster, items: [makeMember()], total: 1 })
     await user.click(form.getByRole("button", { name: "Add member" }))
@@ -223,7 +222,6 @@ describe("client members integration", () => {
     expect(mocks.createMember).toHaveBeenCalledWith(
       expect.objectContaining({
         client_id: "client-1",
-        employer_member_id: "HR-1",
         display_label: "Amina Namukasa",
         relation: "Employee",
       }),
