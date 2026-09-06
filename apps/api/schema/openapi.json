@@ -445,6 +445,15 @@
         "title": "AdvanceCaseRequest",
         "type": "object"
       },
+      "AliasConfidence": {
+        "description": "How much weight a legacy alias mapping carries.\n\n``INFERRED`` is a reading of the label that nobody has signed off, so it\nstays filterable: a reviewer can list exactly the mappings still awaiting\na clinical owner without re-deriving which ones those were.",
+        "enum": [
+          "confirmed",
+          "inferred"
+        ],
+        "title": "AliasConfidence",
+        "type": "string"
+      },
       "AmendClinicalNoteRequest": {
         "properties": {
           "body": {
@@ -4737,6 +4746,103 @@
         "title": "DependentInfoSchema",
         "type": "object"
       },
+      "DiagnosisAliasResponse": {
+        "properties": {
+          "confidence": {
+            "title": "Confidence",
+            "type": "string"
+          },
+          "diagnosis_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Diagnosis Id"
+          },
+          "diagnosis_type_id": {
+            "title": "Diagnosis Type Id",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "normalised_key": {
+            "title": "Normalised Key",
+            "type": "string"
+          },
+          "raw_value": {
+            "title": "Raw Value",
+            "type": "string"
+          },
+          "source": {
+            "title": "Source",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "raw_value",
+          "normalised_key",
+          "diagnosis_type_id",
+          "diagnosis_id",
+          "source",
+          "confidence"
+        ],
+        "title": "DiagnosisAliasResponse",
+        "type": "object"
+      },
+      "DiagnosisAliasUpsert": {
+        "description": "Map a legacy spelling onto the taxonomy.\n\n``diagnosis_id`` stays optional because many legacy classifications name\nonly a type. Inventing a leaf to fill the gap would be worse than\nrecording the type alone.",
+        "properties": {
+          "confidence": {
+            "$ref": "#/components/schemas/AliasConfidence",
+            "default": "inferred",
+            "description": "'confirmed' once a clinical owner has signed it off"
+          },
+          "diagnosis_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Leaf, when the source named one",
+            "title": "Diagnosis Id"
+          },
+          "diagnosis_type_id": {
+            "description": "Taxonomy type it resolves to",
+            "title": "Diagnosis Type Id",
+            "type": "string"
+          },
+          "raw_value": {
+            "description": "The spelling as it arrives",
+            "minLength": 1,
+            "title": "Raw Value",
+            "type": "string"
+          },
+          "source": {
+            "description": "Where this mapping came from",
+            "maxLength": 50,
+            "minLength": 1,
+            "title": "Source",
+            "type": "string"
+          }
+        },
+        "required": [
+          "raw_value",
+          "diagnosis_type_id",
+          "source"
+        ],
+        "title": "DiagnosisAliasUpsert",
+        "type": "object"
+      },
       "DiagnosisCapabilitiesResponse": {
         "description": "What the caller may change, so the UI can hide controls it cannot use.",
         "properties": {
@@ -8072,6 +8178,12 @@
             "description": "User email address",
             "title": "Email",
             "type": "string"
+          },
+          "is_platform_admin": {
+            "default": false,
+            "description": "Whether this session may administer platform-wide surfaces. Derived server-side from PLATFORM_TENANT_ID so the UI cannot disagree with the API about who may write; it fails closed when unconfigured.",
+            "title": "Is Platform Admin",
+            "type": "boolean"
           },
           "role": {
             "anyOf": [
@@ -21052,6 +21164,111 @@
           }
         ],
         "summary": "Create Diagnosis",
+        "tags": [
+          "diagnoses"
+        ]
+      }
+    },
+    "/diagnoses/aliases": {
+      "get": {
+        "operationId": "list_diagnosis_aliases_diagnoses_aliases_get",
+        "parameters": [
+          {
+            "description": "Filter to mappings still awaiting sign-off, or those confirmed",
+            "in": "query",
+            "name": "confidence",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/AliasConfidence"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter to mappings still awaiting sign-off, or those confirmed",
+              "title": "Confidence"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/DiagnosisAliasResponse"
+                  },
+                  "title": "Response List Diagnosis Aliases Diagnoses Aliases Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "List Diagnosis Aliases",
+        "tags": [
+          "diagnoses"
+        ]
+      },
+      "put": {
+        "description": "Map a legacy spelling onto the taxonomy, keyed on its normalised form.",
+        "operationId": "upsert_diagnosis_alias_diagnoses_aliases_put",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DiagnosisAliasUpsert"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DiagnosisAliasResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Upsert Diagnosis Alias",
         "tags": [
           "diagnoses"
         ]

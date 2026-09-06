@@ -2069,6 +2069,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/diagnoses/aliases": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Diagnosis Aliases */
+        get: operations["list_diagnosis_aliases_diagnoses_aliases_get"];
+        /**
+         * Upsert Diagnosis Alias
+         * @description Map a legacy spelling onto the taxonomy, keyed on its normalised form.
+         */
+        put: operations["upsert_diagnosis_alias_diagnoses_aliases_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/diagnoses/capabilities": {
         parameters: {
             query?: never;
@@ -5657,6 +5678,16 @@ export interface components {
         AdvanceCaseRequest: {
             target: components["schemas"]["CaseStatus"];
         };
+        /**
+         * AliasConfidence
+         * @description How much weight a legacy alias mapping carries.
+         *
+         *     ``INFERRED`` is a reading of the label that nobody has signed off, so it
+         *     stays filterable: a reviewer can list exactly the mappings still awaiting
+         *     a clinical owner without re-deriving which ones those were.
+         * @enum {string}
+         */
+        AliasConfidence: "confirmed" | "inferred";
         /** AmendClinicalNoteRequest */
         AmendClinicalNoteRequest: {
             /** Body */
@@ -7583,6 +7614,58 @@ export interface components {
             /** @description Relationship type */
             relationship: components["schemas"]["RelationType"];
         };
+        /** DiagnosisAliasResponse */
+        DiagnosisAliasResponse: {
+            /** Confidence */
+            confidence: string;
+            /** Diagnosis Id */
+            diagnosis_id: string | null;
+            /** Diagnosis Type Id */
+            diagnosis_type_id: string;
+            /** Id */
+            id: string;
+            /** Normalised Key */
+            normalised_key: string;
+            /** Raw Value */
+            raw_value: string;
+            /** Source */
+            source: string;
+        };
+        /**
+         * DiagnosisAliasUpsert
+         * @description Map a legacy spelling onto the taxonomy.
+         *
+         *     ``diagnosis_id`` stays optional because many legacy classifications name
+         *     only a type. Inventing a leaf to fill the gap would be worse than
+         *     recording the type alone.
+         */
+        DiagnosisAliasUpsert: {
+            /**
+             * @description 'confirmed' once a clinical owner has signed it off
+             * @default inferred
+             */
+            confidence: components["schemas"]["AliasConfidence"];
+            /**
+             * Diagnosis Id
+             * @description Leaf, when the source named one
+             */
+            diagnosis_id?: string | null;
+            /**
+             * Diagnosis Type Id
+             * @description Taxonomy type it resolves to
+             */
+            diagnosis_type_id: string;
+            /**
+             * Raw Value
+             * @description The spelling as it arrives
+             */
+            raw_value: string;
+            /**
+             * Source
+             * @description Where this mapping came from
+             */
+            source: string;
+        };
         /**
          * DiagnosisCapabilitiesResponse
          * @description What the caller may change, so the UI can hide controls it cannot use.
@@ -9183,6 +9266,12 @@ export interface components {
              * @description User email address
              */
             email: string;
+            /**
+             * Is Platform Admin
+             * @description Whether this session may administer platform-wide surfaces. Derived server-side from PLATFORM_TENANT_ID so the UI cannot disagree with the API about who may write; it fails closed when unconfigured.
+             * @default false
+             */
+            is_platform_admin: boolean;
             /**
              * Role
              * @description Tenant role (Admin/User/Viewer)
@@ -15780,6 +15869,71 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["DiagnosisResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_diagnosis_aliases_diagnoses_aliases_get: {
+        parameters: {
+            query?: {
+                /** @description Filter to mappings still awaiting sign-off, or those confirmed */
+                confidence?: components["schemas"]["AliasConfidence"] | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DiagnosisAliasResponse"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    upsert_diagnosis_alias_diagnoses_aliases_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DiagnosisAliasUpsert"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DiagnosisAliasResponse"];
                 };
             };
             /** @description Validation Error */
