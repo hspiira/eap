@@ -128,18 +128,21 @@ describe("practitioner affiliations", () => {
 
 describe("organisation affiliations", () => {
   it("shows the server's overlap rejection with the conflicting period", async () => {
-    // Shape captured from the running API: the sentence is the top-level
-    // message, and `details` carries the field name as a value.
+    // Wire shape of the corrected overlap error: one entry keyed by the real
+    // field, carrying the same sentence as the top-level message.
     mocks.create.mockRejectedValue(
       new ApiError(
         "Overlaps affiliation aff-9 (2026-01-01 to 2026-06-01)",
         "AFFILIATION_OVERLAP",
         409,
-        undefined,
+        { valid_from: "Overlaps affiliation aff-9 (2026-01-01 to 2026-06-01)" },
         undefined,
         [
-          { field: "field", message: "valid_from", code: null },
-          { field: "conflicting_affiliation_id", message: "aff-9", code: null },
+          {
+            field: "valid_from",
+            message: "Overlaps affiliation aff-9 (2026-01-01 to 2026-06-01)",
+            code: null,
+          },
         ],
       ),
     )
@@ -150,9 +153,28 @@ describe("organisation affiliations", () => {
     fireEvent.change(screen.getByLabelText(/starts on/i), { target: { value: "2026-03-01" } })
     fireEvent.click(screen.getAllByRole("button", { name: /^add affiliation$/i }).at(-1)!)
 
-    expect(
-      await screen.findByText(/Overlaps affiliation aff-9 \(2026-01-01 to 2026-06-01\)/),
-    ).toBeInTheDocument()
+    // The server names the conflicting end, so the message lands on that input
+    // rather than in a banner detached from the field it is about.
+    const message = await screen.findByText(
+      /Overlaps affiliation aff-9 \(2026-01-01 to 2026-06-01\)/,
+    )
+    expect(message).toBeInTheDocument()
+    const startsOn = screen.getByLabelText(/starts on/i).closest("div")?.parentElement
+    expect(startsOn).toContainElement(message)
+  })
+
+  it("falls back to a banner when the rejection names no usable field", async () => {
+    mocks.create.mockRejectedValue(
+      new ApiError("Overlaps an existing affiliation", "AFFILIATION_OVERLAP", 409),
+    )
+    renderWithProviders(<OrganisationAffiliationsPanel organisationId="org-1" />)
+
+    fireEvent.click(await screen.findByRole("button", { name: /add affiliation/i }))
+    fireEvent.click(screen.getByRole("button", { name: /pick practitioner/i }))
+    fireEvent.change(screen.getByLabelText(/starts on/i), { target: { value: "2026-03-01" } })
+    fireEvent.click(screen.getAllByRole("button", { name: /^add affiliation$/i }).at(-1)!)
+
+    expect(await screen.findByRole("alert")).toHaveTextContent("Overlaps an existing affiliation")
   })
 
   it("sends an open-ended affiliation as a null end", async () => {
