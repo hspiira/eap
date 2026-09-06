@@ -17,6 +17,7 @@ import { StatusBadge } from "@/components/common/StatusBadge"
 import { Tab, TabPanel, Tabs, TabsList } from "@/components/common/Tabs"
 import { CATEGORY_LABELS } from "@/components/ServiceFormSheet"
 import { ServiceSessionFormSheet } from "@/components/ServiceSessionFormSheet"
+import { SessionDeliveryLabel } from "@/components/sessions/SessionAttribution"
 import {
   CancelDialog,
   CompleteDialog,
@@ -84,10 +85,7 @@ function ServiceSessionDetailPage() {
   const providerId = session?.provider_id
   const { data: provider = null } = useQuery({
     queryKey: entityDetailKey("providers", providerId ?? ""),
-    queryFn: async () => {
-      const res = await providersApi.list({ page: 1, limit: 1, search: providerId as string })
-      return (res.items ?? []).find((p) => p.id === providerId) ?? null
-    },
+    queryFn: () => providersApi.getById(providerId as string),
     enabled: !!providerId,
   })
 
@@ -317,7 +315,7 @@ function ServiceSessionDetailPage() {
                     )}
                   </DetailCard>
 
-                  <DetailCard title="Service & provider">
+                  <DetailCard title="Service & practitioner">
                     {service ? (
                       <Link
                         to="/services/$serviceId"
@@ -339,7 +337,11 @@ function ServiceSessionDetailPage() {
                       </Link>
                     ) : null}
                     {provider ? (
-                      <div className="flex items-center gap-2.5 rounded-sm border border-fg/10 bg-bg px-3 py-2">
+                      <Link
+                        to="/providers/$providerId"
+                        params={{ providerId: provider.id }}
+                        className="flex items-center gap-2.5 rounded-sm border border-fg/10 bg-bg px-3 py-2 transition-colors hover:border-fg/25"
+                      >
                         <span
                           aria-hidden
                           className="grid size-7 shrink-0 place-items-center bg-primary/10 text-[10px] font-semibold text-primary"
@@ -347,19 +349,27 @@ function ServiceSessionDetailPage() {
                           PR
                         </span>
                         <div className="min-w-0 flex-1">
-                          <p className="truncate text-sm font-medium text-fg font-mono">
-                            {provider.id}
+                          <p className="truncate text-sm font-medium text-fg">
+                            {provider.display_name}
                           </p>
                           <p className="truncate text-[11px] text-fg-muted">
                             {provider.provider_profile.tier} · {provider.provider_profile.region}
                           </p>
                         </div>
-                      </div>
+                      </Link>
                     ) : session.provider_id ? (
-                      <p className="text-xs text-fg-muted">Loading provider…</p>
+                      <p className="text-xs text-fg-muted">Loading practitioner…</p>
                     ) : (
-                      <p className="text-xs text-fg-muted">No provider assigned.</p>
+                      <p className="text-xs text-fg-muted">No practitioner assigned.</p>
                     )}
+                    <div className="mt-2 border-t border-fg/10 pt-2">
+                      <p className="text-[11px] font-medium tracking-wide text-fg-muted">
+                        Delivered through
+                      </p>
+                      <div className="mt-0.5">
+                        <SessionDeliveryLabel session={session} />
+                      </div>
+                    </div>
                   </DetailCard>
 
                   <DetailCard title="Clinical">
