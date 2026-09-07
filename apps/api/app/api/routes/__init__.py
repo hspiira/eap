@@ -30,6 +30,7 @@ from app.api.routes.kpis import router as kpis_router
 from app.api.routes.members import router as members_router
 from app.api.routes.non_compete_clauses import router as non_compete_router
 from app.api.routes.panel import router as panel_router
+from app.api.routes.practitioner_imports import router as practitioner_imports_router
 from app.api.routes.pricing import router as pricing_router
 from app.api.routes.provider_affiliations import router as provider_affiliations_router
 from app.api.routes.provider_aliases import router as provider_aliases_router
@@ -59,6 +60,7 @@ def register_routers(app: FastAPI) -> None:
     app.include_router(provider_specialties_router)
     app.include_router(provider_aliases_router)
     app.include_router(session_imports_router)
+    app.include_router(practitioner_imports_router)
     app.include_router(clients_router)
     app.include_router(industries_router)
     app.include_router(client_tags_router)
@@ -119,6 +121,7 @@ __all__ = [
     "provider_aliases_router",
     "provider_organisations_router",
     "provider_specialties_router",
+    "practitioner_imports_router",
     "providers_router",
     "pricing_router",
     "register_routers",

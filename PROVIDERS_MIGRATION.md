@@ -746,6 +746,23 @@ owner has directed that provider-module work proceed on the main branch.
   `/providers/{id}/engagement-documents` with an Admin-only audited PUT per
   kind. The workbook importer remains owned elsewhere.
 
+  P-01 and P-03 to P-06 (`PRACTITIONERS_REVIEW.md`) were implemented on
+  2026-09-07 under the same direction as staging only: migration
+  `e9x2z4b6d8f0` adds `practitioner_import_batches` and
+  `practitioner_import_rows`, staged by an Admin-only
+  `POST /practitioner-imports` that parses both practitioner sheets, keeps
+  every source cell verbatim in a provenance JSON, maps role spellings
+  through a version-controlled table (21 of 57 PROFESSION and 7 of 50
+  Speciality spellings; the rest stay unmapped), records repeated
+  normalised names as review candidates through `provider_aliases` under
+  source system `practitioners-orgs-workbook`, and quarantines the
+  double-email cell and the Employee contract memo as needs-review rows.
+  Replay keys are `file:{hash}:sheet:{name}:row:{n}`. Tested against
+  PostgreSQL, migration forward and back included. Not done: the apply
+  step (nothing staged creates a practitioner, organisation, affiliation
+  or catalogue entry), the P-01 catalogue vocabulary decision (product),
+  and alias reconciliation itself, which stays a human API-driven step.
+
 - `apps/api/alembic` is outside the ruff gate, which scopes to `app tests
   scripts`. 65 pre-existing migrations would need reformatting to bring it in.
   Deliberately deferred rather than done in a release that is already extending

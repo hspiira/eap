@@ -17,6 +17,9 @@ from app.core.database import get_db
 from app.domain.repositories.affiliation_attribution_guard import (
     AffiliationAttributionGuard,
 )
+from app.domain.repositories.practitioner_import_repository import (
+    PractitionerImportRepository,
+)
 from app.domain.repositories.provider_network_repository import (
     ProviderAffiliationRepository,
     ProviderAliasRepository,
@@ -115,3 +118,13 @@ async def get_historical_session_writer(
     return HistoricalSessionWriterAdapter(
         record_use_case=RecordHistoricalSessionUseCase(session_repo, provider_repo)
     )
+
+
+async def get_practitioner_import_repository(
+    db: AsyncSession = Depends(get_db),
+) -> PractitionerImportRepository:
+    from app.infrastructure.repositories.practitioner_import_repository import (
+        PractitionerImportRepositoryImpl,
+    )
+
+    return PractitionerImportRepositoryImpl(db)
