@@ -3,9 +3,16 @@
  * Use this and src/types/enums in UI; no ad-hoc status strings.
  */
 
-import { getStatusColors, getStatusLabel, type StatusColorConfig } from "@/utils/statusColors"
+import type { LucideIcon } from "lucide-react"
 
-export type StatusDisplay = StatusColorConfig & { label: string }
+import {
+  getStatusColors,
+  getStatusIcon,
+  getStatusLabel,
+  type StatusColorConfig,
+} from "@/utils/statusColors"
+
+export type StatusDisplay = StatusColorConfig & { label: string; icon: LucideIcon }
 
 const cache = new Map<string, StatusDisplay>()
 
@@ -14,6 +21,7 @@ export function getStatusConfig(status: string): StatusDisplay {
   if (!cache.has(key)) {
     cache.set(key, {
       label: getStatusLabel(key),
+      icon: getStatusIcon(key),
       ...getStatusColors(key),
     })
   }

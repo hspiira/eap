@@ -1,16 +1,6 @@
-import {
-  AlertCircle,
-  AlertTriangle,
-  CheckCircle2,
-  Circle,
-  Clock,
-  type LucideIcon,
-} from "lucide-react"
-
 import { Badge } from "@/components/ui/badge"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { cn } from "@/lib/utils"
-import type { StatusTone } from "@/utils/statusColors"
 import { getStatusConfig } from "@/utils/statusConfig"
 
 export interface StatusBadgeProps {
@@ -19,15 +9,6 @@ export interface StatusBadgeProps {
   className?: string
   /** Render a colored icon with the label on hover, instead of text. Saves column width. */
   iconOnly?: boolean
-}
-
-/** Keyed by the tone getStatusColors already assigns, so the icon tracks the colour without a second status-keyword map. */
-const TONE_ICON: Record<StatusTone, LucideIcon> = {
-  success: CheckCircle2,
-  info: Clock,
-  warning: AlertTriangle,
-  danger: AlertCircle,
-  neutral: Circle,
 }
 
 const ICON_CONTAINER_SIZE: Record<NonNullable<StatusBadgeProps["size"]>, string> = {
@@ -40,7 +21,7 @@ export function StatusBadge({ status, size = "default", className, iconOnly }: S
   const config = getStatusConfig(status)
 
   if (iconOnly) {
-    const Icon = TONE_ICON[config.tone]
+    const Icon = config.icon
     return (
       <TooltipProvider delayDuration={150}>
         <Tooltip>
