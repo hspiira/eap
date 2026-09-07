@@ -67,7 +67,7 @@ function ProviderDetailPage() {
   return (
     <PageShell
       icon={Stethoscope}
-      trail={[{ label: "Practitioners", to: "/providers" }]}
+      trail={[{ label: "Providers", to: "/providers" }]}
       title={provider.display_name}
       actions={
         canWrite ? (

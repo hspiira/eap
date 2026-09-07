@@ -12,6 +12,7 @@ import { ProviderTierBadge } from "@/components/common/ProviderTierBadge"
 import { StatusBadge } from "@/components/common/StatusBadge"
 import { ROW_BORDER } from "@/components/common/tableStyles"
 import { ProviderFormSheet } from "@/components/providers/ProviderFormSheet"
+import { ProviderSectionTabs } from "@/components/providers/ProviderSectionTabs"
 import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
@@ -100,7 +101,8 @@ function ProvidersListPage() {
   return (
     <PageShell
       icon={Stethoscope}
-      breadcrumb="Practitioners"
+      trail={[{ label: "Providers" }]}
+      title="Practitioners"
       actions={
         canWrite ? (
           <Button
@@ -114,6 +116,8 @@ function ProvidersListPage() {
         ) : null
       }
     >
+      <ProviderSectionTabs />
+
       <FilterBar>
         {searchParams.tier ? (
           <FilterChip label={`Tier: ${searchParams.tier}`} onRemove={clear("tier")} />

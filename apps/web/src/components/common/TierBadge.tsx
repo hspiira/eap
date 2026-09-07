@@ -23,7 +23,7 @@ export function TierBadge({ tier, className }: TierBadgeProps) {
     return (
       <span
         className={cn(
-          "inline-flex items-center px-2 py-0.5 text-xs font-medium border border-border text-fg-subtle rounded-none",
+          "inline-flex items-center whitespace-nowrap px-2 py-0.5 text-xs font-medium border border-border text-fg-subtle rounded-none",
           className,
         )}
         aria-label="Tier not set"
@@ -35,7 +35,7 @@ export function TierBadge({ tier, className }: TierBadgeProps) {
   return (
     <span
       className={cn(
-        "inline-flex items-center px-2 py-0.5 text-xs font-medium border rounded-none",
+        "inline-flex items-center whitespace-nowrap px-2 py-0.5 text-xs font-medium border rounded-none",
         TIER_TONE[tier],
         className,
       )}

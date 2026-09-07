@@ -34,6 +34,7 @@ vi.mock("@tanstack/react-router", () => ({
   ),
   useNavigate: () => vi.fn(),
   useSearch: () => mocks.search,
+  useRouterState: () => "/providers",
 }))
 
 const { Route } = await import("@/routes/providers/index")
