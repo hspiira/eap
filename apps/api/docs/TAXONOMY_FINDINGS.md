@@ -7,7 +7,7 @@ catalogue and diagnosis taxonomy in `TAXONOMY_CATALOGUE.md`. Opened
 Each item carries the evidence that established it. Strike an item through when
 it lands and record the commit. Do not remove one without being asked.
 
-Status: 1 of 11 done, 10 open.
+Status: 2 of 11 done, 9 open.
 
 ## Priority order
 
@@ -17,7 +17,7 @@ cited elsewhere.
 | # | Finding | Kind | Status |
 | --- | --- | --- | --- |
 | 1 | ~~The taxonomy's versioning contract is not implemented~~ | Correctness | Done |
-| 2 | A diagnosis cannot be moved between types through the API | Missing capability | Open |
+| 2 | ~~A diagnosis cannot be moved between types through the API~~ | Missing capability | Done |
 | 3 | Diagnosis descriptions are writable but never displayed | Product gap | Open |
 | 4 | `ServiceCategory` cannot classify 13 of 20 services | Schema, needs product decision | Open |
 | 5 | `data/seed_data.json` cannot load against the current schema | Broken dev path | Open |
@@ -81,7 +81,7 @@ bump for both. The other four are regression guards that pass either way,
 covering reactivation clearing the date, a no-op patch leaving `version` alone,
 and a rename not retiring the row.
 
-## 2. A diagnosis cannot be moved between types through the API
+## 2. ~~A diagnosis cannot be moved between types through the API~~
 
 `DiagnosisUpdate` carries name, description and sort_order only
 (`app/api/schemas/diagnosis_schemas.py:65-68`), and `update_diagnosis` takes no
@@ -90,10 +90,39 @@ and a rename not retiring the row.
 `CAREER_FATIGUE` from `WORK_STRESS_ANXIETY` to `CAREER_CHALLENGES`, and there
 is no route that can do it.
 
-Fix: add an optional `type_id` to `DiagnosisUpdate` and to the port, validate
-that the target type exists and is active, and pass it through. A move to a
-retired type would remove the leaf from the tree, since `list_types` filters on
-`is_active`.
+**Landed.** `DiagnosisUpdate` takes an optional `type_id`, the port and the
+repository accept it, and `get_type_by_id` was added because the port could
+only look a type up by code. The route validates the target through
+`_assert_available_type`: unknown is a 404, and retired is a 409 rather than a
+silent success, because `list_types` requires `is_active` and a null
+`effective_until` and a move onto a type failing either would take the leaf out
+of every picker.
+
+A move does not rewrite history. `ServiceSessionEntity.set_clinical_details`
+(`app/domain/entities/service_session.py:216-231`) writes
+`diagnosis_type_id` and `diagnosis_id` independently, so a session keeps the
+type it was recorded against. Prevalence over a period spanning a move will
+split across both types, which is a faithful record of what was entered rather
+than a defect.
+
+Verified by `tests/unit/api/test_diagnosis_type_move.py`, 4 tests on the guard,
+and `tests/integration/test_diagnosis_type_move_persistence.py`, 5 against
+local PostgreSQL covering the move, that it leaves the other fields alone, that
+it bumps `version`, that a move to the same type is not a change, and the
+move-and-rename in one call that the catalogue import performs.
+
+Left open deliberately: the admin UI does not expose the move.
+`DiagnosisFormSheet.tsx` edits code, name, description and sort order, and
+adding a type selector needs the type list passed into the sheet. The catalogue
+import uses the API directly and does not need it.
+
+The regenerated contract is **not** in this commit.
+`pnpm contracts:sync` picks up another session's in-flight `ImportReasonCode`
+from the practitioner import work, which is not in `HEAD`. Same situation as
+phases 1 and 3 recorded in `SERVICES_MIGRATION.md`: whoever lands the
+practitioner work regenerates `apps/api/schema/openapi.json` and
+`apps/web/src/api/generated/schema.ts`, which will then also carry
+`DiagnosisUpdate.type_id`.
 
 ## 3. Diagnosis descriptions are writable but never displayed
 

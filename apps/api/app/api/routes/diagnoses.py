@@ -140,6 +140,21 @@ def _found(entity, label: str):
     return entity
 
 
+async def _assert_available_type(repo: DiagnosisRepository, type_id: str) -> None:
+    """Reject a move onto a type the tree would not return.
+
+    ``list_types`` requires ``is_active`` and a null ``effective_until``, so a
+    move onto a retired type would take the diagnosis out of every picker while
+    reporting success.
+    """
+    target = _found(await repo.get_type_by_id(type_id), "Diagnosis type")
+    if not target.is_active or target.effective_until is not None:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Diagnosis type is retired; activate it before moving a diagnosis under it",
+        )
+
+
 # === Taxonomy writes (platform admin) ===
 
 
@@ -219,8 +234,14 @@ async def update_diagnosis(
     repo: DiagnosisRepository = Depends(get_diagnosis_repository),
     db: AsyncSession = Depends(get_db),
 ):
+    if data.type_id is not None:
+        await _assert_available_type(repo, data.type_id)
     updated = await repo.update_diagnosis(
-        diagnosis_id, name=data.name, description=data.description, sort_order=data.sort_order
+        diagnosis_id,
+        type_id=data.type_id,
+        name=data.name,
+        description=data.description,
+        sort_order=data.sort_order,
     )
     return DiagnosisResponse.model_validate(_found(updated, "Diagnosis"))
 

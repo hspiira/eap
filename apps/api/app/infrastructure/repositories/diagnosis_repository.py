@@ -119,6 +119,10 @@ class DiagnosisRepositoryImpl(DiagnosisRepository):
         row = (await self._session.execute(stmt)).scalar_one_or_none()
         return _to_type(row) if row else None
 
+    async def get_type_by_id(self, type_id: str) -> DiagnosisType | None:
+        model = await self._session.get(DiagnosisTypeModel, type_id)
+        return _to_type(model) if model else None
+
     async def list_diagnoses(
         self,
         *,
@@ -203,6 +207,7 @@ class DiagnosisRepositoryImpl(DiagnosisRepository):
         self,
         diagnosis_id: str,
         *,
+        type_id: str | None = None,
         name: str | None = None,
         description: str | None = None,
         sort_order: int | None = None,
@@ -210,7 +215,9 @@ class DiagnosisRepositoryImpl(DiagnosisRepository):
         model = await self._session.get(DiagnosisModel, diagnosis_id)
         if model is None:
             return None
-        if _apply(model, name=name, description=description, sort_order=sort_order):
+        if _apply(
+            model, type_id=type_id, name=name, description=description, sort_order=sort_order
+        ):
             model.version += 1
         await self._session.flush()
         return _to_diagnosis(model)

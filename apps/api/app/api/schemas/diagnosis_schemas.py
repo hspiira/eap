@@ -63,6 +63,15 @@ class DiagnosisCreate(BaseModel):
 
 
 class DiagnosisUpdate(BaseModel):
+    """Edit a diagnosis, including moving it under a different type.
+
+    ``type_id`` exists because the taxonomy is curated over time and a leaf can
+    be filed under the wrong category. Moving one does not rewrite history: a
+    session records ``diagnosis_type_id`` and ``diagnosis_id`` independently, so
+    an existing session keeps the type it was recorded against.
+    """
+
+    type_id: str | None = Field(None, description="Move the diagnosis under this type")
     name: str | None = Field(None, min_length=1, max_length=255)
     description: str | None = None
     sort_order: int | None = None

@@ -23,6 +23,9 @@ class DiagnosisRepository(ABC):
     async def get_type_by_code(self, code: str) -> DiagnosisType | None: ...
 
     @abstractmethod
+    async def get_type_by_id(self, type_id: str) -> DiagnosisType | None: ...
+
+    @abstractmethod
     async def list_diagnoses(
         self,
         *,
@@ -63,6 +66,7 @@ class DiagnosisRepository(ABC):
         self,
         diagnosis_id: str,
         *,
+        type_id: str | None = None,
         name: str | None = None,
         description: str | None = None,
         sort_order: int | None = None,
