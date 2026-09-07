@@ -11241,6 +11241,11 @@ export interface components {
              * @description The client the session is attributed to
              */
             client_id: string;
+            /**
+             * Client Name
+             * @description Resolved client name
+             */
+            client_name?: string | null;
             /** @description New or repeat client */
             client_type?: components["schemas"]["ClientType"] | null;
             /** @description Clinical continuation outcome */
@@ -11298,6 +11303,11 @@ export interface components {
              */
             location?: string | null;
             /**
+             * Member Display Label
+             * @description Resolved member name
+             */
+            member_display_label?: string | null;
+            /**
              * Member Id
              * @description Absent on a company-wide session
              */
@@ -11322,6 +11332,11 @@ export interface components {
              * @description The affiliation this session is attributed to, if any
              */
             provider_affiliation_id?: string | null;
+            /**
+             * Provider Display Name
+             * @description Resolved practitioner name
+             */
+            provider_display_name?: string | null;
             /**
              * Provider Id
              * @description Provider (person) identifier
@@ -11353,6 +11368,11 @@ export interface components {
              * @description Service identifier
              */
             service_id: string;
+            /**
+             * Service Name
+             * @description Resolved service name
+             */
+            service_name?: string | null;
             /**
              * Session Number
              * @description Ordinal session number for this client

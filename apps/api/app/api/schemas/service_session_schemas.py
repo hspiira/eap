@@ -196,6 +196,12 @@ class ServiceSessionResponse(BaseModel):
     attendance: SessionAttendance = Field(..., description="Individual or CompanyWide")
     member_id: str | None = Field(None, description="Absent on a company-wide session")
     client_id: str = Field(..., description="The client the session is attributed to")
+    # Display names, resolved in bulk on the list path so the UI does not fetch
+    # one member per row. Absent means unresolved, not nameless.
+    client_name: str | None = Field(None, description="Resolved client name")
+    member_display_label: str | None = Field(None, description="Resolved member name")
+    provider_display_name: str | None = Field(None, description="Resolved practitioner name")
+    service_name: str | None = Field(None, description="Resolved service name")
     scheduled_at: datetime = Field(..., description="Scheduled date and time")
     delivery_context: SessionDeliveryContext = Field(..., description="How this was delivered")
     provider_affiliation_id: str | None = Field(

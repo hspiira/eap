@@ -12517,6 +12517,18 @@
             "title": "Client Id",
             "type": "string"
           },
+          "client_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Resolved client name",
+            "title": "Client Name"
+          },
           "client_type": {
             "anyOf": [
               {
@@ -12650,6 +12662,18 @@
             "description": "Session location",
             "title": "Location"
           },
+          "member_display_label": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Resolved member name",
+            "title": "Member Display Label"
+          },
           "member_id": {
             "anyOf": [
               {
@@ -12710,6 +12734,18 @@
             "description": "The affiliation this session is attributed to, if any",
             "title": "Provider Affiliation Id"
           },
+          "provider_display_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Resolved practitioner name",
+            "title": "Provider Display Name"
+          },
           "provider_id": {
             "description": "Provider (person) identifier",
             "title": "Provider Id",
@@ -12754,6 +12790,18 @@
             "description": "Service identifier",
             "title": "Service Id",
             "type": "string"
+          },
+          "service_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Resolved service name",
+            "title": "Service Name"
           },
           "session_number": {
             "anyOf": [

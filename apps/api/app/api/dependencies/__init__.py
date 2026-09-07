@@ -65,6 +65,7 @@ from app.api.dependencies.provider import (
     get_non_compete_clause_repository,
     get_provider_repository,
     get_session_attribution_reader,
+    get_session_name_reader,
 )
 from app.api.dependencies.reporting import (
     get_report_query_runner,
@@ -113,6 +114,7 @@ __all__ = [
     "get_non_compete_clause_repository",
     "get_provider_repository",
     "get_session_attribution_reader",
+    "get_session_name_reader",
     "get_outbox_repository",
     "get_outreach_record_repository",
     "get_password_set_token_repository",

@@ -22,6 +22,7 @@ from app.api.dependencies import (
     get_service_repository,
     get_service_session_repository,
     get_session_attribution_reader,
+    get_session_name_reader,
     pagination,
 )
 from app.api.dependencies.provider_network import (
@@ -78,6 +79,7 @@ from app.domain.repositories.service_session_repository import (
     ServiceSessionRepository,
 )
 from app.domain.repositories.session_attribution_reader import SessionAttributionReader
+from app.domain.repositories.session_name_reader import SessionNameReader, SessionNames
 from app.domain.services.provider_eligibility import (
     AFFILIATION_NOT_FOUND,
     UNRESOLVED_AFFILIATION,
@@ -109,16 +111,24 @@ router = APIRouter(prefix="/service-sessions", tags=["service-sessions"])
 def to_service_session_response(
     session: ServiceSessionEntity,
     provider_organisation_id: str | None = None,
+    names: SessionNames | None = None,
 ) -> ServiceSessionResponse:
     """Map ServiceSessionEntity to API response using public properties."""
+    names = names or SessionNames()
     return ServiceSessionResponse(
         id=session.id.value,
         tenant_id=session.tenant_id.value,
         service_id=session.service_id.value,
         provider_id=session.provider_id.value,
         client_id=session.client_id.value,
+        client_name=names.clients.get(session.client_id.value),
         attendance=session.attendance,
         member_id=session.member_id.value if session.member_id else None,
+        member_display_label=(
+            names.members.get(session.member_id.value) if session.member_id else None
+        ),
+        provider_display_name=names.providers.get(session.provider_id.value),
+        service_name=names.services.get(session.service_id.value),
         scheduled_at=session.scheduled_at,
         delivery_context=session.delivery_context,
         provider_affiliation_id=session.provider_affiliation_id,
@@ -237,7 +247,9 @@ async def _one(
 
 
 async def _many(
-    sessions: Sequence[ServiceSessionEntity], reader: SessionAttributionReader
+    sessions: Sequence[ServiceSessionEntity],
+    reader: SessionAttributionReader,
+    names: SessionNameReader | None = None,
 ) -> list[ServiceSessionResponse]:
     """Sessions with attribution resolved in one query rather than one per row.
 
@@ -251,9 +263,20 @@ async def _many(
     organisations = await reader.organisation_ids_by_affiliation(
         sessions[0].tenant_id, affiliation_ids
     )
+    resolved = (
+        await names.names_for(
+            sessions[0].tenant_id,
+            client_ids=[s.client_id.value for s in sessions],
+            member_ids=[s.member_id.value for s in sessions if s.member_id],
+            provider_ids=[s.provider_id.value for s in sessions],
+            service_ids=[s.service_id.value for s in sessions],
+        )
+        if names
+        else None
+    )
     return [
         to_service_session_response(
-            session, organisations.get(session.provider_affiliation_id or "")
+            session, organisations.get(session.provider_affiliation_id or ""), resolved
         )
         for session in sessions
     ]
@@ -671,6 +694,24 @@ async def restore_service_session(
 # ==================== QUERIES (Direct Repository) ====================
 
 
+#: The columns the list endpoint sorts on. An explicit list rather than a
+#: pass-through: the base repository quietly ignores an unknown column and
+#: sorts by id alone, so a typo produced a silently wrong order, not an error.
+SESSION_SORT_COLUMNS = frozenset(
+    {
+        "scheduled_at",
+        "status",
+        "attendance",
+        "category",
+        "session_type",
+        "session_number",
+        "clinical_outcome",
+        "created_at",
+        "completed_at",
+    }
+)
+
+
 @router.get(
     "/",
     response_model=ServiceSessionListResponse,
@@ -695,9 +736,14 @@ async def list_service_sessions(
     sort_desc: bool = Query(True, description="Sort in descending order"),
     session_repo: ServiceSessionRepository = Depends(get_service_session_repository),
     attribution_reader: SessionAttributionReader = Depends(get_session_attribution_reader),
+    name_reader: SessionNameReader = Depends(get_session_name_reader),
     db: AsyncSession = Depends(get_db),
 ):
     """List service sessions with filtering, searching, and pagination."""
+    if sort_by not in SESSION_SORT_COLUMNS:
+        raise ValidationException(
+            f"sort_by must be one of: {', '.join(sorted(SESSION_SORT_COLUMNS))}"
+        )
 
     sessions = await session_repo.list_all(
         tenant_id=TenantId(tenant_id),
@@ -724,7 +770,7 @@ async def list_service_sessions(
     )
 
     return ServiceSessionListResponse(
-        items=await _many(sessions, attribution_reader),
+        items=await _many(sessions, attribution_reader, name_reader),
         total=total,
         page=pg.page,
         limit=pg.limit,
