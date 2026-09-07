@@ -258,13 +258,8 @@ function ServiceRow({ row }: { row: Service }) {
           >
             <Wrench className="size-3" />
           </span>
-          <span className="min-w-0">
-            <span className="block truncate text-sm font-medium text-fg group-hover:text-primary">
-              {row.name}
-            </span>
-            {row.description ? (
-              <span className="block truncate text-xs text-fg-muted">{row.description}</span>
-            ) : null}
+          <span className="block max-w-[40ch] truncate text-sm font-medium text-fg group-hover:text-primary">
+            {row.name}
           </span>
         </Link>
       </TableCell>
@@ -285,9 +280,7 @@ function ServiceRow({ row }: { row: Service }) {
       </TableCell>
       <TableCell>
         {allowGroup ? (
-          <span className="text-xs text-fg">
-            {row.max_participants != null ? `Up to ${row.max_participants}` : "Group"}
-          </span>
+          <span className="text-xs text-fg">Group</span>
         ) : (
           <span className="text-xs text-fg-muted">Individual</span>
         )}
