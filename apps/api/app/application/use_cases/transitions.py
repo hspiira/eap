@@ -22,7 +22,7 @@ from enum import Enum
 from typing import Any, Generic, TypeVar
 
 from app.application.use_cases.base import BaseUseCase, RepositoryProtocol
-from app.domain.exceptions import DomainError, NotFoundError
+from app.domain.exceptions import DomainError, NotFoundError, PermissionDeniedError
 from app.shared.utils.datetime import utc_now
 
 TEntity = TypeVar("TEntity")
@@ -41,10 +41,36 @@ class TransitionUseCase(BaseUseCase[TEntity, TId], Generic[TEntity, TId, TTransi
         super().__init__(repository)
         self.entity_name = entity_name
 
+    def _require_owner(self, entity: TEntity, tenant_id: str | None) -> None:
+        """Refuse a transition on an aggregate the caller's tenant does not own.
+
+        ``tenant_id=None`` is legal only for an aggregate that has no owning
+        tenant, which today means Tenant itself. Passing None for a
+        tenant-scoped aggregate is a wiring mistake rather than a permitted
+        skip, so it raises instead of letting the write through: SEC-03 was
+        exactly this dispatcher loading by id with no tenant argument, which
+        let a tenant-A Viewer activate tenant-B's survey.
+        """
+        owner = getattr(entity, "tenant_id", None)
+        if owner is None:
+            if tenant_id is not None:
+                raise DomainError(f"{self.entity_name} is not tenant-scoped; pass tenant_id=None")
+            return
+        if tenant_id is None:
+            raise DomainError(f"{self.entity_name} is tenant-scoped; tenant_id is required")
+        if getattr(owner, "value", owner) != tenant_id:
+            raise PermissionDeniedError(
+                "Access denied to this tenant",
+                resource=self.entity_name,
+                action="transition",
+            )
+
     async def execute(
         self,
         entity_id: TId,
         transition: TTransition,
+        *,
+        tenant_id: str | None,
         **kwargs: Any,
     ) -> TEntity:
         entity = await self.repository.get_by_id(entity_id)
@@ -55,6 +81,7 @@ class TransitionUseCase(BaseUseCase[TEntity, TId], Generic[TEntity, TId, TTransi
                 resource_type=self.entity_name,
                 resource_id=str(id_value),
             )
+        self._require_owner(entity, tenant_id)
 
         method_name = transition.value
         method = getattr(entity, method_name, None)

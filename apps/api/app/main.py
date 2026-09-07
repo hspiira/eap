@@ -14,12 +14,13 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from app.core.security import TokenData
 
-from fastapi import FastAPI, Request
+from fastapi import Depends, FastAPI, Request
 from fastapi.responses import HTMLResponse, JSONResponse
 from scalar_fastapi import get_scalar_api_reference
 from sqlalchemy import text
 
 from app.api.routes import register_routers
+from app.core.authorization import block_viewer_writes
 from app.core.config import settings
 from app.core.database import AsyncSessionLocal
 from app.core.exception_handlers import register_exception_handlers
@@ -93,6 +94,9 @@ app = FastAPI(
     lifespan=lifespan,
     docs_url=None,
     redoc_url=None,
+    # Viewers are read-only, enforced once for every route rather than route by
+    # route. See block_viewer_writes and its allowlist.
+    dependencies=[Depends(block_viewer_writes)],
 )
 
 register_exception_handlers(app)

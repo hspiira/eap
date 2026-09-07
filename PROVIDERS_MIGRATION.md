@@ -693,6 +693,9 @@ There are no unanswered design choices blocking the phases above. The decisions
 are adopted under the user's delegated authority; implementation remains the
 responsibility of the agent taking each phase, which must record its evidence.
 
+2026-09-07: the provider worktrees (`wt-agent1..3`) are dormant and the product
+owner has directed that provider-module work proceed on the main branch.
+
 - Target database contents and applied revisions remain unverified. The deploying
   agent must run preflight and retain actionable rejection diagnostics.
 - Historical practitioner identities and delivery context need source
@@ -710,6 +713,92 @@ responsibility of the agent taking each phase, which must record its evidence.
   finding 2. Until they do, applying a staged batch imports nothing.
 - The privileged attribution-correction path from decision 2 is not built. Only
   the rejection half is implemented.
+- **Fixed 2026-09-07 on the main branch: CI was red on a provider audit
+  test, and it was not flaky.** Recorded 2026-09-07 by the members-import
+  agent, when `apps/api/app/api/routes/providers.py` was still held by the
+  provider worktrees. `tests/integration/test_provider_audit_persistence.py::TestAuditRecordsPersist::test_an_unchanged_command_writes_neither_state_nor_audit`
+  fails on every run, and fails identically at `75d500c`, before the member
+  import work, so it is pre-existing. It sits in the CI step
+  "Database-backed tests must execute, not skip", so the api job cannot go
+  green until it is fixed.
+
+  Cause: `EligibleProvider.change_tier` correctly returns early when the tier
+  is unchanged (`app/domain/entities/provider.py:199`), so the entity is not
+  touched. The route then calls `repo.save(provider)` unconditionally
+  (`app/api/routes/providers.py:229`), and `updated_at` carries
+  `onupdate=func.now()` (`app/infrastructure/models/base.py:98`), so the
+  database stamps a new timestamp on any UPDATE the mapper's `entity.updated_at`
+  cannot override. A reaffirming command therefore writes state while emitting
+  no audit event, which is the inverse of the intended guarantee.
+
+  Fix applied 2026-09-07: `providers.py` now routes every
+  `command -> save -> audit` ending (create, general PATCH, tier,
+  panel-status, accreditation, status, account link and unlink) through
+  `_save_if_changed`, which skips both the save and the audit call when the
+  command emitted no event. Verified red-then-green against local PostgreSQL:
+  the test failed before the change and all 8 tests in
+  `test_provider_audit_persistence.py` pass after it.
+
+  P-02 (`PRACTITIONERS_REVIEW.md`) was implemented the same day under the
+  same direction: `provider_engagement_documents` (migration `d8w1y3a5c7e9`)
+  holds one row per (tenant, provider, document kind) with a Present/Missing/
+  Open state and an optional note, exposed at
+  `/providers/{id}/engagement-documents` with an Admin-only audited PUT per
+  kind. The workbook importer remains owned elsewhere.
+
+  P-01 and P-03 to P-06 (`PRACTITIONERS_REVIEW.md`) were implemented on
+  2026-09-07 under the same direction as staging only: migration
+  `e9x2z4b6d8f0` adds `practitioner_import_batches` and
+  `practitioner_import_rows`, staged by an Admin-only
+  `POST /practitioner-imports` that parses both practitioner sheets, keeps
+  every source cell verbatim in a provenance JSON, maps role spellings
+  through a version-controlled table (21 of 57 PROFESSION and 7 of 50
+  Speciality spellings; the rest stay unmapped), records repeated
+  normalised names as review candidates through `provider_aliases` under
+  source system `practitioners-orgs-workbook`, and quarantines the
+  double-email cell and the Employee contract memo as needs-review rows.
+  Replay keys are `file:{hash}:sheet:{name}:row:{n}`. Tested against
+  PostgreSQL, migration forward and back included. Not done: the apply
+  step (nothing staged creates a practitioner, organisation, affiliation
+  or catalogue entry), the P-01 catalogue vocabulary decision (product),
+  and alias reconciliation itself, which stays a human API-driven step.
+
+  The apply step was implemented on 2026-09-07 under the same direction:
+  Admin-only `POST /practitioner-imports/{batch}/apply` (migration
+  `g1z4b6d8f0h2` adds `imported_provider_id`, `imported_organisation_id`
+  and `imported_affiliation_id` to the rows). Accepted rows only; a batch
+  with zero Accepted rows applies and creates nothing. Creation runs
+  through the audited entity path (creation event, save, `audit_change`),
+  and both staging and apply now emit persisted batch events
+  (`PractitionerImportBatchStaged` / `Applied` with actor, tenant, batch
+  and counts), closing the staging audit gap. Adopted decisions, policy
+  rather than data:
+
+  - Affiliation `valid_from` is the apply day in the provider boundary
+    timezone, read as "affiliated as of import". The workbook has no
+    dates and no historical validity is invented; `valid_until` is open.
+  - Transaction boundary: one request transaction, a savepoint per row.
+    A failing row rolls back to its savepoint and is quarantined as
+    NeedsReview with the error recorded; applied rows are kept and the
+    batch still closes Applied. A second apply is a 409. An organisation
+    is created in its own savepoint so a later failure in the same row
+    keeps the firm for following rows.
+  - Organisations dedupe case-insensitively by name within the tenant
+    and are created with Pending approval: imported paperwork is not
+    approval.
+  - `ProviderProfile.tier` and `region` became nullable (entity, mapper,
+    API schema) so an imported practitioner can exist unassessed with
+    panel and accreditation Pending. The booking gate never keyed on
+    tier or region, so eligibility is unchanged; such records fail the
+    gate on panel/accreditation as before.
+
+  Known limitations, recorded not fixed: apply does not detect the same
+  person across different files (identity stays with the alias pipeline
+  and human review); a quarantined row has no path back to Accepted until
+  review tooling exists; the one-organisation-name-per-tenant match is
+  exact-but-case-insensitive, so spelling variants of a firm create
+  separate organisations for a person to merge.
+
 - `apps/api/alembic` is outside the ruff gate, which scopes to `app tests
   scripts`. 65 pre-existing migrations would need reformatting to bring it in.
   Deliberately deferred rather than done in a release that is already extending

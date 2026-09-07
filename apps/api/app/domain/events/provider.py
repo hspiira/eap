@@ -22,7 +22,7 @@ class ProviderTierChanged(DomainEvent):
     """Audit trail for provider tier upgrades / downgrades."""
 
     provider_id: ProviderId
-    old_tier: str
+    old_tier: str | None
     new_tier: str
     actor: UserId
     reason: str
@@ -96,3 +96,15 @@ class ProviderAccountUnlinked(DomainEvent):
     user_id: UserId
     actor: UserId
     reason: str
+
+
+@dataclass(frozen=True)
+class ProviderEngagementDocumentRecorded(DomainEvent):
+    """An engagement-document checklist entry was written or changed."""
+
+    provider_id: ProviderId
+    document_kind: str
+    old_state: str | None
+    new_state: str
+    note: str | None
+    actor: UserId

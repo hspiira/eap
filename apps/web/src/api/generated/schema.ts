@@ -3281,9 +3281,32 @@ export interface paths {
         put?: never;
         /**
          * Import Members
-         * @description Preview or import a roster using only explicit, stable member IDs.
+         * @description Check a roster row by row, and on confirmation import each row on its own.
          */
         post: operations["import_members_members_import_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/members/import/commit": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Commit Member Import
+         * @description Import a slice of previewed rows, re-checking and committing each one alone.
+         *
+         *     The client sends the roster in slices so it can show progress. A row that
+         *     fails is reported and skipped; the rows already written stay written.
+         */
+        post: operations["commit_member_import_members_import_commit_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -3776,6 +3799,85 @@ export interface paths {
         patch: operations["change_provider_tier_panel__provider_id__tier_patch"];
         trace?: never;
     };
+    "/practitioner-imports": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Stage Import
+         * @description Stage the workbook's rows for review. Nothing is applied.
+         *
+         *     Restaging the same file in one tenant is a conflict, not a second batch.
+         */
+        post: operations["stage_import_practitioner_imports_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/practitioner-imports/{batch_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Batch */
+        get: operations["get_batch_practitioner_imports__batch_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/practitioner-imports/{batch_id}/apply": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Apply Batch
+         * @description Create records from the batch's Accepted rows, then close the batch.
+         *
+         *     Applying a second time is refused, so a replayed request cannot create
+         *     twice. A failing row is quarantined for review without sinking the batch.
+         */
+        post: operations["apply_batch_practitioner_imports__batch_id__apply_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/practitioner-imports/{batch_id}/rows": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Rows */
+        get: operations["list_rows_practitioner_imports__batch_id__rows_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/provider-affiliations": {
         parameters: {
             query?: never;
@@ -4102,6 +4204,40 @@ export interface paths {
         patch: operations["change_accreditation_providers__provider_id__accreditation_patch"];
         trace?: never;
     };
+    "/providers/{provider_id}/engagement-documents": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The engagement-document checklist for one practitioner */
+        get: operations["list_engagement_documents_providers__provider_id__engagement_documents_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/providers/{provider_id}/engagement-documents/{document_kind}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Audited upsert of one checklist entry */
+        put: operations["upsert_engagement_document_providers__provider_id__engagement_documents__document_kind__put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/providers/{provider_id}/panel-status": {
         parameters: {
             query?: never;
@@ -4160,7 +4296,14 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Get a single report run (with materialised output) */
+        /**
+         * Get a single report run (with materialised output)
+         * @description Read one run and its materialised output.
+         *
+         *     Materialising the numbers does not make them public: the parameters and
+         *     narrative sit inside the same tenant boundary as the figures, so the read is
+         *     authorised here as well as at run time.
+         */
         get: operations["get_run_reports_runs__run_id__get"];
         put?: never;
         post?: never;
@@ -4212,7 +4355,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Get a report template by ID */
+        /**
+         * Get a report template by ID
+         * @description Read one template. Authenticated, and only within the caller's tenant.
+         */
         get: operations["get_template_reports_templates__template_id__get"];
         put?: never;
         post?: never;
@@ -6259,6 +6405,11 @@ export interface components {
              * File
              * @description UTF-8 CSV using the client import template
              */
+            file: string;
+        };
+        /** Body_stage_import_practitioner_imports_post */
+        Body_stage_import_practitioner_imports_post: {
+            /** File */
             file: string;
         };
         /** Body_stage_import_session_imports_post */
@@ -8638,6 +8789,50 @@ export interface components {
             /** Period Start */
             period_start?: string | null;
         };
+        /**
+         * EngagementDocumentKind
+         * @description The seven engagement documents tracked per practitioner (P-02).
+         * @enum {string}
+         */
+        EngagementDocumentKind: "Contract" | "KYC" | "CertificateOfRegistration" | "MoA" | "UcaLicence" | "DeclarationForm" | "LeadConsultantCV";
+        /** EngagementDocumentResponse */
+        EngagementDocumentResponse: {
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            document_kind: components["schemas"]["EngagementDocumentKind"];
+            /** Id */
+            id: string;
+            /** Note */
+            note: string | null;
+            /** Provider Id */
+            provider_id: string;
+            state: components["schemas"]["EngagementDocumentState"];
+            /** Tenant Id */
+            tenant_id: string;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+        };
+        /**
+         * EngagementDocumentState
+         * @description Whether an engagement document is on file, absent, or being chased.
+         * @enum {string}
+         */
+        EngagementDocumentState: "Present" | "Missing" | "Open";
+        /**
+         * EngagementDocumentUpsert
+         * @description Set one checklist entry. The document kind comes from the path.
+         */
+        EngagementDocumentUpsert: {
+            /** Note */
+            note?: string | null;
+            state: components["schemas"]["EngagementDocumentState"];
+        };
         /** EngagementResponse */
         EngagementResponse: {
             /** Activated At */
@@ -8888,7 +9083,7 @@ export interface components {
          * @description Per-row result of a staged historical import.
          * @enum {string}
          */
-        ImportRowOutcome: "Accepted" | "Duplicate" | "Conflicting" | "MissingPractitioner" | "UnmappedPractitioner" | "AmbiguousPractitioner" | "UnresolvedMember" | "UnresolvedService" | "Rejected";
+        ImportRowOutcome: "Accepted" | "Duplicate" | "Conflicting" | "MissingPractitioner" | "UnmappedPractitioner" | "AmbiguousPractitioner" | "UnresolvedClient" | "UnresolvedMember" | "UnresolvedService" | "Rejected";
         /** IncidentClose */
         IncidentClose: {
             /**
@@ -9581,6 +9776,28 @@ export interface components {
          * @enum {string}
          */
         MemberGender: "Female" | "Male";
+        /**
+         * MemberImportCommitRequest
+         * @description A slice of confirmed rows. Each row is committed on its own.
+         */
+        MemberImportCommitRequest: {
+            /** Rows */
+            rows: components["schemas"]["MemberImportCommitRow"][];
+        };
+        /** MemberImportCommitResponse */
+        MemberImportCommitResponse: {
+            /** Results */
+            results: components["schemas"]["MemberImportRowResult"][];
+        };
+        /**
+         * MemberImportCommitRow
+         * @description One row the client confirmed for import, replayed from the preview.
+         */
+        MemberImportCommitRow: {
+            /** Row */
+            row: number;
+            values: components["schemas"]["MemberImportRowValues"];
+        };
         /** MemberImportIssue */
         MemberImportIssue: {
             /** Field */
@@ -9626,6 +9843,58 @@ export interface components {
             staff_number?: string | null;
             /** State */
             state: string;
+            values?: components["schemas"]["MemberImportRowValues"] | null;
+        };
+        /**
+         * MemberImportRowResult
+         * @description What happened to a single row once it was written.
+         */
+        MemberImportRowResult: {
+            /** Member Id */
+            member_id?: string | null;
+            /** Message */
+            message?: string | null;
+            /** Row */
+            row: number;
+            /** State */
+            state: string;
+        };
+        /**
+         * MemberImportRowValues
+         * @description The raw CSV values for one roster row, as the parser read them.
+         *
+         *     The preview echoes these back so the confirmation step can send one row at a
+         *     time without re-uploading the file.
+         */
+        MemberImportRowValues: {
+            /** Client Code */
+            client_code?: string | null;
+            /** Date Of Birth */
+            date_of_birth?: string | null;
+            /** Display Label */
+            display_label?: string | null;
+            /** Employer Member Id */
+            employer_member_id?: string | null;
+            /** Gender */
+            gender?: string | null;
+            /** National Id */
+            national_id?: string | null;
+            /** Passport Number */
+            passport_number?: string | null;
+            /** Personal Email */
+            personal_email?: string | null;
+            /** Phone */
+            phone?: string | null;
+            /** Primary Employee Member Id */
+            primary_employee_member_id?: string | null;
+            /** Relation */
+            relation?: string | null;
+            /** Staff Number */
+            staff_number?: string | null;
+            /** Status */
+            status?: string | null;
+            /** Work Email */
+            work_email?: string | null;
         };
         /** MemberListResponse */
         MemberListResponse: {
@@ -10032,6 +10301,129 @@ export interface components {
          */
         PaymentStatus: "Pending" | "Paid" | "Overdue" | "Cancelled" | "Refunded";
         /**
+         * PractitionerImportApplyResponse
+         * @description Outcome of applying a batch.
+         *
+         *     `reused_organisations` counts distinct firms that already existed;
+         *     `not_applicable` counts rows left untouched because a person has not
+         *     accepted them.
+         */
+        PractitionerImportApplyResponse: {
+            batch: components["schemas"]["PractitionerImportBatchResponse"];
+            /** Created Affiliations */
+            created_affiliations: number;
+            /** Created Organisations */
+            created_organisations: number;
+            /** Created Providers */
+            created_providers: number;
+            /** Failed */
+            failed: number;
+            /** Not Applicable */
+            not_applicable: number;
+            /** Reused Organisations */
+            reused_organisations: number;
+            /** Rows */
+            rows: components["schemas"]["PractitionerImportApplyRowResult"][];
+            /** Skipped Already Applied */
+            skipped_already_applied: number;
+        };
+        /**
+         * PractitionerImportApplyRowResult
+         * @description One Accepted row's apply result. Untouched rows appear only in counts.
+         */
+        PractitionerImportApplyRowResult: {
+            /** Affiliation Id */
+            affiliation_id?: string | null;
+            /** Error */
+            error?: string | null;
+            /** Organisation Id */
+            organisation_id?: string | null;
+            /** Provider Id */
+            provider_id?: string | null;
+            /** Row Number */
+            row_number: number;
+            /** Sheet Name */
+            sheet_name: string;
+            /** Status */
+            status: string;
+        };
+        /** PractitionerImportBatchResponse */
+        PractitionerImportBatchResponse: {
+            /** Applied At */
+            applied_at: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** File Hash */
+            file_hash: string;
+            /** File Name */
+            file_name: string;
+            /** Id */
+            id: string;
+            /** Outcome Counts */
+            outcome_counts: {
+                [key: string]: number;
+            };
+            /** Row Count */
+            row_count: number;
+            /** Source System */
+            source_system: string;
+            status: components["schemas"]["ImportBatchStatus"];
+            /** Tenant Id */
+            tenant_id: string;
+        };
+        /**
+         * PractitionerImportOutcome
+         * @description Per-row result of a staged practitioner workbook import.
+         *
+         *     Not ImportRowOutcome: those values name session-extract resolutions
+         *     (member, service, practitioner lookup) that do not exist here, and none
+         *     of them means "a person must decide before this row can be applied".
+         * @enum {string}
+         */
+        PractitionerImportOutcome: "Accepted" | "NeedsReview" | "Duplicate" | "Rejected";
+        /** PractitionerImportRowListResponse */
+        PractitionerImportRowListResponse: {
+            /** Has More */
+            has_more: boolean;
+            /** Items */
+            items: components["schemas"]["PractitionerImportRowPreview"][];
+            /** Limit */
+            limit: number;
+            /** Page */
+            page: number;
+            /** Total */
+            total: number;
+        };
+        /** PractitionerImportRowPreview */
+        PractitionerImportRowPreview: {
+            /** Contact Email */
+            contact_email: string | null;
+            /** Mapped Profession */
+            mapped_profession: string | null;
+            /** Normalized Name */
+            normalized_name: string | null;
+            /** Organisation Name */
+            organisation_name: string | null;
+            outcome: components["schemas"]["PractitionerImportOutcome"];
+            /** Provenance */
+            provenance: {
+                [key: string]: unknown;
+            };
+            /** Raw Name */
+            raw_name: string | null;
+            /** Raw Profession */
+            raw_profession: string | null;
+            /** Reasons */
+            reasons: string[];
+            /** Row Number */
+            row_number: number;
+            /** Sheet Name */
+            sheet_name: string;
+        };
+        /**
          * PresentingProblem
          * @description Top-level category of the presenting concern at intake.
          * @enum {string}
@@ -10353,10 +10745,10 @@ export interface components {
             gender?: components["schemas"]["ProviderGender"] | null;
             /** @default Active */
             panel_status: components["schemas"]["PanelStatus"];
-            region: components["schemas"]["UgandaRegion"];
+            region?: components["schemas"]["UgandaRegion"] | null;
             /** Specialties */
             specialties?: string[];
-            tier: components["schemas"]["ProviderTier"];
+            tier?: components["schemas"]["ProviderTier"] | null;
         };
         /** ProviderResponse */
         ProviderResponse: {
@@ -10975,8 +11367,18 @@ export interface components {
              * @description User ID of approver
              */
             approved_by?: string | null;
+            /**
+             * @description Individual names a member; CompanyWide names a client and a headcount
+             * @default Individual
+             */
+            attendance: components["schemas"]["SessionAttendance"];
             /** @description Individual / Group / Family / Couples */
             category?: components["schemas"]["SessionCategory"] | null;
+            /**
+             * Client Id
+             * @description Required for a CompanyWide session. For an Individual session it is taken from the member, so that the two cannot disagree
+             */
+            client_id?: string | null;
             /** @description New or repeat client */
             client_type?: components["schemas"]["ClientType"] | null;
             /** @description Clinical continuation outcome */
@@ -11010,9 +11412,9 @@ export interface components {
             location?: string | null;
             /**
              * Member Id
-             * @description Member identifier
+             * @description Required for an Individual session, forbidden for a CompanyWide one
              */
-            member_id: string;
+            member_id?: string | null;
             /**
              * Partner Name
              * @description Partner name (couples/family sessions)
@@ -11110,6 +11512,8 @@ export interface components {
              * @description User ID of approver
              */
             approved_by?: string | null;
+            /** @description Individual or CompanyWide */
+            attendance: components["schemas"]["SessionAttendance"];
             /**
              * Cancellation Reason
              * @description Cancellation reason
@@ -11117,6 +11521,16 @@ export interface components {
             cancellation_reason?: string | null;
             /** @description Individual / Group / Family / Couples */
             category?: components["schemas"]["SessionCategory"] | null;
+            /**
+             * Client Id
+             * @description The client the session is attributed to
+             */
+            client_id: string;
+            /**
+             * Client Name
+             * @description Resolved client name
+             */
+            client_name?: string | null;
             /** @description New or repeat client */
             client_type?: components["schemas"]["ClientType"] | null;
             /** @description Clinical continuation outcome */
@@ -11174,10 +11588,15 @@ export interface components {
              */
             location?: string | null;
             /**
-             * Member Id
-             * @description Member identifier
+             * Member Display Label
+             * @description Resolved member name
              */
-            member_id: string;
+            member_display_label?: string | null;
+            /**
+             * Member Id
+             * @description Absent on a company-wide session
+             */
+            member_id?: string | null;
             /**
              * Notes
              * @description Session notes
@@ -11198,6 +11617,11 @@ export interface components {
              * @description The affiliation this session is attributed to, if any
              */
             provider_affiliation_id?: string | null;
+            /**
+             * Provider Display Name
+             * @description Resolved practitioner name
+             */
+            provider_display_name?: string | null;
             /**
              * Provider Id
              * @description Provider (person) identifier
@@ -11229,6 +11653,11 @@ export interface components {
              * @description Service identifier
              */
             service_id: string;
+            /**
+             * Service Name
+             * @description Resolved service name
+             */
+            service_name?: string | null;
             /**
              * Session Number
              * @description Ordinal session number for this client
@@ -11359,6 +11788,19 @@ export interface components {
             max_participants?: number | null;
         };
         /**
+         * SessionAttendance
+         * @description Who a session was delivered to.
+         *
+         *     COMPANY_WIDE covers a health talk or site visit: a real session delivered to
+         *     a client with no individual to name. It is not the same as not knowing who
+         *     attended. The source extract holds 569 rows marked Staff or Dependant with
+         *     no member id, and those are unresolved identities that stay staged rather
+         *     than becoming member-less sessions. Keeping the two apart is what lets
+         *     validation require a headcount here and a member there.
+         * @enum {string}
+         */
+        SessionAttendance: "Individual" | "CompanyWide";
+        /**
          * SessionCategory
          * @enum {string}
          */
@@ -11371,9 +11813,10 @@ export interface components {
          *     TO_BE_CONTINUED:  client returns for follow-up (xlsx: T).
          *     REFERRED:         client referred elsewhere (xlsx: R).
          *     COMPLETED:        case episode closed this session (xlsx: C).
+         *     TERMINATED:       engagement ended without completing.
          * @enum {string}
          */
-        SessionClinicalStatus: "ToBeContinued" | "Referred" | "Completed";
+        SessionClinicalStatus: "ToBeContinued" | "Referred" | "Completed" | "Terminated";
         /**
          * SessionDeliveryContext
          * @description How the practitioner delivered, or will deliver, this session.
@@ -19097,6 +19540,39 @@ export interface operations {
             };
         };
     };
+    commit_member_import_members_import_commit_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MemberImportCommitRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MemberImportCommitResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     member_import_template_members_import_template_get: {
         parameters: {
             query?: never;
@@ -20156,6 +20632,146 @@ export interface operations {
             };
         };
     };
+    stage_import_practitioner_imports_post: {
+        parameters: {
+            query: {
+                tenant_id: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["Body_stage_import_practitioner_imports_post"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PractitionerImportBatchResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_batch_practitioner_imports__batch_id__get: {
+        parameters: {
+            query: {
+                tenant_id: string;
+            };
+            header?: never;
+            path: {
+                batch_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PractitionerImportBatchResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    apply_batch_practitioner_imports__batch_id__apply_post: {
+        parameters: {
+            query: {
+                tenant_id: string;
+            };
+            header?: never;
+            path: {
+                batch_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PractitionerImportApplyResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_rows_practitioner_imports__batch_id__rows_get: {
+        parameters: {
+            query: {
+                tenant_id: string;
+                /** @description Filter the review queue */
+                outcome?: components["schemas"]["PractitionerImportOutcome"] | null;
+                /** @description Page number */
+                page?: number;
+                /** @description Items per page */
+                limit?: number;
+            };
+            header?: never;
+            path: {
+                batch_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PractitionerImportRowListResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     list_affiliations_provider_affiliations_get: {
         parameters: {
             query: {
@@ -21008,6 +21624,73 @@ export interface operations {
             };
         };
     };
+    list_engagement_documents_providers__provider_id__engagement_documents_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                provider_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EngagementDocumentResponse"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    upsert_engagement_document_providers__provider_id__engagement_documents__document_kind__put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                provider_id: string;
+                document_kind: components["schemas"]["EngagementDocumentKind"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EngagementDocumentUpsert"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EngagementDocumentResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     change_panel_status_providers__provider_id__panel_status_patch: {
         parameters: {
             query?: never;
@@ -21631,6 +22314,12 @@ export interface operations {
                 service_id?: string | null;
                 /** @description Filter by session status */
                 status?: components["schemas"]["SessionStatus"] | null;
+                /** @description Filter by physical or online */
+                session_type?: components["schemas"]["SessionType"] | null;
+                /** @description Filter by session category */
+                category?: components["schemas"]["SessionCategory"] | null;
+                /** @description Filter by clinical outcome */
+                clinical_outcome?: components["schemas"]["SessionClinicalStatus"] | null;
                 /** @description Only sessions scheduled at or after this instant (ISO 8601) */
                 scheduled_from?: string | null;
                 /** @description Only sessions scheduled at or before this instant (ISO 8601) */

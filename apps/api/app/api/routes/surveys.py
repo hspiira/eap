@@ -26,7 +26,7 @@ from app.application.use_cases.transitions import (
     SurveyCampaignTransition,
     TransitionUseCase,
 )
-from app.core.authorization import require_same_tenant
+from app.core.authorization import assert_same_tenant
 from app.core.database import get_db
 from app.core.security import TokenData, get_current_user
 from app.domain.entities.survey_campaign import SurveyCampaign
@@ -131,7 +131,7 @@ async def get_survey_campaign(
     campaign = await repo.get_by_id(SurveyCampaignId(campaign_id))
     if campaign is None:
         raise HTTPException(status_code=404, detail="Survey campaign not found")
-    require_same_tenant(current_user, campaign.tenant_id.value)
+    assert_same_tenant(current_user, campaign.tenant_id.value)
     return _to_campaign_response(campaign)
 
 
@@ -151,7 +151,9 @@ async def activate_survey_campaign(
 ):
     use_case = TransitionUseCase(repo, "SurveyCampaign")
     campaign = await use_case.execute(
-        SurveyCampaignId(campaign_id), SurveyCampaignTransition.ACTIVATE
+        SurveyCampaignId(campaign_id),
+        SurveyCampaignTransition.ACTIVATE,
+        tenant_id=current_user.tenant_id,
     )
     await audit_change(campaign, audit_handler, current_user, request)
     return _to_campaign_response(campaign)
@@ -172,7 +174,11 @@ async def close_survey_campaign(
     db: AsyncSession = Depends(get_db),
 ):
     use_case = TransitionUseCase(repo, "SurveyCampaign")
-    campaign = await use_case.execute(SurveyCampaignId(campaign_id), SurveyCampaignTransition.CLOSE)
+    campaign = await use_case.execute(
+        SurveyCampaignId(campaign_id),
+        SurveyCampaignTransition.CLOSE,
+        tenant_id=current_user.tenant_id,
+    )
     await audit_change(campaign, audit_handler, current_user, request)
     return _to_campaign_response(campaign)
 
@@ -193,7 +199,7 @@ async def get_survey_aggregate(
     campaign = await campaign_repo.get_by_id(SurveyCampaignId(campaign_id))
     if campaign is None:
         raise HTTPException(status_code=404, detail="Survey campaign not found")
-    require_same_tenant(current_user, campaign.tenant_id.value)
+    assert_same_tenant(current_user, campaign.tenant_id.value)
     use_case = GetSurveyAggregateUseCase(campaign_repo, response_repo)
     return SurveyAggregateResponse(**await use_case.execute(SurveyCampaignId(campaign_id)))
 

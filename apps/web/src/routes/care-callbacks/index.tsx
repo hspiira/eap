@@ -21,7 +21,7 @@ import { IconButton } from "@/components/common/IconButton"
 import { PageShell } from "@/components/common/PageShell"
 import { TableSkeleton } from "@/components/common/PageSkeletons"
 import { SelectionBar } from "@/components/common/SelectionBar"
-import { compareSort, nextSort, SortHeader, type SortState } from "@/components/common/SortHeader"
+import { compareSort, SortHeader, type SortState } from "@/components/common/SortHeader"
 import { STICKY_TABLE_HEAD } from "@/components/common/tableStyles"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
@@ -41,6 +41,7 @@ import {
 } from "@/components/ui/table"
 import { useCanWrite } from "@/hooks/useCanWrite"
 import { useTableSelection } from "@/hooks/useTableSelection"
+import { useUrlSort } from "@/hooks/useUrlSort"
 import { formatDate } from "@/lib/format"
 import { enumParam, listSearchSchema } from "@/lib/search-params"
 import { cn } from "@/lib/utils"
@@ -69,7 +70,11 @@ function CampaignsListPage() {
   const navigate = useNavigate({ from: "/care-callbacks/" })
   const [searchInput, setSearchInput] = useState(searchParams.search ?? "")
   const [addOpen, setAddOpen] = useState(false)
-  const [sort, setSort] = useState<SortState>({ field: "period_start", desc: true })
+  const { sort, toggleSort } = useUrlSort({
+    searchParams,
+    navigate,
+    initialSort: { field: "period_start", desc: true },
+  })
   const canWrite = useCanWrite()
   useEffect(() => {
     if (searchParams.new) {
@@ -96,7 +101,6 @@ function CampaignsListPage() {
     const status = next === "all" ? undefined : (next as CareCallbackCampaignStatus)
     navigate({ search: (prev) => ({ ...prev, status }), replace: true })
   }
-  const toggleSort = (field: string) => setSort((prev) => nextSort(prev, field))
   const hasFilters = Boolean(searchInput) || Boolean(searchParams.status)
 
   return (

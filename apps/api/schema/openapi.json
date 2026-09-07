@@ -1108,6 +1108,20 @@
         "title": "Body_queue_client_import_clients_import_jobs_post",
         "type": "object"
       },
+      "Body_stage_import_practitioner_imports_post": {
+        "properties": {
+          "file": {
+            "contentMediaType": "application/octet-stream",
+            "title": "File",
+            "type": "string"
+          }
+        },
+        "required": [
+          "file"
+        ],
+        "title": "Body_stage_import_practitioner_imports_post",
+        "type": "object"
+      },
       "Body_stage_import_session_imports_post": {
         "properties": {
           "file": {
@@ -6413,6 +6427,110 @@
         "title": "EngagementCreate",
         "type": "object"
       },
+      "EngagementDocumentKind": {
+        "description": "The seven engagement documents tracked per practitioner (P-02).",
+        "enum": [
+          "Contract",
+          "KYC",
+          "CertificateOfRegistration",
+          "MoA",
+          "UcaLicence",
+          "DeclarationForm",
+          "LeadConsultantCV"
+        ],
+        "title": "EngagementDocumentKind",
+        "type": "string"
+      },
+      "EngagementDocumentResponse": {
+        "properties": {
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "document_kind": {
+            "$ref": "#/components/schemas/EngagementDocumentKind"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          },
+          "provider_id": {
+            "title": "Provider Id",
+            "type": "string"
+          },
+          "state": {
+            "$ref": "#/components/schemas/EngagementDocumentState"
+          },
+          "tenant_id": {
+            "title": "Tenant Id",
+            "type": "string"
+          },
+          "updated_at": {
+            "format": "date-time",
+            "title": "Updated At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "tenant_id",
+          "provider_id",
+          "document_kind",
+          "state",
+          "note",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "EngagementDocumentResponse",
+        "type": "object"
+      },
+      "EngagementDocumentState": {
+        "description": "Whether an engagement document is on file, absent, or being chased.",
+        "enum": [
+          "Present",
+          "Missing",
+          "Open"
+        ],
+        "title": "EngagementDocumentState",
+        "type": "string"
+      },
+      "EngagementDocumentUpsert": {
+        "description": "Set one checklist entry. The document kind comes from the path.",
+        "properties": {
+          "note": {
+            "anyOf": [
+              {
+                "maxLength": 255,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          },
+          "state": {
+            "$ref": "#/components/schemas/EngagementDocumentState"
+          }
+        },
+        "required": [
+          "state"
+        ],
+        "title": "EngagementDocumentUpsert",
+        "type": "object"
+      },
       "EngagementResponse": {
         "properties": {
           "activated_at": {
@@ -6994,6 +7112,7 @@
           "MissingPractitioner",
           "UnmappedPractitioner",
           "AmbiguousPractitioner",
+          "UnresolvedClient",
           "UnresolvedMember",
           "UnresolvedService",
           "Rejected"
@@ -8392,6 +8511,62 @@
         "title": "MemberGender",
         "type": "string"
       },
+      "MemberImportCommitRequest": {
+        "additionalProperties": false,
+        "description": "A slice of confirmed rows. Each row is committed on its own.",
+        "properties": {
+          "rows": {
+            "items": {
+              "$ref": "#/components/schemas/MemberImportCommitRow"
+            },
+            "maxItems": 100,
+            "minItems": 1,
+            "title": "Rows",
+            "type": "array"
+          }
+        },
+        "required": [
+          "rows"
+        ],
+        "title": "MemberImportCommitRequest",
+        "type": "object"
+      },
+      "MemberImportCommitResponse": {
+        "properties": {
+          "results": {
+            "items": {
+              "$ref": "#/components/schemas/MemberImportRowResult"
+            },
+            "title": "Results",
+            "type": "array"
+          }
+        },
+        "required": [
+          "results"
+        ],
+        "title": "MemberImportCommitResponse",
+        "type": "object"
+      },
+      "MemberImportCommitRow": {
+        "additionalProperties": false,
+        "description": "One row the client confirmed for import, replayed from the preview.",
+        "properties": {
+          "row": {
+            "minimum": 1.0,
+            "title": "Row",
+            "type": "integer"
+          },
+          "values": {
+            "$ref": "#/components/schemas/MemberImportRowValues"
+          }
+        },
+        "required": [
+          "row",
+          "values"
+        ],
+        "title": "MemberImportCommitRow",
+        "type": "object"
+      },
       "MemberImportIssue": {
         "properties": {
           "field": {
@@ -8539,6 +8714,16 @@
           "state": {
             "title": "State",
             "type": "string"
+          },
+          "values": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/MemberImportRowValues"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "required": [
@@ -8550,6 +8735,209 @@
           "state"
         ],
         "title": "MemberImportRowPreview",
+        "type": "object"
+      },
+      "MemberImportRowResult": {
+        "description": "What happened to a single row once it was written.",
+        "properties": {
+          "member_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Member Id"
+          },
+          "message": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Message"
+          },
+          "row": {
+            "title": "Row",
+            "type": "integer"
+          },
+          "state": {
+            "title": "State",
+            "type": "string"
+          }
+        },
+        "required": [
+          "row",
+          "state"
+        ],
+        "title": "MemberImportRowResult",
+        "type": "object"
+      },
+      "MemberImportRowValues": {
+        "additionalProperties": false,
+        "description": "The raw CSV values for one roster row, as the parser read them.\n\nThe preview echoes these back so the confirmation step can send one row at a\ntime without re-uploading the file.",
+        "properties": {
+          "client_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Client Code"
+          },
+          "date_of_birth": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Date Of Birth"
+          },
+          "display_label": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Display Label"
+          },
+          "employer_member_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Employer Member Id"
+          },
+          "gender": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Gender"
+          },
+          "national_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "National Id"
+          },
+          "passport_number": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Passport Number"
+          },
+          "personal_email": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Personal Email"
+          },
+          "phone": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Phone"
+          },
+          "primary_employee_member_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Primary Employee Member Id"
+          },
+          "relation": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Relation"
+          },
+          "staff_number": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Staff Number"
+          },
+          "status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Status"
+          },
+          "work_email": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Work Email"
+          }
+        },
+        "title": "MemberImportRowValues",
         "type": "object"
       },
       "MemberListResponse": {
@@ -9769,6 +10157,354 @@
         "title": "PaymentStatus",
         "type": "string"
       },
+      "PractitionerImportApplyResponse": {
+        "description": "Outcome of applying a batch.\n\n`reused_organisations` counts distinct firms that already existed;\n`not_applicable` counts rows left untouched because a person has not\naccepted them.",
+        "properties": {
+          "batch": {
+            "$ref": "#/components/schemas/PractitionerImportBatchResponse"
+          },
+          "created_affiliations": {
+            "title": "Created Affiliations",
+            "type": "integer"
+          },
+          "created_organisations": {
+            "title": "Created Organisations",
+            "type": "integer"
+          },
+          "created_providers": {
+            "title": "Created Providers",
+            "type": "integer"
+          },
+          "failed": {
+            "title": "Failed",
+            "type": "integer"
+          },
+          "not_applicable": {
+            "title": "Not Applicable",
+            "type": "integer"
+          },
+          "reused_organisations": {
+            "title": "Reused Organisations",
+            "type": "integer"
+          },
+          "rows": {
+            "items": {
+              "$ref": "#/components/schemas/PractitionerImportApplyRowResult"
+            },
+            "title": "Rows",
+            "type": "array"
+          },
+          "skipped_already_applied": {
+            "title": "Skipped Already Applied",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "batch",
+          "created_providers",
+          "created_organisations",
+          "reused_organisations",
+          "created_affiliations",
+          "skipped_already_applied",
+          "failed",
+          "not_applicable",
+          "rows"
+        ],
+        "title": "PractitionerImportApplyResponse",
+        "type": "object"
+      },
+      "PractitionerImportApplyRowResult": {
+        "description": "One Accepted row's apply result. Untouched rows appear only in counts.",
+        "properties": {
+          "affiliation_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Affiliation Id"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error"
+          },
+          "organisation_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organisation Id"
+          },
+          "provider_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Provider Id"
+          },
+          "row_number": {
+            "title": "Row Number",
+            "type": "integer"
+          },
+          "sheet_name": {
+            "title": "Sheet Name",
+            "type": "string"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "sheet_name",
+          "row_number",
+          "status"
+        ],
+        "title": "PractitionerImportApplyRowResult",
+        "type": "object"
+      },
+      "PractitionerImportBatchResponse": {
+        "properties": {
+          "applied_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Applied At"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "file_hash": {
+            "title": "File Hash",
+            "type": "string"
+          },
+          "file_name": {
+            "title": "File Name",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "outcome_counts": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "title": "Outcome Counts",
+            "type": "object"
+          },
+          "row_count": {
+            "title": "Row Count",
+            "type": "integer"
+          },
+          "source_system": {
+            "title": "Source System",
+            "type": "string"
+          },
+          "status": {
+            "$ref": "#/components/schemas/ImportBatchStatus"
+          },
+          "tenant_id": {
+            "title": "Tenant Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "tenant_id",
+          "source_system",
+          "file_name",
+          "file_hash",
+          "row_count",
+          "status",
+          "outcome_counts",
+          "created_at",
+          "applied_at"
+        ],
+        "title": "PractitionerImportBatchResponse",
+        "type": "object"
+      },
+      "PractitionerImportOutcome": {
+        "description": "Per-row result of a staged practitioner workbook import.\n\nNot ImportRowOutcome: those values name session-extract resolutions\n(member, service, practitioner lookup) that do not exist here, and none\nof them means \"a person must decide before this row can be applied\".",
+        "enum": [
+          "Accepted",
+          "NeedsReview",
+          "Duplicate",
+          "Rejected"
+        ],
+        "title": "PractitionerImportOutcome",
+        "type": "string"
+      },
+      "PractitionerImportRowListResponse": {
+        "properties": {
+          "has_more": {
+            "title": "Has More",
+            "type": "boolean"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/PractitionerImportRowPreview"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "limit": {
+            "title": "Limit",
+            "type": "integer"
+          },
+          "page": {
+            "title": "Page",
+            "type": "integer"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "items",
+          "total",
+          "page",
+          "limit",
+          "has_more"
+        ],
+        "title": "PractitionerImportRowListResponse",
+        "type": "object"
+      },
+      "PractitionerImportRowPreview": {
+        "properties": {
+          "contact_email": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Contact Email"
+          },
+          "mapped_profession": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mapped Profession"
+          },
+          "normalized_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Normalized Name"
+          },
+          "organisation_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organisation Name"
+          },
+          "outcome": {
+            "$ref": "#/components/schemas/PractitionerImportOutcome"
+          },
+          "provenance": {
+            "additionalProperties": true,
+            "title": "Provenance",
+            "type": "object"
+          },
+          "raw_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Raw Name"
+          },
+          "raw_profession": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Raw Profession"
+          },
+          "reasons": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Reasons",
+            "type": "array"
+          },
+          "row_number": {
+            "title": "Row Number",
+            "type": "integer"
+          },
+          "sheet_name": {
+            "title": "Sheet Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "sheet_name",
+          "row_number",
+          "outcome",
+          "raw_name",
+          "normalized_name",
+          "organisation_name",
+          "raw_profession",
+          "mapped_profession",
+          "contact_email",
+          "reasons",
+          "provenance"
+        ],
+        "title": "PractitionerImportRowPreview",
+        "type": "object"
+      },
       "PresentingProblem": {
         "description": "Top-level category of the presenting concern at intake.",
         "enum": [
@@ -10642,7 +11378,14 @@
             "default": "Active"
           },
           "region": {
-            "$ref": "#/components/schemas/UgandaRegion"
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/UgandaRegion"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "specialties": {
             "items": {
@@ -10652,12 +11395,17 @@
             "type": "array"
           },
           "tier": {
-            "$ref": "#/components/schemas/ProviderTier"
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ProviderTier"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "required": [
-          "tier",
-          "region",
           "accreditation_status"
         ],
         "title": "ProviderProfileSchema",
@@ -11917,6 +12665,11 @@
             "description": "User ID of approver",
             "title": "Approved By"
           },
+          "attendance": {
+            "$ref": "#/components/schemas/SessionAttendance",
+            "default": "Individual",
+            "description": "Individual names a member; CompanyWide names a client and a headcount"
+          },
           "category": {
             "anyOf": [
               {
@@ -11927,6 +12680,18 @@
               }
             ],
             "description": "Individual / Group / Family / Couples"
+          },
+          "client_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Required for a CompanyWide session. For an Individual session it is taken from the member, so that the two cannot disagree",
+            "title": "Client Id"
           },
           "client_type": {
             "anyOf": [
@@ -12016,9 +12781,16 @@
             "title": "Location"
           },
           "member_id": {
-            "description": "Member identifier",
-            "title": "Member Id",
-            "type": "string"
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Required for an Individual session, forbidden for a CompanyWide one",
+            "title": "Member Id"
           },
           "partner_name": {
             "anyOf": [
@@ -12113,7 +12885,6 @@
         "required": [
           "service_id",
           "provider_id",
-          "member_id",
           "scheduled_at",
           "delivery_context"
         ],
@@ -12193,6 +12964,10 @@
             "description": "User ID of approver",
             "title": "Approved By"
           },
+          "attendance": {
+            "$ref": "#/components/schemas/SessionAttendance",
+            "description": "Individual or CompanyWide"
+          },
           "cancellation_reason": {
             "anyOf": [
               {
@@ -12215,6 +12990,23 @@
               }
             ],
             "description": "Individual / Group / Family / Couples"
+          },
+          "client_id": {
+            "description": "The client the session is attributed to",
+            "title": "Client Id",
+            "type": "string"
+          },
+          "client_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Resolved client name",
+            "title": "Client Name"
           },
           "client_type": {
             "anyOf": [
@@ -12349,10 +13141,29 @@
             "description": "Session location",
             "title": "Location"
           },
+          "member_display_label": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Resolved member name",
+            "title": "Member Display Label"
+          },
           "member_id": {
-            "description": "Member identifier",
-            "title": "Member Id",
-            "type": "string"
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Absent on a company-wide session",
+            "title": "Member Id"
           },
           "notes": {
             "anyOf": [
@@ -12402,6 +13213,18 @@
             "description": "The affiliation this session is attributed to, if any",
             "title": "Provider Affiliation Id"
           },
+          "provider_display_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Resolved practitioner name",
+            "title": "Provider Display Name"
+          },
           "provider_id": {
             "description": "Provider (person) identifier",
             "title": "Provider Id",
@@ -12447,6 +13270,18 @@
             "title": "Service Id",
             "type": "string"
           },
+          "service_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Resolved service name",
+            "title": "Service Name"
+          },
           "session_number": {
             "anyOf": [
               {
@@ -12485,7 +13320,8 @@
           "tenant_id",
           "service_id",
           "provider_id",
-          "member_id",
+          "attendance",
+          "client_id",
           "scheduled_at",
           "delivery_context",
           "status",
@@ -12770,6 +13606,15 @@
         "title": "ServiceUpdateGroupSettings",
         "type": "object"
       },
+      "SessionAttendance": {
+        "description": "Who a session was delivered to.\n\nCOMPANY_WIDE covers a health talk or site visit: a real session delivered to\na client with no individual to name. It is not the same as not knowing who\nattended. The source extract holds 569 rows marked Staff or Dependant with\nno member id, and those are unresolved identities that stay staged rather\nthan becoming member-less sessions. Keeping the two apart is what lets\nvalidation require a headcount here and a member there.",
+        "enum": [
+          "Individual",
+          "CompanyWide"
+        ],
+        "title": "SessionAttendance",
+        "type": "string"
+      },
       "SessionCategory": {
         "enum": [
           "Individual",
@@ -12781,11 +13626,12 @@
         "type": "string"
       },
       "SessionClinicalStatus": {
-        "description": "Clinical continuation outcome recorded by the counsellor at session end.\n\nDistinct from SessionStatus (scheduling lifecycle).\nTO_BE_CONTINUED:  client returns for follow-up (xlsx: T).\nREFERRED:         client referred elsewhere (xlsx: R).\nCOMPLETED:        case episode closed this session (xlsx: C).",
+        "description": "Clinical continuation outcome recorded by the counsellor at session end.\n\nDistinct from SessionStatus (scheduling lifecycle).\nTO_BE_CONTINUED:  client returns for follow-up (xlsx: T).\nREFERRED:         client referred elsewhere (xlsx: R).\nCOMPLETED:        case episode closed this session (xlsx: C).\nTERMINATED:       engagement ended without completing.",
         "enum": [
           "ToBeContinued",
           "Referred",
-          "Completed"
+          "Completed",
+          "Terminated"
         ],
         "title": "SessionClinicalStatus",
         "type": "string"
@@ -15036,6 +15882,11 @@
             "description": "Successful Response"
           }
         },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
         "summary": "Root"
       }
     },
@@ -15403,6 +16254,11 @@
             "description": "Validation Error"
           }
         },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
         "summary": "Get activity by ID",
         "tags": [
           "activities"
@@ -15929,6 +16785,11 @@
             "description": "Validation Error"
           }
         },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
         "summary": "Azure AD SSO callback (exchanges code for internal JWT)",
         "tags": [
           "authentication"
@@ -15949,6 +16810,11 @@
             "description": "Successful Response"
           }
         },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
         "summary": "Initiate Azure AD SSO (redirects to Microsoft login)",
         "tags": [
           "authentication"
@@ -15991,6 +16857,11 @@
             "description": "Validation Error"
           }
         },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
         "summary": "Authenticate user and get access token",
         "tags": [
           "authentication"
@@ -16033,6 +16904,11 @@
             "description": "Validation Error"
           }
         },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
         "summary": "Revoke refresh token (logout)",
         "tags": [
           "authentication"
@@ -16109,6 +16985,11 @@
             "description": "Validation Error"
           }
         },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
         "summary": "Refresh access token",
         "tags": [
           "authentication"
@@ -16144,6 +17025,11 @@
             "description": "Validation Error"
           }
         },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
         "summary": "Set initial admin password using one-time token",
         "tags": [
           "authentication"
@@ -16703,6 +17589,11 @@
             "description": "Validation Error"
           }
         },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
         "summary": "Get a campaign",
         "tags": [
           "care-callbacks"
@@ -17035,6 +17926,11 @@
             "description": "Validation Error"
           }
         },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
         "summary": "List outreach records for a campaign",
         "tags": [
           "care-callbacks"
@@ -17077,6 +17973,11 @@
             "description": "Validation Error"
           }
         },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
         "summary": "Aggregated outreach status / triage / crisis stats for the campaign",
         "tags": [
           "care-callbacks"
@@ -17799,6 +18700,11 @@
             "description": "Validation Error"
           }
         },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
         "summary": "Get client tag by ID",
         "tags": [
           "client-tags"
@@ -18868,6 +19774,11 @@
             "description": "Successful Response"
           }
         },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
         "summary": "Download the client CSV import template",
         "tags": [
           "clients"
@@ -20710,6 +21621,11 @@
             "description": "Validation Error"
           }
         },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
         "summary": "Get contact by ID",
         "tags": [
           "contacts"
@@ -24987,6 +25903,11 @@
             "description": "Successful Response"
           }
         },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
         "summary": "Health"
       }
     },
@@ -25960,6 +26881,11 @@
             "description": "Validation Error"
           }
         },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
         "summary": "Get KPI assignment by ID",
         "tags": [
           "kpis"
@@ -26381,6 +27307,11 @@
             "description": "Validation Error"
           }
         },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
         "summary": "Get KPI by ID",
         "tags": [
           "kpis"
@@ -26883,7 +27814,7 @@
     },
     "/members/import": {
       "post": {
-        "description": "Preview or import a roster using only explicit, stable member IDs.",
+        "description": "Check a roster row by row, and on confirmation import each row on its own.",
         "operationId": "import_members_members_import_post",
         "parameters": [
           {
@@ -26942,6 +27873,53 @@
         ]
       }
     },
+    "/members/import/commit": {
+      "post": {
+        "description": "Import a slice of previewed rows, re-checking and committing each one alone.\n\nThe client sends the roster in slices so it can show progress. A row that\nfails is reported and skipped; the rows already written stay written.",
+        "operationId": "commit_member_import_members_import_commit_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MemberImportCommitRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MemberImportCommitResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Commit Member Import",
+        "tags": [
+          "members"
+        ]
+      }
+    },
     "/members/import/template": {
       "get": {
         "description": "Return the supported member roster columns with one safe example row.",
@@ -26956,6 +27934,11 @@
             "description": "Successful Response"
           }
         },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
         "summary": "Download the member CSV import template",
         "tags": [
           "members"
@@ -28022,6 +29005,11 @@
             "description": "Validation Error"
           }
         },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
         "summary": "Get an outreach record",
         "tags": [
           "care-callbacks"
@@ -28659,6 +29647,278 @@
         "summary": "Audited tier change for a provider",
         "tags": [
           "panel"
+        ]
+      }
+    },
+    "/practitioner-imports": {
+      "post": {
+        "description": "Stage the workbook's rows for review. Nothing is applied.\n\nRestaging the same file in one tenant is a conflict, not a second batch.",
+        "operationId": "stage_import_practitioner_imports_post",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "tenant_id",
+            "required": true,
+            "schema": {
+              "title": "Tenant Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_stage_import_practitioner_imports_post"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PractitionerImportBatchResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Stage Import",
+        "tags": [
+          "practitioner-imports"
+        ]
+      }
+    },
+    "/practitioner-imports/{batch_id}": {
+      "get": {
+        "operationId": "get_batch_practitioner_imports__batch_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "batch_id",
+            "required": true,
+            "schema": {
+              "title": "Batch Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "tenant_id",
+            "required": true,
+            "schema": {
+              "title": "Tenant Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PractitionerImportBatchResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Get Batch",
+        "tags": [
+          "practitioner-imports"
+        ]
+      }
+    },
+    "/practitioner-imports/{batch_id}/apply": {
+      "post": {
+        "description": "Create records from the batch's Accepted rows, then close the batch.\n\nApplying a second time is refused, so a replayed request cannot create\ntwice. A failing row is quarantined for review without sinking the batch.",
+        "operationId": "apply_batch_practitioner_imports__batch_id__apply_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "batch_id",
+            "required": true,
+            "schema": {
+              "title": "Batch Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "tenant_id",
+            "required": true,
+            "schema": {
+              "title": "Tenant Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PractitionerImportApplyResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Apply Batch",
+        "tags": [
+          "practitioner-imports"
+        ]
+      }
+    },
+    "/practitioner-imports/{batch_id}/rows": {
+      "get": {
+        "operationId": "list_rows_practitioner_imports__batch_id__rows_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "batch_id",
+            "required": true,
+            "schema": {
+              "title": "Batch Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "tenant_id",
+            "required": true,
+            "schema": {
+              "title": "Tenant Id",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Filter the review queue",
+            "in": "query",
+            "name": "outcome",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/PractitionerImportOutcome"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter the review queue",
+              "title": "Outcome"
+            }
+          },
+          {
+            "description": "Page number",
+            "in": "query",
+            "name": "page",
+            "required": false,
+            "schema": {
+              "default": 1,
+              "description": "Page number",
+              "minimum": 1,
+              "title": "Page",
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Items per page",
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 50,
+              "description": "Items per page",
+              "maximum": 100,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PractitionerImportRowListResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "List Rows",
+        "tags": [
+          "practitioner-imports"
         ]
       }
     },
@@ -29613,6 +30873,11 @@
             "description": "Validation Error"
           }
         },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
         "summary": "List Specialties",
         "tags": [
           "provider-specialties"
@@ -30394,6 +31659,122 @@
         ]
       }
     },
+    "/providers/{provider_id}/engagement-documents": {
+      "get": {
+        "operationId": "list_engagement_documents_providers__provider_id__engagement_documents_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "provider_id",
+            "required": true,
+            "schema": {
+              "title": "Provider Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/EngagementDocumentResponse"
+                  },
+                  "title": "Response List Engagement Documents Providers  Provider Id  Engagement Documents Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "The engagement-document checklist for one practitioner",
+        "tags": [
+          "providers"
+        ]
+      }
+    },
+    "/providers/{provider_id}/engagement-documents/{document_kind}": {
+      "put": {
+        "operationId": "upsert_engagement_document_providers__provider_id__engagement_documents__document_kind__put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "provider_id",
+            "required": true,
+            "schema": {
+              "title": "Provider Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "document_kind",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/EngagementDocumentKind"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EngagementDocumentUpsert"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EngagementDocumentResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Audited upsert of one checklist entry",
+        "tags": [
+          "providers"
+        ]
+      }
+    },
     "/providers/{provider_id}/panel-status": {
       "patch": {
         "operationId": "change_panel_status_providers__provider_id__panel_status_patch",
@@ -30567,6 +31948,7 @@
     },
     "/reports/runs/{run_id}": {
       "get": {
+        "description": "Read one run and its materialised output.\n\nMaterialising the numbers does not make them public: the parameters and\nnarrative sit inside the same tenant boundary as the figures, so the read is\nauthorised here as well as at run time.",
         "operationId": "get_run_reports_runs__run_id__get",
         "parameters": [
           {
@@ -30601,6 +31983,11 @@
             "description": "Validation Error"
           }
         },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
         "summary": "Get a single report run (with materialised output)",
         "tags": [
           "reports"
@@ -30790,6 +32177,7 @@
     },
     "/reports/templates/{template_id}": {
       "get": {
+        "description": "Read one template. Authenticated, and only within the caller's tenant.",
         "operationId": "get_template_reports_templates__template_id__get",
         "parameters": [
           {
@@ -30824,6 +32212,11 @@
             "description": "Validation Error"
           }
         },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
         "summary": "Get a report template by ID",
         "tags": [
           "reports"
@@ -31308,6 +32701,11 @@
             "description": "Validation Error"
           }
         },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
         "summary": "Get service assignment by ID",
         "tags": [
           "service-assignments"
@@ -31550,6 +32948,60 @@
               ],
               "description": "Filter by session status",
               "title": "Status"
+            }
+          },
+          {
+            "description": "Filter by physical or online",
+            "in": "query",
+            "name": "session_type",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/SessionType"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter by physical or online",
+              "title": "Session Type"
+            }
+          },
+          {
+            "description": "Filter by session category",
+            "in": "query",
+            "name": "category",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/SessionCategory"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter by session category",
+              "title": "Category"
+            }
+          },
+          {
+            "description": "Filter by clinical outcome",
+            "in": "query",
+            "name": "clinical_outcome",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/SessionClinicalStatus"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter by clinical outcome",
+              "title": "Clinical Outcome"
             }
           },
           {
@@ -33720,6 +35172,11 @@
             "description": "Validation Error"
           }
         },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
         "summary": "Public webhook ingestion (HMAC-verified, idempotent)",
         "tags": [
           "surveys"
@@ -33950,6 +35407,11 @@
             "description": "Validation Error"
           }
         },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
         "summary": "Check if tenant code is available",
         "tags": [
           "tenants"

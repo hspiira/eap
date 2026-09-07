@@ -78,6 +78,42 @@ export function BackLink() {
   )
 }
 
+export function DemoTemplateUnavailable({ title }: { title: string }) {
+  return (
+    <PageShell icon={FileBarChart} breadcrumb={`Reports · ${title}`}>
+      <EmptyState
+        icon={FileBarChart}
+        title="Not available yet"
+        description={`${title} exists only as a demonstration built on sample records. It is withheld outside demo mode because it is not bound to the tenant's own data.`}
+        action={
+          <Link
+            to="/reports"
+            className="inline-flex h-9 items-center gap-1.5 rounded-sm border border-fg/15 bg-surface px-3 text-sm font-medium text-fg hover:bg-surface-hover"
+          >
+            <ArrowLeft className="size-4" />
+            Back to reports
+          </Link>
+        }
+      />
+    </PageShell>
+  )
+}
+
+export function DemoDataBanner({ note }: { note: string }) {
+  return (
+    <div
+      role="note"
+      className="rounded-sm border border-warning/40 bg-warning-soft px-3 py-2 print:border print:border-black print:bg-white"
+    >
+      <p className="flex items-center gap-1.5 text-[11px] font-semibold tracking-wide text-warning-fg print:text-black">
+        <AlertTriangle className="size-3.5" />
+        Demonstration data
+      </p>
+      <p className="mt-0.5 text-xs text-warning-fg print:text-black">{note}</p>
+    </div>
+  )
+}
+
 export function UnknownTemplate({ slug }: { slug: string }) {
   return (
     <PageShell icon={FileBarChart} breadcrumb={`Reports · ${slug}`}>

@@ -18,12 +18,21 @@ from dataclasses import dataclass
 from datetime import datetime
 
 from app.domain.entities.service_session import ServiceSessionEntity
-from app.domain.enums import SessionDeliveryContext, SessionStatus
+from app.domain.enums import (
+    ClientType,
+    SessionAttendance,
+    SessionCategory,
+    SessionClinicalStatus,
+    SessionDeliveryContext,
+    SessionStatus,
+    SessionType,
+)
 from app.domain.exceptions import DomainError
 from app.domain.repositories.provider_repository import ProviderRepository
 from app.domain.repositories.service_session_repository import ServiceSessionRepository
 from app.domain.services.provider_network_calendar import boundary_day
 from app.domain.value_objects.core import (
+    ClientId,
     EligibleMemberId,
     ProviderId,
     ServiceId,
@@ -48,12 +57,22 @@ class HistoricalSessionRecord:
     tenant_id: TenantId
     service_id: ServiceId
     provider_id: ProviderId
-    member_id: EligibleMemberId
+    client_id: ClientId
     delivered_at: datetime
     delivery_context: SessionDeliveryContext
+    attendance: SessionAttendance = SessionAttendance.INDIVIDUAL
+    member_id: EligibleMemberId | None = None
     provider_affiliation_id: str | None = None
     source_batch_id: str | None = None
     source_row_number: int | None = None
+    # Activity-log values, normalised at staging; None where the source did not map.
+    session_type: SessionType | None = None
+    category: SessionCategory | None = None
+    clinical_outcome: SessionClinicalStatus | None = None
+    final_status: SessionStatus | None = None
+    client_type: ClientType | None = None
+    rate_ugx: int | None = None
+    session_number: int | None = None
 
 
 class RecordHistoricalSessionUseCase:
@@ -71,6 +90,7 @@ class RecordHistoricalSessionUseCase:
         await self._require_same_tenant_practitioner(record)
         _require_past(record.delivered_at)
         _require_consistent_context(record)
+        _require_terminal_status(record.final_status)
 
         now = utc_now()
         session = ServiceSessionEntity(
@@ -78,15 +98,28 @@ class RecordHistoricalSessionUseCase:
             tenant_id=record.tenant_id,
             service_id=record.service_id,
             provider_id=record.provider_id,
+            client_id=record.client_id,
+            attendance=record.attendance,
             member_id=record.member_id,
             scheduled_at=record.delivered_at,
             delivery_context=record.delivery_context,
             provider_affiliation_id=record.provider_affiliation_id,
-            status=SessionStatus.COMPLETED,
-            completed_at=record.delivered_at,
+            # A no-show is the one historical outcome that is not a completion.
+            status=record.final_status or SessionStatus.COMPLETED,
+            completed_at=(
+                record.delivered_at
+                if (record.final_status or SessionStatus.COMPLETED) is SessionStatus.COMPLETED
+                else None
+            ),
             created_at=now,
             updated_at=now,
             reschedule_count=0,
+            session_type=record.session_type,
+            category=record.category,
+            clinical_outcome=record.clinical_outcome,
+            client_type=record.client_type,
+            rate_ugx=record.rate_ugx,
+            session_number=record.session_number,
         )
         await self._sessions.save(session)
         return session
@@ -119,4 +152,13 @@ def _require_consistent_context(record: HistoricalSessionRecord) -> None:
             "Organisation delivery requires an affiliation, and direct or unknown "
             "delivery must not carry one",
             "delivery_context_inconsistent",
+        )
+
+
+def _require_terminal_status(status: SessionStatus | None) -> None:
+    """A past session either happened or nobody came; other states are live ones."""
+    if status is not None and status not in (SessionStatus.COMPLETED, SessionStatus.NO_SHOW):
+        raise HistoricalImportRejected(
+            f"A historical session cannot be recorded as {status.value}",
+            code="HISTORICAL_STATUS_NOT_TERMINAL",
         )

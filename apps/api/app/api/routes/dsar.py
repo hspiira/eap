@@ -25,7 +25,7 @@ from app.application.use_cases.dsar_use_cases import (
     RequestErasureUseCase,
     RequestExportUseCase,
 )
-from app.core.authorization import require_same_tenant
+from app.core.authorization import assert_same_tenant
 from app.core.database import get_db
 from app.core.security import TokenData, get_current_user
 from app.domain.entities.dsar_request import DSARRequest
@@ -127,7 +127,7 @@ async def execute_export(
     req = await repo.get_by_id(DSARRequestId(request_id))
     if req is None:
         raise HTTPException(status_code=404, detail="DSAR request not found")
-    require_same_tenant(current_user, req.tenant_id.value)
+    assert_same_tenant(current_user, req.tenant_id.value)
     out = await ExecuteExportUseCase(repo, collector).execute(DSARRequestId(request_id))
     return _to_response(out)
 
@@ -178,7 +178,7 @@ async def cancel_erasure(
     req = await repo.get_by_id(DSARRequestId(request_id))
     if req is None:
         raise HTTPException(status_code=404, detail="DSAR request not found")
-    require_same_tenant(current_user, req.tenant_id.value)
+    assert_same_tenant(current_user, req.tenant_id.value)
     out = await CancelErasureUseCase(repo).execute(DSARRequestId(request_id))
     return _to_response(out)
 
@@ -200,7 +200,7 @@ async def execute_erasure(
     req = await repo.get_by_id(DSARRequestId(request_id))
     if req is None:
         raise HTTPException(status_code=404, detail="DSAR request not found")
-    require_same_tenant(current_user, req.tenant_id.value)
+    assert_same_tenant(current_user, req.tenant_id.value)
     out = await ExecuteErasureUseCase(repo, tombstoner).execute(DSARRequestId(request_id))
     return _to_response(out)
 
@@ -235,5 +235,5 @@ async def get_dsar_request(
     req = await repo.get_by_id(DSARRequestId(request_id))
     if req is None:
         raise HTTPException(status_code=404, detail="DSAR request not found")
-    require_same_tenant(current_user, req.tenant_id.value)
+    assert_same_tenant(current_user, req.tenant_id.value)
     return _to_response(req)

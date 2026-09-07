@@ -1,9 +1,15 @@
 import type * as TanstackRouter from "@tanstack/react-router"
 import { screen } from "@testing-library/react"
 import type { ReactElement } from "react"
-import { describe, expect, it, vi } from "vitest"
+import { beforeEach, describe, expect, it, vi } from "vitest"
 
 import { renderWithProviders } from "@/test/utils"
+
+let fixturesEnabled = true
+
+vi.mock("@/lib/fixtures", () => ({
+  useFixtures: () => fixturesEnabled,
+}))
 
 vi.mock("@tanstack/react-router", async () => {
   const actual = await vi.importActual<typeof TanstackRouter>("@tanstack/react-router")
@@ -26,6 +32,10 @@ async function renderRoute(modulePath: string): Promise<HTMLElement> {
   return container
 }
 
+beforeEach(() => {
+  fixturesEnabled = true
+})
+
 describe("reports landing", () => {
   it("lists the four report templates", async () => {
     await renderRoute("@/routes/reports/index")
@@ -39,9 +49,30 @@ describe("reports landing", () => {
     await renderRoute("@/routes/reports/index")
     expect(screen.getAllByText(/coming soon/i).length).toBeGreaterThanOrEqual(2)
   })
+
+  it("labels the renewal pack as demonstration data rather than a ready report", async () => {
+    await renderRoute("@/routes/reports/index")
+    expect(screen.getByText(/demonstration data/i)).toBeInTheDocument()
+  })
+
+  it("withholds the renewal pack entirely when fixtures are off", async () => {
+    fixturesEnabled = false
+    await renderRoute("@/routes/reports/index")
+    expect(screen.queryByText(/demonstration data/i)).not.toBeInTheDocument()
+    expect(screen.getAllByText(/coming soon/i).length).toBe(3)
+  })
 })
 
 describe("per-client renewal pack template", () => {
+  it("is unavailable when fixtures are off, and prints no sample record", async () => {
+    fixturesEnabled = false
+    await renderRoute("@/routes/reports/$templateSlug")
+
+    expect(screen.getByText(/not available yet/i)).toBeInTheDocument()
+    expect(screen.queryByText(/stanbic bank uganda/i)).not.toBeInTheDocument()
+    expect(screen.queryByRole("button", { name: /print/i })).not.toBeInTheDocument()
+  })
+
   it("renders all sections from the fixture", async () => {
     await renderRoute("@/routes/reports/$templateSlug")
 
@@ -50,6 +81,15 @@ describe("per-client renewal pack template", () => {
     expect(screen.getByText(/diagnosis prevalence/i)).toBeInTheDocument()
     expect(screen.getByText(/care-callback outcomes/i)).toBeInTheDocument()
     expect(screen.getByText(/satisfaction distribution/i)).toBeInTheDocument()
+  })
+
+  it("labels the demo data on the page and in the printed output", async () => {
+    const container = await renderRoute("@/routes/reports/$templateSlug")
+
+    const banner = screen.getByRole("note")
+    expect(banner).toHaveTextContent(/demonstration data/i)
+    expect(banner).toHaveTextContent(/not this tenant's data/i)
+    expect(container.querySelector("[role='note']")?.className).not.toMatch(/print:hidden/)
   })
 
   it("shows period and tier in the header", async () => {

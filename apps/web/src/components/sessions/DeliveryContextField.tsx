@@ -76,7 +76,6 @@ export function DeliveryContextField({
       <FormField
         label="Delivered through"
         required
-        description="Whether the practitioner delivers this session directly or on behalf of a supplier firm."
         error={contextError}
         htmlFor="ss-delivery-context"
       >
@@ -85,7 +84,7 @@ export function DeliveryContextField({
           onValueChange={(value) => onContextChange(value as BookableContext)}
         >
           <SelectTrigger id="ss-delivery-context">
-            <SelectValue placeholder="Choose direct or organisation" />
+            <SelectValue placeholder="Direct or organisation" />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value={SessionDeliveryContext.DIRECT}>Direct</SelectItem>
@@ -98,7 +97,7 @@ export function DeliveryContextField({
         <FormField
           label="Organisation"
           required
-          description="Only firms this practitioner represents on the scheduled date are listed."
+          description="Only firms represented on the scheduled date."
           error={affiliationError}
           htmlFor="ss-affiliation"
         >

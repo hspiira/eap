@@ -180,8 +180,11 @@ class CreateTenantUseCase(BaseUseCase[TenantEntity, TenantId]):
 
         user_transition: TransitionUseCase = TransitionUseCase(self.user_repository)
         user_transition.entity_name = "User"
-        await user_transition.execute(admin_user.id, UserTransition.ACTIVATE)
-        await user_transition.execute(admin_user.id, UserTransition.VERIFY_EMAIL)
+        # The admin is created inside the tenant this use case just built, so
+        # the owner it must match is that tenant, not a caller's.
+        owner = tenant.id.value
+        await user_transition.execute(admin_user.id, UserTransition.ACTIVATE, tenant_id=owner)
+        await user_transition.execute(admin_user.id, UserTransition.VERIFY_EMAIL, tenant_id=owner)
 
         set_password_token_val: str | None = None
         set_password_expires_at_val: datetime | None = None

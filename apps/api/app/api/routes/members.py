@@ -9,7 +9,6 @@ import csv
 import io
 import json
 from collections.abc import Sequence
-from datetime import date
 from typing import Literal
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, UploadFile, status
@@ -37,8 +36,11 @@ from app.api.schemas.member_schemas import (
     MemberDuplicateCandidate,
     MemberDuplicateListResponse,
     MemberDuplicateMember,
+    MemberImportCommitRequest,
+    MemberImportCommitResponse,
     MemberImportResponse,
     MemberImportRowPreview,
+    MemberImportRowResult,
     MemberListResponse,
     MemberMergeRequest,
     MemberMergeResponse,
@@ -49,6 +51,13 @@ from app.api.schemas.member_schemas import (
     MemberUpdate,
 )
 from app.api.schemas.service_session_schemas import ServiceSessionListResponse
+from app.api.services.member_import import (
+    MemberRowChecker,
+    MemberRowImporter,
+    RowCheck,
+    csv_row,
+    row_values,
+)
 from app.application.services.member_audit import record_member_change
 from app.application.use_cases.eligible_member_use_cases import EnrolEligibleMemberUseCase
 from app.core.authorization import require_clinical_scope, require_not_viewer, require_tenant_role
@@ -57,7 +66,8 @@ from app.core.security import TokenData, get_current_user
 from app.domain.entities.client import ClientEntity
 from app.domain.entities.eligible_member import EligibleMember
 from app.domain.entities.member_next_of_kin import MemberNextOfKin
-from app.domain.enums import EligibilityStatus, MemberGender, MemberRelation, TenantRole
+from app.domain.enums import EligibilityStatus, MemberRelation, TenantRole
+from app.domain.exceptions import EvexiaException
 from app.domain.repositories.client_repository import ClientRepository
 from app.domain.repositories.eligible_member_repository import (
     ClinicalSubjectRepository,
@@ -102,6 +112,7 @@ def _member_import_row(
         state=state,
         message=message,
         default_action=default_action or ("skip" if state == "duplicate" else "import"),
+        values=row_values(row),
     )
 
 
@@ -480,7 +491,9 @@ async def export_members(
     "/import/template",
     summary="Download the member CSV import template",
 )
-async def member_import_template() -> StreamingResponse:
+async def member_import_template(
+    current_user: TokenData = Depends(get_current_user),
+) -> StreamingResponse:
     """Return the supported member roster columns with one safe example row."""
     output = io.StringIO(newline="")
     writer = csv.writer(output)
@@ -585,8 +598,74 @@ async def scan_member_duplicates(
     return MemberDuplicateListResponse(items=candidates[:100], scanned=len(members))
 
 
+ROSTER_MAX_BYTES = 10 * 1024 * 1024
+
+
+async def _read_roster(file: UploadFile) -> tuple[list[MemberCsvRow], list[dict[str, object]]]:
+    """Decode an uploaded roster into parsed rows plus per-row parser issues."""
+    if not file.filename or not file.filename.lower().endswith(".csv"):
+        raise HTTPException(status_code=415, detail="Only CSV files are supported")
+    content = await file.read()
+    if len(content) > ROSTER_MAX_BYTES:
+        raise HTTPException(status_code=413, detail="Member roster CSV must be 10 MB or smaller")
+    try:
+        return parse_member_csv(content)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+
+def _decisions(raw: str | None) -> dict[str, str]:
+    try:
+        decoded = json.loads(raw) if raw else {}
+    except (TypeError, ValueError, json.JSONDecodeError) as exc:
+        raise HTTPException(status_code=422, detail="decisions_json must be an object") from exc
+    if not isinstance(decoded, dict):
+        raise HTTPException(status_code=422, detail="decisions_json must be an object")
+    return decoded
+
+
+def _decision_for(decisions: dict[str, str], row_number: int) -> str | None:
+    return decisions.get(str(row_number), decisions.get(row_number))
+
+
+def _importer(
+    current_user: TokenData,
+    member_repo: EligibleMemberRepository,
+    subject_repo: ClinicalSubjectRepository,
+    link_repo: EligibleMemberClinicalLinkRepository,
+    outbox: OutboxRepository,
+) -> MemberRowImporter:
+    return MemberRowImporter(
+        current_user,
+        EnrolEligibleMemberUseCase(member_repo, subject_repo, link_repo),
+        member_repo,
+        outbox,
+        _tenant_secret(current_user.tenant_id),
+    )
+
+
+async def _import_row(
+    row: MemberCsvRow,
+    check: RowCheck,
+    importer: MemberRowImporter,
+    db: AsyncSession,
+) -> MemberImportRowResult:
+    """Write one checked row in its own transaction and report what happened."""
+    if check.state != "new" or check.data is None:
+        return MemberImportRowResult(row=row.row_number, state=check.state, message=check.message)
+    try:
+        member = await importer.enrol(row, check.data)
+        await db.commit()
+    except (EvexiaException, IntegrityError, ValueError) as exc:
+        await db.rollback()
+        return MemberImportRowResult(
+            row=row.row_number, state="failed", message=str(exc).split("\n", 1)[-1]
+        )
+    return MemberImportRowResult(row=row.row_number, state="imported", member_id=member.id.value)
+
+
 @router.post("/import", response_model=MemberImportResponse)
-@transactional()
+@readonly()
 async def import_members(
     file: UploadFile = File(..., description="UTF-8 client member roster CSV"),
     decisions_json: str | None = Form(None, description="Row decisions from the preview"),
@@ -601,143 +680,96 @@ async def import_members(
     outbox: OutboxRepository = Depends(get_outbox_repository),
     db: AsyncSession = Depends(get_db),
 ):
-    """Preview or import a roster using only explicit, stable member IDs."""
-    if not file.filename or not file.filename.lower().endswith(".csv"):
-        raise HTTPException(status_code=415, detail="Only CSV files are supported")
-    content = await file.read()
-    if len(content) > 10 * 1024 * 1024:
-        raise HTTPException(status_code=413, detail="Member roster CSV must be 10 MB or smaller")
-    try:
-        rows, parse_issues = parse_member_csv(content)
-    except ValueError as exc:
-        raise HTTPException(status_code=422, detail=str(exc)) from exc
-
-    try:
-        decisions = json.loads(decisions_json) if decisions_json else {}
-        if not isinstance(decisions, dict):
-            raise ValueError
-    except (TypeError, ValueError, json.JSONDecodeError) as exc:
-        raise HTTPException(status_code=422, detail="decisions_json must be an object") from exc
-    previews: dict[int, MemberImportRowPreview] = {}
-    errors: dict[int, str] = {int(issue["row"]): str(issue["message"]) for issue in parse_issues}
-    error_fields: dict[int, str | None] = {
+    """Check a roster row by row, and on confirmation import each row on its own."""
+    rows, parse_issues = await _read_roster(file)
+    decisions = _decisions(decisions_json)
+    parse_errors = {int(issue["row"]): str(issue["message"]) for issue in parse_issues}
+    error_fields = {
         int(issue["row"]): str(issue.get("field")) if issue.get("field") else None
         for issue in parse_issues
     }
-    prepared: list[tuple[MemberCsvRow, ClientEntity, MemberCreate]] = []
-    seen: set[tuple[str, str]] = set()
-    for row in rows:
-        client = (
-            await client_repo.get_by_code(TenantId(current_user.tenant_id), row.client_code or "")
-            if row.client_code
-            else None
-        )
-        message = errors.get(row.row_number)
-        if message is None and client is None:
-            message = "Company Code does not resolve to a client in this tenant"
-        key = (client.id.value, row.employer_member_id or "") if client else None
-        if message is None and key in seen:
-            message = "Staff_ID is duplicated in this file for this client"
-        duplicate = False
-        if message is None and key:
-            seen.add(key)
-            existing = await member_repo.find_by_employer_member_id(
-                TenantId(current_user.tenant_id), client.id, row.employer_member_id or ""
-            )
-            if existing is not None:
-                duplicate = True
-        data: MemberCreate | None = None
-        if message is None and client is not None:
-            try:
-                relation = MemberRelation(row.relation or MemberRelation.EMPLOYEE.value)
-                data = MemberCreate(
-                    client_id=client.id.value,
-                    employer_member_id=row.employer_member_id,
-                    display_label=row.display_label or "",
-                    work_email=row.work_email,
-                    personal_email=row.personal_email,
-                    gender=(MemberGender(row.gender.title()) if row.gender else None),
-                    date_of_birth=(
-                        date.fromisoformat(row.date_of_birth) if row.date_of_birth else None
-                    ),
-                    phone=row.phone,
-                    staff_number=row.staff_number,
-                    national_id=row.national_id,
-                    passport_number=row.passport_number,
-                    relation=relation,
-                    primary_employee_member_id=row.primary_employee_member_id,
-                )
-            except (ValueError, ValidationError) as exc:
-                message = str(exc).split("\n", 1)[-1]
-        decision = decisions.get(str(row.row_number), decisions.get(row.row_number))
-        if decision is not None and decision not in {"import", "skip"}:
-            message = "Decision must be import or skip"
-        elif duplicate and decision not in (None, "skip"):
-            message = "Existing members can only be skipped; they are never overwritten"
-        skipped = decision == "skip"
-        state = (
-            "invalid"
-            if message
-            else ("duplicate" if duplicate else ("skipped" if skipped else "new"))
-        )
-        previews[row.row_number] = _member_import_row(
-            row, client_name=client.name if client else None, state=state, message=message
-        )
-        if data is not None and message is None and not duplicate and not skipped:
-            prepared.append((row, client, data))
 
-    if errors or any(preview.state == "invalid" for preview in previews.values()):
+    checker = MemberRowChecker(current_user.tenant_id, client_repo, member_repo)
+    checked: list[tuple[MemberCsvRow, RowCheck]] = []
+    for row in rows:
+        check = await checker.check(
+            row,
+            decision=_decision_for(decisions, row.row_number),
+            parse_error=parse_errors.get(row.row_number),
+        )
+        checked.append((row, check))
+
+    previews = [
+        _member_import_row(
+            row,
+            client_name=check.client.name if check.client else None,
+            state=check.state,
+            message=check.message,
+        )
+        for row, check in checked
+    ]
+    skipped = sum(preview.state in {"duplicate", "skipped"} for preview in previews)
+    invalid = [preview for preview in previews if preview.state == "invalid"]
+    ready = [(row, check) for row, check in checked if check.importable]
+
+    if invalid or dry_run:
         return MemberImportResponse(
-            imported=0,
-            skipped=sum(preview.state in {"duplicate", "skipped"} for preview in previews.values()),
-            failed=sum(preview.state == "invalid" for preview in previews.values()),
+            imported=0 if invalid else len(ready),
+            skipped=skipped,
+            failed=len(invalid),
             issues=[
                 {
                     "row": preview.row,
                     "field": error_fields.get(preview.row),
                     "message": preview.message or "Invalid row",
                 }
-                for preview in previews.values()
-                if preview.state == "invalid"
+                for preview in invalid
             ],
-            rows=list(previews.values()),
-        )
-    if dry_run:
-        return MemberImportResponse(
-            imported=len(prepared),
-            skipped=sum(preview.state in {"duplicate", "skipped"} for preview in previews.values()),
-            failed=0,
-            issues=[],
-            rows=list(previews.values()),
+            rows=previews,
         )
 
-    use_case = EnrolEligibleMemberUseCase(member_repo, subject_repo, link_repo)
-    for row, _client, data in prepared:
-        member, _ = await _enrol(use_case, data, current_user, row.employer_member_id or "")
-        imported_status = (row.status or "Pending").strip().casefold()
-        if imported_status == EligibilityStatus.ACTIVE.value.casefold():
-            member.reinstate()
-        elif imported_status == EligibilityStatus.SUSPENDED.value.casefold():
-            member.suspend()
-        elif imported_status == EligibilityStatus.TERMINATED.value.casefold():
-            member.terminate()
-        member.record_import()
-        await member_repo.save(member)
-        await record_member_change(
-            outbox,
-            tenant_id=current_user.tenant_id,
-            user_id=current_user.user_id,
-            resource_id=member.id.value,
-            action="CREATE",
-            operation="Imported",
-        )
+    importer = _importer(current_user, member_repo, subject_repo, link_repo, outbox)
+    results = [await _import_row(row, check, importer, db) for row, check in ready]
+    failures = [result for result in results if result.state == "failed"]
     return MemberImportResponse(
-        imported=len(prepared),
-        skipped=sum(preview.state in {"duplicate", "skipped"} for preview in previews.values()),
-        failed=0,
-        issues=[],
-        rows=list(previews.values()),
+        imported=sum(result.state == "imported" for result in results),
+        skipped=skipped,
+        failed=len(failures),
+        issues=[
+            {"row": result.row, "field": None, "message": result.message or "Import failed"}
+            for result in failures
+        ],
+        rows=previews,
     )
+
+
+@router.post("/import/commit", response_model=MemberImportCommitResponse)
+@readonly()
+async def commit_member_import(
+    payload: MemberImportCommitRequest,
+    current_user: TokenData = Depends(require_not_viewer),
+    member_repo: EligibleMemberRepository = Depends(get_eligible_member_repository),
+    client_repo: ClientRepository = Depends(get_client_repository),
+    subject_repo: ClinicalSubjectRepository = Depends(get_clinical_subject_repository),
+    link_repo: EligibleMemberClinicalLinkRepository = Depends(
+        get_eligible_member_clinical_link_repository
+    ),
+    outbox: OutboxRepository = Depends(get_outbox_repository),
+    db: AsyncSession = Depends(get_db),
+):
+    """Import a slice of previewed rows, re-checking and committing each one alone.
+
+    The client sends the roster in slices so it can show progress. A row that
+    fails is reported and skipped; the rows already written stay written.
+    """
+    checker = MemberRowChecker(current_user.tenant_id, client_repo, member_repo)
+    importer = _importer(current_user, member_repo, subject_repo, link_repo, outbox)
+    results: list[MemberImportRowResult] = []
+    for entry in payload.rows:
+        row = csv_row(entry.row, entry.values)
+        check = await checker.check(row)
+        results.append(await _import_row(row, check, importer, db))
+    return MemberImportCommitResponse(results=results)
 
 
 def _csv_cell(value: str | None) -> str | None:

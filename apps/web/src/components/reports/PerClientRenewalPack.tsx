@@ -1,9 +1,7 @@
-import { useState } from "react"
-
 import { FileText, Printer } from "lucide-react"
 
 import { PageShell } from "@/components/common/PageShell"
-import { BackLink, Field, ReportSection } from "@/components/reports/ReportShared"
+import { BackLink, DemoDataBanner, Field, ReportSection } from "@/components/reports/ReportShared"
 import { Button } from "@/components/ui/button"
 import {
   Table,
@@ -16,8 +14,11 @@ import {
 import { cn } from "@/lib/utils"
 import { type RenewalPackData, renewalPackFixture } from "@/routes/reports/renewal-pack-fixture"
 
+const DEMO_NOTE =
+  "Sample records, not this tenant's data. The renewal pack is not bound to the report API yet, so no client, period or figure below is real."
+
 export function PerClientRenewalPack() {
-  const [data] = useState<RenewalPackData>(renewalPackFixture)
+  const data: RenewalPackData = renewalPackFixture
   const handlePrint = () => {
     if (typeof window !== "undefined") window.print()
   }
@@ -25,7 +26,7 @@ export function PerClientRenewalPack() {
   return (
     <PageShell
       icon={FileText}
-      breadcrumb={`Reports · Renewal pack · ${data.client.name}`}
+      breadcrumb={`Reports · Renewal pack (demo) · ${data.client.name}`}
       actions={
         <>
           <BackLink />
@@ -51,6 +52,7 @@ export function PerClientRenewalPack() {
               "print:border-0 print:bg-white print:p-0 print:text-black",
             )}
           >
+            <DemoDataBanner note={DEMO_NOTE} />
             <RenewalPackHeader data={data} />
             <SessionsByMonth data={data} />
             <DiagnosisPrevalence data={data} />
@@ -66,7 +68,7 @@ export function PerClientRenewalPack() {
 export function RenewalPackHeader({ data }: { data: RenewalPackData }) {
   return (
     <section>
-      <p className="text-[11px] font-semibold tracking-wide text-fg-muted">Renewal pack</p>
+      <p className="text-[11px] font-semibold tracking-wide text-fg-muted">Renewal pack (demo)</p>
       <h2 className="mt-1 text-2xl font-semibold text-fg">{data.client.name}</h2>
       <dl className="mt-4 grid gap-4 sm:grid-cols-3">
         <Field label="Period" value={data.period} />

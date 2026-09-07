@@ -38,3 +38,13 @@ class SessionImportBatchId(Id):
 @dataclass(frozen=True)
 class SessionImportRowId(Id):
     pass
+
+
+@dataclass(frozen=True)
+class PractitionerImportBatchId(Id):
+    pass
+
+
+@dataclass(frozen=True)
+class PractitionerImportRowId(Id):
+    pass

@@ -24,7 +24,7 @@ from app.application.use_cases.transitions import (
     ServiceAssignmentTransition,
     TransitionUseCase,
 )
-from app.core.authorization import require_same_tenant
+from app.core.authorization import assert_same_tenant, require_same_tenant
 from app.core.database import get_db
 from app.core.security import TokenData, get_current_user
 from app.domain.entities.service_assignment import ServiceAssignmentEntity
@@ -128,7 +128,9 @@ async def activate_service_assignment(
     """Activate a service assignment."""
     use_case = TransitionUseCase(assignment_repo, "Assignment")
     assignment = await use_case.execute(
-        ServiceAssignmentId(assignment_id), ServiceAssignmentTransition.ACTIVATE
+        ServiceAssignmentId(assignment_id),
+        ServiceAssignmentTransition.ACTIVATE,
+        tenant_id=current_user.tenant_id,
     )
     await audit_change(assignment, audit_handler, current_user, request)
     return _to_service_assignment_response(assignment)
@@ -151,7 +153,9 @@ async def deactivate_service_assignment(
     """Deactivate a service assignment."""
     use_case = TransitionUseCase(assignment_repo, "Assignment")
     assignment = await use_case.execute(
-        ServiceAssignmentId(assignment_id), ServiceAssignmentTransition.DEACTIVATE
+        ServiceAssignmentId(assignment_id),
+        ServiceAssignmentTransition.DEACTIVATE,
+        tenant_id=current_user.tenant_id,
     )
     await audit_change(assignment, audit_handler, current_user, request)
     return _to_service_assignment_response(assignment)
@@ -208,6 +212,7 @@ async def list_service_assignments(
 @readonly()
 async def get_service_assignment(
     assignment_id: str,
+    current_user: TokenData = Depends(get_current_user),
     assignment_repo: ServiceAssignmentRepository = Depends(get_service_assignment_repository),
     db: AsyncSession = Depends(get_db),
 ):
@@ -217,6 +222,7 @@ async def get_service_assignment(
     )
     if not assignment:
         raise NotFoundError("Assignment not found")
+    assert_same_tenant(current_user, assignment.tenant_id.value)
     return _to_service_assignment_response(assignment)
 
 

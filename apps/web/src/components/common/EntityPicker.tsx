@@ -2,6 +2,7 @@ import * as React from "react"
 import { useState } from "react"
 
 import { clientsApi } from "@/api/endpoints/clients"
+import { industriesApi } from "@/api/endpoints/industries"
 import { type MemberListParams, membersApi } from "@/api/endpoints/members"
 import { personsApi } from "@/api/endpoints/persons"
 import { type ProviderListParams, providersApi } from "@/api/endpoints/providers"
@@ -14,7 +15,7 @@ import { useDebouncedValue } from "@/hooks/useDebouncedValue"
 import { displayName, memberLabel, nameInitials, personInitials } from "@/lib/display"
 import { useEntityList } from "@/lib/queries"
 import type { ListParams, PaginatedResponse } from "@/types/api"
-import type { Client, Member, Person, Provider, Service, User } from "@/types/entities"
+import type { Client, Industry, Member, Person, Provider, Service, User } from "@/types/entities"
 import { getStatusLabel } from "@/utils/statusColors"
 
 /** Search-and-select over a paginated resource. */
@@ -51,6 +52,9 @@ export function EntityPicker<T extends { id: string }, P extends ListParams = Li
   filter?: (item: T) => boolean
 }) {
   const [query, setQuery] = useState("")
+  // A combobox, not a permanently open list: eight rows of every picker at
+  // once made a form three screens tall before anything was chosen.
+  const [open, setOpen] = useState(false)
   const debounced = useDebouncedValue(query.trim(), 250)
   const list = useEntityList<T, P>({
     resource,
@@ -64,13 +68,16 @@ export function EntityPicker<T extends { id: string }, P extends ListParams = Li
 
   if (selected) {
     return (
-      <div className="flex items-center gap-2.5 rounded-sm border border-fg/15 bg-surface px-3 py-2">
+      <div className="flex items-center gap-2.5 rounded-sm border border-fg/15 bg-surface px-3 py-1.5">
         {renderSelected(selected)}
         <Button
           type="button"
           variant="ghost"
           size="sm"
-          onClick={() => onChange("")}
+          onClick={() => {
+            onChange("")
+            setQuery("")
+          }}
           className="shrink-0 text-xs text-fg/65"
         >
           Change
@@ -80,32 +87,51 @@ export function EntityPicker<T extends { id: string }, P extends ListParams = Li
   }
 
   return (
-    <div className="space-y-1.5">
-      <Input placeholder={placeholder} value={query} onChange={(e) => setQuery(e.target.value)} />
-      <div className="max-h-48 overflow-y-auto rounded-sm border border-fg/15 bg-bg">
-        {list.isPending ? (
-          <p className="px-3 py-2 text-xs text-fg-muted">Loading…</p>
-        ) : items.length === 0 ? (
-          <p className="px-3 py-2 text-xs text-fg-muted">
-            {debounced ? emptyNoMatch : emptyPrompt}
-          </p>
-        ) : (
-          <ul className="divide-y divide-fg/8">
-            {items.map((item) => (
-              <li key={item.id}>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  onClick={() => onChange(item.id)}
-                  className="flex h-auto w-full items-center gap-2.5 px-3 py-2 text-left"
-                >
-                  {renderRow(item)}
-                </Button>
-              </li>
-            ))}
-          </ul>
-        )}
-      </div>
+    <div className="relative">
+      <Input
+        role="combobox"
+        aria-expanded={open}
+        placeholder={placeholder}
+        value={query}
+        onChange={(e) => setQuery(e.target.value)}
+        onFocus={() => setOpen(true)}
+        onBlur={() => setOpen(false)}
+        onKeyDown={(e) => {
+          if (e.key === "Escape") setOpen(false)
+        }}
+      />
+      {open ? (
+        <div className="absolute z-50 mt-1 max-h-56 w-full overflow-y-auto rounded-sm border border-fg/15 bg-bg shadow-md">
+          {list.isPending ? (
+            <p className="px-3 py-2 text-xs text-fg-muted">Loading…</p>
+          ) : items.length === 0 ? (
+            <p className="px-3 py-2 text-xs text-fg-muted">
+              {debounced ? emptyNoMatch : emptyPrompt}
+            </p>
+          ) : (
+            <ul className="divide-y divide-fg/8">
+              {items.map((item) => (
+                <li key={item.id}>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    // Mousedown, not click: the input blurs first otherwise,
+                    // the list unmounts, and the click lands on nothing.
+                    onMouseDown={(e) => {
+                      e.preventDefault()
+                      onChange(item.id)
+                      setOpen(false)
+                    }}
+                    className="flex h-auto w-full items-center gap-2.5 px-3 py-1.5 text-left"
+                  >
+                    {renderRow(item)}
+                  </Button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      ) : null}
     </div>
   )
 }
@@ -141,6 +167,39 @@ export function PickerRow({
 }
 
 /** Client search-and-select. Was copy-pasted into five form sheets. */
+export function IndustryPicker({
+  value,
+  onChange,
+  selected,
+  filter,
+}: {
+  value: string
+  onChange: (id: string) => void
+  selected?: Industry | null
+  /** e.g. exclude the industry being edited so it cannot be its own parent. */
+  filter?: (industry: Industry) => boolean
+}) {
+  return (
+    <EntityPicker<Industry>
+      resource="industries"
+      listFn={industriesApi.list}
+      value={value}
+      onChange={onChange}
+      placeholder="Search industries by name…"
+      emptyPrompt="Start typing to search industries."
+      emptyNoMatch="No industries match."
+      renderSelected={(i) => (
+        <PickerRow initials={nameInitials(i.name)} primary={i.name} secondary={i.code} size="md" />
+      )}
+      renderRow={(i) => (
+        <PickerRow initials={nameInitials(i.name)} primary={i.name} secondary={i.code} />
+      )}
+      selectedItem={selected}
+      filter={filter}
+    />
+  )
+}
+
 export function ClientPicker({
   value,
   onChange,

@@ -13,6 +13,7 @@ import { useNavigate } from "@tanstack/react-router"
 import apiClient from "@/api/client"
 import { useSilentRefresh } from "@/hooks/useSilentRefresh"
 import { authActions } from "@/lib/auth-store"
+import { resetIdentityState } from "@/lib/identity-reset"
 import { currentRedirectPath } from "@/lib/redirect"
 import { tenantActions } from "@/lib/tenant-actions"
 import { useAuthStore } from "@/store/slices/authSlice"
@@ -48,6 +49,9 @@ export function AppBootstrap() {
   useEffect(() => {
     apiClient.setAuthErrorCallback(() => {
       useAuthStore.getState().clearAuth()
+      // A 401 ends the session as surely as logout does; the next sign-in on
+      // this tab must not find the previous subject's rows still cached.
+      void resetIdentityState()
       navigate({
         to: "/auth/login",
         search: { tenant_code: undefined, email: undefined, redirect: currentRedirectPath() },

@@ -62,3 +62,23 @@ class ProviderGender(str, Enum):
 
     FEMALE = "Female"
     MALE = "Male"
+
+
+class EngagementDocumentKind(str, Enum):
+    """The seven engagement documents tracked per practitioner (P-02)."""
+
+    CONTRACT = "Contract"
+    KYC = "KYC"
+    CERTIFICATE_OF_REGISTRATION = "CertificateOfRegistration"
+    MEMORANDUM_OF_ASSOCIATION = "MoA"
+    UCA_LICENCE = "UcaLicence"
+    DECLARATION_FORM = "DeclarationForm"
+    LEAD_CONSULTANT_CV = "LeadConsultantCV"
+
+
+class EngagementDocumentState(str, Enum):
+    """Whether an engagement document is on file, absent, or being chased."""
+
+    PRESENT = "Present"
+    MISSING = "Missing"
+    OPEN = "Open"

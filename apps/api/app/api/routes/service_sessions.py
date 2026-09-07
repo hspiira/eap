@@ -16,11 +16,13 @@ from app.api.dependencies import (
     get_audit_event_handler,
     get_authorization_repository,
     get_case_repository,
+    get_client_repository,
     get_eligible_member_repository,
     get_provider_repository,
     get_service_repository,
     get_service_session_repository,
     get_session_attribution_reader,
+    get_session_name_reader,
     pagination,
 )
 from app.api.dependencies.provider_network import (
@@ -58,11 +60,20 @@ from app.core.authorization import (
 )
 from app.core.database import get_db
 from app.core.security import TokenData, get_current_user
+from app.domain.entities.eligible_member import EligibleMember
 from app.domain.entities.service_session import ServiceSessionEntity
-from app.domain.enums import SessionDeliveryContext, SessionStatus
+from app.domain.enums import (
+    SessionAttendance,
+    SessionCategory,
+    SessionClinicalStatus,
+    SessionDeliveryContext,
+    SessionStatus,
+    SessionType,
+)
 from app.domain.enums.provider_network import OrganisationApprovalStatus
 from app.domain.exceptions import NotFoundError, ValidationException
 from app.domain.repositories.case_repository import CaseRepository
+from app.domain.repositories.client_repository import ClientRepository
 from app.domain.repositories.eap_programme_repository import AuthorizationRepository
 from app.domain.repositories.eligible_member_repository import EligibleMemberRepository
 from app.domain.repositories.provider_network_repository import (
@@ -75,6 +86,7 @@ from app.domain.repositories.service_session_repository import (
     ServiceSessionRepository,
 )
 from app.domain.repositories.session_attribution_reader import SessionAttributionReader
+from app.domain.repositories.session_name_reader import SessionNameReader, SessionNames
 from app.domain.services.provider_eligibility import (
     AFFILIATION_NOT_FOUND,
     UNRESOLVED_AFFILIATION,
@@ -87,6 +99,7 @@ from app.domain.services.provider_eligibility import (
 )
 from app.domain.value_objects.core import (
     CaseId,
+    ClientId,
     EligibleMemberId,
     ProviderId,
     ServiceId,
@@ -105,14 +118,24 @@ router = APIRouter(prefix="/service-sessions", tags=["service-sessions"])
 def to_service_session_response(
     session: ServiceSessionEntity,
     provider_organisation_id: str | None = None,
+    names: SessionNames | None = None,
 ) -> ServiceSessionResponse:
     """Map ServiceSessionEntity to API response using public properties."""
+    names = names or SessionNames()
     return ServiceSessionResponse(
         id=session.id.value,
         tenant_id=session.tenant_id.value,
         service_id=session.service_id.value,
         provider_id=session.provider_id.value,
-        member_id=session.member_id.value,
+        client_id=session.client_id.value,
+        client_name=names.clients.get(session.client_id.value),
+        attendance=session.attendance,
+        member_id=session.member_id.value if session.member_id else None,
+        member_display_label=(
+            names.members.get(session.member_id.value) if session.member_id else None
+        ),
+        provider_display_name=names.providers.get(session.provider_id.value),
+        service_name=names.services.get(session.service_id.value),
         scheduled_at=session.scheduled_at,
         delivery_context=session.delivery_context,
         provider_affiliation_id=session.provider_affiliation_id,
@@ -231,7 +254,9 @@ async def _one(
 
 
 async def _many(
-    sessions: Sequence[ServiceSessionEntity], reader: SessionAttributionReader
+    sessions: Sequence[ServiceSessionEntity],
+    reader: SessionAttributionReader,
+    names: SessionNameReader | None = None,
 ) -> list[ServiceSessionResponse]:
     """Sessions with attribution resolved in one query rather than one per row.
 
@@ -245,15 +270,55 @@ async def _many(
     organisations = await reader.organisation_ids_by_affiliation(
         sessions[0].tenant_id, affiliation_ids
     )
+    resolved = (
+        await names.names_for(
+            sessions[0].tenant_id,
+            client_ids=[s.client_id.value for s in sessions],
+            member_ids=[s.member_id.value for s in sessions if s.member_id],
+            provider_ids=[s.provider_id.value for s in sessions],
+            service_ids=[s.service_id.value for s in sessions],
+        )
+        if names
+        else None
+    )
     return [
         to_service_session_response(
-            session, organisations.get(session.provider_affiliation_id or "")
+            session, organisations.get(session.provider_affiliation_id or ""), resolved
         )
         for session in sessions
     ]
 
 
 # ==================== COMMANDS (Use Cases) ====================
+
+
+async def _resolve_attendance(
+    data: ServiceSessionCreate,
+    tenant_id: str,
+    member_repo: EligibleMemberRepository,
+    client_repo: ClientRepository,
+) -> tuple[EligibleMember | None, ClientId]:
+    """Resolve who a session was delivered to, and the client it belongs to.
+
+    An individual session takes its client from the member rather than from the
+    request, so the two cannot disagree and a caller cannot attribute one
+    client's member to another client's session. A company-wide session names
+    the client directly, because there is no member to take it from.
+    """
+    if data.attendance is SessionAttendance.COMPANY_WIDE:
+        client = await client_repo.get_by_id(ClientId(data.client_id or ""))
+        if client is None or client.tenant_id.value != tenant_id:
+            raise NotFoundError(
+                "Client not found", resource_type="Client", resource_id=data.client_id or ""
+            )
+        return None, client.id
+
+    member = await member_repo.get_by_id(EligibleMemberId(data.member_id or ""))
+    if member is None or member.tenant_id.value != tenant_id:
+        raise NotFoundError(
+            "Member not found", resource_type="Member", resource_id=data.member_id or ""
+        )
+    return member, member.client_id
 
 
 @router.post(
@@ -271,6 +336,7 @@ async def create_service_session(
     current_user: TokenData = Depends(require_same_tenant),
     session_repo: ServiceSessionRepository = Depends(get_service_session_repository),
     member_repo: EligibleMemberRepository = Depends(get_eligible_member_repository),
+    client_repo: ClientRepository = Depends(get_client_repository),
     provider_repo: ProviderRepository = Depends(get_provider_repository),
     service_repo: ServiceRepository = Depends(get_service_repository),
     affiliation_repo: ProviderAffiliationRepository = Depends(get_provider_affiliation_repository),
@@ -282,9 +348,7 @@ async def create_service_session(
     db: AsyncSession = Depends(get_db),
 ):
     """Create a new service session."""
-    member = await member_repo.get_by_id(EligibleMemberId(data.member_id))
-    if member is None or member.tenant_id.value != tenant_id:
-        raise NotFoundError("Member not found", resource_type="Member", resource_id=data.member_id)
+    member, client_id = await _resolve_attendance(data, tenant_id, member_repo, client_repo)
     scheduled_at = ensure_utc(data.scheduled_at)
     _reject_unknown_context(data.delivery_context)
     await _require_bookable(
@@ -307,7 +371,9 @@ async def create_service_session(
         tenant_id=TenantId(tenant_id),
         service_id=ServiceId(data.service_id),
         provider_id=ProviderId(data.provider_id),
-        member_id=EligibleMemberId(data.member_id),
+        client_id=client_id,
+        attendance=data.attendance,
+        member_id=member.id if member else None,
         scheduled_at=scheduled_at,
         delivery_context=data.delivery_context,
         provider_affiliation_id=data.provider_affiliation_id,
@@ -357,6 +423,7 @@ async def complete_service_session(
         ServiceSessionTransition.COMPLETE,
         duration=body.duration,
         notes=body.notes,
+        tenant_id=current_user.tenant_id,
     )
     await audit_change(session, audit_handler, current_user, request)
     drawdown = await _draw_down(
@@ -434,7 +501,10 @@ async def cancel_service_session(
     """Cancel a service session."""
     use_case = TransitionUseCase(session_repo, "Session")
     session = await use_case.execute(
-        session.id, ServiceSessionTransition.CANCEL, reason=body.reason
+        session.id,
+        ServiceSessionTransition.CANCEL,
+        reason=body.reason,
+        tenant_id=current_user.tenant_id,
     )
     await audit_change(session, audit_handler, current_user, request)
     return await _one(session, attribution_reader)
@@ -484,6 +554,7 @@ async def reschedule_service_session(
         session.id,
         ServiceSessionTransition.RESCHEDULE,
         new_scheduled_at=new_scheduled_at,
+        tenant_id=current_user.tenant_id,
     )
     await audit_change(session, audit_handler, current_user, request)
     return await _one(session, attribution_reader)
@@ -506,7 +577,9 @@ async def mark_no_show_service_session(
 ):
     """Mark a service session as no-show."""
     use_case = TransitionUseCase(session_repo, "Session")
-    session = await use_case.execute(session.id, ServiceSessionTransition.MARK_NO_SHOW)
+    session = await use_case.execute(
+        session.id, ServiceSessionTransition.MARK_NO_SHOW, tenant_id=current_user.tenant_id
+    )
     await audit_change(session, audit_handler, current_user, request)
     return await _one(session, attribution_reader)
 
@@ -571,6 +644,7 @@ async def update_service_session_feedback(
         session.id,
         ServiceSessionTransition.UPDATE_FEEDBACK,
         feedback=body.feedback,
+        tenant_id=current_user.tenant_id,
     )
     await audit_change(session, audit_handler, current_user, request)
     return await _one(session, attribution_reader)
@@ -593,7 +667,9 @@ async def archive_service_session(
 ):
     """Archive a service session."""
     use_case = TransitionUseCase(session_repo, "Session")
-    session = await use_case.execute(session.id, ServiceSessionTransition.ARCHIVE)
+    session = await use_case.execute(
+        session.id, ServiceSessionTransition.ARCHIVE, tenant_id=current_user.tenant_id
+    )
     await audit_change(session, audit_handler, current_user, request)
     return await _one(session, attribution_reader)
 
@@ -615,12 +691,32 @@ async def restore_service_session(
 ):
     """Restore an archived service session."""
     use_case = TransitionUseCase(session_repo, "Session")
-    session = await use_case.execute(session.id, ServiceSessionTransition.RESTORE)
+    session = await use_case.execute(
+        session.id, ServiceSessionTransition.RESTORE, tenant_id=current_user.tenant_id
+    )
     await audit_change(session, audit_handler, current_user, request)
     return await _one(session, attribution_reader)
 
 
 # ==================== QUERIES (Direct Repository) ====================
+
+
+#: The columns the list endpoint sorts on. An explicit list rather than a
+#: pass-through: the base repository quietly ignores an unknown column and
+#: sorts by id alone, so a typo produced a silently wrong order, not an error.
+SESSION_SORT_COLUMNS = frozenset(
+    {
+        "scheduled_at",
+        "status",
+        "attendance",
+        "category",
+        "session_type",
+        "session_number",
+        "clinical_outcome",
+        "created_at",
+        "completed_at",
+    }
+)
 
 
 @router.get(
@@ -636,6 +732,11 @@ async def list_service_sessions(
     provider_id: str | None = Query(None, description="Filter by provider identifier"),
     service_id: str | None = Query(None, description="Filter by service identifier"),
     status: SessionStatus | None = Query(None, description="Filter by session status"),
+    session_type: SessionType | None = Query(None, description="Filter by physical or online"),
+    category: SessionCategory | None = Query(None, description="Filter by session category"),
+    clinical_outcome: SessionClinicalStatus | None = Query(
+        None, description="Filter by clinical outcome"
+    ),
     scheduled_from: datetime | None = Query(
         None, description="Only sessions scheduled at or after this instant (ISO 8601)"
     ),
@@ -647,9 +748,14 @@ async def list_service_sessions(
     sort_desc: bool = Query(True, description="Sort in descending order"),
     session_repo: ServiceSessionRepository = Depends(get_service_session_repository),
     attribution_reader: SessionAttributionReader = Depends(get_session_attribution_reader),
+    name_reader: SessionNameReader = Depends(get_session_name_reader),
     db: AsyncSession = Depends(get_db),
 ):
     """List service sessions with filtering, searching, and pagination."""
+    if sort_by not in SESSION_SORT_COLUMNS:
+        raise ValidationException(
+            f"sort_by must be one of: {', '.join(sorted(SESSION_SORT_COLUMNS))}"
+        )
 
     sessions = await session_repo.list_all(
         tenant_id=TenantId(tenant_id),
@@ -657,6 +763,9 @@ async def list_service_sessions(
         provider_id=ProviderId(provider_id) if provider_id else None,
         service_id=ServiceId(service_id) if service_id else None,
         status=status,
+        session_type=session_type,
+        category=category,
+        clinical_outcome=clinical_outcome,
         scheduled_from=scheduled_from,
         scheduled_to=scheduled_to,
         limit=pg.limit,
@@ -671,12 +780,15 @@ async def list_service_sessions(
         provider_id=ProviderId(provider_id) if provider_id else None,
         service_id=ServiceId(service_id) if service_id else None,
         status=status,
+        session_type=session_type,
+        category=category,
+        clinical_outcome=clinical_outcome,
         scheduled_from=scheduled_from,
         scheduled_to=scheduled_to,
     )
 
     return ServiceSessionListResponse(
-        items=await _many(sessions, attribution_reader),
+        items=await _many(sessions, attribution_reader, name_reader),
         total=total,
         page=pg.page,
         limit=pg.limit,

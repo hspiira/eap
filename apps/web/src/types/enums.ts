@@ -59,6 +59,15 @@ export enum SessionStatus {
   NO_SHOW = "No Show",
 }
 
+/**
+ * Who a session was delivered to. `COMPANY_WIDE` is a health talk or site
+ * visit, delivered to a client with nobody individual to name.
+ */
+export enum SessionAttendance {
+  INDIVIDUAL = "Individual",
+  COMPANY_WIDE = "CompanyWide",
+}
+
 /** Physical or online delivery. */
 export enum SessionType {
   PHYSICAL = "Physical",
@@ -87,6 +96,7 @@ export enum SessionClinicalStatus {
   TO_BE_CONTINUED = "ToBeContinued",
   REFERRED = "Referred",
   COMPLETED = "Completed",
+  TERMINATED = "Terminated",
 }
 
 /**

@@ -221,7 +221,9 @@ async def publish_document(
 ):
     """Publish a document (make it available)."""
     use_case = TransitionUseCase(document_repo, "Document")
-    updated = await use_case.execute(document.id, DocumentTransition.PUBLISH)
+    updated = await use_case.execute(
+        document.id, DocumentTransition.PUBLISH, tenant_id=current_user.tenant_id
+    )
     await audit_change(updated, audit_handler, current_user, request)
     return _to_document_response(updated)
 
@@ -242,7 +244,9 @@ async def archive_document(
 ):
     """Archive a document."""
     use_case = TransitionUseCase(document_repo, "Document")
-    updated = await use_case.execute(document.id, DocumentTransition.ARCHIVE)
+    updated = await use_case.execute(
+        document.id, DocumentTransition.ARCHIVE, tenant_id=current_user.tenant_id
+    )
     await audit_change(updated, audit_handler, current_user, request)
     return _to_document_response(updated)
 

@@ -199,12 +199,7 @@ export function ContractFormSheet({
         {lockedClientId ? (
           <LockedClientSummary clientId={lockedClientId} client={client ?? null} />
         ) : (
-          <FormField
-            label="Client"
-            required
-            error={errors.client_id?.message}
-            description="Select the corporate client this contract is for."
-          >
+          <FormField label="Client" required error={errors.client_id?.message}>
             <ClientPicker
               value={watchedClientId}
               onChange={(id) =>

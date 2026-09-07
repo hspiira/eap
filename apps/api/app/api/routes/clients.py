@@ -94,7 +94,7 @@ from app.core.authorization import (
     require_tenant_role,
 )
 from app.core.database import AsyncSessionLocal, get_db
-from app.core.security import TokenData
+from app.core.security import TokenData, get_current_user
 from app.domain.entities.client import ClientEntity
 from app.domain.enums import (
     BaseStatus,
@@ -360,7 +360,10 @@ async def verify_client(
 
     use_case = TransitionUseCase(client_repo, "Client")
     client = await use_case.execute(
-        client.id, ClientTransition.VERIFY, verified_by=UserId(verified_by)
+        client.id,
+        ClientTransition.VERIFY,
+        verified_by=UserId(verified_by),
+        tenant_id=current_user.tenant_id,
     )
     await audit_change(client, audit_handler, current_user, request)
     return _to_client_response(client)
@@ -382,7 +385,9 @@ async def activate_client(
 ):
     """Activate a client."""
     use_case = TransitionUseCase(client_repo, "Client")
-    client = await use_case.execute(client.id, ClientTransition.ACTIVATE)
+    client = await use_case.execute(
+        client.id, ClientTransition.ACTIVATE, tenant_id=current_user.tenant_id
+    )
     await audit_change(client, audit_handler, current_user, request)
     return _to_client_response(client)
 
@@ -404,7 +409,9 @@ async def deactivate_client(
 ):
     """Deactivate a client."""
     use_case = TransitionUseCase(client_repo, "Client")
-    client = await use_case.execute(client.id, ClientTransition.DEACTIVATE, reason=body.reason)
+    client = await use_case.execute(
+        client.id, ClientTransition.DEACTIVATE, reason=body.reason, tenant_id=current_user.tenant_id
+    )
     await audit_change(client, audit_handler, current_user, request)
     return _to_client_response(client)
 
@@ -426,7 +433,9 @@ async def suspend_client(
 ):
     """Suspend a client."""
     use_case = TransitionUseCase(client_repo, "Client")
-    client = await use_case.execute(client.id, ClientTransition.SUSPEND, reason=body.reason)
+    client = await use_case.execute(
+        client.id, ClientTransition.SUSPEND, reason=body.reason, tenant_id=current_user.tenant_id
+    )
     await audit_change(client, audit_handler, current_user, request)
     return _to_client_response(client)
 
@@ -449,7 +458,9 @@ async def terminate_client(
 ):
     """Terminate a client."""
     use_case = TransitionUseCase(client_repo, "Client")
-    client = await use_case.execute(client.id, ClientTransition.TERMINATE, reason=body.reason)
+    client = await use_case.execute(
+        client.id, ClientTransition.TERMINATE, reason=body.reason, tenant_id=current_user.tenant_id
+    )
     await audit_change(client, audit_handler, current_user, request)
     return _to_client_response(client)
 
@@ -471,7 +482,9 @@ async def archive_client(
 ):
     """Archive a client."""
     use_case = TransitionUseCase(client_repo, "Client")
-    client = await use_case.execute(client.id, ClientTransition.ARCHIVE)
+    client = await use_case.execute(
+        client.id, ClientTransition.ARCHIVE, tenant_id=current_user.tenant_id
+    )
     await audit_change(client, audit_handler, current_user, request)
     return _to_client_response(client)
 
@@ -492,7 +505,9 @@ async def restore_client(
 ):
     """Restore an archived or soft-deleted client."""
     use_case = TransitionUseCase(client_repo, "Client")
-    client = await use_case.execute(client.id, ClientTransition.RESTORE)
+    client = await use_case.execute(
+        client.id, ClientTransition.RESTORE, tenant_id=current_user.tenant_id
+    )
     await audit_change(client, audit_handler, current_user, request)
     return _to_client_response(client)
 
@@ -594,7 +609,10 @@ async def update_client_contact_info(
 
     use_case = TransitionUseCase(client_repo, "Client")
     client = await use_case.execute(
-        client.id, ClientTransition.UPDATE_CONTACT_INFO, contact_info=contact_info
+        client.id,
+        ClientTransition.UPDATE_CONTACT_INFO,
+        contact_info=contact_info,
+        tenant_id=current_user.tenant_id,
     )
     await audit_change(client, audit_handler, current_user, request)
     return _to_client_response(client)
@@ -627,7 +645,10 @@ async def update_client_billing_address(
 
     use_case = TransitionUseCase(client_repo, "Client")
     client = await use_case.execute(
-        client.id, ClientTransition.UPDATE_BILLING_ADDRESS, billing_address=billing_address
+        client.id,
+        ClientTransition.UPDATE_BILLING_ADDRESS,
+        billing_address=billing_address,
+        tenant_id=current_user.tenant_id,
     )
     await audit_change(client, audit_handler, current_user, request)
     return _to_client_response(client)
@@ -650,7 +671,9 @@ async def update_client_tier(
 ):
     """Set the client's engagement tier."""
     use_case = TransitionUseCase(client_repo, "Client")
-    client = await use_case.execute(client.id, ClientTransition.UPDATE_TIER, tier=data.tier)
+    client = await use_case.execute(
+        client.id, ClientTransition.UPDATE_TIER, tier=data.tier, tenant_id=current_user.tenant_id
+    )
     await audit_change(client, audit_handler, current_user, request)
     return _to_client_response(client)
 
@@ -1092,7 +1115,9 @@ async def list_clients(
     "/import/template",
     summary="Download the client CSV import template",
 )
-async def client_import_template() -> StreamingResponse:
+async def client_import_template(
+    current_user: TokenData = Depends(get_current_user),
+) -> StreamingResponse:
     """Return the supported client import columns as an Excel-compatible CSV."""
     output = io.StringIO(newline="")
     writer = csv.writer(output)

@@ -28,9 +28,13 @@ def user_id() -> UserId:
     return UserId("user-123")
 
 
+#: The tenant every user fixture below belongs to.
+TENANT_ID = "tenant-456"
+
+
 @pytest.fixture
 def tenant_id() -> TenantId:
-    return TenantId("tenant-456")
+    return TenantId(TENANT_ID)
 
 
 @pytest.fixture
@@ -110,21 +114,25 @@ class TestUserTransitions:
     @pytest.mark.asyncio
     async def test_activate(self, mock_user_repo, user_id, pending_user):
         mock_user_repo.get_by_id.return_value = pending_user
-        await _transition_use_case(mock_user_repo).execute(user_id, UserTransition.ACTIVATE)
+        await _transition_use_case(mock_user_repo).execute(
+            user_id, UserTransition.ACTIVATE, tenant_id=TENANT_ID
+        )
         assert pending_user.status == UserStatus.ACTIVE
         mock_user_repo.save.assert_called_once()
 
     @pytest.mark.asyncio
     async def test_verify_email(self, mock_user_repo, user_id, pending_user):
         mock_user_repo.get_by_id.return_value = pending_user
-        await _transition_use_case(mock_user_repo).execute(user_id, UserTransition.VERIFY_EMAIL)
+        await _transition_use_case(mock_user_repo).execute(
+            user_id, UserTransition.VERIFY_EMAIL, tenant_id=TENANT_ID
+        )
         assert pending_user.email_verified_at is not None
 
     @pytest.mark.asyncio
     async def test_suspend_with_reason(self, mock_user_repo, user_id, active_user):
         mock_user_repo.get_by_id.return_value = active_user
         await _transition_use_case(mock_user_repo).execute(
-            user_id, UserTransition.SUSPEND, reason="Policy violation"
+            user_id, UserTransition.SUSPEND, reason="Policy violation", tenant_id=TENANT_ID
         )
         assert active_user.status == UserStatus.SUSPENDED
 
@@ -132,7 +140,7 @@ class TestUserTransitions:
     async def test_ban_with_reason(self, mock_user_repo, user_id, active_user):
         mock_user_repo.get_by_id.return_value = active_user
         await _transition_use_case(mock_user_repo).execute(
-            user_id, UserTransition.BAN, reason="Fraud"
+            user_id, UserTransition.BAN, reason="Fraud", tenant_id=TENANT_ID
         )
         assert active_user.status == UserStatus.BANNED
 
@@ -140,7 +148,7 @@ class TestUserTransitions:
     async def test_deactivate(self, mock_user_repo, user_id, active_user):
         mock_user_repo.get_by_id.return_value = active_user
         await _transition_use_case(mock_user_repo).execute(
-            user_id, UserTransition.DEACTIVATE, reason="Inactive"
+            user_id, UserTransition.DEACTIVATE, reason="Inactive", tenant_id=TENANT_ID
         )
         assert active_user.status == UserStatus.INACTIVE
 
@@ -148,7 +156,7 @@ class TestUserTransitions:
     async def test_terminate(self, mock_user_repo, user_id, active_user):
         mock_user_repo.get_by_id.return_value = active_user
         await _transition_use_case(mock_user_repo).execute(
-            user_id, UserTransition.TERMINATE, reason="Account closure"
+            user_id, UserTransition.TERMINATE, reason="Account closure", tenant_id=TENANT_ID
         )
         assert active_user.status == UserStatus.TERMINATED
 
@@ -156,7 +164,7 @@ class TestUserTransitions:
     async def test_update_password(self, mock_user_repo, user_id, active_user):
         mock_user_repo.get_by_id.return_value = active_user
         await _transition_use_case(mock_user_repo).execute(
-            user_id, UserTransition.UPDATE_PASSWORD, password_hash="newhash"
+            user_id, UserTransition.UPDATE_PASSWORD, password_hash="newhash", tenant_id=TENANT_ID
         )
         assert active_user._password_hash == "newhash"
 
@@ -164,11 +172,11 @@ class TestUserTransitions:
     async def test_enable_disable_two_factor(self, mock_user_repo, user_id, active_user):
         mock_user_repo.get_by_id.return_value = active_user
         await _transition_use_case(mock_user_repo).execute(
-            user_id, UserTransition.ENABLE_TWO_FACTOR
+            user_id, UserTransition.ENABLE_TWO_FACTOR, tenant_id=TENANT_ID
         )
         assert active_user.is_two_factor_enabled is True
         await _transition_use_case(mock_user_repo).execute(
-            user_id, UserTransition.DISABLE_TWO_FACTOR
+            user_id, UserTransition.DISABLE_TWO_FACTOR, tenant_id=TENANT_ID
         )
         assert active_user.is_two_factor_enabled is False
 

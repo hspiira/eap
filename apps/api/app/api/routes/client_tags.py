@@ -24,7 +24,7 @@ from app.application.use_cases.transitions import (
     ClientTagTransition,
     TransitionUseCase,
 )
-from app.core.authorization import require_same_tenant
+from app.core.authorization import assert_same_tenant, require_same_tenant
 from app.core.database import get_db
 from app.core.security import TokenData, get_current_user
 from app.domain.entities.client_tag import ClientTagEntity
@@ -123,7 +123,9 @@ async def activate_client_tag(
 ):
     """Activate a client tag."""
     use_case = TransitionUseCase(tag_repo, "Tag")
-    tag = await use_case.execute(ClientTagId(tag_id), ClientTagTransition.ACTIVATE)
+    tag = await use_case.execute(
+        ClientTagId(tag_id), ClientTagTransition.ACTIVATE, tenant_id=current_user.tenant_id
+    )
     await audit_change(tag, audit_handler, current_user, request)
     return _to_client_tag_response(tag)
 
@@ -144,7 +146,9 @@ async def deactivate_client_tag(
 ):
     """Deactivate a client tag."""
     use_case = TransitionUseCase(tag_repo, "Tag")
-    tag = await use_case.execute(ClientTagId(tag_id), ClientTagTransition.DEACTIVATE)
+    tag = await use_case.execute(
+        ClientTagId(tag_id), ClientTagTransition.DEACTIVATE, tenant_id=current_user.tenant_id
+    )
     await audit_change(tag, audit_handler, current_user, request)
     return _to_client_tag_response(tag)
 
@@ -197,6 +201,7 @@ async def list_client_tags(
 @readonly()
 async def get_client_tag(
     tag_id: str,
+    current_user: TokenData = Depends(get_current_user),
     tag_repo: ClientTagRepository = Depends(get_client_tag_repository),
     db: AsyncSession = Depends(get_db),
 ):
@@ -204,6 +209,7 @@ async def get_client_tag(
     tag = await GetClientTagUseCase(tag_repo).execute(ClientTagId(tag_id))
     if not tag:
         raise NotFoundError("Tag not found")
+    assert_same_tenant(current_user, tag.tenant_id.value)
     return _to_client_tag_response(tag)
 
 

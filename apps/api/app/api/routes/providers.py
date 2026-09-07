@@ -9,11 +9,17 @@ lifecycle change rather than two.
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.dependencies import get_audit_event_handler, get_provider_repository
+from app.api.dependencies import (
+    get_audit_event_handler,
+    get_provider_engagement_document_repository,
+    get_provider_repository,
+)
 from app.api.schemas.provider_schemas import (
     AccountLinkCommand,
     AccountUnlinkCommand,
     AccreditationCommand,
+    EngagementDocumentResponse,
+    EngagementDocumentUpsert,
     PanelStatusCommand,
     ProviderCreate,
     ProviderListResponse,
@@ -26,17 +32,23 @@ from app.core.authorization import require_not_viewer, require_same_tenant, requ
 from app.core.database import get_db
 from app.core.security import TokenData, get_current_user
 from app.domain.entities.provider import UNSET, ProviderEntity
+from app.domain.entities.provider_engagement_document import ProviderEngagementDocument
 from app.domain.enums import (
     AccreditationStatus,
     BaseStatus,
+    EngagementDocumentKind,
     PanelStatus,
     ProviderTier,
     TenantRole,
     UgandaRegion,
 )
 from app.domain.exceptions import ConflictError
+from app.domain.repositories.provider_engagement_document_repository import (
+    ProviderEngagementDocumentRepository,
+)
 from app.domain.repositories.provider_repository import ProviderListQuery, ProviderRepository
 from app.domain.value_objects.core import ProviderId, ProviderProfile, TenantId, UserId
+from app.domain.value_objects.ids import ProviderEngagementDocumentId
 from app.shared.decorators import readonly, transactional
 from app.shared.utils.datetime import utc_now
 from app.shared.utils.generators import generate_cuid
@@ -73,6 +85,24 @@ async def _load(
     if provider is None or provider.tenant_id.value != current_user.tenant_id:
         raise HTTPException(status_code=404, detail="Provider not found")
     return provider
+
+
+async def _save_if_changed(
+    provider: ProviderEntity,
+    repo: ProviderRepository,
+    audit_handler,
+    current_user: TokenData,
+    request: Request,
+) -> ProviderResponse:
+    """Persist and audit only when the command emitted an event.
+
+    A no-op command must write neither state nor audit; an unconditional save
+    would still stamp updated_at through the model's onupdate.
+    """
+    if provider.events:
+        await repo.save(provider)
+        await audit_change(provider, audit_handler, current_user, request)
+    return _response(provider)
 
 
 @router.get("", response_model=ProviderListResponse, summary="Practitioner directory")
@@ -170,9 +200,7 @@ async def create_provider(
         updated_at=now,
     )
     provider.record_created(UserId(current_user.user_id))
-    await repo.save(provider)
-    await audit_change(provider, audit_handler, current_user, request)
-    return _response(provider)
+    return await _save_if_changed(provider, repo, audit_handler, current_user, request)
 
 
 @router.patch(
@@ -203,9 +231,7 @@ async def update_provider(
         bio=data.bio if "bio" in provided else UNSET,
         gender=data.gender if "gender" in provided else UNSET,
     )
-    await repo.save(provider)
-    await audit_change(provider, audit_handler, current_user, request)
-    return _response(provider)
+    return await _save_if_changed(provider, repo, audit_handler, current_user, request)
 
 
 @router.patch(
@@ -226,9 +252,7 @@ async def change_tier(
 ):
     provider = await _load(provider_id, current_user, repo)
     provider.change_tier(data.tier, UserId(current_user.user_id), data.reason)
-    await repo.save(provider)
-    await audit_change(provider, audit_handler, current_user, request)
-    return _response(provider)
+    return await _save_if_changed(provider, repo, audit_handler, current_user, request)
 
 
 @router.patch(
@@ -249,9 +273,7 @@ async def change_panel_status(
 ):
     provider = await _load(provider_id, current_user, repo)
     provider.change_panel_status(data.panel_status, UserId(current_user.user_id), data.reason)
-    await repo.save(provider)
-    await audit_change(provider, audit_handler, current_user, request)
-    return _response(provider)
+    return await _save_if_changed(provider, repo, audit_handler, current_user, request)
 
 
 @router.patch(
@@ -283,9 +305,7 @@ async def change_accreditation(
             data.accreditation_expiry if "accreditation_expiry" in provided else UNSET
         ),
     )
-    await repo.save(provider)
-    await audit_change(provider, audit_handler, current_user, request)
-    return _response(provider)
+    return await _save_if_changed(provider, repo, audit_handler, current_user, request)
 
 
 @router.patch(
@@ -306,9 +326,7 @@ async def change_status(
 ):
     provider = await _load(provider_id, current_user, repo)
     provider.change_status(data.status, UserId(current_user.user_id), data.reason)
-    await repo.save(provider)
-    await audit_change(provider, audit_handler, current_user, request)
-    return _response(provider)
+    return await _save_if_changed(provider, repo, audit_handler, current_user, request)
 
 
 @router.post(
@@ -338,9 +356,7 @@ async def link_account(
             details={"user_id": data.user_id, "provider_id": existing.id.value},
         )
     provider.link_account(target, UserId(current_user.user_id), data.reason)
-    await repo.save(provider)
-    await audit_change(provider, audit_handler, current_user, request)
-    return _response(provider)
+    return await _save_if_changed(provider, repo, audit_handler, current_user, request)
 
 
 @router.delete(
@@ -361,6 +377,82 @@ async def unlink_account(
 ):
     provider = await _load(provider_id, current_user, repo)
     provider.unlink_account(UserId(current_user.user_id), data.reason)
-    await repo.save(provider)
-    await audit_change(provider, audit_handler, current_user, request)
-    return _response(provider)
+    return await _save_if_changed(provider, repo, audit_handler, current_user, request)
+
+
+def _document_response(document: ProviderEngagementDocument) -> EngagementDocumentResponse:
+    return EngagementDocumentResponse(
+        id=document.id.value,
+        tenant_id=document.tenant_id.value,
+        provider_id=document.provider_id.value,
+        document_kind=document.document_kind,
+        state=document.state,
+        note=document.note,
+        created_at=document.created_at,
+        updated_at=document.updated_at,
+    )
+
+
+@router.get(
+    "/{provider_id}/engagement-documents",
+    response_model=list[EngagementDocumentResponse],
+    summary="The engagement-document checklist for one practitioner",
+)
+@readonly()
+async def list_engagement_documents(
+    provider_id: str,
+    current_user: TokenData = Depends(get_current_user),
+    repo: ProviderRepository = Depends(get_provider_repository),
+    documents: ProviderEngagementDocumentRepository = Depends(
+        get_provider_engagement_document_repository
+    ),
+    db: AsyncSession = Depends(get_db),
+):
+    provider = await _load(provider_id, current_user, repo)
+    entries = await documents.list_for_provider(provider.tenant_id, provider.id)
+    return [_document_response(entry) for entry in entries]
+
+
+@router.put(
+    "/{provider_id}/engagement-documents/{document_kind}",
+    response_model=EngagementDocumentResponse,
+    dependencies=[Depends(require_admin)],
+    summary="Audited upsert of one checklist entry",
+)
+@transactional()
+async def upsert_engagement_document(
+    provider_id: str,
+    document_kind: EngagementDocumentKind,
+    data: EngagementDocumentUpsert,
+    request: Request,
+    current_user: TokenData = Depends(get_current_user),
+    repo: ProviderRepository = Depends(get_provider_repository),
+    documents: ProviderEngagementDocumentRepository = Depends(
+        get_provider_engagement_document_repository
+    ),
+    audit_handler=Depends(get_audit_event_handler),
+    db: AsyncSession = Depends(get_db),
+):
+    provider = await _load(provider_id, current_user, repo)
+    note = data.note.strip() if data.note and data.note.strip() else None
+    actor = UserId(current_user.user_id)
+    document = await documents.get_for_kind(provider.tenant_id, provider.id, document_kind)
+    if document is None:
+        now = utc_now()
+        document = ProviderEngagementDocument(
+            id=ProviderEngagementDocumentId(generate_cuid()),
+            tenant_id=provider.tenant_id,
+            provider_id=provider.id,
+            document_kind=document_kind,
+            state=data.state,
+            note=note,
+            created_at=now,
+            updated_at=now,
+        )
+        document.record_created(actor)
+    else:
+        document.update_record(data.state, note, actor)
+    if document.events:
+        await documents.save(document)
+        await audit_change(document, audit_handler, current_user, request)
+    return _document_response(document)

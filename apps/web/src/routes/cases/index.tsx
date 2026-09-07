@@ -11,7 +11,7 @@ import { FilterBar, FilterChip, FilterSearch, FilterTrigger } from "@/components
 import { PageShell } from "@/components/common/PageShell"
 import { TableSkeleton } from "@/components/common/PageSkeletons"
 import { RequireClinicalScope } from "@/components/common/RequireClinicalScope"
-import { compareSort, nextSort, SortHeader, type SortState } from "@/components/common/SortHeader"
+import { compareSort, SortHeader, type SortState } from "@/components/common/SortHeader"
 import { StatusBadge } from "@/components/common/StatusBadge"
 import { Button } from "@/components/ui/button"
 import {
@@ -22,6 +22,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
+import { useUrlSort } from "@/hooks/useUrlSort"
 import { formatDate } from "@/lib/format"
 import { enumParam, listSearchSchema } from "@/lib/search-params"
 import type { Case } from "@/types/entities"
@@ -59,7 +60,11 @@ function CasesListPage() {
   const navigate = useNavigate({ from: "/cases/" })
   const [searchInput, setSearchInput] = useState(searchParams.search ?? "")
   const [addOpen, setAddOpen] = useState(false)
-  const [sort, setSort] = useState<SortState>({ field: "opened_at", desc: true })
+  const { sort, toggleSort } = useUrlSort({
+    searchParams,
+    navigate,
+    initialSort: { field: "opened_at", desc: true },
+  })
 
   useEffect(() => {
     if (searchParams.new) {
@@ -89,7 +94,6 @@ function CasesListPage() {
     const status = next === "all" ? undefined : (next as CaseStatus)
     navigate({ search: (prev) => ({ ...prev, status }), replace: true })
   }
-  const toggleSort = (field: string) => setSort((prev) => nextSort(prev, field))
   const hasFilters =
     Boolean(searchInput) || Boolean(searchParams.status) || Boolean(searchParams.presenting_problem)
 

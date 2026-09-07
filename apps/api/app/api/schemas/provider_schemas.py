@@ -23,6 +23,8 @@ from app.api.schemas.provider_profile_schemas import ProviderProfileSchema
 from app.domain.enums import (
     AccreditationStatus,
     BaseStatus,
+    EngagementDocumentKind,
+    EngagementDocumentState,
     PanelStatus,
     ProviderGender,
     ProviderIdentityProvenance,
@@ -150,3 +152,21 @@ class ProviderListResponse(BaseModel):
     page: int
     limit: int
     has_more: bool
+
+
+class EngagementDocumentUpsert(BaseModel):
+    """Set one checklist entry. The document kind comes from the path."""
+
+    state: EngagementDocumentState
+    note: OptionalSanitizedStr = Field(default=None, max_length=255)
+
+
+class EngagementDocumentResponse(BaseModel):
+    id: str
+    tenant_id: str
+    provider_id: str
+    document_kind: EngagementDocumentKind
+    state: EngagementDocumentState
+    note: str | None
+    created_at: datetime
+    updated_at: datetime

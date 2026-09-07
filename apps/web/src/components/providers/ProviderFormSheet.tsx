@@ -113,8 +113,11 @@ export function ProviderFormSheet({
       display_name: p.display_name,
       email: p.email ?? "",
       phone: p.phone ?? "",
-      tier: p.provider_profile.tier,
-      region: p.provider_profile.region,
+      // Empty, not a default: the form requires both, so editing an
+      // unassessed import forces a person to choose rather than having a
+      // suggestion silently become the assessment.
+      tier: p.provider_profile.tier ?? ("" as unknown as ProviderTier),
+      region: p.provider_profile.region ?? ("" as unknown as UgandaRegion),
       gender: p.provider_profile.gender ?? undefined,
       bio: p.provider_profile.bio ?? "",
     }),

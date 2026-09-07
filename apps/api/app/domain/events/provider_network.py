@@ -6,6 +6,7 @@ from datetime import date
 from app.domain.events.base import DomainEvent
 from app.domain.value_objects.core import ProviderId, TenantId, UserId
 from app.domain.value_objects.provider_network import (
+    PractitionerImportBatchId,
     ProviderAffiliationId,
     ProviderAliasId,
     ProviderOrganisationId,
@@ -127,3 +128,24 @@ class SessionImportBatchAbandoned(DomainEvent):
     tenant_id: TenantId
     actor: UserId
     reason: str
+
+
+@dataclass(frozen=True)
+class PractitionerImportBatchStaged(DomainEvent):
+    batch_id: PractitionerImportBatchId
+    tenant_id: TenantId
+    source_system: str
+    file_hash: str
+    row_count: int
+    actor: UserId
+
+
+@dataclass(frozen=True)
+class PractitionerImportBatchApplied(DomainEvent):
+    batch_id: PractitionerImportBatchId
+    tenant_id: TenantId
+    created_providers: int
+    created_organisations: int
+    created_affiliations: int
+    failed_rows: int
+    actor: UserId

@@ -204,14 +204,14 @@ export function FeedbackPanel({
   }
 
   return (
-    <DetailCard title="Subject feedback" phiLabel="PHI · access logged">
+    <DetailCard title="Feedback" phiLabel="PHI · access logged">
       <div className="space-y-4">
         <FormField label="Feedback" htmlFor="ss-feedback">
           <Textarea
             id="ss-feedback"
             value={feedback}
             onChange={(e) => setFeedback(e.target.value)}
-            placeholder="Anything the subject shared about the session…"
+            placeholder="What the member shared"
             rows={4}
           />
         </FormField>
@@ -322,7 +322,7 @@ export function CompleteDialog({
               id="complete-notes"
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              placeholder="What happened in this session?"
+              placeholder="What happened"
               rows={3}
             />
           </FormField>
@@ -407,7 +407,7 @@ export function CancelDialog({
             id="cancel-reason"
             value={reason}
             onChange={(e) => setReason(e.target.value)}
-            placeholder="Why is this session being cancelled?"
+            placeholder="Why it was cancelled"
             rows={3}
           />
         </FormField>
@@ -508,12 +508,12 @@ export function RescheduleDialog({
               onChange={(e) => setScheduled(e.target.value)}
             />
           </FormField>
-          <FormField label="Reason / notes" htmlFor="reschedule-notes">
+          <FormField label="Reason" htmlFor="reschedule-notes">
             <Input
               id="reschedule-notes"
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              placeholder="Why is this being rescheduled?"
+              placeholder="Why it moved"
             />
           </FormField>
         </div>

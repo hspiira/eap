@@ -7,7 +7,7 @@ import apiClient from "@/api/client"
 import { authApi } from "@/api/endpoints/auth"
 import { tenantsApi } from "@/api/endpoints/tenants"
 import type { LoginRequest } from "@/api/types"
-import { clearGlobalSearch } from "@/lib/search-state"
+import { resetIdentityState } from "@/lib/identity-reset"
 import { useAuthStore } from "@/store/slices/authSlice"
 import { useTenantStore } from "@/store/slices/tenantSlice"
 import type { Tenant } from "@/types/entities"
@@ -21,6 +21,7 @@ export const authActions = {
     const { setAuth, setLoading, setError, clearAuth } = useAuthStore.getState()
     setLoading(true)
     setError(null)
+    await resetIdentityState()
 
     try {
       const response = await authApi.login(credentials)
@@ -61,6 +62,7 @@ export const authActions = {
       useAuthStore.getState().setLoading(false)
     } catch (error) {
       clearAuth()
+      await resetIdentityState()
       const message = error instanceof Error ? error.message : "Login failed"
       setError(message)
       useAuthStore.getState().setLoading(false)
@@ -90,6 +92,7 @@ export const authActions = {
     const { setAuth, setLoading, setError, clearAuth } = useAuthStore.getState()
     setLoading(true)
     setError(null)
+    await resetIdentityState()
     try {
       const me = await authApi.me()
       setAuth(access_token, me.user_id, me.email)
@@ -104,6 +107,7 @@ export const authActions = {
       useAuthStore.getState().setLoading(false)
     } catch (error) {
       clearAuth()
+      await resetIdentityState()
       const message = error instanceof Error ? error.message : "Sign-in failed"
       setError(message)
       useAuthStore.getState().setLoading(false)
@@ -120,6 +124,7 @@ export const authActions = {
     const { setAuth, setLoading, setError, clearAuth } = useAuthStore.getState()
     setLoading(true)
     setError(null)
+    await resetIdentityState()
     try {
       const me = await authApi.me()
       setAuth(null, me.user_id, me.email)
@@ -134,6 +139,7 @@ export const authActions = {
       useAuthStore.getState().setLoading(false)
     } catch (error) {
       clearAuth()
+      await resetIdentityState()
       const message = error instanceof Error ? error.message : "Sign-in failed"
       setError(message)
       useAuthStore.getState().setLoading(false)
@@ -154,7 +160,7 @@ export const authActions = {
       availableTenants: [],
       isLoading: false,
     })
-    await clearGlobalSearch()
+    await resetIdentityState()
   },
 
   async initAuth(): Promise<void> {
@@ -164,6 +170,7 @@ export const authActions = {
       const valid = await apiClient.validateSession()
       if (!valid) {
         auth.clearAuth()
+        await resetIdentityState()
         auth.setLoading(false)
         return
       }

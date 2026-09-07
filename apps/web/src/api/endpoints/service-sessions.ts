@@ -1,4 +1,5 @@
 import type { Schemas, ServiceSessionCreate } from "@/api/generated"
+import type { SessionCategory, SessionClinicalStatus, SessionType } from "@/types/enums"
 
 import apiClient from "../client"
 import type { ListParams, PaginatedResponse, ServiceSession } from "../types"
@@ -22,6 +23,9 @@ export interface ServiceSessionListParams extends ListParams {
   member_id?: string
   provider_id?: string
   service_id?: string
+  session_type?: SessionType
+  category?: SessionCategory
+  clinical_outcome?: SessionClinicalStatus
   /** ISO 8601 instant; inclusive lower bound on `scheduled_at`. */
   scheduled_from?: string
   /** ISO 8601 instant; inclusive upper bound on `scheduled_at`. */

@@ -67,6 +67,8 @@ from app.domain.enums.privacy import (
 )
 from app.domain.enums.provider import (
     AccreditationStatus,
+    EngagementDocumentKind,
+    EngagementDocumentState,
     NonCompeteStatus,
     PanelStatus,
     ProviderGender,
@@ -85,6 +87,7 @@ from app.domain.enums.session import (
     BaseStatus,
     ClientType,
     ServiceCategory,
+    SessionAttendance,
     SessionCategory,
     SessionClinicalStatus,
     SessionDeliveryContext,
@@ -134,6 +137,8 @@ __all__ = [
     "DocumentStatus",
     "DocumentType",
     "EligibilityStatus",
+    "EngagementDocumentKind",
+    "EngagementDocumentState",
     "EngagementStatus",
     "KPICategory",
     "KPIMeasurementUnit",
@@ -159,6 +164,7 @@ __all__ = [
     "RetentionDataClass",
     "SafetyPlanStatus",
     "ServiceCategory",
+    "SessionAttendance",
     "SessionCategory",
     "SessionClinicalStatus",
     "SessionDeliveryContext",

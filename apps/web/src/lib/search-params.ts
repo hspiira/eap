@@ -34,25 +34,48 @@ export function boolParam(): SearchParser<true> {
     value === true || value === "true" || value === 1 || value === "1" ? true : undefined
 }
 
+/** Table state the shared list hooks keep in the URL rather than in React state. */
+export interface ListViewSearch {
+  new?: boolean
+  search?: string
+  page?: number
+  sort?: string
+  desc?: boolean
+}
+
+/** Page 1 is the default, so it is left out of the query string entirely. */
+function pageParam(value: unknown): number | undefined {
+  const page = typeof value === "string" ? Number(value) : value
+  return typeof page === "number" && Number.isInteger(page) && page > 1 ? page : undefined
+}
+
 /**
  * Build a `validateSearch` function that always handles the shared `new` (sheet
- * open) and `search` (query string) params, plus any entity-specific parsers.
- * The returned type is inferred so `useSearch()` stays fully typed downstream.
+ * open), `search`, `page`, `sort` and `desc` params, plus any entity-specific
+ * parsers. The returned type is inferred so `useSearch()` stays fully typed
+ * downstream.
+ *
+ * Page and sort belong here rather than in component state: a sort held in
+ * React is lost on every reload and on every return from a detail row.
  */
 export function listSearchSchema<E extends Record<string, SearchParser<unknown>>>(fields: E) {
   return (
     search: Record<string, unknown>,
-  ): { new?: boolean; search?: string } & {
+  ): ListViewSearch & {
     [K in keyof E]?: NonNullable<ReturnType<E[K]>>
   } => {
     const out: Record<string, unknown> = {}
     if (search.new === "1" || search.new === true) out.new = true
     if (typeof search.search === "string" && search.search.trim()) out.search = search.search
+    const page = pageParam(search.page)
+    if (page !== undefined) out.page = page
+    if (typeof search.sort === "string" && search.sort.trim()) out.sort = search.sort
+    if (boolParam()(search.desc)) out.desc = true
     for (const key in fields) {
       const parsed = fields[key](search[key])
       if (parsed !== undefined) out[key] = parsed
     }
-    return out as { new?: boolean; search?: string } & {
+    return out as ListViewSearch & {
       [K in keyof E]?: NonNullable<ReturnType<E[K]>>
     }
   }

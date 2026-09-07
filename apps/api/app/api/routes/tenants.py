@@ -186,7 +186,7 @@ async def activate_tenant(
 ):
     """Activate a tenant."""
     use_case = TransitionUseCase(tenant_repo, "Tenant")
-    tenant = await use_case.execute(TenantId(tenant_id), TenantTransition.ACTIVATE)
+    tenant = await use_case.execute(TenantId(tenant_id), TenantTransition.ACTIVATE, tenant_id=None)
     await audit_change(tenant, audit_handler, current_user, request, tenant_id=tenant.id)
     return _to_tenant_response(tenant)
 
@@ -210,7 +210,7 @@ async def suspend_tenant(
     """Suspend a tenant."""
     use_case = TransitionUseCase(tenant_repo, "Tenant")
     tenant = await use_case.execute(
-        TenantId(tenant_id), TenantTransition.SUSPEND, reason=body.reason
+        TenantId(tenant_id), TenantTransition.SUSPEND, reason=body.reason, tenant_id=None
     )
     await audit_change(tenant, audit_handler, current_user, request, tenant_id=tenant.id)
     return _to_tenant_response(tenant)
@@ -235,7 +235,7 @@ async def terminate_tenant(
     """Terminate a tenant."""
     use_case = TransitionUseCase(tenant_repo, "Tenant")
     tenant = await use_case.execute(
-        TenantId(tenant_id), TenantTransition.TERMINATE, reason=body.reason
+        TenantId(tenant_id), TenantTransition.TERMINATE, reason=body.reason, tenant_id=None
     )
     await audit_change(tenant, audit_handler, current_user, request, tenant_id=tenant.id)
     return _to_tenant_response(tenant)
@@ -268,6 +268,7 @@ async def update_tenant_settings(
         if settings.features_enabled is not None
         else None,
         custom_branding=settings.custom_branding,
+        tenant_id=None,
     )
     await audit_change(tenant, audit_handler, current_user, request, tenant_id=tenant.id)
     return _to_tenant_response(tenant)
@@ -297,7 +298,7 @@ async def update_tenant(
         return _to_tenant_response(tenant)
     use_case = TransitionUseCase(tenant_repo, "Tenant")
     tenant = await use_case.execute(
-        TenantId(tenant_id), TenantTransition.UPDATE_NAME, name=data.name
+        TenantId(tenant_id), TenantTransition.UPDATE_NAME, name=data.name, tenant_id=None
     )
     await audit_change(tenant, audit_handler, current_user, request, tenant_id=tenant.id)
     return _to_tenant_response(tenant)
@@ -325,6 +326,7 @@ async def update_subscription(
         TenantId(tenant_id),
         TenantTransition.UPDATE_SUBSCRIPTION_TIER,
         tier=data.subscription_tier,
+        tenant_id=None,
     )
     await audit_change(tenant, audit_handler, current_user, request, tenant_id=tenant.id)
     return _to_tenant_response(tenant)
@@ -390,7 +392,7 @@ async def archive_tenant(
 ):
     """Archive a tenant."""
     use_case = TransitionUseCase(tenant_repo, "Tenant")
-    tenant = await use_case.execute(TenantId(tenant_id), TenantTransition.ARCHIVE)
+    tenant = await use_case.execute(TenantId(tenant_id), TenantTransition.ARCHIVE, tenant_id=None)
     await audit_change(tenant, audit_handler, current_user, request, tenant_id=tenant.id)
     return _to_tenant_response(tenant)
 
@@ -412,7 +414,7 @@ async def restore_tenant(
 ):
     """Restore an archived or soft-deleted tenant."""
     use_case = TransitionUseCase(tenant_repo, "Tenant")
-    tenant = await use_case.execute(TenantId(tenant_id), TenantTransition.RESTORE)
+    tenant = await use_case.execute(TenantId(tenant_id), TenantTransition.RESTORE, tenant_id=None)
     await audit_change(tenant, audit_handler, current_user, request, tenant_id=tenant.id)
     return _to_tenant_response(tenant)
 

@@ -38,7 +38,7 @@ from app.application.use_cases.transitions import (
     KPITransition,
     TransitionUseCase,
 )
-from app.core.authorization import require_same_tenant
+from app.core.authorization import assert_same_tenant, require_same_tenant
 from app.core.database import get_db
 from app.core.security import TokenData, get_current_user
 from app.domain.entities.kpi import KPIAssignmentEntity, KPIEntity
@@ -173,7 +173,9 @@ async def activate_kpi(
 ):
     """Activate a KPI."""
     use_case = TransitionUseCase(kpi_repo, "KPI")
-    kpi = await use_case.execute(KPIId(kpi_id), KPITransition.ACTIVATE)
+    kpi = await use_case.execute(
+        KPIId(kpi_id), KPITransition.ACTIVATE, tenant_id=current_user.tenant_id
+    )
     await audit_change(kpi, audit_handler, current_user, request)
     return _to_kpi_response(kpi)
 
@@ -194,7 +196,9 @@ async def deactivate_kpi(
 ):
     """Deactivate a KPI."""
     use_case = TransitionUseCase(kpi_repo, "KPI")
-    kpi = await use_case.execute(KPIId(kpi_id), KPITransition.DEACTIVATE)
+    kpi = await use_case.execute(
+        KPIId(kpi_id), KPITransition.DEACTIVATE, tenant_id=current_user.tenant_id
+    )
     await audit_change(kpi, audit_handler, current_user, request)
     return _to_kpi_response(kpi)
 
@@ -274,6 +278,7 @@ async def check_kpi_name_availability(
 @readonly()
 async def get_kpi(
     kpi_id: str,
+    current_user: TokenData = Depends(get_current_user),
     kpi_repo: KPIRepository = Depends(get_kpi_repository),
     db: AsyncSession = Depends(get_db),
 ):
@@ -281,6 +286,7 @@ async def get_kpi(
     kpi = await GetKPIUseCase(kpi_repo).execute(KPIId(kpi_id))
     if not kpi:
         raise NotFoundError("KPI not found")
+    assert_same_tenant(current_user, kpi.tenant_id.value)
     return _to_kpi_response(kpi)
 
 
@@ -357,7 +363,9 @@ async def activate_kpi_assignment(
     """Activate a KPI assignment."""
     use_case = TransitionUseCase(assignment_repo, "Assignment")
     assignment = await use_case.execute(
-        KPIAssignmentId(assignment_id), KPIAssignmentTransition.ACTIVATE
+        KPIAssignmentId(assignment_id),
+        KPIAssignmentTransition.ACTIVATE,
+        tenant_id=current_user.tenant_id,
     )
     await audit_change(assignment, audit_handler, current_user, request)
     return _to_kpi_assignment_response(assignment)
@@ -380,7 +388,9 @@ async def deactivate_kpi_assignment(
     """Deactivate a KPI assignment."""
     use_case = TransitionUseCase(assignment_repo, "Assignment")
     assignment = await use_case.execute(
-        KPIAssignmentId(assignment_id), KPIAssignmentTransition.DEACTIVATE
+        KPIAssignmentId(assignment_id),
+        KPIAssignmentTransition.DEACTIVATE,
+        tenant_id=current_user.tenant_id,
     )
     await audit_change(assignment, audit_handler, current_user, request)
     return _to_kpi_assignment_response(assignment)
@@ -447,6 +457,7 @@ async def list_kpi_assignments(
 @readonly()
 async def get_kpi_assignment(
     assignment_id: str,
+    current_user: TokenData = Depends(get_current_user),
     assignment_repo: KPIAssignmentRepository = Depends(get_kpi_assignment_repository),
     db: AsyncSession = Depends(get_db),
 ):
@@ -456,6 +467,7 @@ async def get_kpi_assignment(
     )
     if not assignment:
         raise NotFoundError("KPI assignment not found")
+    assert_same_tenant(current_user, assignment.tenant_id.value)
     return _to_kpi_assignment_response(assignment)
 
 

@@ -50,6 +50,7 @@ class ImportRowOutcome(str, Enum):
     MISSING_PRACTITIONER = "MissingPractitioner"
     UNMAPPED_PRACTITIONER = "UnmappedPractitioner"
     AMBIGUOUS_PRACTITIONER = "AmbiguousPractitioner"
+    UNRESOLVED_CLIENT = "UnresolvedClient"
     UNRESOLVED_MEMBER = "UnresolvedMember"
     UNRESOLVED_SERVICE = "UnresolvedService"
     REJECTED = "Rejected"
@@ -61,3 +62,17 @@ class ImportBatchStatus(str, Enum):
     STAGED = "Staged"
     APPLIED = "Applied"
     ABANDONED = "Abandoned"
+
+
+class PractitionerImportOutcome(str, Enum):
+    """Per-row result of a staged practitioner workbook import.
+
+    Not ImportRowOutcome: those values name session-extract resolutions
+    (member, service, practitioner lookup) that do not exist here, and none
+    of them means "a person must decide before this row can be applied".
+    """
+
+    ACCEPTED = "Accepted"
+    NEEDS_REVIEW = "NeedsReview"
+    DUPLICATE = "Duplicate"
+    REJECTED = "Rejected"

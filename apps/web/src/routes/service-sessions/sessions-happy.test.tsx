@@ -22,6 +22,13 @@ vi.mock("@/api/endpoints/service-sessions", () => ({
           id: "ss_1",
           service_id: "sv_1",
           member_id: "p_1",
+          client_id: "c_1",
+          attendance: "Individual",
+          // The list endpoint resolves names server-side since C1; the row is
+          // the wire shape, not something the page looks up per id.
+          service_name: "Short-term counselling",
+          member_display_label: "Janet Nakato",
+          client_name: "Acme",
           status: "Scheduled",
           session_type: "Online",
           session_category: "Individual",

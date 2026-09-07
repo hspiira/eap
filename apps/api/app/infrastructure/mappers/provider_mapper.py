@@ -17,13 +17,6 @@ from app.infrastructure.models.provider_model import ProviderModel
 from app.shared.utils.datetime import ensure_utc
 
 
-def _required(profile: dict[str, object], name: str) -> object:
-    value = profile.get(name)
-    if value is None:
-        raise ValueError(f"Stored provider profile is missing required field {name!r}")
-    return value
-
-
 class ProviderMapper:
     @staticmethod
     def to_entity(model: ProviderModel) -> ProviderEntity:
@@ -77,8 +70,8 @@ class ProviderMapper:
         if expiry is not None and not isinstance(expiry, date):
             raise ValueError("Provider accreditation expiry must be an ISO date")
         return ProviderProfile(
-            tier=ProviderTier(_required(profile, "tier")),
-            region=UgandaRegion(_required(profile, "region")),
+            tier=ProviderTier(profile["tier"]) if profile.get("tier") else None,
+            region=UgandaRegion(profile["region"]) if profile.get("region") else None,
             accreditation_status=AccreditationStatus(
                 profile.get("accreditation_status") or AccreditationStatus.PENDING
             ),
@@ -95,8 +88,8 @@ class ProviderMapper:
         if profile is None:
             return None
         return {
-            "tier": profile.tier.value,
-            "region": profile.region.value,
+            "tier": profile.tier.value if profile.tier else None,
+            "region": profile.region.value if profile.region else None,
             "accreditation_status": profile.accreditation_status.value,
             "panel_status": profile.panel_status.value,
             "accreditation_authority": profile.accreditation_authority,

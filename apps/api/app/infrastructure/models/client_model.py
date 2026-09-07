@@ -9,7 +9,17 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from sqlalchemy import JSON, CheckConstraint, Enum, ForeignKey, Index, String, func, text
+from sqlalchemy import (
+    JSON,
+    CheckConstraint,
+    Enum,
+    ForeignKey,
+    Index,
+    String,
+    UniqueConstraint,
+    func,
+    text,
+)
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.domain.enums import BaseStatus, ClientTier, ContactMethod
@@ -36,6 +46,10 @@ class ClientModel(CuidMixin, TenantMixin, Base, TimestampMixin, SoftDeleteMixin)
 
     __tablename__ = "clients"
     __table_args__ = (
+        # A superset of the primary key, so it adds no constraint of its own. It
+        # exists so a tenant-scoped table can carry a composite foreign key to a
+        # client, as providers already do with uq_providers_tenant_id.
+        UniqueConstraint("tenant_id", "id", name="uq_clients_tenant_id"),
         CheckConstraint(
             "status IN (" + ", ".join(f"'{e.value}'" for e in BaseStatus) + ")",
             name="client_status_check",

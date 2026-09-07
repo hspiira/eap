@@ -123,7 +123,7 @@ export function ProviderLifecyclePanel({
     if (!command) return
     try {
       const updated = await runCommand(provider.id, command, reason, {
-        tier,
+        tier: tier ?? ProviderTier.T3,
         panelStatus,
         status,
         accreditation,
@@ -192,8 +192,8 @@ export function ProviderLifecyclePanel({
             id="lifecycle-tier"
             label="Tier"
             values={Object.values(ProviderTier)}
-            value={tier}
-            onChange={setTier}
+            value={tier ?? ""}
+            onChange={(value) => setTier(value as ProviderTier)}
           />
         ) : null}
         {command === "panel" ? (

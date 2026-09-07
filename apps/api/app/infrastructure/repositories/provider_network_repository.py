@@ -136,6 +136,20 @@ class ProviderOrganisationRepositoryImpl(ProviderOrganisationRepository):
         await self.session.merge(ProviderOrganisationMapper.to_model(organisation))
         await self.session.flush()
 
+    async def find_organisation_by_name(
+        self, tenant_id: TenantId, name: str
+    ) -> ProviderOrganisationEntity | None:
+        model = await self.session.scalar(
+            select(ProviderOrganisationModel)
+            .where(
+                ProviderOrganisationModel.tenant_id == tenant_id.value,
+                func.lower(ProviderOrganisationModel.name) == name.strip().lower(),
+                ProviderOrganisationModel.deleted_at.is_(None),
+            )
+            .limit(1)
+        )
+        return ProviderOrganisationMapper.to_entity(model) if model else None
+
     async def name_exists(
         self,
         tenant_id: TenantId,

@@ -256,6 +256,64 @@ answer strings as employer-facing chart labels.
 never appear in aggregate JSON or printed reports; small cohorts and totals obey
 the same policy on every endpoint. Retain categorical aggregate functionality.
 
+### SEC-04: 100 mutating routes authenticated the caller but never checked they may write
+
+**Status: closed.** Evidence: reproduced by dependency-tree scan, then fixed.
+
+SEC-03's repair has two halves. The tenant half was closed first:
+`TransitionUseCase.execute` requires the owning tenant and refuses a mismatch,
+and the entity-ID reads are scoped. This is the write-role half.
+
+**Correction to the first count recorded here.** The initial scan reported 157
+and named `POST /cases/{id}/close`, clinical-note `/sign`, `/users/{id}/ban`
+and `/tenants/{id}/terminate` among the exposed routes. That was wrong, and the
+claim is withdrawn. `require_tenant_role` and `require_self_or_role` are
+factories whose inner function is named `_require`; matching only the factory
+name missed them, so 57 already-gated routes were counted as exposed. Cases,
+clinical notes, users, tenants, industries and members all carry their own
+gate. The corrected figure is **100**.
+
+What was genuinely reachable by a same-tenant Viewer: every DSAR mutation
+(`/dsar/export`, `/dsar/erasure`, `/dsar/{id}/cancel`, `/execute-export`,
+`/execute-erasure`), every contract command including `/terminate` and
+`PATCH /pricing`, benchmark consent withdrawal, the care-callback campaign
+lifecycle and member enrolment, every outreach-record transition including
+`/triage` and `/escalate`, critical incidents, documents including
+`PATCH /confidentiality`, engagements, KPIs, services, service assignments,
+service sessions, survey campaigns, contacts, client tags, activities, report
+template creation and runs, and `POST /utilisation-events`. Decision 3 in this
+plan is "Viewers cannot mutate", and decision 3 also puts pricing changes and
+DSAR execution behind tenant Admin specifically.
+
+**Repair.** `block_viewer_writes` in `app/core/authorization.py`, registered as
+an application-level dependency in `app/main.py`, so no route can be added
+outside it. It refuses an unsafe method to a Viewer's token unless the route is
+in `VIEWER_WRITABLE`, which holds six entries, each with its reason in the
+source: the four auth endpoints, `POST /search` (a read whose query is a body),
+and the signed survey webhook. Anonymous requests pass through, because whether
+a route may be called without a token is a separate question that
+`test_route_authorization` holds.
+
+Route signatures were deliberately not edited. Hand-editing a hundred of them
+is how twelve lost their tenant check in the first place, and an opt-in gate is
+only as good as the memory of whoever adds the next route.
+
+**Verified:** `test_viewer_write_gate` refuses a Viewer through the real
+application on eight representative routes, confirms `/search` still gets past
+the gate, confirms Admin and User are untouched, confirms reads and anonymous
+requests are untouched, and pins the allowlist so growth is deliberate. Removing
+the registration fails eight of those tests. Unit 1731 passed, coverage 67.48%.
+Integration and e2e 500 passed, 1 failed, that failure being the pre-existing
+provider audit test recorded in `PROVIDERS_MIGRATION.md`.
+
+**Left open, deliberately.** The 100 routes now rely on the blanket gate rather
+than on a role stated at the route. That is a weaker statement of intent than
+`Depends(require_not_viewer)` at each one, and decision 3's stricter rule, that
+pricing changes and DSAR execution require tenant Admin rather than merely
+not-Viewer, is still not enforced. A test asserts the count does not grow while
+that is outstanding. Assigning explicit roles route by route is follow-up work
+for each module owner.
+
 ## P2: workflows and data correctness
 
 ### API-01: Survey and engagement lists disagree with their live response types
@@ -550,11 +608,35 @@ must add commit IDs, exact commands/results and deployment state to its phase.
 Keep unchecked items open until their stated acceptance checks pass.
 
 - [ ] Phase 1 - Access control and identity isolation
-  - [ ] Close SEC-01, SEC-02 and SEC-03 across all mounted routes in scope.
-  - [ ] Close AUTH-01 for logout, expiry, SSO and delayed responses.
-  - [ ] Add anonymous, wrong-tenant, wrong-role and wrong-scope regression cases.
+  - [x] ~~Close SEC-01~~ across all mounted routes in scope. The scan found 26
+        routes resolving no user, not the 2 recorded; all are authenticated and
+        tenant-scoped except the justified public surface, which
+        `test_route_authorization` now holds as an explicit allowlist.
+        `GET /provider-specialties` is listed there as pending, not approved:
+        it belongs to the provider worktrees.
+  - [x] ~~Close SEC-02.~~ All twelve unawaited calls replaced with the
+        synchronous `assert_same_tenant`; `test_use_case_call_sites` fails the
+        build if the async form is called outside `Depends` again.
+  - [x] ~~Close SEC-03.~~ Tenant half: `TransitionUseCase.execute` takes a
+        required keyword-only `tenant_id`, enforced fail-closed in both
+        directions, and all 82 route call sites plus the one application-layer
+        call site pass the authenticated caller's tenant. Write-role half:
+        closed by SEC-04's blanket gate. Per-route role statements remain
+        follow-up work for each module owner.
+  - [x] ~~Close AUTH-01 for logout, expiry, SSO and delayed responses.~~
+        `resetIdentityState` is reached from all of them; verified against a
+        real query client, including a response arriving after the reset.
+  - [~] Anonymous, wrong-tenant and wrong-role regression cases added
+        (`test_cross_tenant_reads`, `test_route_authorization`,
+        `test_transition_use_case`, `test_viewer_write_gate`). Wrong-scope
+        cases on clinical routes are not written yet.
   - [ ] Verify forbidden operations have no save, export or erasure side effects.
+        Partly done: the transition guard is asserted to leave the aggregate
+        unchanged and unsaved. Not yet done for DSAR export/erasure.
   - [ ] Reconcile shared authorization/outreach/session files with provider work.
+        Not started. `service_sessions.py`, `non_compete_clauses.py` and
+        `panel.py` received tenant arguments at their transition call sites and
+        the provider worktrees must rebase onto that.
 
 - [ ] Phase 2 - Reporting truth and privacy
   - [ ] Close REP-01, PRIV-01, REP-02 and DATA-01.
@@ -583,6 +665,76 @@ Keep unchecked items open until their stated acceptance checks pass.
   - [ ] Run the same checkout's backend and frontend before browser verification.
   - [ ] Mark implemented, tested and deployed separately. A hidden navigation item
         or a passing mock test is not evidence of endpoint safety or deployment.
+
+## Scope rule: paused modules are out of scope until they are reopened
+
+Set 2026-09-07 by the user. `apps/web/src/lib/featureFlags.ts` flags these off
+by default: **contacts, audit, activities, kpis, documents, surveys, campaigns,
+worklist, engagements**. Do not repair their workflows, contracts or UI under
+this plan. Wait until the product owner reopens a module, then take its
+findings as one backend-and-frontend slice, which is what decision 9 already
+asks for.
+
+This retires the following from the active work list for now: API-01, SUR-01,
+ENG-01 and AUD-01 (surveys and engagements), and the survey half of PRIV-01 and
+DATA-01. `6765d1f` implemented API-01 and AUD-01 and was reverted by `f7e07c1`;
+cherry-pick it when those modules reopen, and finish its verification then, as
+it was stopped part-way through its own test run.
+
+**Security findings are the exception and stay in scope.** A flag hides a nav
+entry; it does not unmount the API. Every route of a paused module is still
+reachable by anyone who knows its path, which is precisely how SEC-01 found
+care-callback campaigns, outreach records, contacts, KPIs and activities
+readable with no credentials. SEC-01 through SEC-04 therefore apply to paused
+modules and are not reverted.
+
+Still in scope: REP-01 and REP-02 (reports is not flagged), and VERIFY-01.
+CASE-01 (cases), INC-01 (critical incidents) and BILL-01 (contracts/pricing)
+are not flagged either; confirm with the product owner before starting them,
+since this plan's phases assumed a different order.
+
+## Active ownership (read before editing any file named here)
+
+Claimed 2026-09-07. Update this block when a stream is picked up or released;
+do not start work on a claimed path without agreeing the handover here first.
+
+| Stream | Findings | Owner | State |
+| --- | --- | --- | --- |
+| 1. Access control and session state | SEC-01, SEC-02, SEC-03, SEC-04, AUTH-01 | stream 1 agent (this branch, `chore/monorepo`) | all closed; per-route roles left as module-owner follow-up, see SEC-04 |
+| 2. Reporting and privacy | REP-01, PRIV-01, REP-02, DATA-01 | delegated 2026-09-07 | in progress |
+| 3. Module integration | API-01, ENG-01, AUD-01 | delegated 2026-09-07 | in progress |
+| 3b. Module integration, later round | SUR-01, INC-01, CASE-01, BILL-01 | unclaimed | open |
+
+**Files stream 1 holds.** Backend: `app/core/authorization.py`,
+`app/api/dependencies/reporting.py`, `app/application/use_cases/transitions.py`,
+and the authorization lines only of `app/api/routes/`: `reports.py`,
+`benchmark.py`, `engagements.py`, `surveys.py`, `eap_programmes.py`, `cases.py`,
+`clinical_notes.py`, `dsar.py`, `care_callbacks.py`, `pricing.py`,
+`critical_incidents.py`. Frontend: `src/lib/auth-store.ts`,
+`src/lib/tenant-actions.ts`, `src/lib/query-client.ts`,
+`src/components/AppBootstrap.tsx`.
+
+**What this means for streams 2 and 3.** `surveys.py`, `engagements.py`,
+`critical_incidents.py`, `pricing.py` and `cases.py` are also stream 3 files.
+Stream 1 goes first in them, as the plan's execution ownership requires, and
+touches only the authorization guard and route signature. Response shapes, use
+case bodies and schemas in those files are untouched and stay with stream 3.
+Take them once stream 1's commits for that file have landed; rebase rather than
+edit in parallel.
+
+**Interface stream 1 publishes.** `assert_same_tenant(current_user, tenant_id)`
+in `app/core/authorization.py` is the in-body ownership guard. It is
+deliberately synchronous: the defect SEC-02 records is twelve unawaited calls to
+the async `require_same_tenant`, which a synchronous function cannot repeat.
+`require_same_tenant` keeps its existing, correct meaning as a FastAPI
+dependency (`Depends(require_same_tenant)`) for routes carrying `tenant_id` in
+the path or query. Use the dependency where a route takes a tenant argument, and
+`assert_same_tenant` where the tenant is only known after loading the entity.
+
+**Not claimed by stream 1.** The provider module, held by `wt-agent1`,
+`wt-agent2` and `wt-agent3`. See also the red provider CI test recorded under
+"Remaining risks and ownership" in `PROVIDERS_MIGRATION.md`: the api job cannot
+go green until its owner fixes it, independently of this plan.
 
 ## Execution ownership
 

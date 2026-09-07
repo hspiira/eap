@@ -249,7 +249,7 @@ export function TenantFormSheet({ open, onOpenChange, tenant, onSaved }: TenantF
       <FormField
         label="Custom branding"
         required
-        description="Allow the tenant to use custom branding and override theme colours."
+        description="Custom branding and theme colours."
         error={errors.custom_branding?.message}
         htmlFor="tenant-branding"
       >

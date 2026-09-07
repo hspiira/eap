@@ -21,7 +21,7 @@ from app.application.use_cases.benchmark_use_cases import (
     GrantBenchmarkConsentUseCase,
     WithdrawBenchmarkConsentUseCase,
 )
-from app.core.authorization import require_same_tenant
+from app.core.authorization import assert_same_tenant
 from app.core.database import get_db
 from app.core.security import TokenData, get_current_user
 from app.domain.entities.benchmark_consent import BenchmarkConsent
@@ -103,7 +103,7 @@ async def withdraw_consent(
         actor=UserId(current_user.user_id),
         reason=data.reason,
     )
-    require_same_tenant(current_user, out.tenant_id.value)
+    assert_same_tenant(current_user, out.tenant_id.value)
     return _to_consent_response(out)
 
 

@@ -382,7 +382,11 @@ function SessionsPanel({
               <TableRow key={s.id} className="group border-fg/8">
                 <TableCell className="text-sm text-fg">{formatDateTime(s.scheduled_at)}</TableCell>
                 <TableCell>
-                  <MemberLink memberId={s.member_id} />
+                  {s.member_id ? (
+                    <MemberLink memberId={s.member_id} />
+                  ) : (
+                    <span className="text-xs text-fg-muted">Company-wide</span>
+                  )}
                 </TableCell>
                 <TableCell>
                   <StatusBadge status={s.status} />

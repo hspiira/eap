@@ -204,7 +204,7 @@ class ProviderEntity:
             ProviderTierChanged(
                 occurred_at=utc_now(),
                 provider_id=self.id,
-                old_tier=profile.tier.value,
+                old_tier=profile.tier.value if profile.tier else None,
                 new_tier=new_tier.value,
                 actor=actor,
                 reason=checked,

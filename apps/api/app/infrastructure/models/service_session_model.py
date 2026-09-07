@@ -20,6 +20,7 @@ from sqlalchemy.orm import Mapped, mapped_column
 
 from app.domain.enums import (
     ClientType,
+    SessionAttendance,
     SessionCategory,
     SessionClinicalStatus,
     SessionDeliveryContext,
@@ -80,6 +81,33 @@ class ServiceSessionModel(CuidMixin, TenantMixin, Base, TimestampMixin, SoftDele
             name="fk_service_sessions_provider_tenant",
             ondelete="RESTRICT",
         ),
+        ForeignKeyConstraint(
+            ["tenant_id", "client_id"],
+            ["clients.tenant_id", "clients.id"],
+            name="fk_service_sessions_client_tenant",
+            ondelete="RESTRICT",
+        ),
+        # The member must belong to the client the session is attributed to.
+        # Enforced here as well as in the application, so a direct write cannot
+        # attach one client's member to another client's session.
+        ForeignKeyConstraint(
+            ["tenant_id", "client_id", "member_id"],
+            [
+                "eligible_members.tenant_id",
+                "eligible_members.client_id",
+                "eligible_members.id",
+            ],
+            name="fk_service_sessions_member_client_tenant",
+            ondelete="RESTRICT",
+        ),
+        CheckConstraint(
+            "attendance IN (" + ", ".join(f"'{e.value}'" for e in SessionAttendance) + ")",
+            name="session_attendance_check",
+        ),
+        CheckConstraint(
+            "(attendance = 'CompanyWide') = (member_id IS NULL)",
+            name="session_attendance_matches_member_check",
+        ),
         CheckConstraint(
             "delivery_context IN ("
             + ", ".join(f"'{e.value}'" for e in SessionDeliveryContext)
@@ -113,8 +141,15 @@ class ServiceSessionModel(CuidMixin, TenantMixin, Base, TimestampMixin, SoftDele
     provider_affiliation_id: Mapped[str | None] = mapped_column(
         String(25), nullable=True, index=True
     )
-    member_id: Mapped[str] = mapped_column(
-        ForeignKey("eligible_members.id"), nullable=False, index=True
+    client_id: Mapped[str] = mapped_column(String(25), nullable=False, index=True)
+    attendance: Mapped[SessionAttendance] = mapped_column(
+        EnumValueType(SessionAttendance),
+        nullable=False,
+        default=SessionAttendance.INDIVIDUAL,
+        index=True,
+    )
+    member_id: Mapped[str | None] = mapped_column(
+        ForeignKey("eligible_members.id"), nullable=True, index=True
     )
 
     # Scheduling

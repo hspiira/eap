@@ -205,6 +205,31 @@ class MemberDuplicateListResponse(BaseModel):
     scanned: int
 
 
+class MemberImportRowValues(BaseModel):
+    """The raw CSV values for one roster row, as the parser read them.
+
+    The preview echoes these back so the confirmation step can send one row at a
+    time without re-uploading the file.
+    """
+
+    client_code: str | None = None
+    employer_member_id: str | None = None
+    staff_number: str | None = None
+    display_label: str | None = None
+    work_email: str | None = None
+    personal_email: str | None = None
+    gender: str | None = None
+    date_of_birth: str | None = None
+    phone: str | None = None
+    national_id: str | None = None
+    passport_number: str | None = None
+    status: str | None = None
+    relation: str | None = None
+    primary_employee_member_id: str | None = None
+
+    model_config = ConfigDict(extra="forbid")
+
+
 class MemberImportRowPreview(BaseModel):
     row: int
     client_code: str | None
@@ -215,6 +240,7 @@ class MemberImportRowPreview(BaseModel):
     state: str
     message: str | None = None
     default_action: str = "import"
+    values: MemberImportRowValues | None = None
 
 
 class MemberImportIssue(BaseModel):
@@ -229,3 +255,33 @@ class MemberImportResponse(BaseModel):
     failed: int
     issues: list[MemberImportIssue] = Field(default_factory=list)
     rows: list[MemberImportRowPreview]
+
+
+class MemberImportCommitRow(BaseModel):
+    """One row the client confirmed for import, replayed from the preview."""
+
+    row: int = Field(..., ge=1)
+    values: MemberImportRowValues
+
+    model_config = ConfigDict(extra="forbid")
+
+
+class MemberImportCommitRequest(BaseModel):
+    """A slice of confirmed rows. Each row is committed on its own."""
+
+    rows: list[MemberImportCommitRow] = Field(..., min_length=1, max_length=100)
+
+    model_config = ConfigDict(extra="forbid")
+
+
+class MemberImportRowResult(BaseModel):
+    """What happened to a single row once it was written."""
+
+    row: int
+    state: str
+    member_id: str | None = None
+    message: str | None = None
+
+
+class MemberImportCommitResponse(BaseModel):
+    results: list[MemberImportRowResult]

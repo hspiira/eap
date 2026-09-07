@@ -8,7 +8,12 @@ import { membersApi } from "@/api/endpoints/members"
 import { serviceSessionsApi } from "@/api/endpoints/service-sessions"
 import { servicesApi } from "@/api/endpoints/services"
 import { DiagnosisSelector } from "@/components/common/DiagnosisSelector"
-import { MemberPicker, ProviderPicker, ServicePicker } from "@/components/common/EntityPicker"
+import {
+  ClientPicker,
+  MemberPicker,
+  ProviderPicker,
+  ServicePicker,
+} from "@/components/common/EntityPicker"
 import { FormField } from "@/components/common/FormField"
 import { FormSection } from "@/components/common/FormSection"
 import { SheetForm } from "@/components/common/SheetForm"
@@ -34,16 +39,28 @@ import { useEntityList } from "@/lib/queries"
 import { cn } from "@/lib/utils"
 import type { ErrorDetail } from "@/types/api"
 import type { Member, Service, ServiceSession } from "@/types/entities"
-import { ClientType, SessionCategory, SessionDeliveryContext, SessionType } from "@/types/enums"
+import {
+  ClientType,
+  SessionAttendance,
+  SessionCategory,
+  SessionDeliveryContext,
+  SessionType,
+} from "@/types/enums"
+import { getStatusLabel } from "@/utils/statusColors"
 
 const schema = z
   .object({
     service_id: z.string().trim().min(1, "Service is required"),
-    member_id: z.string().trim().min(1, "Member is required"),
+    attendance: z.enum([SessionAttendance.INDIVIDUAL, SessionAttendance.COMPANY_WIDE]),
+    member_id: z.string().optional(),
+    client_id: z.string().optional(),
     service_provider_id: z.string().trim().min(1, "Practitioner is required"),
-    delivery_context: z.enum([SessionDeliveryContext.DIRECT, SessionDeliveryContext.ORGANISATION], {
-      message: "Choose direct or organisation delivery",
-    }),
+    // Optional at the base and required in a refinement below. zod skips
+    // object-level refinements when the base object fails to parse, so a
+    // required enum here would suppress every conditional message with it.
+    delivery_context: z
+      .enum([SessionDeliveryContext.DIRECT, SessionDeliveryContext.ORGANISATION])
+      .optional(),
     provider_affiliation_id: z.string().optional(),
     scheduled_at: z
       .string()
@@ -65,6 +82,28 @@ const schema = z
     is_backfill: z.boolean().optional(),
     backfill_reason: z.string().optional(),
   })
+  .refine((d) => Boolean(d.delivery_context), {
+    path: ["delivery_context"],
+    message: "Choose direct or organisation delivery",
+  })
+  // A health talk names a client and a headcount; a session names a member.
+  .refine((d) => d.attendance !== SessionAttendance.INDIVIDUAL || Boolean(d.member_id?.trim()), {
+    path: ["member_id"],
+    message: "Member is required",
+  })
+  .refine((d) => d.attendance !== SessionAttendance.COMPANY_WIDE || Boolean(d.client_id?.trim()), {
+    path: ["client_id"],
+    message: "Choose the client this session was delivered to",
+  })
+  .refine(
+    (d) =>
+      d.attendance !== SessionAttendance.COMPANY_WIDE ||
+      (Number.isFinite(Number(d.headcount)) && Number(d.headcount) >= 2),
+    {
+      path: ["headcount"],
+      message: "A company-wide session needs a headcount; it is the only measure of its reach",
+    },
+  )
   .refine(
     (d) =>
       d.delivery_context !== SessionDeliveryContext.ORGANISATION ||
@@ -96,7 +135,9 @@ type Values = z.infer<typeof schema>
 
 const EMPTY: Values = {
   service_id: "",
+  attendance: SessionAttendance.INDIVIDUAL,
   member_id: "",
+  client_id: "",
   service_provider_id: "",
   delivery_context: undefined as unknown as Values["delivery_context"],
   provider_affiliation_id: "",
@@ -161,7 +202,11 @@ export function ServiceSessionFormSheet({
     >({
       resource: "service-sessions",
       schema,
-      defaultValues: { ...EMPTY, service_id: serviceId ?? "", member_id: memberId ?? "" },
+      defaultValues: {
+        ...EMPTY,
+        service_id: serviceId ?? "",
+        member_id: memberId ?? "",
+      },
       open,
       onOpenChange,
       entity: session,
@@ -175,11 +220,14 @@ export function ServiceSessionFormSheet({
           const n = Number(v)
           return v?.trim() && Number.isFinite(n) ? n : undefined
         }
+        const companyWide = values.attendance === SessionAttendance.COMPANY_WIDE
         return {
           service_id: values.service_id,
-          member_id: values.member_id,
+          attendance: values.attendance,
+          member_id: companyWide ? undefined : values.member_id,
+          client_id: companyWide ? values.client_id : undefined,
           provider_id: values.service_provider_id,
-          delivery_context: values.delivery_context,
+          delivery_context: values.delivery_context!,
           provider_affiliation_id:
             values.delivery_context === SessionDeliveryContext.ORGANISATION
               ? (values.provider_affiliation_id?.trim() ?? null)
@@ -252,10 +300,14 @@ export function ServiceSessionFormSheet({
 
   const watchedService = watch("service_id")
   const watchedMember = watch("member_id")
+  const watchedAttendance = watch("attendance")
   const watchedProvider = watch("service_provider_id")
   const watchedBackfill = !isEdit && Boolean(watch("is_backfill"))
   const watchedCategory = watch("category")
   const isGroup = watchedCategory === SessionCategory.GROUP
+  // A company-wide session is counted, not named, so its headcount is asked for
+  // whatever category it carries.
+  const needsHeadcount = isGroup || watchedAttendance === SessionAttendance.COMPANY_WIDE
   const isPartnered =
     watchedCategory === SessionCategory.COUPLES || watchedCategory === SessionCategory.FAMILY
 
@@ -268,10 +320,10 @@ export function ServiceSessionFormSheet({
       title={isEdit ? "Edit session" : watchedBackfill ? "Log past session" : "Schedule session"}
       description={
         isEdit
-          ? "Update the time, location, or notes for this session."
+          ? "Update the time, location, or notes."
           : watchedBackfill
-            ? "Record a session that already happened. Marked Completed and tagged in the audit trail."
-            : "Schedule a session for a member against a service. Lifecycle changes (complete / cancel / no-show) happen later from the detail view."
+            ? "Record a session that already happened. It is marked Completed and audited."
+            : "Book a session for a member, or for a whole company."
       }
       size="lg"
       onSubmit={submit}
@@ -282,7 +334,7 @@ export function ServiceSessionFormSheet({
     >
       {ineligible ? <EligibilityFailureNotice reasons={ineligible} /> : null}
 
-      <FormSection title="Service">
+      <FormSection title="Session">
         <FormField label="Service" required error={errors.service_id?.message}>
           {lockedServiceId ? (
             <LockedServiceSummary serviceId={lockedServiceId} service={service ?? null} />
@@ -303,6 +355,7 @@ export function ServiceSessionFormSheet({
               name="category"
               render={({ field }) => (
                 <EnumSelect
+                  placeholder="Individual, group…"
                   value={field.value}
                   onChange={field.onChange}
                   options={Object.values(SessionCategory)}
@@ -310,12 +363,13 @@ export function ServiceSessionFormSheet({
               )}
             />
           </FormField>
-          <FormField label="Delivery" error={errors.session_type?.message}>
+          <FormField label="Mode" error={errors.session_type?.message}>
             <Controller
               control={control}
               name="session_type"
               render={({ field }) => (
                 <EnumSelect
+                  placeholder="Physical or online"
                   value={field.value}
                   onChange={field.onChange}
                   options={Object.values(SessionType)}
@@ -324,11 +378,11 @@ export function ServiceSessionFormSheet({
             />
           </FormField>
         </div>
-        {isGroup ? (
+        {needsHeadcount ? (
           <FormField
             label="Headcount"
             required
-            description="Number of participants: group sessions need at least 2."
+            description="At least 2."
             error={errors.headcount?.message}
             htmlFor="ss-headcount"
           >
@@ -337,30 +391,63 @@ export function ServiceSessionFormSheet({
         ) : null}
       </FormSection>
 
-      <FormSection title="Subject">
-        <FormField label="Member" required error={errors.member_id?.message}>
-          {lockedMemberId ? (
-            <LockedMemberSummary memberId={lockedMemberId} member={member ?? null} />
-          ) : (
-            <MemberPicker
-              value={watchedMember ?? ""}
+      <FormSection title="Participants">
+        {/* Asked first: it decides whether the rest of this section wants a
+            member or a client and a headcount. */}
+        <FormField
+          label="Delivered to"
+          htmlFor="ss-attendance"
+          required
+          error={errors.attendance?.message}
+        >
+          <Controller
+            control={control}
+            name="attendance"
+            render={({ field }) => (
+              <EnumSelect
+                id="ss-attendance"
+                value={field.value}
+                onChange={field.onChange}
+                options={Object.values(SessionAttendance)}
+              />
+            )}
+          />
+        </FormField>
+        {watchedAttendance === SessionAttendance.COMPANY_WIDE ? (
+          <FormField label="Client" required error={errors.client_id?.message}>
+            <ClientPicker
+              value={watch("client_id") ?? ""}
               onChange={(id) =>
-                setValue("member_id", id, { shouldValidate: true, shouldDirty: true })
+                setValue("client_id", id, { shouldValidate: true, shouldDirty: true })
               }
             />
-          )}
-        </FormField>
+          </FormField>
+        ) : (
+          <FormField label="Member" required error={errors.member_id?.message}>
+            {lockedMemberId ? (
+              <LockedMemberSummary memberId={lockedMemberId} member={member ?? null} />
+            ) : (
+              <MemberPicker
+                value={watchedMember ?? ""}
+                onChange={(id) =>
+                  setValue("member_id", id, { shouldValidate: true, shouldDirty: true })
+                }
+              />
+            )}
+          </FormField>
+        )}
         <Input type="hidden" {...register("member_id")} />
+        <Input type="hidden" {...register("client_id")} />
         <FormField label="Client type" error={errors.client_type?.message}>
           <Controller
             control={control}
             name="client_type"
             render={({ field }) => (
               <EnumSelect
+                placeholder="New or repeat"
                 value={field.value}
                 onChange={field.onChange}
                 options={Object.values(ClientType)}
-                placeholder="New or returning?"
               />
             )}
           />
@@ -381,7 +468,7 @@ export function ServiceSessionFormSheet({
             >
               <Input
                 id="ss-partner-rel"
-                placeholder="e.g. Spouse"
+                placeholder="Spouse"
                 {...register("partner_relationship")}
               />
             </FormField>
@@ -389,10 +476,7 @@ export function ServiceSessionFormSheet({
         ) : null}
       </FormSection>
 
-      <FormSection
-        title="Practitioner"
-        description="Who delivers the session, and whether they deliver it directly or for a supplier firm."
-      >
+      <FormSection title="Delivery" description="Who delivered it, and under what arrangement.">
         <FormField label="Practitioner" required error={errors.service_provider_id?.message}>
           <ProviderPicker
             value={watchedProvider ?? ""}
@@ -433,7 +517,7 @@ export function ServiceSessionFormSheet({
           </FormField>
           <FormField
             label="Session number"
-            description="Position in the member's episode, e.g. 3 of 6."
+            description="Position in the member's episode."
             error={errors.session_number?.message}
             htmlFor="ss-session-no"
           >
@@ -462,8 +546,7 @@ export function ServiceSessionFormSheet({
                 This session already happened
               </span>
               <span className="block text-xs text-fg-muted">
-                Backfill a past session. It will be marked Completed and tagged with a logged-at
-                timestamp + reason in the audit trail.
+                Marked Completed, and audited with your reason.
               </span>
             </label>
           </div>
@@ -478,40 +561,26 @@ export function ServiceSessionFormSheet({
         </FormField>
         {watchedBackfill ? (
           <FormField
-            label="Reason for back-entry"
+            label="Reason"
             required
-            description="Why is this being logged after the fact? Visible in the audit log."
+            description="Recorded in the audit log."
             error={errors.backfill_reason?.message}
             htmlFor="ss-backfill-reason"
           >
             <Input
               id="ss-backfill-reason"
-              placeholder="e.g. Phone session: paper notes, entered next day"
+              placeholder="Paper notes, entered next day"
               {...register("backfill_reason")}
             />
           </FormField>
         ) : null}
-        <FormField
-          label="Location"
-          description="Physical address, video link, or 'Phone'."
-          error={errors.location?.message}
-          htmlFor="ss-location"
-        >
-          <Input
-            id="ss-location"
-            placeholder="e.g. Room 4 / Zoom / Phone"
-            {...register("location")}
-          />
+        <FormField label="Location" error={errors.location?.message} htmlFor="ss-location">
+          <Input id="ss-location" placeholder="Room 4, Zoom, or Phone" {...register("location")} />
         </FormField>
       </FormSection>
 
       <FormSection title="Clinical">
-        <FormField
-          label="Issue / topic"
-          description="Presenting issue, in the taxonomy's terms."
-          error={errors.issue_topic?.message}
-          htmlFor="ss-issue"
-        >
+        <FormField label="Issue / topic" error={errors.issue_topic?.message} htmlFor="ss-issue">
           <Input id="ss-issue" {...register("issue_topic")} />
         </FormField>
         <FormField label="Diagnosis" error={errors.diagnosis_id?.message}>
@@ -534,7 +603,7 @@ export function ServiceSessionFormSheet({
         {isEdit ? (
           <FormField
             label="Notes"
-            description="Internal notes, not shared with the subject."
+            description="Not shared with the member."
             error={errors.notes?.message}
             htmlFor="ss-notes"
           >
@@ -547,11 +616,14 @@ export function ServiceSessionFormSheet({
 }
 
 function EnumSelect<T extends string>({
+  id,
   value,
   onChange,
   options,
   placeholder = "Select…",
 }: {
+  /** Pairs with the FormField label, so the control has an accessible name. */
+  id?: string
   value: T | undefined
   onChange: (v: T) => void
   options: readonly T[] | T[]
@@ -559,13 +631,13 @@ function EnumSelect<T extends string>({
 }) {
   return (
     <Select value={value ?? ""} onValueChange={onChange}>
-      <SelectTrigger>
+      <SelectTrigger id={id}>
         <SelectValue placeholder={placeholder} />
       </SelectTrigger>
       <SelectContent>
         {options.map((o) => (
           <SelectItem key={o} value={o}>
-            {o}
+            {getStatusLabel(o)}
           </SelectItem>
         ))}
       </SelectContent>
@@ -576,7 +648,9 @@ function EnumSelect<T extends string>({
 function toFormValues(s: ServiceSession): Values {
   return {
     service_id: s.service_id,
-    member_id: s.member_id,
+    attendance: s.attendance,
+    member_id: s.member_id ?? "",
+    client_id: s.client_id ?? "",
     service_provider_id: s.provider_id ?? "",
     delivery_context: deliveryContextForForm(s.delivery_context),
     provider_affiliation_id: s.provider_affiliation_id ?? "",

@@ -33,10 +33,14 @@ class LicenseInfo:
 
 @dataclass(frozen=True)
 class ProviderProfile:
-    """Panel-level metadata about a service provider (Joseph's framework)."""
+    """Panel-level metadata about a service provider (Joseph's framework).
 
-    tier: ProviderTier
-    region: UgandaRegion
+    `tier` and `region` are None until a person assesses the practitioner;
+    imported records arrive without either and are not bookable.
+    """
+
+    tier: ProviderTier | None
+    region: UgandaRegion | None
     accreditation_status: AccreditationStatus
     panel_status: PanelStatus = PanelStatus.PENDING
     accreditation_authority: str | None = None

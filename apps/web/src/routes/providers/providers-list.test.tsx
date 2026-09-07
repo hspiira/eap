@@ -8,7 +8,8 @@ import type { Provider } from "@/types/entities"
 const mocks = vi.hoisted(() => ({
   list: vi.fn(),
   canWrite: true,
-  search: {} as Record<string, string>,
+  search: {} as Record<string, unknown>,
+  listeners: new Set<() => void>(),
 }))
 vi.mock("@/api/endpoints/providers", () => ({ providersApi: mocks }))
 vi.mock("@/hooks/useCanWrite", () => ({
@@ -16,26 +17,45 @@ vi.mock("@/hooks/useCanWrite", () => ({
   useCurrentRole: () => "Admin",
 }))
 vi.mock("@/components/providers/ProviderFormSheet", () => ({ ProviderFormSheet: () => null }))
-vi.mock("@tanstack/react-router", () => ({
-  createFileRoute: () => (options: unknown) => ({ options }),
-  Link: ({
-    children,
-    to: _to,
-    params: _params,
-    ...rest
-  }: {
-    children: React.ReactNode
-    to?: string
-    params?: unknown
-  }) => (
-    <a href={_to} {...rest}>
-      {children}
-    </a>
-  ),
-  useNavigate: () => vi.fn(),
-  useSearch: () => mocks.search,
-  useRouterState: () => "/providers",
-}))
+// The list page keeps page and sort in the URL, so the router stand-in has to
+// store what navigate writes and re-render the readers. A navigate that throws
+// the search away would make paging look broken here and only here.
+vi.mock("@tanstack/react-router", async () => {
+  const { useEffect, useReducer } = await import("react")
+  return {
+    createFileRoute: () => (options: unknown) => ({ options }),
+    Link: ({
+      children,
+      to: _to,
+      params: _params,
+      ...rest
+    }: {
+      children: React.ReactNode
+      to?: string
+      params?: unknown
+    }) => (
+      <a href={_to} {...rest}>
+        {children}
+      </a>
+    ),
+    useNavigate:
+      () => (opts: { search: (prev: Record<string, unknown>) => Record<string, unknown> }) => {
+        mocks.search = opts.search(mocks.search)
+        for (const listener of mocks.listeners) listener()
+      },
+    useSearch: () => {
+      const [, rerender] = useReducer((count: number) => count + 1, 0)
+      useEffect(() => {
+        mocks.listeners.add(rerender)
+        return () => {
+          mocks.listeners.delete(rerender)
+        }
+      }, [])
+      return mocks.search
+    },
+    useRouterState: () => "/providers",
+  }
+})
 
 const { Route } = await import("@/routes/providers/index")
 const Page = (Route as unknown as { options: { component: React.ComponentType } }).options.component
@@ -70,6 +90,7 @@ beforeEach(() => {
   vi.clearAllMocks()
   mocks.canWrite = true
   mocks.search = {}
+  mocks.listeners.clear()
   mocks.list.mockResolvedValue(page([makeProvider()], 1))
 })
 
