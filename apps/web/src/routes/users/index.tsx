@@ -288,9 +288,9 @@ function UsersListPage() {
                         Email
                       </SortHeader>
                     </TableHead>
-                    <TableHead>
+                    <TableHead className="text-center">
                       <SortHeader field="status" sort={sort} onToggle={toggleSort}>
-                        Status
+                        <span className="sr-only">Status</span>
                       </SortHeader>
                     </TableHead>
                     <TableHead className="text-fg/65">Email verified</TableHead>
@@ -359,8 +359,8 @@ function UserRow({
           <span className="text-sm font-medium text-fg group-hover:text-primary">{row.email}</span>
         </Link>
       </TableCell>
-      <TableCell>
-        <StatusBadge status={row.status} />
+      <TableCell className="text-center">
+        <StatusBadge status={row.status} iconOnly />
       </TableCell>
       <TableCell>
         {row.is_email_verified ? (

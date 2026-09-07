@@ -167,7 +167,9 @@ function CasesListPage() {
                       Opened
                     </SortHeader>
                   </TableHead>
-                  <TableHead>Status</TableHead>
+                  <TableHead className="text-center">
+                    <span className="sr-only">Status</span>
+                  </TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -189,8 +191,8 @@ function CasesListPage() {
                       {CaseReferralSourceLabel[c.referral_source]}
                     </TableCell>
                     <TableCell className="text-sm text-fg/75">{formatDate(c.opened_at)}</TableCell>
-                    <TableCell>
-                      <StatusBadge status={c.status} />
+                    <TableCell className="text-center">
+                      <StatusBadge status={c.status} iconOnly />
                     </TableCell>
                   </TableRow>
                 ))}

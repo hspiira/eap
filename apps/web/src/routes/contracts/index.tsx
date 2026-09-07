@@ -243,12 +243,12 @@ function ContractsListPage() {
                 <TableHeader className={STICKY_TABLE_HEAD}>
                   <TableRow className={`hover:bg-transparent ${ROW_BORDER}`}>
                     <TableHead className="text-fg/65">Client</TableHead>
-                    <TableHead>
+                    <TableHead className="text-center">
                       <SortHeader field="status" sort={sort} onToggle={toggleSort}>
-                        Status
+                        <span className="sr-only">Status</span>
                       </SortHeader>
                     </TableHead>
-                    <TableHead>
+                    <TableHead className="text-center">
                       <SortHeader field="payment_status" sort={sort} onToggle={toggleSort}>
                         Payment
                       </SortHeader>
@@ -312,11 +312,11 @@ function ContractRow({ row, clientsById }: { row: Contract; clientsById: Map<str
           </span>
         </Link>
       </TableCell>
-      <TableCell>
-        <StatusBadge status={row.status} />
+      <TableCell className="text-center">
+        <StatusBadge status={row.status} iconOnly />
       </TableCell>
-      <TableCell>
-        <StatusBadge status={row.payment_status} />
+      <TableCell className="text-center">
+        <StatusBadge status={row.payment_status} iconOnly />
       </TableCell>
       <TableCell className="whitespace-nowrap text-xs text-fg/70">
         {formatDay(row.period.start_date)}

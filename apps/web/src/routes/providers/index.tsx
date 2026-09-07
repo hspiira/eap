@@ -61,8 +61,8 @@ const COLUMNS: ListColumn[] = [
   { header: "Practitioner", sortField: "display_name" },
   { header: "Tier", className: "text-fg/65" },
   { header: "Region", className: "text-fg/65" },
-  { header: "Panel", className: "text-fg/65" },
-  { header: "Accreditation", className: "text-fg/65" },
+  { header: "Panel", className: "text-fg/65 text-center" },
+  { header: "Accreditation", className: "text-fg/65 text-center" },
   { header: "Email", className: "text-fg/65" },
   { header: "Phone", className: "text-fg/65" },
   { header: "Account", className: "text-fg/65" },
@@ -356,11 +356,11 @@ function ProviderRow({
         <ProviderTierBadge tier={profile.tier} />
       </TableCell>
       <TableCell className="py-1.5 text-xs text-fg/70">{profile.region}</TableCell>
-      <TableCell className="py-1.5">
-        <StatusBadge status={profile.panel_status} size="sm" />
+      <TableCell className="py-1.5 text-center">
+        <StatusBadge status={profile.panel_status} size="sm" iconOnly />
       </TableCell>
-      <TableCell className="py-1.5">
-        <StatusBadge status={profile.accreditation_status} size="sm" />
+      <TableCell className="py-1.5 text-center">
+        <StatusBadge status={profile.accreditation_status} size="sm" iconOnly />
       </TableCell>
       <TableCell className="max-w-[14rem] truncate py-1.5 text-xs text-fg/70">
         {provider.email ?? <span className="text-fg-subtle">-</span>}

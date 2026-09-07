@@ -208,9 +208,9 @@ function ServicesListPage() {
                         Category
                       </SortHeader>
                     </TableHead>
-                    <TableHead>
+                    <TableHead className="text-center">
                       <SortHeader field="status" sort={sort} onToggle={toggleSort}>
-                        Status
+                        <span className="sr-only">Status</span>
                       </SortHeader>
                     </TableHead>
                     <TableHead>
@@ -276,8 +276,8 @@ function ServiceRow({ row }: { row: Service }) {
           <span className="text-fg-subtle">-</span>
         )}
       </TableCell>
-      <TableCell>
-        <StatusBadge status={row.status} />
+      <TableCell className="text-center">
+        <StatusBadge status={row.status} iconOnly />
       </TableCell>
       <TableCell className="tabular-nums text-sm text-fg/75">
         {row.duration_minutes != null ? `${row.duration_minutes}m` : "-"}

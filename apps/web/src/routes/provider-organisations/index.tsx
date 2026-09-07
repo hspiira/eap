@@ -50,8 +50,8 @@ export const Route = createFileRoute("/provider-organisations/")({
 const COLUMNS: ListColumn[] = [
   { header: "Organisation", sortField: "name" },
   { header: "Registration", className: "text-fg/65" },
-  { header: "Supplier approval", className: "text-fg/65" },
-  { header: "Active", className: "text-fg/65" },
+  { header: "Supplier approval", className: "text-fg/65 text-center" },
+  { header: "Active", className: "text-fg/65 text-center" },
   { header: "Contact", className: "text-fg/65" },
 ]
 
@@ -314,11 +314,11 @@ function OrganisationRow({
       <TableCell className="py-1.5 text-xs text-fg/70">
         {organisation.registration_number ?? "-"}
       </TableCell>
-      <TableCell className="py-1.5">
-        <StatusBadge status={organisation.approval_status} size="sm" />
+      <TableCell className="py-1.5 text-center">
+        <StatusBadge status={organisation.approval_status} size="sm" iconOnly />
       </TableCell>
-      <TableCell className="py-1.5 text-xs text-fg/70">
-        {organisation.is_active ? "Active" : "Inactive"}
+      <TableCell className="py-1.5 text-center">
+        <StatusBadge status={organisation.is_active ? "active" : "inactive"} size="sm" iconOnly />
       </TableCell>
       <TableCell className="max-w-[14rem] truncate py-1.5 text-xs text-fg/70">
         {organisation.contact_email ?? organisation.contact_phone ?? "-"}

@@ -181,7 +181,9 @@ function TenantsListBody() {
                     <TableRow>
                       <TableHead>Name</TableHead>
                       <TableHead>Code</TableHead>
-                      <TableHead>Status</TableHead>
+                      <TableHead className="text-center">
+                        <span className="sr-only">Status</span>
+                      </TableHead>
                       <TableHead>Tier</TableHead>
                       <TableHead>SSO</TableHead>
                       <TableHead className="w-12" />
@@ -304,8 +306,8 @@ function TenantRow({ tenant }: { tenant: Tenant }) {
         </Link>
       </TableCell>
       <TableCell className="text-xs text-fg/75">{tenant.code ?? "-"}</TableCell>
-      <TableCell>
-        <StatusBadge status={tenant.status} />
+      <TableCell className="text-center">
+        <StatusBadge status={tenant.status} iconOnly />
       </TableCell>
       <TableCell className="text-sm text-fg/75">{tenant.subscription_tier ?? "-"}</TableCell>
       <TableCell>

@@ -2,7 +2,15 @@ import { useMemo } from "react"
 
 import { useQuery } from "@tanstack/react-query"
 import { createFileRoute, Link, useNavigate, useSearch } from "@tanstack/react-router"
-import { CalendarClock, Download, ExternalLink, MoreHorizontal, Plus } from "lucide-react"
+import {
+  CalendarClock,
+  Download,
+  ExternalLink,
+  MoreHorizontal,
+  Plus,
+  User,
+  Users,
+} from "lucide-react"
 
 import { membersApi } from "@/api/endpoints/members"
 import { type ServiceSessionListParams, serviceSessionsApi } from "@/api/endpoints/service-sessions"
@@ -345,33 +353,41 @@ function ServiceSessionsListPage() {
                         onCheckedChange={selection.toggleSelectAll}
                       />
                     </TableHead>
+                    <TableHead className="text-fg/65">Attendee</TableHead>
+                    <TableHead className="text-center">
+                      <SortHeader field="status" sort={sort} onToggle={toggleSort}>
+                        <span className="sr-only">Status</span>
+                      </SortHeader>
+                    </TableHead>
                     <TableHead>
                       <SortHeader field="scheduled_at" sort={sort} onToggle={toggleSort}>
                         Date
                       </SortHeader>
                     </TableHead>
                     <TableHead className="text-fg/65">Time</TableHead>
-                    <TableHead>
-                      <SortHeader field="member_id" sort={sort} onToggle={toggleSort}>
-                        Member
-                      </SortHeader>
-                    </TableHead>
                     <TableHead className="text-fg/65">Client</TableHead>
                     <TableHead className="text-fg/65">Counsellor</TableHead>
+                    <TableHead className="text-fg/65">Intervention</TableHead>
                     <TableHead>
-                      <SortHeader field="service_id" sort={sort} onToggle={toggleSort}>
-                        Intervention
+                      <SortHeader field="session_type" sort={sort} onToggle={toggleSort}>
+                        Mode
                       </SortHeader>
                     </TableHead>
-                    <TableHead className="text-fg/65">Mode</TableHead>
-                    <TableHead className="text-fg/65">Category</TableHead>
-                    <TableHead className="text-right text-fg/65">Session #</TableHead>
                     <TableHead>
-                      <SortHeader field="status" sort={sort} onToggle={toggleSort}>
-                        Status
+                      <SortHeader field="category" sort={sort} onToggle={toggleSort}>
+                        Category
                       </SortHeader>
                     </TableHead>
-                    <TableHead className="text-fg/65">Outcome</TableHead>
+                    <TableHead className="text-right">
+                      <SortHeader field="session_number" sort={sort} onToggle={toggleSort}>
+                        Session #
+                      </SortHeader>
+                    </TableHead>
+                    <TableHead>
+                      <SortHeader field="clinical_outcome" sort={sort} onToggle={toggleSort}>
+                        Outcome
+                      </SortHeader>
+                    </TableHead>
                     <TableHead className="w-16 text-right text-fg/65">
                       <span className="sr-only">Actions</span>
                     </TableHead>
@@ -415,7 +431,11 @@ function SessionRow({
   isSelected: boolean
   onToggle: () => void
 }) {
-  const personLabel = row.member_display_label ?? "Member unavailable"
+  // A session's name-like value is who it was for. A company-wide session has
+  // no member, and its client is the attendee.
+  const attendeeLabel =
+    row.member_display_label ??
+    (row.member_id ? "Member unavailable" : (row.client_name ?? "Company-wide"))
   const scheduled = new Date(row.scheduled_at)
   const dateLabel = formatDate(scheduled)
   const timeLabel = scheduled.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
@@ -428,7 +448,7 @@ function SessionRow({
           onCheckedChange={onToggle}
         />
       </TableCell>
-      <TableCell>
+      <TableCell className="max-w-52">
         <Link
           to="/service-sessions/$sessionId"
           params={{ sessionId: row.id }}
@@ -438,28 +458,19 @@ function SessionRow({
             aria-hidden
             className="grid size-6 shrink-0 place-items-center bg-primary/10 text-primary"
           >
-            <CalendarClock className="size-3" />
+            {row.member_id ? <User className="size-3" /> : <Users className="size-3" />}
           </span>
           <span className="truncate text-sm font-medium text-fg group-hover:text-primary">
-            {dateLabel}
+            {attendeeLabel}
           </span>
         </Link>
       </TableCell>
+      <TableCell className="text-center">
+        <StatusBadge status={row.status} iconOnly />
+      </TableCell>
+      <TableCell className="whitespace-nowrap text-xs text-fg/75">{dateLabel}</TableCell>
       <TableCell className="whitespace-nowrap tabular-nums text-xs text-fg/75">
         {timeLabel}
-      </TableCell>
-      <TableCell className="max-w-44 truncate">
-        {row.member_id ? (
-          <Link
-            to="/members/$memberId"
-            params={{ memberId: row.member_id }}
-            className="text-xs text-fg/75 hover:text-primary"
-          >
-            {personLabel}
-          </Link>
-        ) : (
-          <span className="text-xs text-fg-muted">Company-wide</span>
-        )}
       </TableCell>
       <TableCell className="max-w-36 truncate text-xs text-fg/75">
         {row.client_name ?? <Blank />}
@@ -490,9 +501,6 @@ function SessionRow({
       <TableCell className="text-xs text-fg/75">{row.category ?? <Blank />}</TableCell>
       <TableCell className="text-right tabular-nums text-xs text-fg/75">
         {row.session_number ?? <Blank />}
-      </TableCell>
-      <TableCell>
-        <StatusBadge status={row.status} />
       </TableCell>
       <TableCell className="text-xs text-fg/75">
         {row.clinical_outcome ? getStatusLabel(row.clinical_outcome) : <Blank />}

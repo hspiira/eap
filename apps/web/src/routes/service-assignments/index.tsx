@@ -200,9 +200,9 @@ function ServiceAssignmentsListPage() {
                         Service
                       </SortHeader>
                     </TableHead>
-                    <TableHead>
+                    <TableHead className="text-center">
                       <SortHeader field="status" sort={sort} onToggle={toggleSort}>
-                        Status
+                        <span className="sr-only">Status</span>
                       </SortHeader>
                     </TableHead>
                     <TableHead>Notes</TableHead>
@@ -258,8 +258,8 @@ function AssignmentRow({ row }: { row: ServiceAssignment }) {
           {row.service_id.slice(0, 8)}
         </Link>
       </TableCell>
-      <TableCell>
-        <StatusBadge status={row.status} />
+      <TableCell className="text-center">
+        <StatusBadge status={row.status} iconOnly />
       </TableCell>
       <TableCell className="max-w-[24ch] truncate text-sm text-fg/75">
         {row.notes ?? <span className="text-fg-subtle">-</span>}
