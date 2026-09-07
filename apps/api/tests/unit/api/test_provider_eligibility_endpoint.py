@@ -27,6 +27,7 @@ from app.domain.enums import (
     ProviderTier,
     UgandaRegion,
 )
+from app.domain.services.provider_network_calendar import boundary_day
 from app.domain.value_objects.core import ProviderId, ProviderProfile, TenantId, UserId
 from app.shared.utils.datetime import utc_now
 
@@ -106,13 +107,19 @@ async def test_the_preview_reports_the_same_codes_the_write_path_returns(api):
 
 @pytest.mark.asyncio
 async def test_the_preview_checks_the_supplied_service_date(api):
-    """An accreditation valid today need not cover a later booking."""
+    """An accreditation valid today need not cover a later booking.
+
+    The expiry is today's business day in Kampala, which is what the rule
+    compares against. `utc_now().date()` is a different day for the three
+    hours before midnight UTC, so an expiry built from it read as lapsed and
+    this test failed in exactly that window.
+    """
     provider = _provider()
     provider.change_accreditation(
         UserId("admin"),
         "Certificate lapses next month",
         accreditation_status=AccreditationStatus.ACCREDITED,
-        accreditation_expiry=utc_now().date(),
+        accreditation_expiry=boundary_day(utc_now()),
     )
     api.providers.get_by_id.return_value = provider
 
