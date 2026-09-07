@@ -98,11 +98,10 @@ const COLUMNS: ListColumn[] = [
   { header: "Client", sortField: "name" },
   { header: "Code", sortField: "code" },
   { header: "Tier", sortField: "tier" },
-  { header: "Status", sortField: "status" },
+  { header: "Status", sortField: "status", className: "text-center" },
   { header: "Email", className: "text-fg/65" },
   { header: "Phone", className: "text-fg/65" },
-  { header: "Contracts", className: "text-fg/65" },
-  { header: "Employees", className: "text-fg/65" },
+  { header: "Employees", className: "text-fg/65 text-center" },
   { header: "Last activity", className: "text-fg/65" },
   { header: "Renewal", className: "text-fg/65" },
 ]
@@ -751,8 +750,8 @@ function ClientRow({
       <TableCell>
         <TierBadge tier={row.tier} />
       </TableCell>
-      <TableCell>
-        <StatusBadge status={row.status} />
+      <TableCell className="text-center">
+        <StatusBadge status={row.status} iconOnly />
       </TableCell>
       <TableCell className="max-w-[14rem] truncate text-xs text-fg/70">
         {row.contact_info?.email ?? <span className="text-fg-subtle">-</span>}
@@ -760,10 +759,7 @@ function ClientRow({
       <TableCell className="whitespace-nowrap text-xs text-fg/70">
         {row.contact_info?.phone ?? <span className="text-fg-subtle">-</span>}
       </TableCell>
-      <TableCell className="text-xs text-fg/70">
-        {row.active_contracts_count == null ? "-" : row.active_contracts_count}
-      </TableCell>
-      <TableCell className="text-xs text-fg/70">
+      <TableCell className="text-center text-xs text-fg/70">
         {row.staff_count == null ? "-" : row.staff_count}
       </TableCell>
       <TableCell className="whitespace-nowrap text-xs text-fg/70">
