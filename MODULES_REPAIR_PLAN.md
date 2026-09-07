@@ -584,6 +584,48 @@ Keep unchecked items open until their stated acceptance checks pass.
   - [ ] Mark implemented, tested and deployed separately. A hidden navigation item
         or a passing mock test is not evidence of endpoint safety or deployment.
 
+## Active ownership (read before editing any file named here)
+
+Claimed 2026-09-07. Update this block when a stream is picked up or released;
+do not start work on a claimed path without agreeing the handover here first.
+
+| Stream | Findings | Owner | State |
+| --- | --- | --- | --- |
+| 1. Access control and session state | SEC-01, SEC-02, SEC-03, AUTH-01 | members-import agent (this branch, `chore/monorepo`) | in progress |
+| 2. Reporting and privacy | REP-01, PRIV-01, REP-02, DATA-01, VERIFY-01 | unclaimed | open |
+| 3. Module integration | API-01, SUR-01, ENG-01, AUD-01, INC-01, CASE-01, BILL-01 | unclaimed | open |
+
+**Files stream 1 holds.** Backend: `app/core/authorization.py`,
+`app/api/dependencies/reporting.py`, `app/application/use_cases/transitions.py`,
+and the authorization lines only of `app/api/routes/`: `reports.py`,
+`benchmark.py`, `engagements.py`, `surveys.py`, `eap_programmes.py`, `cases.py`,
+`clinical_notes.py`, `dsar.py`, `care_callbacks.py`, `pricing.py`,
+`critical_incidents.py`. Frontend: `src/lib/auth-store.ts`,
+`src/lib/tenant-actions.ts`, `src/lib/query-client.ts`,
+`src/components/AppBootstrap.tsx`.
+
+**What this means for streams 2 and 3.** `surveys.py`, `engagements.py`,
+`critical_incidents.py`, `pricing.py` and `cases.py` are also stream 3 files.
+Stream 1 goes first in them, as the plan's execution ownership requires, and
+touches only the authorization guard and route signature. Response shapes, use
+case bodies and schemas in those files are untouched and stay with stream 3.
+Take them once stream 1's commits for that file have landed; rebase rather than
+edit in parallel.
+
+**Interface stream 1 publishes.** `assert_same_tenant(current_user, tenant_id)`
+in `app/core/authorization.py` is the in-body ownership guard. It is
+deliberately synchronous: the defect SEC-02 records is twelve unawaited calls to
+the async `require_same_tenant`, which a synchronous function cannot repeat.
+`require_same_tenant` keeps its existing, correct meaning as a FastAPI
+dependency (`Depends(require_same_tenant)`) for routes carrying `tenant_id` in
+the path or query. Use the dependency where a route takes a tenant argument, and
+`assert_same_tenant` where the tenant is only known after loading the entity.
+
+**Not claimed by stream 1.** The provider module, held by `wt-agent1`,
+`wt-agent2` and `wt-agent3`. See also the red provider CI test recorded under
+"Remaining risks and ownership" in `PROVIDERS_MIGRATION.md`: the api job cannot
+go green until its owner fixes it, independently of this plan.
+
 ## Execution ownership
 
 After coordinating with the active provider integration owner, use three repair
