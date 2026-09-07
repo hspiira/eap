@@ -46,6 +46,13 @@ Evidence from the development database (evexia_db, profiled 2026-09-07):
   stacked columns thin to slivers at 31 daily buckets. One form is used at
   every window rather than switching shape, so the chart does not appear to
   change meaning when the range changes.
+- **The bands are overlaid, not stacked.** Stacked, the upper band's line
+  sits at the running total while its thickness carries its own value: at
+  22 Jun the Online line stood at 7 (3 physical + 4 online) while the tooltip
+  said 4, so the chart contradicted its own readout. Overlaid, each line meets
+  the axis at its own value and the bucket total moves to the tooltip label,
+  which is where it was legible anyway. Fills drop to an 18% wash so one band
+  reads through another.
 - **A band with no data is not drawn.** An all-zero series still strokes a
   line along the top of the stack, which reads as a flat series rather than
   an absent one. Bands are filtered on the data, and the legend follows.

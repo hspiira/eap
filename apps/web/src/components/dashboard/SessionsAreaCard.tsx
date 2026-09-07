@@ -1,10 +1,15 @@
 /**
- * Sessions delivered over the selected window, stacked by delivery type.
+ * Sessions delivered over the selected window, one band per delivery type.
  *
  * Area rather than columns: the window control changes both the bucket count
- * and the density, and a stacked band keeps the Physical/Online composition
- * readable from seven daily points up to twenty-six weekly ones, where
- * stacked columns would thin to slivers.
+ * and the density, and a filled band stays readable from seven daily points
+ * up to twenty-six weekly ones, where columns would thin to slivers.
+ *
+ * The bands are overlaid, not stacked. Stacked, the upper band's line sits at
+ * the running total while its thickness carries its own value, so a reader
+ * following the Online line reads the total and disbelieves the tooltip. Each
+ * line now meets the axis at its own value; the bucket total moves to the
+ * tooltip label, which is the only place it was ever readable anyway.
  */
 
 import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from "recharts"
@@ -119,14 +124,25 @@ function AreaBody({ series, loading, error, refreshing }: AreaBodyProps) {
           allowDecimals={false}
           className="text-[10px]"
         />
-        <ChartTooltip content={<ChartTooltipContent indicator="line" />} />
+        <ChartTooltip
+          content={
+            <ChartTooltipContent
+              indicator="line"
+              labelFormatter={(label, items) => (
+                <span className="flex items-baseline gap-2">
+                  {label}
+                  <span className="text-fg-muted">{bucketTotal(items)} total</span>
+                </span>
+              )}
+            />
+          }
+        />
         <ChartLegend content={<ChartLegendContent />} />
         {bands.map((band) => (
           <Area
             key={band.key}
             dataKey={band.key}
             type="monotone"
-            stackId="sessions"
             stroke={`var(--color-${band.key})`}
             strokeWidth={2}
             fill={`url(#fill-${band.key})`}
@@ -137,13 +153,18 @@ function AreaBody({ series, loading, error, refreshing }: AreaBodyProps) {
   )
 }
 
+/** Overlaid bands, so the wash stays light enough to read one through another. */
 function SeriesGradient({ id, color }: { id: string; color: string }) {
   return (
     <linearGradient id={id} x1="0" y1="0" x2="0" y2="1">
-      <stop offset="5%" stopColor={color} stopOpacity={0.3} />
-      <stop offset="95%" stopColor={color} stopOpacity={0.04} />
+      <stop offset="5%" stopColor={color} stopOpacity={0.18} />
+      <stop offset="95%" stopColor={color} stopOpacity={0.02} />
     </linearGradient>
   )
+}
+
+function bucketTotal(items: ReadonlyArray<{ value?: unknown }> = []): number {
+  return items.reduce((sum, item) => sum + (Number(item.value) || 0), 0)
 }
 
 function Message({ text }: { text: string }) {
