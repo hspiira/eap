@@ -104,10 +104,13 @@ the data.
 
 ### S-04: `ACTIVITY LOG ID` must not be used as the source record key
 
-It looks like a stable key and is not: 7,079 distinct values over 7,465 rows,
-with 669 rows colliding across 283 groups. If it is passed as
-`source_record_key`, `_replay_key` returns `key:{...}` and 669 legitimate
-sessions are marked `Duplicate` and dropped without anyone seeing a rejection.
+It looks like a stable key and is not: 7,079 distinct values over 7,465
+non-empty rows, with 669 rows colliding across 283 groups, and 5 rows where the
+column is empty. If it is passed as `source_record_key`, `_replay_key` returns
+`key:{...}` and 386 legitimate sessions are marked `Duplicate` and dropped
+without anyone seeing a rejection: the first row of each colliding group stages
+normally, so the loss is 669 - 283, not 669. Corrected under B1 from the file at
+the hash above.
 
 Independently, 620 rows in 271 groups share `DATE + NAME + CLIENT-ID + COUNSELOR
 + TIME`, so no natural composite key is unique either. **For this file, use the

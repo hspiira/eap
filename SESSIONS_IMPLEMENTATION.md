@@ -189,6 +189,28 @@ key strategy was used on the batch.
 message, a file with unique keys stages normally, and a file nominating no key
 column stages on `file:{hash}:row:{n}`.
 
+**Decided (B1, implemented).** Blank values in a nominated key column refuse the
+batch alongside repeats, so the rule is completeness and uniqueness, not
+uniqueness alone. A blank falls back to `file:{hash}:row:{n}` while its
+neighbours use `key:{...}`, which keys one batch two ways: a re-export under a
+new hash restages exactly the blank-key rows and returns the rest as duplicates.
+`ACTIVITY LOG ID` is blank on 5 of 7,470 rows, so the two rules differ on this
+file. Both faults are reported in one message so an operator sees the whole
+problem in a single upload.
+
+**No new column.** The batch already records how it was keyed:
+`session_import_batches.file_hash` and `source_record_key_field`, which is NULL
+exactly when the file-and-row strategy applies. `replay_key_strategy()` in
+`session_import_staging.py` names the strategy from that stored column, so a
+reconciliation reading a stored batch needs no access to the file. A separate
+strategy column would duplicate `source_record_key_field` one-for-one.
+
+**Counts reproduced from the extract** at
+`0e8fa212455ea42bba48574eb46c639ade1238bc9fa7382bfc7eee1951774e44`: 7,470 rows,
+`ACTIVITY LOG ID` non-empty on 7,465 with 7,079 distinct, 283 repeated values
+spanning 669 rows. The rows actually lost to `Duplicate` would be 386, not 669:
+the first row of each group stages normally, so the loss is 669 - 283.
+
 ### B2. Normalisation tables
 
 **Owns** a new module under `app/shared/utils/` or

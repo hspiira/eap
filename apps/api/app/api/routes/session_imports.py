@@ -29,6 +29,7 @@ from app.application.services.provider_alias_reconciliation import (
 )
 from app.application.services.session_import_staging import (
     SessionImportStagingService,
+    preflight_source_keys,
 )
 from app.application.use_cases.apply_session_import import ApplyImportBatchUseCase
 from app.core.authorization import require_same_tenant, require_tenant_role
@@ -123,6 +124,7 @@ async def stage_import(
         )
 
     source_rows = parse_source_rows(content, source_record_key_field)
+    preflight_source_keys(source_rows, source_record_key_field)
     now = utc_now()
     batch = SessionImportBatchEntity(
         id=SessionImportBatchId(generate_cuid()),

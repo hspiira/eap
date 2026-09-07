@@ -10,6 +10,8 @@ write entry point agent 1 owns, and calling the live session use case would
 merge the two rule sets that this separation exists to keep apart.
 """
 
+from collections import defaultdict
+from collections.abc import Sequence
 from dataclasses import dataclass
 from datetime import date, datetime
 
@@ -19,6 +21,7 @@ from app.application.services.provider_alias_reconciliation import (
     ProviderAliasReconciliationService,
 )
 from app.domain.enums.provider_network import DeliveryContext, ImportRowOutcome
+from app.domain.exceptions import DomainError
 from app.domain.repositories.provider_network_repository import (
     ProviderAffiliationRepository,
     SessionImportRepository,
@@ -38,6 +41,11 @@ _NAME_OUTCOMES = {
     NameOutcome.AMBIGUOUS: ImportRowOutcome.AMBIGUOUS_PRACTITIONER,
     NameOutcome.REJECTED: ImportRowOutcome.REJECTED,
 }
+
+SOURCE_KEY_STRATEGY = "source_record_key"
+FILE_ROW_KEY_STRATEGY = "file:{hash}:row:{n}"
+
+_SAMPLE_SIZE = 3
 
 
 @dataclass(frozen=True)
@@ -247,6 +255,82 @@ def _replay_key(row: SourceRow, file_hash: str) -> str:
     if row.source_record_key:
         return f"key:{row.source_record_key}"
     return f"file:{file_hash}:row:{row.row_number}"
+
+
+def replay_key_strategy(source_record_key_field: str | None) -> str:
+    """Which replay key form a batch is keyed by.
+
+    The batch records the column it was keyed on, or nothing, so a later
+    reconciliation reading a stored batch can name the strategy without the
+    file. `SessionImportBatchModel.source_record_key_field` is that record.
+    """
+    return SOURCE_KEY_STRATEGY if source_record_key_field else FILE_ROW_KEY_STRATEGY
+
+
+def preflight_source_keys(rows: Sequence[SourceRow], source_record_key_field: str | None) -> str:
+    """Check a nominated key column over the whole file and name the strategy.
+
+    Runs before any row is staged. A repeated key makes `_replay_key` collide,
+    and the second row is staged as Duplicate and lost without a rejection an
+    operator would think to look at.
+    """
+    if source_record_key_field:
+        _refuse_unusable_key(rows, source_record_key_field)
+    return replay_key_strategy(source_record_key_field)
+
+
+def _refuse_unusable_key(rows: Sequence[SourceRow], column: str) -> None:
+    """Uniqueness and completeness are both required, because a blank fails open.
+
+    A row with no key falls back to `file:{hash}:row:{n}` while its neighbours
+    use `key:{...}`, leaving one batch keyed two ways: a re-export under a new
+    hash then restages exactly those rows and returns the rest as duplicates.
+    """
+    collisions = _colliding_keys(rows)
+    blanks = tuple(row.row_number for row in rows if not row.source_record_key)
+    if not collisions and not blanks:
+        return
+    raise DomainError(
+        _preflight_message(column, collisions, blanks),
+        error_code="IMPORT_SOURCE_KEY_NOT_UNIQUE",
+        http_status=422,
+        details={"source_record_key_field": column},
+    )
+
+
+def _colliding_keys(rows: Sequence[SourceRow]) -> tuple[tuple[str, tuple[int, ...]], ...]:
+    grouped: dict[str, list[int]] = defaultdict(list)
+    for row in rows:
+        if row.source_record_key:
+            grouped[row.source_record_key].append(row.row_number)
+    return tuple((key, tuple(numbers)) for key, numbers in grouped.items() if len(numbers) > 1)
+
+
+def _preflight_message(
+    column: str,
+    collisions: tuple[tuple[str, tuple[int, ...]], ...],
+    blanks: tuple[int, ...],
+) -> str:
+    parts = [f"Column {column!r} cannot be the source record key."]
+    if collisions:
+        affected = sum(len(numbers) for _, numbers in collisions)
+        parts.append(
+            f"Repeated values: {len(collisions)} across {affected} rows, "
+            f"for example {_collision_sample(collisions)}."
+        )
+    if blanks:
+        parts.append(f"Rows with no value: {len(blanks)}, for example {_row_sample(blanks)}.")
+    return " ".join(parts)
+
+
+def _collision_sample(collisions: tuple[tuple[str, tuple[int, ...]], ...]) -> str:
+    return "; ".join(
+        f"{key!r} on rows {_row_sample(numbers)}" for key, numbers in collisions[:_SAMPLE_SIZE]
+    )
+
+
+def _row_sample(numbers: tuple[int, ...]) -> str:
+    return ", ".join(str(number) for number in numbers[:_SAMPLE_SIZE])
 
 
 def new_row_id() -> SessionImportRowId:

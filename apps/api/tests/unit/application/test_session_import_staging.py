@@ -10,12 +10,18 @@ from app.application.services.provider_alias_reconciliation import (
     NameResolution,
 )
 from app.application.services.session_import_staging import (
+    FILE_ROW_KEY_STRATEGY,
+    SOURCE_KEY_STRATEGY,
     SessionImportStagingService,
     SourceRow,
+    preflight_source_keys,
+    replay_key_strategy,
 )
 from app.domain.entities.provider_affiliation import ProviderAffiliationEntity
+from app.domain.entities.session_import import SessionImportBatchEntity
 from app.domain.enums.provider_network import DeliveryContext, ImportRowOutcome
-from app.domain.value_objects.core import ProviderId, TenantId
+from app.domain.exceptions import DomainError
+from app.domain.value_objects.core import ProviderId, TenantId, UserId
 from app.domain.value_objects.provider_network import (
     ProviderAffiliationId,
     ProviderOrganisationId,
@@ -234,3 +240,125 @@ class TestReplay:
         await _stage(service, _row())
         service._aliases.resolve.assert_not_awaited()
         service._affiliations.get_valid_affiliation.assert_not_awaited()
+
+
+def _keyed_rows(*keys: str | None) -> list[SourceRow]:
+    return [_row(row_number=number, source_record_key=key) for number, key in enumerate(keys, 1)]
+
+
+class TestSourceKeyPreflight:
+    """S-04: a nominated key column that is not unique destroys rows silently.
+
+    In the reference extract `ACTIVITY LOG ID` holds 7,079 distinct values over
+    7,465 non-empty rows. Nominated as the source key, the second and later row
+    of each colliding group is staged as Duplicate and dropped, and no rejection
+    is written for anyone to review. The preflight refuses the whole batch
+    instead, before a single row is staged.
+    """
+
+    def test_a_repeated_key_refuses_the_batch(self):
+        with pytest.raises(DomainError) as error:
+            preflight_source_keys(_keyed_rows("LOG-1", "LOG-2", "LOG-1"), "ACTIVITY LOG ID")
+        assert error.value.error_code == "IMPORT_SOURCE_KEY_NOT_UNIQUE"
+
+    def test_the_refusal_names_the_column(self):
+        with pytest.raises(DomainError) as error:
+            preflight_source_keys(_keyed_rows("LOG-1", "LOG-1"), "ACTIVITY LOG ID")
+        assert "ACTIVITY LOG ID" in error.value.message
+        assert error.value.details["source_record_key_field"] == "ACTIVITY LOG ID"
+
+    def test_the_refusal_samples_the_colliding_values_and_their_rows(self):
+        """An operator has to see which values are wrong, not only that some are."""
+        with pytest.raises(DomainError) as error:
+            preflight_source_keys(_keyed_rows("LOG-1", "LOG-2", "LOG-1"), "ACTIVITY LOG ID")
+        assert "'LOG-1' on rows 1, 3" in error.value.message
+
+    def test_the_refusal_counts_the_repeats_and_the_rows_they_cost(self):
+        rows = _keyed_rows("A", "A", "B", "B", "B", "C")
+        with pytest.raises(DomainError) as error:
+            preflight_source_keys(rows, "ACTIVITY LOG ID")
+        assert "Repeated values: 2 across 5 rows" in error.value.message
+
+    def test_a_collision_at_opposite_ends_of_the_file_is_found(self):
+        """The check is over the whole file, not a neighbouring window."""
+        rows = _keyed_rows("LOG-1", *[f"LOG-{n}" for n in range(2, 60)], "LOG-1")
+        with pytest.raises(DomainError):
+            preflight_source_keys(rows, "ACTIVITY LOG ID")
+
+    def test_unique_keys_are_accepted(self):
+        assert (
+            preflight_source_keys(_keyed_rows("LOG-1", "LOG-2", "LOG-3"), "ACTIVITY LOG ID")
+            == SOURCE_KEY_STRATEGY
+        )
+
+    def test_no_nominated_column_falls_back_to_the_file_and_row_key(self):
+        assert preflight_source_keys(_keyed_rows(None, None), None) == FILE_ROW_KEY_STRATEGY
+
+    def test_a_blank_key_refuses_the_batch(self):
+        """Fails safe: a blank falls back to file-and-row and keys the batch twice.
+
+        `ACTIVITY LOG ID` is empty on 5 of 7,470 rows, so uniqueness and
+        completeness are different rules. Allowing the blanks through would
+        stage one batch under two key forms, and a re-export under a new hash
+        would then restage exactly those rows while the rest came back as
+        duplicates.
+        """
+        with pytest.raises(DomainError) as error:
+            preflight_source_keys(_keyed_rows("LOG-1", None, "LOG-3"), "ACTIVITY LOG ID")
+        assert "Rows with no value: 1, for example 2" in error.value.message
+
+    def test_blank_keys_are_not_reported_as_one_repeated_value(self):
+        with pytest.raises(DomainError) as error:
+            preflight_source_keys(_keyed_rows(None, None), "ACTIVITY LOG ID")
+        assert "Repeated values" not in error.value.message
+        assert "Rows with no value: 2" in error.value.message
+
+    def test_both_faults_are_reported_together(self):
+        """One upload tells the operator everything wrong with the column."""
+        with pytest.raises(DomainError) as error:
+            preflight_source_keys(_keyed_rows("LOG-1", "LOG-1", None), "ACTIVITY LOG ID")
+        assert "Repeated values" in error.value.message
+        assert "Rows with no value" in error.value.message
+
+    def test_an_empty_file_is_accepted_when_no_column_was_nominated(self):
+        assert preflight_source_keys([], None) == FILE_ROW_KEY_STRATEGY
+
+
+class TestTheBatchRecordsHowItWasKeyed:
+    """A later reconciliation has to be able to tell how a batch was keyed."""
+
+    def _batch(self, key_field: str | None) -> SessionImportBatchEntity:
+        return SessionImportBatchEntity(
+            id=SessionImportBatchId("b-1"),
+            tenant_id=TENANT,
+            source_system=SOURCE,
+            file_name="sessions.csv",
+            file_hash=HASH,
+            row_count=3,
+            source_record_key_field=key_field,
+            staged_by=UserId("u-1"),
+            created_at=NOW,
+            updated_at=NOW,
+        )
+
+    def test_the_file_hash_is_recorded(self):
+        assert self._batch(None).file_hash == HASH
+
+    def test_a_nominated_column_records_the_source_key_strategy(self):
+        batch = self._batch("ACTIVITY LOG ID")
+        assert replay_key_strategy(batch.source_record_key_field) == SOURCE_KEY_STRATEGY
+        assert batch.uses_file_hash_replay_key is False
+
+    def test_no_nominated_column_records_the_file_and_row_strategy(self):
+        batch = self._batch(None)
+        assert replay_key_strategy(batch.source_record_key_field) == FILE_ROW_KEY_STRATEGY
+        assert batch.uses_file_hash_replay_key is True
+
+    async def test_a_staged_row_is_keyed_the_way_the_batch_records(self):
+        batch = self._batch(None)
+        service, _ = _service()
+        staged = await service.stage_row(
+            TENANT, SOURCE, batch.file_hash, _row(row_number=9), now=NOW
+        )
+        assert replay_key_strategy(batch.source_record_key_field) == FILE_ROW_KEY_STRATEGY
+        assert staged.replay_key == f"file:{batch.file_hash}:row:9"
