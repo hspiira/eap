@@ -54,17 +54,17 @@
   --brand-fg: var(--neutral-0);
 
   /* Semantic roles: four colours, each with surface + fg + emphasis. */
-  --success: #15803d;
-  --success-soft: #dcfce7;
-  --success-fg: #14532d;
+  --success: #1c7d5d;
+  --success-soft: #eff5f3;
+  --success-fg: #1c7d5d;
 
   --warning: #b45309;
   --warning-soft: #fef3c7;
   --warning-fg: #78350f;
 
-  --danger: #b91c1c;
-  --danger-soft: #fee2e2;
-  --danger-fg: #7f1d1d;
+  --danger: #92203d;
+  --danger-soft: #f6eff1;
+  --danger-fg: #92203d;
 
   --info: #1d4ed8;
   --info-soft: #dbeafe;

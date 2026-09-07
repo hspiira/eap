@@ -48,17 +48,17 @@
   --brand-fg: #052e16;
 
   /* Semantic roles: softer fills, brighter emphasis. */
-  --success: #4ade80;
-  --success-soft: rgb(74 222 128 / 0.12);
-  --success-fg: #bbf7d0;
+  --success: #2abb8b;
+  --success-soft: rgb(42 187 139 / 0.12);
+  --success-fg: #59d9ae;
 
   --warning: #fbbf24;
   --warning-soft: rgb(251 191 36 / 0.12);
   --warning-fg: #fde68a;
 
-  --danger: #f87171;
-  --danger-soft: rgb(248 113 113 / 0.12);
-  --danger-fg: #fecaca;
+  --danger: #e37d97;
+  --danger-soft: rgb(227 125 151 / 0.12);
+  --danger-fg: #de6886;
 
   --info: #60a5fa;
   --info-soft: rgb(96 165 250 / 0.12);

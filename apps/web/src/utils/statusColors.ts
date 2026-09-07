@@ -21,12 +21,20 @@
  *
  * Both themes use the solid role colour, with the foreground flipping via the
  * `bg` token: white on the fill in light, near-black in dark. The dark palette
- * makes each role a light colour (--danger is #f87171 there), so white on the
+ * makes each role a light colour (--danger is #e37d97 there), so white on the
  * fill measures about 2:1 and fails; near-black measures 7.16:1 or better.
  * Measured contrast of fill against `text-bg`, all passing WCAG AA 4.5:1:
- *   success 5.02 light / 11.36 dark   warning 5.02 / 11.86
- *   danger  6.47 / 7.16               info    6.70 / 7.79
+ *   success 5.07 light / 8.09 dark   warning 5.02 / 11.86
+ *   danger  8.41 / 7.21              info    6.70 / 7.79
  *   neutral 7.81 / 7.04
+ *
+ * The success and danger hues are taken from Cursor's diff colours, sampled
+ * from a screenshot: green #1f8a66 at hue 160 and red #d02d56 at hue 345. The
+ * hues carry over; the lightness does not. Cursor uses them as small text on
+ * near-black, where their red measures 3.95:1, and as a light-theme fill the
+ * green measures 4.30:1 against white. Each role is set to the deepest
+ * lightness at that hue which keeps every pair the app actually renders above
+ * 4.5:1, including role text on the soft tint used by the dashboard cards.
  *
  * Icons are keyed by status first and tone second. In an icon-only column the
  * shape is what tells two statuses of the same tone apart, and Carbon asks for
