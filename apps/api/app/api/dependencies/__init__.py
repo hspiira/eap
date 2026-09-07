@@ -63,6 +63,7 @@ from app.api.dependencies.privacy import (
 )
 from app.api.dependencies.provider import (
     get_non_compete_clause_repository,
+    get_provider_engagement_document_repository,
     get_provider_repository,
     get_session_attribution_reader,
     get_session_name_reader,
@@ -112,6 +113,7 @@ __all__ = [
     "get_kpi_assignment_repository",
     "get_kpi_repository",
     "get_non_compete_clause_repository",
+    "get_provider_engagement_document_repository",
     "get_provider_repository",
     "get_session_attribution_reader",
     "get_session_name_reader",

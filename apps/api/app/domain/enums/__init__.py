@@ -67,6 +67,8 @@ from app.domain.enums.privacy import (
 )
 from app.domain.enums.provider import (
     AccreditationStatus,
+    EngagementDocumentKind,
+    EngagementDocumentState,
     NonCompeteStatus,
     PanelStatus,
     ProviderGender,
@@ -135,6 +137,8 @@ __all__ = [
     "DocumentStatus",
     "DocumentType",
     "EligibilityStatus",
+    "EngagementDocumentKind",
+    "EngagementDocumentState",
     "EngagementStatus",
     "KPICategory",
     "KPIMeasurementUnit",

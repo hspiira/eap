@@ -65,6 +65,9 @@ from app.infrastructure.models.password_set_token_model import PasswordSetTokenM
 from app.infrastructure.models.person_model import PersonModel
 from app.infrastructure.models.provider_affiliation_model import ProviderAffiliationModel
 from app.infrastructure.models.provider_alias_model import ProviderAliasModel
+from app.infrastructure.models.provider_engagement_document_model import (
+    ProviderEngagementDocumentModel,
+)
 from app.infrastructure.models.provider_model import ProviderModel
 from app.infrastructure.models.provider_organisation_model import ProviderOrganisationModel
 from app.infrastructure.models.provider_specialty_model import (
@@ -137,6 +140,7 @@ __all__ = [
     "PersonModel",
     "ProviderAffiliationModel",
     "ProviderAliasModel",
+    "ProviderEngagementDocumentModel",
     "ProviderModel",
     "ProviderOrganisationModel",
     "ProviderSpecialtyLinkModel",

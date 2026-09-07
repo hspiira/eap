@@ -7,6 +7,9 @@ from app.core.database import get_db
 from app.domain.repositories.non_compete_clause_repository import (
     NonCompeteClauseRepository,
 )
+from app.domain.repositories.provider_engagement_document_repository import (
+    ProviderEngagementDocumentRepository,
+)
 from app.domain.repositories.provider_repository import ProviderRepository
 from app.domain.repositories.session_attribution_reader import SessionAttributionReader
 from app.domain.repositories.session_name_reader import SessionNameReader
@@ -20,6 +23,16 @@ async def get_non_compete_clause_repository(
     )
 
     return NonCompeteClauseRepositoryImpl(db)
+
+
+async def get_provider_engagement_document_repository(
+    db: AsyncSession = Depends(get_db),
+) -> ProviderEngagementDocumentRepository:
+    from app.infrastructure.repositories.provider_engagement_document_repository import (
+        ProviderEngagementDocumentRepositoryImpl,
+    )
+
+    return ProviderEngagementDocumentRepositoryImpl(db)
 
 
 async def get_provider_repository(db: AsyncSession = Depends(get_db)) -> ProviderRepository:

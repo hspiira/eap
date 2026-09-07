@@ -271,6 +271,11 @@ class WorkLifeReferralId(Id):
 
 
 @dataclass(frozen=True)
+class ProviderEngagementDocumentId(Id):
+    pass
+
+
+@dataclass(frozen=True)
 class WorkLifeProviderId(Id):
     pass
 
