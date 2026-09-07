@@ -27,8 +27,7 @@ const TYPES: (DiagnosisType & { diagnoses: Diagnosis[] })[] = [
         id: "dx-f32",
         code: "F32",
         name: "Depressive episode",
-        description:
-          "Depressed mood or loss of interest for at least two weeks, most of the day.",
+        description: "Depressed mood or loss of interest for at least two weeks, most of the day.",
         type_id: "type-mood",
         sort_order: 3,
       },

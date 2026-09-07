@@ -5346,6 +5346,7 @@
         "type": "object"
       },
       "DiagnosisUpdate": {
+        "description": "Edit a diagnosis, including moving it under a different type.\n\n``type_id`` exists because the taxonomy is curated over time and a leaf can\nbe filed under the wrong category. Moving one does not rewrite history: a\nsession records ``diagnosis_type_id`` and ``diagnosis_id`` independently, so\nan existing session keeps the type it was recorded against.",
         "properties": {
           "description": {
             "anyOf": [
@@ -5381,6 +5382,18 @@
               }
             ],
             "title": "Sort Order"
+          },
+          "type_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Move the diagnosis under this type",
+            "title": "Type Id"
           }
         },
         "title": "DiagnosisUpdate",
@@ -7102,6 +7115,41 @@
         ],
         "title": "ImportBatchStatus",
         "type": "string"
+      },
+      "ImportReasonCode": {
+        "description": "Machine-readable code for a staged row's outcome reason (P-10).\n\nA message alone is fine to display but not to build a review UI or any\nother consumer against: rewording it silently breaks a string match.\nEvery reason attached to a row carries one of these alongside its\nhuman-readable message.",
+        "enum": [
+          "AlreadyStaged",
+          "MissingName",
+          "UnmappedProfession",
+          "UnmappedSpeciality",
+          "DuplicateNameCandidate",
+          "OrganisationNameCollision",
+          "MultiEmailCell",
+          "EmployeeContractMemo",
+          "ApplyFailed",
+          "Legacy"
+        ],
+        "title": "ImportReasonCode",
+        "type": "string"
+      },
+      "ImportReasonSchema": {
+        "description": "Why one row needs review, applied or apply failed (P-10).\n\n`code` is stable and machine-readable; match on it, never on `message`.",
+        "properties": {
+          "code": {
+            "$ref": "#/components/schemas/ImportReasonCode"
+          },
+          "message": {
+            "title": "Message",
+            "type": "string"
+          }
+        },
+        "required": [
+          "code",
+          "message"
+        ],
+        "title": "ImportReasonSchema",
+        "type": "object"
       },
       "ImportRowOutcome": {
         "description": "Per-row result of a staged historical import.",
@@ -10475,7 +10523,7 @@
           },
           "reasons": {
             "items": {
-              "type": "string"
+              "$ref": "#/components/schemas/ImportReasonSchema"
             },
             "title": "Reasons",
             "type": "array"

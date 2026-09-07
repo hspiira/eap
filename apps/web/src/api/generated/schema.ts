@@ -8338,7 +8338,15 @@ export interface components {
              */
             sort_order: number;
         };
-        /** DiagnosisUpdate */
+        /**
+         * DiagnosisUpdate
+         * @description Edit a diagnosis, including moving it under a different type.
+         *
+         *     ``type_id`` exists because the taxonomy is curated over time and a leaf can
+         *     be filed under the wrong category. Moving one does not rewrite history: a
+         *     session records ``diagnosis_type_id`` and ``diagnosis_id`` independently, so
+         *     an existing session keeps the type it was recorded against.
+         */
         DiagnosisUpdate: {
             /** Description */
             description?: string | null;
@@ -8346,6 +8354,11 @@ export interface components {
             name?: string | null;
             /** Sort Order */
             sort_order?: number | null;
+            /**
+             * Type Id
+             * @description Move the diagnosis under this type
+             */
+            type_id?: string | null;
         };
         /**
          * DocumentCreate
@@ -9078,6 +9091,28 @@ export interface components {
          * @enum {string}
          */
         ImportBatchStatus: "Staged" | "Applied" | "Abandoned";
+        /**
+         * ImportReasonCode
+         * @description Machine-readable code for a staged row's outcome reason (P-10).
+         *
+         *     A message alone is fine to display but not to build a review UI or any
+         *     other consumer against: rewording it silently breaks a string match.
+         *     Every reason attached to a row carries one of these alongside its
+         *     human-readable message.
+         * @enum {string}
+         */
+        ImportReasonCode: "AlreadyStaged" | "MissingName" | "UnmappedProfession" | "UnmappedSpeciality" | "DuplicateNameCandidate" | "OrganisationNameCollision" | "MultiEmailCell" | "EmployeeContractMemo" | "ApplyFailed" | "Legacy";
+        /**
+         * ImportReasonSchema
+         * @description Why one row needs review, applied or apply failed (P-10).
+         *
+         *     `code` is stable and machine-readable; match on it, never on `message`.
+         */
+        ImportReasonSchema: {
+            code: components["schemas"]["ImportReasonCode"];
+            /** Message */
+            message: string;
+        };
         /**
          * ImportRowOutcome
          * @description Per-row result of a staged historical import.
@@ -10417,7 +10452,7 @@ export interface components {
             /** Raw Profession */
             raw_profession: string | null;
             /** Reasons */
-            reasons: string[];
+            reasons: components["schemas"]["ImportReasonSchema"][];
             /** Row Number */
             row_number: number;
             /** Sheet Name */
