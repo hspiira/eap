@@ -180,6 +180,40 @@ The remaining retirement slices are now complete:
 - [x] ~~Final `/persons` API removal~~ — the legacy Persons router is no longer
   registered. Provider/session/callback paths no longer require its API.
 
+## Roster import atomicity (2026-09-07)
+
+Decision: a confirmed roster import commits one row at a time, not the file as
+a unit. `POST /members/import` still previews the whole file; the confirmation
+now replays the previewed rows through `POST /members/import/commit` in slices
+of 25, and that route re-checks and commits each row on its own.
+
+Reason: the single-transaction import undid every accepted row when a later row
+failed, and gave the UI nothing to report until the whole file finished. Row
+atomicity makes a partial import a legitimate, reportable outcome.
+
+Assumptions and consequences:
+
+- The preview response now carries each row's parsed values (`values`), because
+  the commit step replays rows rather than re-uploading the file. The commit
+  route trusts none of it: client resolution, in-file duplicate detection,
+  existing-member detection and `MemberCreate` validation all run again server
+  side before a row is written.
+- `MemberRowChecker` and `MemberRowImporter` in `app/api/services/member_import.py`
+  are the single implementation used by both routes, so preview and commit
+  cannot judge a row differently.
+- A file with invalid rows can now be imported for its valid rows. Previously
+  any invalid row blocked the whole file. Existing members are still never
+  overwritten; a duplicate is reported and skipped.
+- Verified: 1577 API unit tests pass, including new coverage for per-row commit,
+  a failing row that does not stop the run, duplicate refusal, and a company
+  code outside the tenant. Browser verification was not run.
+
+Open finding, not fixed here: `ClientImportDialog` and `POST /clients/import`
+still commit a whole file as one unit for files under 5 MB, with no per-row
+outcome; larger files go through the queued job instead. The client importer
+should get the same row-at-a-time treatment. Only the import table's font size
+was corrected in that dialog.
+
 ## Roster import reference
 
 The sample roster at `/Users/piira/Downloads/persons.csv` is handled by the
