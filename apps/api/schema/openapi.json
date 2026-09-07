@@ -6802,6 +6802,51 @@
         "title": "FieldChangeSchema",
         "type": "object"
       },
+      "GlobalSearchRequest": {
+        "description": "The query travels in the body, not the URL.\n\nA search term is user-entered text that routinely names a person. As a\nquery parameter it would be written to the server access log and to every\nproxy log in front of it, however carefully the handler avoids logging it.",
+        "properties": {
+          "limit": {
+            "default": 5,
+            "description": "Maximum results per category",
+            "maximum": 10.0,
+            "minimum": 1.0,
+            "title": "Limit",
+            "type": "integer"
+          },
+          "q": {
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Q",
+            "type": "string"
+          }
+        },
+        "required": [
+          "q"
+        ],
+        "title": "GlobalSearchRequest",
+        "type": "object"
+      },
+      "GlobalSearchResponse": {
+        "description": "One authenticated, tenant-scoped response covering every record category.",
+        "properties": {
+          "clients": {
+            "$ref": "#/components/schemas/SearchCategoryResult"
+          },
+          "practitioners": {
+            "$ref": "#/components/schemas/SearchCategoryResult"
+          },
+          "provider_organisations": {
+            "$ref": "#/components/schemas/SearchCategoryResult"
+          }
+        },
+        "required": [
+          "clients",
+          "practitioners",
+          "provider_organisations"
+        ],
+        "title": "GlobalSearchResponse",
+        "type": "object"
+      },
       "GrantConsentRequest": {
         "properties": {
           "scope": {
@@ -11270,6 +11315,78 @@
           "rationale"
         ],
         "title": "RetentionPolicyResponse",
+        "type": "object"
+      },
+      "SearchCategoryResult": {
+        "description": "One category's bounded page, with its own truncation and failure state.",
+        "properties": {
+          "failed": {
+            "default": false,
+            "description": "This category could not be searched. Distinct from an empty result: the client must not render it as no records found.",
+            "title": "Failed",
+            "type": "boolean"
+          },
+          "has_more": {
+            "description": "Further matches exist beyond this page. No count is returned, so nothing is disclosed about records the caller cannot read.",
+            "title": "Has More",
+            "type": "boolean"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/SearchResultItem"
+            },
+            "title": "Items",
+            "type": "array"
+          }
+        },
+        "required": [
+          "items",
+          "has_more"
+        ],
+        "title": "SearchCategoryResult",
+        "type": "object"
+      },
+      "SearchResultItem": {
+        "description": "One matched record, projected to its choosable fields.",
+        "properties": {
+          "id": {
+            "description": "Stable record id; the frontend maps type+id to a route",
+            "title": "Id",
+            "type": "string"
+          },
+          "label": {
+            "description": "Primary display label",
+            "title": "Label",
+            "type": "string"
+          },
+          "secondary": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Approved disambiguating detail, e.g. a client code or a practitioner region",
+            "title": "Secondary"
+          },
+          "type": {
+            "enum": [
+              "client",
+              "practitioner",
+              "provider_organisation"
+            ],
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "label",
+          "type"
+        ],
+        "title": "SearchResultItem",
         "type": "object"
       },
       "ServiceAssignmentCreate": {
@@ -30740,6 +30857,64 @@
         "summary": "Run a report template synchronously and persist the output",
         "tags": [
           "reports"
+        ]
+      }
+    },
+    "/search": {
+      "post": {
+        "description": "Bounded, projected matches per category, scoped to the caller's tenant.\n\nA POST that reads: the verb is what keeps the search term out of the URL.\nNothing here writes, and the route is wrapped read-only so nothing commits.\n\nTenant comes from the authenticated context, which `require_same_tenant`\ncompares against the requested tenant before any query runs.",
+        "operationId": "global_search_search_post",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "tenant_id",
+            "required": true,
+            "schema": {
+              "title": "Tenant Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GlobalSearchRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GlobalSearchResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Search records the caller may already read",
+        "tags": [
+          "search"
         ]
       }
     },

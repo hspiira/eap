@@ -37,6 +37,7 @@ from app.api.routes.provider_organisations import router as provider_organisatio
 from app.api.routes.provider_specialties import router as provider_specialties_router
 from app.api.routes.providers import router as providers_router
 from app.api.routes.reports import router as reports_router
+from app.api.routes.search import router as search_router
 from app.api.routes.service_assignments import router as service_assignments_router
 from app.api.routes.service_sessions import router as service_sessions_router
 from app.api.routes.services import router as services_router
@@ -86,6 +87,7 @@ def register_routers(app: FastAPI) -> None:
     app.include_router(eap_programmes_router)
     app.include_router(kpis_router)
     app.include_router(audit_router)
+    app.include_router(search_router)
 
 
 __all__ = [
@@ -121,6 +123,7 @@ __all__ = [
     "pricing_router",
     "register_routers",
     "reports_router",
+    "search_router",
     "services_router",
     "service_assignments_router",
     "service_sessions_router",
