@@ -21822,6 +21822,12 @@ export interface operations {
                 service_id?: string | null;
                 /** @description Filter by session status */
                 status?: components["schemas"]["SessionStatus"] | null;
+                /** @description Filter by physical or online */
+                session_type?: components["schemas"]["SessionType"] | null;
+                /** @description Filter by session category */
+                category?: components["schemas"]["SessionCategory"] | null;
+                /** @description Filter by clinical outcome */
+                clinical_outcome?: components["schemas"]["SessionClinicalStatus"] | null;
                 /** @description Only sessions scheduled at or after this instant (ISO 8601) */
                 scheduled_from?: string | null;
                 /** @description Only sessions scheduled at or before this instant (ISO 8601) */

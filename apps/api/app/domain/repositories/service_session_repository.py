@@ -10,7 +10,12 @@ from collections.abc import Sequence
 from datetime import datetime
 
 from app.domain.entities.service_session import ServiceSessionEntity
-from app.domain.enums import SessionStatus
+from app.domain.enums import (
+    SessionCategory,
+    SessionClinicalStatus,
+    SessionStatus,
+    SessionType,
+)
 from app.domain.repositories.base_repository import BaseRepository
 from app.domain.value_objects.core import (
     EligibleMemberId,
@@ -85,6 +90,9 @@ class ServiceSessionRepository(BaseRepository[ServiceSessionEntity, SessionId]):
         provider_id: ProviderId | None = None,
         service_id: ServiceId | None = None,
         status: SessionStatus | None = None,
+        session_type: SessionType | None = None,
+        category: SessionCategory | None = None,
+        clinical_outcome: SessionClinicalStatus | None = None,
         scheduled_from: datetime | None = None,
         scheduled_to: datetime | None = None,
         limit: int = 100,
@@ -120,6 +128,9 @@ class ServiceSessionRepository(BaseRepository[ServiceSessionEntity, SessionId]):
         provider_id: ProviderId | None = None,
         service_id: ServiceId | None = None,
         status: SessionStatus | None = None,
+        session_type: SessionType | None = None,
+        category: SessionCategory | None = None,
+        clinical_outcome: SessionClinicalStatus | None = None,
         scheduled_from: datetime | None = None,
         scheduled_to: datetime | None = None,
     ) -> int:

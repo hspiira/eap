@@ -138,3 +138,32 @@ class TestSortAllowlist:
 
         assert response.status_code == 200, response.text
         assert api.sessions.list_all.await_args.kwargs["sort_by"] == column
+
+
+class TestOperatorFilters:
+    """C4: the dimensions an operator slices by reach the repository."""
+
+    @pytest.mark.parametrize(
+        ("param", "value", "kwarg"),
+        [
+            ("session_type", "Physical", "session_type"),
+            ("category", "Group", "category"),
+            ("clinical_outcome", "Terminated", "clinical_outcome"),
+            ("provider_id", "prv-1", "provider_id"),
+        ],
+    )
+    async def test_a_filter_is_passed_to_both_list_and_count(self, api, param, value, kwarg):
+        response = await api.http.get(f"/service-sessions/?tenant_id=t1&{param}={value}")
+
+        assert response.status_code == 200, response.text
+        listed = api.sessions.list_all.await_args.kwargs[kwarg]
+        counted = api.sessions.count.await_args.kwargs[kwarg]
+        assert listed is not None and counted is not None
+        assert str(getattr(listed, "value", listed)) == value
+        assert str(getattr(counted, "value", counted)) == value
+
+    async def test_an_invalid_filter_value_is_rejected(self, api):
+        response = await api.http.get("/service-sessions/?tenant_id=t1&category=Webinar")
+
+        assert response.status_code == 422, response.text
+        api.sessions.list_all.assert_not_awaited()

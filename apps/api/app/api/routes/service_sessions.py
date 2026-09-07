@@ -62,7 +62,14 @@ from app.core.database import get_db
 from app.core.security import TokenData, get_current_user
 from app.domain.entities.eligible_member import EligibleMember
 from app.domain.entities.service_session import ServiceSessionEntity
-from app.domain.enums import SessionAttendance, SessionDeliveryContext, SessionStatus
+from app.domain.enums import (
+    SessionAttendance,
+    SessionCategory,
+    SessionClinicalStatus,
+    SessionDeliveryContext,
+    SessionStatus,
+    SessionType,
+)
 from app.domain.enums.provider_network import OrganisationApprovalStatus
 from app.domain.exceptions import NotFoundError, ValidationException
 from app.domain.repositories.case_repository import CaseRepository
@@ -725,6 +732,11 @@ async def list_service_sessions(
     provider_id: str | None = Query(None, description="Filter by provider identifier"),
     service_id: str | None = Query(None, description="Filter by service identifier"),
     status: SessionStatus | None = Query(None, description="Filter by session status"),
+    session_type: SessionType | None = Query(None, description="Filter by physical or online"),
+    category: SessionCategory | None = Query(None, description="Filter by session category"),
+    clinical_outcome: SessionClinicalStatus | None = Query(
+        None, description="Filter by clinical outcome"
+    ),
     scheduled_from: datetime | None = Query(
         None, description="Only sessions scheduled at or after this instant (ISO 8601)"
     ),
@@ -751,6 +763,9 @@ async def list_service_sessions(
         provider_id=ProviderId(provider_id) if provider_id else None,
         service_id=ServiceId(service_id) if service_id else None,
         status=status,
+        session_type=session_type,
+        category=category,
+        clinical_outcome=clinical_outcome,
         scheduled_from=scheduled_from,
         scheduled_to=scheduled_to,
         limit=pg.limit,
@@ -765,6 +780,9 @@ async def list_service_sessions(
         provider_id=ProviderId(provider_id) if provider_id else None,
         service_id=ServiceId(service_id) if service_id else None,
         status=status,
+        session_type=session_type,
+        category=category,
+        clinical_outcome=clinical_outcome,
         scheduled_from=scheduled_from,
         scheduled_to=scheduled_to,
     )

@@ -32084,6 +32084,60 @@
             }
           },
           {
+            "description": "Filter by physical or online",
+            "in": "query",
+            "name": "session_type",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/SessionType"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter by physical or online",
+              "title": "Session Type"
+            }
+          },
+          {
+            "description": "Filter by session category",
+            "in": "query",
+            "name": "category",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/SessionCategory"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter by session category",
+              "title": "Category"
+            }
+          },
+          {
+            "description": "Filter by clinical outcome",
+            "in": "query",
+            "name": "clinical_outcome",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/SessionClinicalStatus"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter by clinical outcome",
+              "title": "Clinical Outcome"
+            }
+          },
+          {
             "description": "Only sessions scheduled at or after this instant (ISO 8601)",
             "in": "query",
             "name": "scheduled_from",

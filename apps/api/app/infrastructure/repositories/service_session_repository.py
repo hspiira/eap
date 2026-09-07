@@ -12,7 +12,12 @@ from typing import Any
 from sqlalchemy import select
 
 from app.domain.entities.service_session import ServiceSessionEntity
-from app.domain.enums import SessionStatus
+from app.domain.enums import (
+    SessionCategory,
+    SessionClinicalStatus,
+    SessionStatus,
+    SessionType,
+)
 from app.domain.repositories.service_session_repository import (
     ServiceSessionRepository,
 )
@@ -104,6 +109,9 @@ class ServiceSessionRepositoryImpl(
         provider_id: ProviderId | None,
         service_id: ServiceId | None,
         status: SessionStatus | None,
+        session_type: SessionType | None = None,
+        category: SessionCategory | None = None,
+        clinical_outcome: SessionClinicalStatus | None = None,
     ) -> dict[str, Any]:
         filters: dict[str, Any] = {}
         if member_id:
@@ -114,6 +122,12 @@ class ServiceSessionRepositoryImpl(
             filters["service_id"] = service_id.value
         if status:
             filters["status"] = status
+        if session_type:
+            filters["session_type"] = session_type
+        if category:
+            filters["category"] = category
+        if clinical_outcome:
+            filters["clinical_outcome"] = clinical_outcome
         return filters
 
     @staticmethod
@@ -141,6 +155,9 @@ class ServiceSessionRepositoryImpl(
         provider_id: ProviderId | None = None,
         service_id: ServiceId | None = None,
         status: SessionStatus | None = None,
+        session_type: SessionType | None = None,
+        category: SessionCategory | None = None,
+        clinical_outcome: SessionClinicalStatus | None = None,
         scheduled_from: datetime | None = None,
         scheduled_to: datetime | None = None,
         limit: int = 100,
@@ -155,7 +172,15 @@ class ServiceSessionRepositoryImpl(
             offset=offset,
             sort_by=sort_by,
             sort_desc=sort_desc,
-            filters=self._base_filters(member_id, provider_id, service_id, status),
+            filters=self._base_filters(
+                member_id,
+                provider_id,
+                service_id,
+                status,
+                session_type,
+                category,
+                clinical_outcome,
+            ),
             search=None,
             search_fields=None,
             extra_conditions=self._scheduled_conditions(scheduled_from, scheduled_to),
@@ -168,13 +193,24 @@ class ServiceSessionRepositoryImpl(
         provider_id: ProviderId | None = None,
         service_id: ServiceId | None = None,
         status: SessionStatus | None = None,
+        session_type: SessionType | None = None,
+        category: SessionCategory | None = None,
+        clinical_outcome: SessionClinicalStatus | None = None,
         scheduled_from: datetime | None = None,
         scheduled_to: datetime | None = None,
     ) -> int:
         """Count sessions matching filters. Must mirror list_all exactly."""
         return await self._count_all(
             tenant_id=tenant_id.value,
-            filters=self._base_filters(member_id, provider_id, service_id, status),
+            filters=self._base_filters(
+                member_id,
+                provider_id,
+                service_id,
+                status,
+                session_type,
+                category,
+                clinical_outcome,
+            ),
             extra_conditions=self._scheduled_conditions(scheduled_from, scheduled_to),
             search=None,
             search_fields=None,
