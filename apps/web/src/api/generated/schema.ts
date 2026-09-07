@@ -6683,7 +6683,7 @@ export interface components {
         CaseStatus: "Intake" | "Assessment" | "Active" | "Closed" | "ReferredOut" | "NoShowClosed";
         /**
          * CategoryCount
-         * @description Completed sessions per session category over the trend window.
+         * @description Completed sessions per session category inside the range.
          */
         CategoryCount: {
             /** Category */
@@ -7119,7 +7119,7 @@ export interface components {
         };
         /**
          * ClientSessions
-         * @description Completed sessions per client over the trend window.
+         * @description Completed sessions per client inside the range.
          */
         ClientSessions: {
             /** Client Id */
@@ -8088,14 +8088,14 @@ export interface components {
         DSARRequestType: "Export" | "Erasure";
         /**
          * DashboardKpis
-         * @description Headline counts for the KPI strip.
+         * @description Headline counts. Session counts follow the range; the rest are stock.
          */
         DashboardKpis: {
             /**
-             * Clients Served 90D
-             * @description Distinct clients with a completed session in the last 90 days
+             * Clients Served
+             * @description Distinct clients with a completed session inside the range
              */
-            clients_served_90d: number;
+            clients_served: number;
             /**
              * Clients Total
              * @description Clients on the tenant, any status
@@ -8117,15 +8117,15 @@ export interface components {
              */
             import_backlog: number;
             /**
-             * Sessions 90D
-             * @description Completed sessions in the last 90 days
+             * Sessions
+             * @description Completed sessions inside the range
              */
-            sessions_90d: number;
+            sessions: number;
             /**
-             * Sessions Prior 90D
-             * @description Completed sessions in the 90 days before that, for the delta
+             * Sessions Prior
+             * @description Completed sessions in the equal-length prior window, for the delta
              */
-            sessions_prior_90d: number;
+            sessions_prior: number;
         };
         /**
          * DashboardResponse
@@ -8138,12 +8138,15 @@ export interface components {
             /** Import Queues */
             import_queues: components["schemas"]["ImportQueueEntry"][];
             kpis: components["schemas"]["DashboardKpis"];
+            range: components["schemas"]["RangeInfo"];
             /** Sessions By Category */
             sessions_by_category: components["schemas"]["CategoryCount"][];
-            /** Sessions Monthly */
-            sessions_monthly: components["schemas"]["MonthlySessions"][];
+            /** Sessions Series */
+            sessions_series: components["schemas"]["SeriesPoint"][];
             /** Top Clients */
             top_clients: components["schemas"]["ClientSessions"][];
+            /** Trending Services */
+            trending_services: components["schemas"]["ServiceTrend"][];
         };
         /**
          * DataQuality
@@ -9259,13 +9262,20 @@ export interface components {
         ImportBatchStatus: "Staged" | "Applied" | "Abandoned";
         /**
          * ImportBatchSummary
-         * @description The batch the backlog figures describe.
+         * @description The batch the backlog figures describe, as a part-to-whole composition.
          */
         ImportBatchSummary: {
             /** Accepted */
             accepted: number;
             /** Applied At */
             applied_at?: string | null;
+            /**
+             * Blocked
+             * @description Rows held on an unresolved identity
+             */
+            blocked: number;
+            /** Duplicate */
+            duplicate: number;
             /** File Name */
             file_name: string;
             /** Row Count */
@@ -10312,19 +10322,6 @@ export interface components {
             currency: string;
         };
         /**
-         * MonthlySessions
-         * @description One month of completed sessions. The series is always 12 entries, zero-filled.
-         */
-        MonthlySessions: {
-            /**
-             * Month
-             * @description Calendar month, YYYY-MM
-             */
-            month: string;
-            /** Total */
-            total: number;
-        };
-        /**
          * NextOfKinRelationship
          * @description Relationship of a restricted emergency contact to a member.
          * @enum {string}
@@ -11118,6 +11115,38 @@ export interface components {
             phone?: string | null;
             region?: components["schemas"]["UgandaRegion"] | null;
         };
+        /**
+         * RangeInfo
+         * @description The resolved window the flow figures describe.
+         */
+        RangeInfo: {
+            /**
+             * End
+             * @description Exclusive window end, ISO 8601
+             */
+            end: string;
+            /**
+             * Granularity
+             * @description Bucket size of sessions_series, chosen from the window length
+             * @enum {string}
+             */
+            granularity: "day" | "week" | "month";
+            /**
+             * Preset
+             * @enum {string}
+             */
+            preset: "this_week" | "this_month" | "last_30d" | "last_90d" | "last_180d" | "custom";
+            /**
+             * Prior Start
+             * @description Start of the equal-length window before this one, ISO 8601
+             */
+            prior_start: string;
+            /**
+             * Start
+             * @description Inclusive window start, ISO 8601
+             */
+            start: string;
+        };
         /** RateCardEntrySchema */
         RateCardEntrySchema: {
             rate: components["schemas"]["app__api__schemas__pricing_schemas__MoneySchema-Input"];
@@ -11331,6 +11360,34 @@ export interface components {
              * @enum {string}
              */
             type: "client" | "practitioner" | "provider_organisation";
+        };
+        /**
+         * SeriesPoint
+         * @description One bucket of completed sessions, split by how it was delivered.
+         *
+         *     `unknown` carries sessions whose source recorded no delivery type. It is
+         *     kept as its own band rather than folded into either, so the chart never
+         *     asserts a delivery type the record does not carry.
+         */
+        SeriesPoint: {
+            /**
+             * Bucket
+             * @description Bucket start: YYYY-MM-DD, or YYYY-MM when monthly
+             */
+            bucket: string;
+            /**
+             * Label
+             * @description Display label for the bucket
+             */
+            label: string;
+            /** Online */
+            online: number;
+            /** Physical */
+            physical: number;
+            /** Total */
+            total: number;
+            /** Unknown */
+            unknown: number;
         };
         /**
          * ServiceAssignmentCreate
@@ -12006,6 +12063,25 @@ export interface components {
              * @description Session feedback
              */
             feedback: string;
+        };
+        /**
+         * ServiceTrend
+         * @description One service's demand inside the range, against the prior window.
+         */
+        ServiceTrend: {
+            /**
+             * Change Pct
+             * @description Percentage change against the prior window; null when it had no sessions
+             */
+            change_pct?: number | null;
+            /** Prior Total */
+            prior_total: number;
+            /** Service Id */
+            service_id: string;
+            /** Service Name */
+            service_name: string;
+            /** Total */
+            total: number;
         };
         /**
          * ServiceUpdate
@@ -17162,6 +17238,12 @@ export interface operations {
         parameters: {
             query: {
                 tenant_id: string;
+                /** @description Window the flow figures cover */
+                range?: "this_week" | "this_month" | "last_30d" | "last_90d" | "last_180d" | "custom";
+                /** @description Window start when range is custom, ISO 8601 */
+                start?: string | null;
+                /** @description Window end when range is custom, ISO 8601 */
+                end?: string | null;
             };
             header?: never;
             path?: never;

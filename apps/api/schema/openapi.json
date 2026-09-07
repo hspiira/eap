@@ -1695,7 +1695,7 @@
         "type": "string"
       },
       "CategoryCount": {
-        "description": "Completed sessions per session category over the trend window.",
+        "description": "Completed sessions per session category inside the range.",
         "properties": {
           "category": {
             "title": "Category",
@@ -2693,7 +2693,7 @@
         "type": "object"
       },
       "ClientSessions": {
-        "description": "Completed sessions per client over the trend window.",
+        "description": "Completed sessions per client inside the range.",
         "properties": {
           "client_id": {
             "title": "Client Id",
@@ -4706,11 +4706,11 @@
         "type": "string"
       },
       "DashboardKpis": {
-        "description": "Headline counts for the KPI strip.",
+        "description": "Headline counts. Session counts follow the range; the rest are stock.",
         "properties": {
-          "clients_served_90d": {
-            "description": "Distinct clients with a completed session in the last 90 days",
-            "title": "Clients Served 90D",
+          "clients_served": {
+            "description": "Distinct clients with a completed session inside the range",
+            "title": "Clients Served",
             "type": "integer"
           },
           "clients_total": {
@@ -4733,21 +4733,21 @@
             "title": "Import Backlog",
             "type": "integer"
           },
-          "sessions_90d": {
-            "description": "Completed sessions in the last 90 days",
-            "title": "Sessions 90D",
+          "sessions": {
+            "description": "Completed sessions inside the range",
+            "title": "Sessions",
             "type": "integer"
           },
-          "sessions_prior_90d": {
-            "description": "Completed sessions in the 90 days before that, for the delta",
-            "title": "Sessions Prior 90D",
+          "sessions_prior": {
+            "description": "Completed sessions in the equal-length prior window, for the delta",
+            "title": "Sessions Prior",
             "type": "integer"
           }
         },
         "required": [
-          "sessions_90d",
-          "sessions_prior_90d",
-          "clients_served_90d",
+          "sessions",
+          "sessions_prior",
+          "clients_served",
           "covered_members",
           "clients_with_roster",
           "clients_total",
@@ -4783,6 +4783,9 @@
           "kpis": {
             "$ref": "#/components/schemas/DashboardKpis"
           },
+          "range": {
+            "$ref": "#/components/schemas/RangeInfo"
+          },
           "sessions_by_category": {
             "items": {
               "$ref": "#/components/schemas/CategoryCount"
@@ -4790,11 +4793,11 @@
             "title": "Sessions By Category",
             "type": "array"
           },
-          "sessions_monthly": {
+          "sessions_series": {
             "items": {
-              "$ref": "#/components/schemas/MonthlySessions"
+              "$ref": "#/components/schemas/SeriesPoint"
             },
-            "title": "Sessions Monthly",
+            "title": "Sessions Series",
             "type": "array"
           },
           "top_clients": {
@@ -4803,13 +4806,22 @@
             },
             "title": "Top Clients",
             "type": "array"
+          },
+          "trending_services": {
+            "items": {
+              "$ref": "#/components/schemas/ServiceTrend"
+            },
+            "title": "Trending Services",
+            "type": "array"
           }
         },
         "required": [
+          "range",
           "kpis",
-          "sessions_monthly",
+          "sessions_series",
           "sessions_by_category",
           "top_clients",
+          "trending_services",
           "import_queues",
           "data_quality"
         ],
@@ -7304,7 +7316,7 @@
         "type": "string"
       },
       "ImportBatchSummary": {
-        "description": "The batch the backlog figures describe.",
+        "description": "The batch the backlog figures describe, as a part-to-whole composition.",
         "properties": {
           "accepted": {
             "title": "Accepted",
@@ -7320,6 +7332,15 @@
               }
             ],
             "title": "Applied At"
+          },
+          "blocked": {
+            "description": "Rows held on an unresolved identity",
+            "title": "Blocked",
+            "type": "integer"
+          },
+          "duplicate": {
+            "title": "Duplicate",
+            "type": "integer"
           },
           "file_name": {
             "title": "File Name",
@@ -7338,7 +7359,9 @@
           "file_name",
           "status",
           "row_count",
-          "accepted"
+          "accepted",
+          "duplicate",
+          "blocked"
         ],
         "title": "ImportBatchSummary",
         "type": "object"
@@ -9888,26 +9911,6 @@
         "title": "MoneyCreate",
         "type": "object"
       },
-      "MonthlySessions": {
-        "description": "One month of completed sessions. The series is always 12 entries, zero-filled.",
-        "properties": {
-          "month": {
-            "description": "Calendar month, YYYY-MM",
-            "title": "Month",
-            "type": "string"
-          },
-          "total": {
-            "title": "Total",
-            "type": "integer"
-          }
-        },
-        "required": [
-          "month",
-          "total"
-        ],
-        "title": "MonthlySessions",
-        "type": "object"
-      },
       "NextOfKinRelationship": {
         "description": "Relationship of a restricted emergency contact to a member.",
         "enum": [
@@ -12084,6 +12087,57 @@
         "title": "ProviderUpdate",
         "type": "object"
       },
+      "RangeInfo": {
+        "description": "The resolved window the flow figures describe.",
+        "properties": {
+          "end": {
+            "description": "Exclusive window end, ISO 8601",
+            "title": "End",
+            "type": "string"
+          },
+          "granularity": {
+            "description": "Bucket size of sessions_series, chosen from the window length",
+            "enum": [
+              "day",
+              "week",
+              "month"
+            ],
+            "title": "Granularity",
+            "type": "string"
+          },
+          "preset": {
+            "enum": [
+              "this_week",
+              "this_month",
+              "last_30d",
+              "last_90d",
+              "last_180d",
+              "custom"
+            ],
+            "title": "Preset",
+            "type": "string"
+          },
+          "prior_start": {
+            "description": "Start of the equal-length window before this one, ISO 8601",
+            "title": "Prior Start",
+            "type": "string"
+          },
+          "start": {
+            "description": "Inclusive window start, ISO 8601",
+            "title": "Start",
+            "type": "string"
+          }
+        },
+        "required": [
+          "preset",
+          "start",
+          "end",
+          "prior_start",
+          "granularity"
+        ],
+        "title": "RangeInfo",
+        "type": "object"
+      },
       "RateCardEntrySchema": {
         "properties": {
           "rate": {
@@ -12539,6 +12593,47 @@
           "type"
         ],
         "title": "SearchResultItem",
+        "type": "object"
+      },
+      "SeriesPoint": {
+        "description": "One bucket of completed sessions, split by how it was delivered.\n\n`unknown` carries sessions whose source recorded no delivery type. It is\nkept as its own band rather than folded into either, so the chart never\nasserts a delivery type the record does not carry.",
+        "properties": {
+          "bucket": {
+            "description": "Bucket start: YYYY-MM-DD, or YYYY-MM when monthly",
+            "title": "Bucket",
+            "type": "string"
+          },
+          "label": {
+            "description": "Display label for the bucket",
+            "title": "Label",
+            "type": "string"
+          },
+          "online": {
+            "title": "Online",
+            "type": "integer"
+          },
+          "physical": {
+            "title": "Physical",
+            "type": "integer"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          },
+          "unknown": {
+            "title": "Unknown",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "bucket",
+          "label",
+          "physical",
+          "online",
+          "unknown",
+          "total"
+        ],
+        "title": "SeriesPoint",
         "type": "object"
       },
       "ServiceAssignmentCreate": {
@@ -13886,6 +13981,47 @@
           "feedback"
         ],
         "title": "ServiceSessionUpdateFeedback",
+        "type": "object"
+      },
+      "ServiceTrend": {
+        "description": "One service's demand inside the range, against the prior window.",
+        "properties": {
+          "change_pct": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Percentage change against the prior window; null when it had no sessions",
+            "title": "Change Pct"
+          },
+          "prior_total": {
+            "title": "Prior Total",
+            "type": "integer"
+          },
+          "service_id": {
+            "title": "Service Id",
+            "type": "string"
+          },
+          "service_name": {
+            "title": "Service Name",
+            "type": "string"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "service_id",
+          "service_name",
+          "total",
+          "prior_total"
+        ],
+        "title": "ServiceTrend",
         "type": "object"
       },
       "ServiceUpdate": {
@@ -23564,6 +23700,62 @@
             "schema": {
               "title": "Tenant Id",
               "type": "string"
+            }
+          },
+          {
+            "description": "Window the flow figures cover",
+            "in": "query",
+            "name": "range",
+            "required": false,
+            "schema": {
+              "default": "last_90d",
+              "description": "Window the flow figures cover",
+              "enum": [
+                "this_week",
+                "this_month",
+                "last_30d",
+                "last_90d",
+                "last_180d",
+                "custom"
+              ],
+              "title": "Range",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Window start when range is custom, ISO 8601",
+            "in": "query",
+            "name": "start",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Window start when range is custom, ISO 8601",
+              "title": "Start"
+            }
+          },
+          {
+            "description": "Window end when range is custom, ISO 8601",
+            "in": "query",
+            "name": "end",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Window end when range is custom, ISO 8601",
+              "title": "End"
             }
           }
         ],
