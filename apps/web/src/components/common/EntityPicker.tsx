@@ -2,6 +2,7 @@ import * as React from "react"
 import { useState } from "react"
 
 import { clientsApi } from "@/api/endpoints/clients"
+import { industriesApi } from "@/api/endpoints/industries"
 import { type MemberListParams, membersApi } from "@/api/endpoints/members"
 import { personsApi } from "@/api/endpoints/persons"
 import { type ProviderListParams, providersApi } from "@/api/endpoints/providers"
@@ -14,7 +15,7 @@ import { useDebouncedValue } from "@/hooks/useDebouncedValue"
 import { displayName, memberLabel, nameInitials, personInitials } from "@/lib/display"
 import { useEntityList } from "@/lib/queries"
 import type { ListParams, PaginatedResponse } from "@/types/api"
-import type { Client, Member, Person, Provider, Service, User } from "@/types/entities"
+import type { Client, Industry, Member, Person, Provider, Service, User } from "@/types/entities"
 import { getStatusLabel } from "@/utils/statusColors"
 
 /** Search-and-select over a paginated resource. */
@@ -166,6 +167,39 @@ export function PickerRow({
 }
 
 /** Client search-and-select. Was copy-pasted into five form sheets. */
+export function IndustryPicker({
+  value,
+  onChange,
+  selected,
+  filter,
+}: {
+  value: string
+  onChange: (id: string) => void
+  selected?: Industry | null
+  /** e.g. exclude the industry being edited so it cannot be its own parent. */
+  filter?: (industry: Industry) => boolean
+}) {
+  return (
+    <EntityPicker<Industry>
+      resource="industries"
+      listFn={industriesApi.list}
+      value={value}
+      onChange={onChange}
+      placeholder="Search industries by name…"
+      emptyPrompt="Start typing to search industries."
+      emptyNoMatch="No industries match."
+      renderSelected={(i) => (
+        <PickerRow initials={nameInitials(i.name)} primary={i.name} secondary={i.code} size="md" />
+      )}
+      renderRow={(i) => (
+        <PickerRow initials={nameInitials(i.name)} primary={i.name} secondary={i.code} />
+      )}
+      selectedItem={selected}
+      filter={filter}
+    />
+  )
+}
+
 export function ClientPicker({
   value,
   onChange,

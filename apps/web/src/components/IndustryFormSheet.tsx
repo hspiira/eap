@@ -1,6 +1,7 @@
 import { z } from "zod"
 
 import { industriesApi } from "@/api/endpoints/industries"
+import { IndustryPicker } from "@/components/common/EntityPicker"
 import { FormField } from "@/components/common/FormField"
 import { SheetForm } from "@/components/common/SheetForm"
 import { Input } from "@/components/ui/input"
@@ -34,7 +35,7 @@ export function IndustryFormSheet({
   industry,
   onSaved,
 }: IndustryFormSheetProps) {
-  const { register, formState, submit, serverError, isEdit } = useEntityFormSheet<
+  const { register, watch, setValue, formState, submit, serverError, isEdit } = useEntityFormSheet<
     IndustryFormValues,
     Parameters<typeof industriesApi.create>[0],
     Industry,
@@ -104,16 +105,17 @@ export function IndustryFormSheet({
 
       <FormField
         label="Parent industry"
-        description="Paste the parent industry's ID. Leave empty for a top-level industry."
+        description="Leave empty for a top-level industry."
         error={errors.parent_industry_id?.message}
-        htmlFor="ind-parent"
       >
-        <Input
-          id="ind-parent"
-          placeholder="cln…"
-
-          {...register("parent_industry_id")}
+        <IndustryPicker
+          value={watch("parent_industry_id") ?? ""}
+          onChange={(id) =>
+            setValue("parent_industry_id", id, { shouldValidate: true, shouldDirty: true })
+          }
+          filter={(candidate) => candidate.id !== industry?.id}
         />
+        <Input type="hidden" {...register("parent_industry_id")} />
       </FormField>
     </SheetForm>
   )
