@@ -2,16 +2,32 @@ import * as React from "react"
 
 import { cn } from "@/lib/utils"
 
-const Table = React.forwardRef<HTMLTableElement, React.HTMLAttributes<HTMLTableElement>>(
-  ({ className, ...props }, ref) => (
-    <div className="relative w-full overflow-auto">
+interface TableProps extends React.HTMLAttributes<HTMLTableElement> {
+  /**
+   * Wrap the table in its own scroll container. Leave it on for a table inside
+   * a card or a dialog, which has nowhere else to scroll.
+   *
+   * Turn it off when the caller already owns a scroll area. The wrapper is a
+   * scrolling ancestor, and `position: sticky` resolves against the nearest
+   * one, so a sticky header inside an unconstrained wrapper has no scrollport
+   * to stick in and rides up with the rows. That is what silently disabled
+   * every sticky header on the list pages.
+   */
+  scrollable?: boolean
+}
+
+const Table = React.forwardRef<HTMLTableElement, TableProps>(
+  ({ className, scrollable = true, ...props }, ref) => {
+    const table = (
       <table
         ref={ref}
         className={cn("w-full caption-bottom text-sm rounded-none", className)}
         {...props}
       />
-    </div>
-  ),
+    )
+    if (!scrollable) return table
+    return <div className="relative w-full overflow-auto">{table}</div>
+  },
 )
 Table.displayName = "Table"
 

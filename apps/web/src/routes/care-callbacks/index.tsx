@@ -192,6 +192,34 @@ function CampaignsListPage() {
             <SelectionBar count={selection.selectedIds.size} onClear={selection.clearSelection}>
               <BulkAction
                 ids={selection.selectedIds}
+                label="Activate"
+                confirmTitle="Activate campaigns"
+                confirmDescription={(n) =>
+                  `Activate ${n} selected ${n === 1 ? "campaign" : "campaigns"}?`
+                }
+                labelFor={(id) => items.find((i) => i.id === id)?.name ?? id}
+                action={careCallbacksApi.activateCampaign}
+                invalidateKey={["care-callback-campaigns"]}
+                verb="activated"
+                noun="campaign"
+                onDone={selection.clearSelection}
+              />
+              <BulkAction
+                ids={selection.selectedIds}
+                label="Complete"
+                confirmTitle="Complete campaigns"
+                confirmDescription={(n) =>
+                  `Complete ${n} selected ${n === 1 ? "campaign" : "campaigns"}?`
+                }
+                labelFor={(id) => items.find((i) => i.id === id)?.name ?? id}
+                action={careCallbacksApi.completeCampaign}
+                invalidateKey={["care-callback-campaigns"]}
+                verb="completed"
+                noun="campaign"
+                onDone={selection.clearSelection}
+              />
+              <BulkAction
+                ids={selection.selectedIds}
                 label="Archive"
                 confirmTitle="Archive campaigns"
                 confirmDescription={(n) =>
@@ -207,7 +235,7 @@ function CampaignsListPage() {
               />
             </SelectionBar>
             <div className="relative min-h-0 flex-1 overflow-auto">
-              <Table className="w-full caption-bottom text-sm">
+              <Table className="w-full caption-bottom text-sm" scrollable={false}>
                 <TableHeader className={STICKY_TABLE_HEAD}>
                   <TableRow className={`hover:bg-transparent ${ROW_BORDER}`}>
                     <TableHead className="w-10 px-3">
