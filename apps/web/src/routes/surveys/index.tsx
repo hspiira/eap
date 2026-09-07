@@ -2,7 +2,7 @@ import { useEffect, useState } from "react"
 
 import { useQuery } from "@tanstack/react-query"
 import { createFileRoute, Link, useNavigate, useSearch } from "@tanstack/react-router"
-import { ClipboardList, Download, ExternalLink, MoreHorizontal, Plus } from "lucide-react"
+import { ClipboardList, Download, ExternalLink, Lock, MoreHorizontal, Plus } from "lucide-react"
 
 import { surveysApi } from "@/api/endpoints/surveys"
 import { BulkAction } from "@/components/common/BulkAction"
@@ -155,6 +155,7 @@ function SurveysListPage() {
               <BulkAction
                 ids={selection.selectedIds}
                 label="Close"
+                icon={Lock}
                 confirmTitle="Close surveys"
                 confirmDescription={(n) =>
                   `${n} ${n === 1 ? "survey" : "surveys"} will stop accepting responses. You can reopen them later.`

@@ -3,8 +3,11 @@ import { useCallback, useEffect, useState } from "react"
 import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { createFileRoute, Link, useNavigate, useSearch } from "@tanstack/react-router"
 import {
+  Archive,
+  ArchiveRestore,
   Bookmark,
   Building2,
+  CircleX,
   Download,
   ExternalLink,
   FileDown,
@@ -618,6 +621,7 @@ function ClientsListPage() {
               <BulkAction
                 ids={selection.selectedIds}
                 label="Archive"
+                icon={Archive}
                 confirmTitle="Archive clients"
                 confirmDescription={(n) =>
                   `${n} ${n === 1 ? "client" : "clients"} will be hidden from the active list. You can restore them later.`
@@ -635,6 +639,7 @@ function ClientsListPage() {
               <BulkAction
                 ids={selection.selectedIds}
                 label="Restore"
+                icon={ArchiveRestore}
                 confirmTitle="Restore clients"
                 confirmDescription={(n) =>
                   `Restore ${n} selected ${n === 1 ? "client" : "clients"} to the active list?`
@@ -651,6 +656,7 @@ function ClientsListPage() {
               <BulkActionWithReason
                 ids={selection.selectedIds}
                 label="Terminate"
+                icon={CircleX}
                 confirmTitle="Terminate clients"
                 confirmDescription={(n) =>
                   `Terminate ${n} selected ${n === 1 ? "client" : "clients"}? This ends the engagement.`

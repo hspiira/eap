@@ -1,7 +1,9 @@
 import { useState } from "react"
 
+import type { LucideIcon } from "lucide-react"
+
+import { BulkActionButton } from "@/components/common/BulkActionButton"
 import { ReasonDialog } from "@/components/providers/ReasonDialog"
-import { Button } from "@/components/ui/button"
 import { type BulkActionOptions, useBulkAction } from "@/hooks/useBulkAction"
 
 interface BulkActionWithReasonProps extends Omit<BulkActionOptions, "action"> {
@@ -13,6 +15,8 @@ interface BulkActionWithReasonProps extends Omit<BulkActionOptions, "action"> {
   confirmDescription: (count: number) => string
   /** Applied to one id with the reason collected once for the whole run. */
   action: (id: string, reason: string) => Promise<unknown>
+  /** The action's icon. The bar is icon-only; the label names it on hover. */
+  icon: LucideIcon
   destructive?: boolean
 }
 
@@ -30,6 +34,7 @@ export function BulkActionWithReason({
   confirmTitle,
   confirmDescription,
   action,
+  icon: Icon,
   destructive,
   ...options
 }: BulkActionWithReasonProps) {
@@ -43,16 +48,13 @@ export function BulkActionWithReason({
 
   return (
     <>
-      <Button
-        type="button"
-        variant={destructive ? "destructive" : "outline"}
-        size="sm"
-        className="h-7 px-2.5"
-        disabled={running}
+      <BulkActionButton
+        label={label}
+        icon={Icon}
+        destructive={destructive}
+        running={running}
         onClick={() => setConfirmOpen(true)}
-      >
-        {label}
-      </Button>
+      />
       <ReasonDialog
         open={confirmOpen}
         onOpenChange={setConfirmOpen}

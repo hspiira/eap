@@ -1,7 +1,16 @@
 import { useState } from "react"
 
 import { createFileRoute, Link, useNavigate, useSearch } from "@tanstack/react-router"
-import { ExternalLink, MoreHorizontal, Plus, Stethoscope } from "lucide-react"
+import {
+  ExternalLink,
+  MoreHorizontal,
+  Plus,
+  Power,
+  PowerOff,
+  Stethoscope,
+  UserMinus,
+  UserPlus,
+} from "lucide-react"
 
 import { type ProviderListParams, providersApi } from "@/api/endpoints/providers"
 import { BulkActionWithReason } from "@/components/common/BulkActionWithReason"
@@ -245,6 +254,7 @@ function ProvidersListPage() {
               <BulkActionWithReason
                 ids={selection.selectedIds}
                 label="Activate"
+                icon={Power}
                 confirmTitle="Activate practitioners"
                 confirmDescription={(n) =>
                   `Activate ${n} selected ${n === 1 ? "practitioner" : "practitioners"}?`
@@ -261,6 +271,7 @@ function ProvidersListPage() {
               <BulkActionWithReason
                 ids={selection.selectedIds}
                 label="Deactivate"
+                icon={PowerOff}
                 confirmTitle="Deactivate practitioners"
                 confirmDescription={(n) =>
                   `Deactivate ${n} selected ${n === 1 ? "practitioner" : "practitioners"}?`
@@ -278,6 +289,7 @@ function ProvidersListPage() {
               <BulkActionWithReason
                 ids={selection.selectedIds}
                 label="Suspend from panel"
+                icon={UserMinus}
                 confirmTitle="Suspend practitioners from panel"
                 confirmDescription={(n) =>
                   `Suspend ${n} selected ${n === 1 ? "practitioner" : "practitioners"} from the panel? They will not be bookable.`
@@ -298,6 +310,7 @@ function ProvidersListPage() {
               <BulkActionWithReason
                 ids={selection.selectedIds}
                 label="Reactivate panel"
+                icon={UserPlus}
                 confirmTitle="Reactivate practitioners on panel"
                 confirmDescription={(n) =>
                   `Reactivate ${n} selected ${n === 1 ? "practitioner" : "practitioners"} on the panel?`

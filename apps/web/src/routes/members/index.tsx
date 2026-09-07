@@ -3,6 +3,9 @@ import { useCallback, useState } from "react"
 import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { createFileRoute, Link, useNavigate, useSearch } from "@tanstack/react-router"
 import {
+  CirclePause,
+  CirclePlay,
+  CircleX,
   Download,
   ExternalLink,
   FileDown,
@@ -362,6 +365,7 @@ function MembersListPage() {
             <BulkAction
               ids={selection.selectedIds}
               label="Suspend"
+              icon={CirclePause}
               confirmTitle="Suspend members"
               confirmDescription={(n) => `Suspend ${n} selected member${n === 1 ? "" : "s"}?`}
               action={membersApi.suspend}
@@ -374,6 +378,7 @@ function MembersListPage() {
             <BulkAction
               ids={selection.selectedIds}
               label="Reinstate"
+              icon={CirclePlay}
               confirmTitle="Reinstate members"
               confirmDescription={(n) => `Reinstate ${n} selected member${n === 1 ? "" : "s"}?`}
               action={membersApi.reinstate}
@@ -386,6 +391,7 @@ function MembersListPage() {
             <BulkAction
               ids={selection.selectedIds}
               label="Terminate"
+              icon={CircleX}
               confirmTitle="Terminate members"
               confirmDescription={(n) =>
                 `Terminate ${n} selected member${n === 1 ? "" : "s"}? This ends their eligibility.`

@@ -1,11 +1,15 @@
 import { createFileRoute, Link, useNavigate, useSearch } from "@tanstack/react-router"
 import {
   BadgeCheck,
+  Ban,
+  CirclePause,
+  CircleX,
   Download,
   ExternalLink,
   KeyRound,
   MoreHorizontal,
   Plus,
+  PowerOff,
   ShieldCheck,
   ShieldOff,
   UserCog,
@@ -214,6 +218,7 @@ function UsersListPage() {
               <BulkActionWithReason
                 ids={selection.selectedIds}
                 label="Suspend"
+                icon={CirclePause}
                 confirmTitle="Suspend users"
                 confirmDescription={(n) =>
                   `${n} ${n === 1 ? "user" : "users"} will lose access until reinstated.`
@@ -229,6 +234,7 @@ function UsersListPage() {
               <BulkAction
                 ids={selection.selectedIds}
                 label="Deactivate"
+                icon={PowerOff}
                 confirmTitle="Deactivate users"
                 confirmDescription={(n) =>
                   `${n} ${n === 1 ? "user" : "users"} will lose access until reactivated.`
@@ -244,6 +250,7 @@ function UsersListPage() {
               <BulkActionWithReason
                 ids={selection.selectedIds}
                 label="Ban"
+                icon={Ban}
                 confirmTitle="Ban users"
                 confirmDescription={(n) =>
                   `${n} ${n === 1 ? "user" : "users"} will be permanently banned.`
@@ -259,6 +266,7 @@ function UsersListPage() {
               <BulkActionWithReason
                 ids={selection.selectedIds}
                 label="Terminate"
+                icon={CircleX}
                 confirmTitle="Terminate users"
                 confirmDescription={(n) =>
                   `${n} ${n === 1 ? "user" : "users"} will be permanently terminated.`

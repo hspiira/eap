@@ -1,7 +1,17 @@
 import { useState } from "react"
 
 import { createFileRoute, Link, useNavigate, useSearch } from "@tanstack/react-router"
-import { Building, ExternalLink, MoreHorizontal, Plus } from "lucide-react"
+import {
+  Building,
+  CircleCheck,
+  CirclePause,
+  ExternalLink,
+  MoreHorizontal,
+  Plus,
+  Power,
+  PowerOff,
+  ShieldOff,
+} from "lucide-react"
 
 import {
   type ProviderOrganisationListParams,
@@ -200,6 +210,7 @@ function ProviderOrganisationsListPage() {
               <BulkActionWithReason
                 ids={selection.selectedIds}
                 label="Approve"
+                icon={CircleCheck}
                 confirmTitle="Approve organisations"
                 confirmDescription={(n) =>
                   `Approve ${n} selected ${n === 1 ? "organisation" : "organisations"} as a supplier?`
@@ -214,6 +225,7 @@ function ProviderOrganisationsListPage() {
               <BulkActionWithReason
                 ids={selection.selectedIds}
                 label="Suspend"
+                icon={CirclePause}
                 confirmTitle="Suspend organisations"
                 confirmDescription={(n) =>
                   `Suspend ${n} selected ${n === 1 ? "organisation" : "organisations"} as a supplier?`
@@ -229,6 +241,7 @@ function ProviderOrganisationsListPage() {
               <BulkActionWithReason
                 ids={selection.selectedIds}
                 label="Revoke"
+                icon={ShieldOff}
                 confirmTitle="Revoke organisation approval"
                 confirmDescription={(n) =>
                   `Revoke supplier approval for ${n} selected ${n === 1 ? "organisation" : "organisations"}?`
@@ -244,6 +257,7 @@ function ProviderOrganisationsListPage() {
               <BulkActionWithReason
                 ids={selection.selectedIds}
                 label="Deactivate"
+                icon={PowerOff}
                 confirmTitle="Deactivate organisations"
                 confirmDescription={(n) =>
                   `Deactivate ${n} selected ${n === 1 ? "organisation" : "organisations"}?`
@@ -261,6 +275,7 @@ function ProviderOrganisationsListPage() {
               <BulkActionWithReason
                 ids={selection.selectedIds}
                 label="Reactivate"
+                icon={Power}
                 confirmTitle="Reactivate organisations"
                 confirmDescription={(n) =>
                   `Reactivate ${n} selected ${n === 1 ? "organisation" : "organisations"}?`

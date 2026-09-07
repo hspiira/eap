@@ -1,7 +1,9 @@
 import { useState } from "react"
 
+import type { LucideIcon } from "lucide-react"
+
+import { BulkActionButton } from "@/components/common/BulkActionButton"
 import { ConfirmDialog } from "@/components/common/ConfirmDialog"
-import { Button } from "@/components/ui/button"
 import { type BulkActionOptions, useBulkAction } from "@/hooks/useBulkAction"
 
 interface BulkActionProps extends BulkActionOptions {
@@ -11,6 +13,8 @@ interface BulkActionProps extends BulkActionOptions {
   confirmTitle: string
   /** Receives the selection size so the copy can name it. */
   confirmDescription: (count: number) => string
+  /** The action's icon. The bar is icon-only; the label names it on hover. */
+  icon: LucideIcon
   destructive?: boolean
 }
 
@@ -20,6 +24,7 @@ export function BulkAction({
   label,
   confirmTitle,
   confirmDescription,
+  icon: Icon,
   destructive,
   ...options
 }: BulkActionProps) {
@@ -28,16 +33,13 @@ export function BulkAction({
 
   return (
     <>
-      <Button
-        type="button"
-        variant={destructive ? "destructive" : "outline"}
-        size="sm"
-        className="h-7 px-2.5"
-        disabled={running}
+      <BulkActionButton
+        label={label}
+        icon={Icon}
+        destructive={destructive}
+        running={running}
         onClick={() => setConfirmOpen(true)}
-      >
-        {label}
-      </Button>
+      />
       <ConfirmDialog
         open={confirmOpen}
         onOpenChange={setConfirmOpen}

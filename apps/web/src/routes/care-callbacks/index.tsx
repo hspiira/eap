@@ -3,12 +3,15 @@ import { useEffect, useState } from "react"
 import { useQuery } from "@tanstack/react-query"
 import { createFileRoute, Link, useNavigate, useSearch } from "@tanstack/react-router"
 import {
+  Archive,
+  CheckCheck,
   Download,
   ExternalLink,
   Headphones,
   MoreHorizontal,
   Phone,
   Plus,
+  Power,
   RotateCw,
 } from "lucide-react"
 
@@ -193,6 +196,7 @@ function CampaignsListPage() {
               <BulkAction
                 ids={selection.selectedIds}
                 label="Activate"
+                icon={Power}
                 confirmTitle="Activate campaigns"
                 confirmDescription={(n) =>
                   `Activate ${n} selected ${n === 1 ? "campaign" : "campaigns"}?`
@@ -207,6 +211,7 @@ function CampaignsListPage() {
               <BulkAction
                 ids={selection.selectedIds}
                 label="Complete"
+                icon={CheckCheck}
                 confirmTitle="Complete campaigns"
                 confirmDescription={(n) =>
                   `Complete ${n} selected ${n === 1 ? "campaign" : "campaigns"}?`
@@ -221,6 +226,7 @@ function CampaignsListPage() {
               <BulkAction
                 ids={selection.selectedIds}
                 label="Archive"
+                icon={Archive}
                 confirmTitle="Archive campaigns"
                 confirmDescription={(n) =>
                   `${n} ${n === 1 ? "campaign" : "campaigns"} will be archived.`

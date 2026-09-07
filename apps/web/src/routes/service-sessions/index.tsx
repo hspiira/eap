@@ -1,11 +1,15 @@
-import { useMemo } from "react"
+import { useMemo, useState } from "react"
 
 import { useQuery } from "@tanstack/react-query"
 import { createFileRoute, Link, useNavigate, useSearch } from "@tanstack/react-router"
 import {
+  Archive,
+  ArchiveRestore,
   CalendarClock,
+  CalendarX,
   Download,
   ExternalLink,
+  FileUp,
   MoreHorizontal,
   Plus,
   User,
@@ -27,6 +31,7 @@ import { SortHeader } from "@/components/common/SortHeader"
 import { StatusBadge } from "@/components/common/StatusBadge"
 import { STICKY_TABLE_HEAD } from "@/components/common/tableStyles"
 import { ServiceSessionFormSheet } from "@/components/ServiceSessionFormSheet"
+import { SessionImportDialog } from "@/components/sessions/SessionImportDialog"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import {
@@ -123,6 +128,7 @@ function ServiceSessionsListPage() {
     navigate,
     initialSort: { field: "scheduled_at", desc: true },
   })
+  const [importOpen, setImportOpen] = useState(false)
   const canWrite = useCanWrite()
   const activeStatus = searchParams.status
   const activeServiceId = searchParams.service_id
@@ -206,6 +212,18 @@ function ServiceSessionsListPage() {
           <IconButton label="Export" icon={Download} />
           <span className="mx-1 h-4 w-px bg-fg/15" aria-hidden />
           {canWrite && (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="h-7 gap-1.5 px-2.5"
+              onClick={() => setImportOpen(true)}
+            >
+              <FileUp className="size-3.5" />
+              Import
+            </Button>
+          )}
+          {canWrite && (
             <Button size="sm" className="h-7 gap-1.5 px-2.5" onClick={() => setAddOpen(true)}>
               <Plus className="size-3.5" />
               Schedule session
@@ -266,6 +284,11 @@ function ServiceSessionsListPage() {
         />
       </FilterBar>
 
+      <SessionImportDialog
+        open={importOpen}
+        onOpenChange={setImportOpen}
+        onImported={() => void query.refetch()}
+      />
       <ServiceSessionFormSheet
         open={addOpen}
         onOpenChange={setAddOpen}
@@ -304,6 +327,7 @@ function ServiceSessionsListPage() {
               <BulkAction
                 ids={selection.selectedIds}
                 label="No-show"
+                icon={CalendarX}
                 confirmTitle="Mark sessions as no-show"
                 confirmDescription={(n) =>
                   `Mark ${n} selected ${n === 1 ? "session" : "sessions"} as no-show?`
@@ -317,6 +341,7 @@ function ServiceSessionsListPage() {
               <BulkAction
                 ids={selection.selectedIds}
                 label="Restore"
+                icon={ArchiveRestore}
                 confirmTitle="Restore sessions"
                 confirmDescription={(n) =>
                   `Restore ${n} selected ${n === 1 ? "session" : "sessions"}?`
@@ -330,6 +355,7 @@ function ServiceSessionsListPage() {
               <BulkAction
                 ids={selection.selectedIds}
                 label="Archive"
+                icon={Archive}
                 confirmTitle="Archive sessions"
                 confirmDescription={(n) =>
                   `${n} ${n === 1 ? "session" : "sessions"} will be archived. You can restore them later.`
