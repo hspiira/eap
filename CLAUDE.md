@@ -93,3 +93,33 @@ without being asked.
   or continue a thread that has nothing left in it.
 - Prefer one message that closes the loop over several that keep it open.
   Correspondence is not progress on the task.
+
+## Execute the assigned task
+
+- Complete the assigned scope, run the relevant checks, commit your work, and
+  hand back the result. Do not turn a bounded task into an open-ended discussion,
+  review cycle, or project-wide improvement effort.
+- Make routine, reversible implementation decisions yourself within the agreed
+  scope and rules. Do not ask the user or other agents to approve each step,
+  reconfirm existing authorization, or debate choices already settled.
+- Do not expand scope, implement unsolicited features, refactor unrelated code,
+  or direct other agents to do unassigned work. Necessary changes to complete
+  the assigned task are in scope; adjacent improvements are not.
+- The discoveries rule is not permission to expand scope. Record an unrelated
+  finding once in the appropriate handoff document with evidence and a concrete
+  follow-up, then continue your task. Fix it now only if it is within your scope.
+- Contact another agent only for a shared-path conflict, required dependency,
+  actionable correction affecting assigned work, or completed handoff. Send the
+  evidence and exact request together. Do not send acknowledgments, repeated
+  status requests, speculative suggestions, or agreement/disagreement loops.
+- When coordination is required, make one concise request and continue
+  independent work. Wait only on the dependent portion. Silence does not grant
+  permission to edit another agent's files or take over its assignment.
+- Escalate only when missing information, conflicting requirements, an ownership
+  conflict, or an authorization boundary prevents safe progress. State the
+  blocker, what you checked, and the smallest decision needed in one message.
+- Keep progress updates brief and factual. Do not repeatedly narrate unchanged
+  status, reread settled context, or rerun passing checks without a new reason.
+- Once acceptance criteria and required checks are satisfied, stop. Deliver
+  what changed, verification, commit references, and any recorded limitations.
+  Do not initiate another review round or wait for ceremonial sign-off.
