@@ -73,6 +73,22 @@
   /* Grey chip for an inert status. */
   --status-neutral: #525252;
 
+  /* Chart series. A fixed categorical order, assigned by series identity and
+     never cycled; validated as a set for colour-vision deficiency separation
+     against this surface. Slots 3 and 4 sit below 3:1 here, so a chart using
+     them ships direct labels rather than relying on the fill alone.
+     --chart-muted carries an absent value, which is not an identity. */
+  --chart-1: #2a78d6;
+  --chart-2: #eb6834;
+  --chart-3: #1baf7a;
+  --chart-4: #eda100;
+  --chart-muted: #a3a3a3;
+
+  /* Import composition: state, not identity, so it wears status colours and
+     always ships with a label. */
+  --chart-good: #0ca30c;
+  --chart-serious: #ec835a;
+
   /* Focus ring + selection. */
   --ring: var(--brand);
   --selection-bg: rgb(15 81 50 / 0.15);

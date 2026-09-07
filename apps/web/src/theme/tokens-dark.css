@@ -68,6 +68,18 @@
      it stays visible against the near-black page. */
   --status-neutral: #6b6b6b;
 
+  /* Chart series: the same four hues stepped for the dark surface, where all
+     four clear 3:1. Slot order matches the light theme, so a series keeps its
+     identity across themes. */
+  --chart-1: #3987e5;
+  --chart-2: #d95926;
+  --chart-3: #199e70;
+  --chart-4: #c98500;
+  --chart-muted: #6b6b6b;
+
+  --chart-good: #0ca30c;
+  --chart-serious: #ec835a;
+
   --ring: var(--brand);
   --selection-bg: rgb(52 211 153 / 0.18);
 
