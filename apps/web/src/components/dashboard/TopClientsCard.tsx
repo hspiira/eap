@@ -62,7 +62,7 @@ function ClientRow({ client, max }: { client: ClientSessions; max: number }) {
       </span>
       <span className="flex items-center gap-2">
         <span
-          className="h-5 rounded-sm bg-chart-1 transition-[width]"
+          className="h-7 rounded-sm bg-chart-1 transition-[width]"
           style={{ width: `${Math.max((client.total / max) * BAR_MAX_WIDTH, 1)}%` }}
         />
         <span className="text-sm font-medium tabular-nums text-fg">
