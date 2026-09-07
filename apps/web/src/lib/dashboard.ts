@@ -6,7 +6,7 @@
  * so a working tenant pays for exactly one request.
  */
 
-import { useQueries, useQuery } from "@tanstack/react-query"
+import { keepPreviousData, useQueries, useQuery } from "@tanstack/react-query"
 
 import { contractsApi } from "@/api/endpoints/contracts"
 import { dashboardApi } from "@/api/endpoints/dashboard"
@@ -18,11 +18,45 @@ import { entityListKey } from "./queries"
 const KPI_PARAMS = { page: 1, limit: 1 } as const
 const ONE_MINUTE = 60_000
 
-export function useDashboard() {
+export type RangePreset =
+  | "this_week"
+  | "this_month"
+  | "last_30d"
+  | "last_90d"
+  | "last_180d"
+  | "custom"
+
+export interface DashboardRange {
+  preset: RangePreset
+  start?: string
+  end?: string
+}
+
+export const DEFAULT_RANGE: DashboardRange = { preset: "last_90d" }
+
+const RANGE_LABELS: Record<RangePreset, string> = {
+  this_week: "this week",
+  this_month: "this month",
+  last_30d: "last 30 days",
+  last_90d: "last 90 days",
+  last_180d: "last 6 months",
+  custom: "selected range",
+}
+
+export function rangeLabel(range: DashboardRange): string {
+  return RANGE_LABELS[range.preset]
+}
+
+/**
+ * Holds the previous render while a new window loads, so switching range
+ * dims the charts rather than collapsing the page into skeletons.
+ */
+export function useDashboard(range: DashboardRange) {
   return useQuery({
-    queryKey: ["dashboard", "aggregate"],
-    queryFn: () => dashboardApi.get(),
+    queryKey: ["dashboard", "aggregate", range],
+    queryFn: () => dashboardApi.get(range),
     staleTime: ONE_MINUTE,
+    placeholderData: keepPreviousData,
   })
 }
 
@@ -85,43 +119,6 @@ export function formatDelta(current: number, prior: number): KpiDelta | null {
     direction: change > 0 ? "up" : "down",
     tone: change > 0 ? "success" : "danger",
   }
-}
-
-const MONTH_NAMES = [
-  "Jan",
-  "Feb",
-  "Mar",
-  "Apr",
-  "May",
-  "Jun",
-  "Jul",
-  "Aug",
-  "Sep",
-  "Oct",
-  "Nov",
-  "Dec",
-]
-
-/** "2026-09" → "Sep". Falls back to the raw key on malformed input. */
-export function monthLabel(month: string): string {
-  const index = Number(month.slice(5, 7)) - 1
-  return MONTH_NAMES[index] ?? month
-}
-
-/** "2026-09" → "Sep 2026". */
-export function monthLabelLong(month: string): string {
-  return `${monthLabel(month)} ${month.slice(0, 4)}`
-}
-
-/** Clean axis ticks from zero to above the series maximum, so bars keep headroom. */
-export function niceTicks(max: number): number[] {
-  if (max <= 0) return [0, 1]
-  const rough = Math.max(max / 3, 1)
-  const power = 10 ** Math.floor(Math.log10(rough))
-  const step = [1, 2, 5, 10].map((s) => s * power).find((s) => s * 4 >= max) ?? power * 10
-  const ticks = [0]
-  while (ticks[ticks.length - 1] <= max) ticks.push(ticks[ticks.length - 1] + step)
-  return ticks
 }
 
 export function formatRelativeTime(iso: string): string {

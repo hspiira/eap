@@ -6,6 +6,7 @@
  */
 
 import type { DashboardResponse } from "@/api/generated"
+import type { DashboardRange } from "@/lib/dashboard"
 import { useFixtures } from "@/lib/fixtures"
 import type { RequestOptions } from "@/types/api"
 
@@ -13,8 +14,12 @@ import apiClient from "../client"
 import { fixtureDashboard } from "./dashboard-fixture"
 
 export const dashboardApi = {
-  async get(options?: RequestOptions): Promise<DashboardResponse> {
-    if (useFixtures()) return Promise.resolve(fixtureDashboard())
-    return apiClient.get<DashboardResponse>("/dashboard", undefined, options)
+  async get(range: DashboardRange, options?: RequestOptions): Promise<DashboardResponse> {
+    if (useFixtures()) return Promise.resolve(fixtureDashboard(range))
+    return apiClient.get<DashboardResponse>(
+      "/dashboard",
+      { range: range.preset, start: range.start, end: range.end },
+      options,
+    )
   },
 }

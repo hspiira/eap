@@ -1,93 +1,117 @@
 /**
- * Home dashboard. One aggregate query drives everything: delivery KPIs and
- * trend, utilisation by client and category, the import backlog, and the
- * data-quality queues. The onboarding checklist appears only for a tenant
- * with no clients yet.
+ * Home dashboard. One aggregate query drives everything.
+ *
+ * The page leads with decisions: what is blocked and what to do about it.
+ * The analytics below answer "how is delivery going", all scoped by a single
+ * window control that sits above them.
  */
 
-import { Link } from "@tanstack/react-router"
-import {
-  ArrowUpRight,
-  Building2,
-  CalendarClock,
-  ClipboardList,
-  FileSignature,
-  Plus,
-  UserCheck,
-  Users,
-} from "lucide-react"
+import { useMemo, useState } from "react"
 
-import { BarList } from "@/components/dashboard/BarList"
-import { DataQualityCard } from "@/components/dashboard/DataQualityCard"
+import { Link } from "@tanstack/react-router"
+import { ArrowUpRight, Building2, CalendarClock, ClipboardList, Plus, UserCheck } from "lucide-react"
+
+import { AttentionCard, buildAttentionItems } from "@/components/dashboard/AttentionCard"
+import { CardDelta } from "@/components/dashboard/CardBar"
+import { CategoryDonutCard } from "@/components/dashboard/CategoryDonutCard"
 import { ImportHealthCard } from "@/components/dashboard/ImportHealthCard"
-import { SessionsTrendCard } from "@/components/dashboard/SessionsTrendCard"
+import { RangeFilter } from "@/components/dashboard/RangeFilter"
+import { SessionsAreaCard } from "@/components/dashboard/SessionsAreaCard"
 import { type StatSpec,StatStrip } from "@/components/dashboard/StatStrip"
+import { TopClientsCard } from "@/components/dashboard/TopClientsCard"
+import { TrendingServicesCard } from "@/components/dashboard/TrendingServicesCard"
 import { OnboardingProgressCard } from "@/components/OnboardingProgressCard"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { formatDelta, formatKpi, useDashboard, useOnboardingCounts } from "@/lib/dashboard"
-
-interface QuickAction {
-  to: string
-  label: string
-  icon: React.ElementType
-  description: string
-}
-
-const QUICK_ACTIONS: ReadonlyArray<QuickAction> = [
-  {
-    to: "/clients/new",
-    label: "Add client",
-    icon: Building2,
-    description: "Onboard a new client organisation.",
-  },
-  {
-    to: "/members?new=true",
-    label: "Add member",
-    icon: Users,
-    description: "Add a covered employee or beneficiary.",
-  },
-  {
-    to: "/service-sessions/new",
-    label: "Log session",
-    icon: CalendarClock,
-    description: "Record a delivered care session.",
-  },
-  {
-    to: "/contracts/new",
-    label: "New contract",
-    icon: FileSignature,
-    description: "Draft a master service agreement.",
-  },
-]
+import {
+  type DashboardRange,
+  DEFAULT_RANGE,
+  formatDelta,
+  formatKpi,
+  rangeLabel,
+  useDashboard,
+  useOnboardingCounts,
+} from "@/lib/dashboard"
 
 export function DashboardMain() {
-  const dashboard = useDashboard()
+  const [range, setRange] = useState<DashboardRange>(DEFAULT_RANGE)
+  const dashboard = useDashboard(range)
   const data = dashboard.data
   const loading = dashboard.isLoading
   const error = dashboard.isError
+  const refreshing = dashboard.isFetching && !dashboard.isLoading
 
+  const attention = useMemo(() => (data ? buildAttentionItems(data) : []), [data])
+  const stats = useStatSpecs(data, { loading, error, range })
+
+  return (
+    <div className="flex min-h-0 flex-1 flex-col bg-bg">
+      <div className="grid w-full gap-4 p-4 md:p-6">
+        <DashboardHeader />
+        <StatStrip stats={stats} />
+        <AttentionCard items={attention} loading={loading} />
+
+        <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
+          <h2 className="text-sm font-semibold text-fg">Delivery</h2>
+          <RangeFilter value={range} onChange={setRange} />
+        </div>
+
+        <SessionsAreaCard
+          series={data?.sessions_series ?? []}
+          total={data?.kpis.sessions ?? 0}
+          delta={<SessionsDelta data={data} />}
+          loading={loading}
+          error={error}
+          refreshing={refreshing}
+        />
+
+        <div className="grid gap-4 lg:grid-cols-3">
+          <div className="lg:col-span-2">
+            <TopClientsCard clients={data?.top_clients ?? []} loading={loading} />
+          </div>
+          <CategoryDonutCard categories={data?.sessions_by_category ?? []} loading={loading} />
+        </div>
+
+        <div className="grid gap-4 lg:grid-cols-2">
+          <TrendingServicesCard services={data?.trending_services ?? []} loading={loading} />
+          <ImportHealthCard
+            batch={data?.import_batch}
+            queues={data?.import_queues ?? []}
+            loading={loading}
+          />
+        </div>
+
+        {data && data.kpis.clients_total === 0 ? <EmptyTenantOnboarding /> : null}
+      </div>
+    </div>
+  )
+}
+
+function useStatSpecs(
+  data: ReturnType<typeof useDashboard>["data"],
+  { loading, error, range }: { loading: boolean; error: boolean; range: DashboardRange },
+): ReadonlyArray<StatSpec> {
   const kpis = data?.kpis
-  const stats: ReadonlyArray<StatSpec> = [
+  const delta = kpis ? formatDelta(kpis.sessions, kpis.sessions_prior) : null
+  return [
     {
       id: "sessions",
-      label: "Sessions, 90 days",
-      value: formatKpi(kpis?.sessions_90d ?? null),
+      label: "Sessions",
+      value: formatKpi(kpis?.sessions ?? null),
       icon: CalendarClock,
       tone: "success",
-      delta: kpis ? (formatDelta(kpis.sessions_90d, kpis.sessions_prior_90d) ?? undefined) : undefined,
-      hint: "Completed sessions delivered",
-      spark: data?.sessions_monthly.map((m) => m.total),
+      delta: delta ?? undefined,
+      hint: rangeLabel(range),
+      spark: data?.sessions_series.map((p) => p.total),
       loading,
       error,
     },
     {
       id: "clients-served",
       label: "Clients served",
-      value: formatKpi(kpis?.clients_served_90d ?? null),
+      value: formatKpi(kpis?.clients_served ?? null),
       icon: Building2,
       tone: "info",
-      hint: kpis ? `of ${kpis.clients_total} clients, last 90 days` : undefined,
+      hint: kpis ? `of ${kpis.clients_total}` : undefined,
       loading,
       error,
     },
@@ -97,9 +121,7 @@ export function DashboardMain() {
       value: formatKpi(kpis?.covered_members ?? null),
       icon: UserCheck,
       tone: "info",
-      hint: kpis
-        ? `${kpis.clients_with_roster} of ${kpis.clients_total} clients have a roster`
-        : undefined,
+      hint: kpis ? `${kpis.clients_with_roster} of ${kpis.clients_total} rostered` : undefined,
       loading,
       error,
     },
@@ -109,45 +131,18 @@ export function DashboardMain() {
       value: formatKpi(kpis?.import_backlog ?? null),
       icon: ClipboardList,
       tone: "warning",
-      hint: data?.import_batch
-        ? `rows in ${data.import_batch.file_name} awaiting resolution`
-        : undefined,
+      hint: "rows blocked",
       loading,
       error,
     },
   ]
+}
 
-  return (
-    <div className="flex min-h-0 flex-1 flex-col bg-bg">
-      <div className="grid w-full gap-4 p-4 md:p-6">
-        <DashboardHeader />
-        <StatStrip stats={stats} />
-        <div className="grid gap-4 lg:grid-cols-3">
-          <div className="grid content-start gap-4 lg:col-span-2">
-            <SessionsTrendCard
-              monthly={data?.sessions_monthly ?? []}
-              loading={loading}
-              error={error}
-            />
-            <div className="grid gap-4 sm:grid-cols-2">
-              <TopClientsCard data={data} loading={loading} />
-              <CategoryCard data={data} loading={loading} />
-            </div>
-            <ImportHealthCard
-              batch={data?.import_batch}
-              queues={data?.import_queues ?? []}
-              loading={loading}
-            />
-          </div>
-          <div className="grid content-start gap-4">
-            <QuickActionsCard actions={QUICK_ACTIONS} />
-            <DataQualityCard quality={data?.data_quality} loading={loading} />
-            {kpis && kpis.clients_total === 0 ? <EmptyTenantOnboarding /> : null}
-          </div>
-        </div>
-      </div>
-    </div>
-  )
+function SessionsDelta({ data }: { data: ReturnType<typeof useDashboard>["data"] }) {
+  if (!data) return null
+  const delta = formatDelta(data.kpis.sessions, data.kpis.sessions_prior)
+  if (!delta) return null
+  return <CardDelta label={delta.label} direction={delta.direction} tone={delta.tone} />
 }
 
 function DashboardHeader() {
@@ -172,129 +167,6 @@ function DashboardHeader() {
         </Button>
       </div>
     </div>
-  )
-}
-
-function TopClientsCard({
-  data,
-  loading,
-}: {
-  data: ReturnType<typeof useDashboard>["data"]
-  loading: boolean
-}) {
-  const items =
-    data?.top_clients.map((client) => ({
-      key: client.client_id,
-      label: client.client_name,
-      value: client.total,
-      to: "/clients/$clientId",
-      params: { clientId: client.client_id },
-    })) ?? []
-  return (
-    <ListCard
-      title="Sessions by client"
-      subtitle="Last 12 months"
-      loading={loading}
-      empty={items.length === 0 ? "No sessions recorded yet." : undefined}
-    >
-      <BarList items={items} />
-    </ListCard>
-  )
-}
-
-function CategoryCard({
-  data,
-  loading,
-}: {
-  data: ReturnType<typeof useDashboard>["data"]
-  loading: boolean
-}) {
-  const items =
-    data?.sessions_by_category.map((category) => ({
-      key: category.category,
-      label: category.category,
-      value: category.total,
-    })) ?? []
-  return (
-    <ListCard
-      title="Sessions by category"
-      subtitle="Last 12 months"
-      loading={loading}
-      empty={items.length === 0 ? "No categorised sessions yet." : undefined}
-    >
-      <BarList items={items} />
-    </ListCard>
-  )
-}
-
-function ListCard({
-  title,
-  subtitle,
-  loading,
-  empty,
-  children,
-}: {
-  title: string
-  subtitle: string
-  loading: boolean
-  empty?: string
-  children: React.ReactNode
-}) {
-  return (
-    <Card className="rounded-md">
-      <CardHeader className="border-b border-border p-3">
-        <CardTitle className="text-sm font-semibold text-fg">{title}</CardTitle>
-        <p className="text-xs text-fg-muted">{subtitle}</p>
-      </CardHeader>
-      <CardContent className="p-3">
-        {loading ? (
-          <div className="grid gap-2">
-            <div className="h-8 animate-pulse rounded bg-muted" />
-            <div className="h-8 animate-pulse rounded bg-muted" />
-          </div>
-        ) : empty ? (
-          <p className="py-2 text-sm text-fg-muted">{empty}</p>
-        ) : (
-          children
-        )}
-      </CardContent>
-    </Card>
-  )
-}
-
-function QuickActionsCard({ actions }: { actions: ReadonlyArray<QuickAction> }) {
-  return (
-    <Card className="rounded-md">
-      <CardHeader className="border-b border-border p-3">
-        <CardTitle className="text-sm font-semibold text-fg">Quick actions</CardTitle>
-      </CardHeader>
-      <CardContent className="p-0">
-        {actions.map((action, i) => (
-          <Link
-            key={action.to}
-            to={action.to}
-            className={
-              "group flex items-start gap-3 p-3 transition-colors hover:bg-surface-hover focus-visible:bg-surface-hover focus-visible:outline-none" +
-              (i > 0 ? " border-t border-border-subtle" : "")
-            }
-          >
-            <span
-              className="flex size-8 shrink-0 items-center justify-center rounded-md bg-muted text-fg-muted transition-colors group-hover:bg-primary/10 group-hover:text-primary"
-              aria-hidden
-            >
-              <action.icon className="size-4" />
-            </span>
-            <div className="min-w-0 flex-1">
-              <div className="flex items-center gap-1 text-sm font-medium text-fg">
-                {action.label}
-                <ArrowUpRight className="size-3.5 shrink-0 text-fg-subtle transition-colors group-hover:text-primary" />
-              </div>
-              <p className="text-xs text-fg-muted">{action.description}</p>
-            </div>
-          </Link>
-        ))}
-      </CardContent>
-    </Card>
   )
 }
 

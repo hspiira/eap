@@ -1,46 +1,79 @@
 /**
- * Dashboard happy path against the DEV fixture: the KPI strip, trend chart,
- * utilisation lists, import health and data-quality queues all render the
- * aggregate's figures.
+ * Dashboard happy path against the DEV fixture: the decision panel leads,
+ * the analytics cards render the aggregate, and the window control re-scopes
+ * them. Chart geometry is not asserted here; jsdom gives Recharts no size, so
+ * these cases cover the figures and controls around the marks.
  */
 
-import { screen, waitFor } from "@testing-library/react"
+import { screen, waitFor, within } from "@testing-library/react"
+import userEvent from "@testing-library/user-event"
 import { describe, expect, it, vi } from "vitest"
 
 import { renderWithProviders } from "@/test/utils"
 
 vi.mock("@tanstack/react-router", () => ({
-  Link: ({ children }: { children?: React.ReactNode }) => <a>{children}</a>,
+  Link: ({ children, to }: { children?: React.ReactNode; to?: string }) => (
+    <a href={to ?? "#"}>{children}</a>
+  ),
   useNavigate: () => vi.fn(),
 }))
 
 const { DashboardMain } = await import("@/components/DashboardMain")
 
 describe("DashboardMain", () => {
-  it("renders the aggregate figures", async () => {
+  it("leads with the decision panel, ranked by what is blocking", async () => {
     renderWithProviders(<DashboardMain />)
 
-    await waitFor(() => expect(screen.getByText("41")).toBeInTheDocument())
+    await screen.findByText(/Activate 112 pending practitioners/)
+    const panel = screen.getByRole("heading", { name: "Needs attention" })
+    const card = panel.closest("div[class*='rounded-md']") as HTMLElement
+    const rows = within(card).getAllByRole("link")
 
-    expect(screen.getByText("Sessions, 90 days")).toBeInTheDocument()
-    expect(screen.getByText("7.1k")).toBeInTheDocument()
-    expect(screen.getByText("5 of 43 clients have a roster")).toBeInTheDocument()
+    expect(rows[0]).toHaveTextContent("Activate 112 pending practitioners")
+    expect(rows[0]).toHaveTextContent("they cannot take new bookings")
+    expect(rows[1]).toHaveTextContent("Import member rosters for 38 clients")
+    // The action names the consequence, not just the count.
+    expect(rows[1]).toHaveTextContent("unblocks 7,103 import rows")
+  })
 
-    expect(screen.getByText("Sessions delivered")).toBeInTheDocument()
-    expect(screen.getByText("Vivo Energy")).toBeInTheDocument()
-    expect(screen.getByText("Group")).toBeInTheDocument()
+  it("renders the analytics cards from the aggregate", async () => {
+    renderWithProviders(<DashboardMain />)
 
-    expect(screen.getByText("sessions.csv")).toBeInTheDocument()
-    expect(screen.getByText("Members not on a roster")).toBeInTheDocument()
-    expect(screen.getByText("6,444")).toBeInTheDocument()
+    expect(await screen.findByText("Vivo Energy")).toBeInTheDocument()
+    expect(screen.getByRole("heading", { name: "Sessions delivered" })).toBeInTheDocument()
+    expect(screen.getByRole("heading", { name: "Top clients" })).toBeInTheDocument()
+    expect(screen.getByRole("heading", { name: "By category" })).toBeInTheDocument()
+    expect(screen.getByRole("heading", { name: "Services in demand" })).toBeInTheDocument()
+    expect(screen.getByRole("heading", { name: "Import health" })).toBeInTheDocument()
 
-    expect(screen.getByText("Practitioners pending activation")).toBeInTheDocument()
-    expect(screen.getByText("112")).toBeInTheDocument()
+    expect(screen.getByText("Group Counselling")).toBeInTheDocument()
+
+    // Import health reads as a composition of the whole batch.
+    expect(screen.getByText("Accepted")).toBeInTheDocument()
+    expect(screen.getByText("Already held")).toBeInTheDocument()
+    expect(screen.getByText("Blocked")).toBeInTheDocument()
+    expect(screen.getByText("Member not on a roster")).toBeInTheDocument()
+  })
+
+  it("re-scopes the figures when the window changes", async () => {
+    const user = userEvent.setup()
+    renderWithProviders(<DashboardMain />)
+
+    await screen.findByRole("heading", { name: "Sessions delivered" })
+    const ninety = screen.getByRole("button", { name: "90d" })
+    expect(ninety).toHaveAttribute("aria-pressed", "true")
+
+    const week = screen.getByRole("button", { name: "Week" })
+    await user.click(week)
+
+    await waitFor(() => expect(week).toHaveAttribute("aria-pressed", "true"))
+    expect(ninety).toHaveAttribute("aria-pressed", "false")
+    expect(screen.getByText("this week")).toBeInTheDocument()
   })
 
   it("keeps the onboarding checklist off for a working tenant", async () => {
     renderWithProviders(<DashboardMain />)
-    await waitFor(() => expect(screen.getByText("41")).toBeInTheDocument())
+    await screen.findByText("Vivo Energy")
     expect(screen.queryByText("Add first client")).not.toBeInTheDocument()
   })
 })
