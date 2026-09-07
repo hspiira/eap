@@ -47,9 +47,7 @@ def _session(session_id: str, member: str | None) -> ServiceSessionEntity:
         service_id=ServiceId("svc-1"),
         provider_id=ProviderId("prv-1"),
         client_id=ClientId("cli-1"),
-        attendance=(
-            SessionAttendance.INDIVIDUAL if member else SessionAttendance.COMPANY_WIDE
-        ),
+        attendance=(SessionAttendance.INDIVIDUAL if member else SessionAttendance.COMPANY_WIDE),
         member_id=EligibleMemberId(member) if member else None,
         scheduled_at=NOW,
         status=SessionStatus.SCHEDULED,
