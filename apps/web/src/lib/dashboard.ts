@@ -19,12 +19,7 @@ const KPI_PARAMS = { page: 1, limit: 1 } as const
 const ONE_MINUTE = 60_000
 
 export type RangePreset =
-  | "this_week"
-  | "this_month"
-  | "last_30d"
-  | "last_90d"
-  | "last_180d"
-  | "custom"
+  "this_week" | "this_month" | "last_30d" | "last_90d" | "last_180d" | "custom"
 
 export interface DashboardRange {
   preset: RangePreset

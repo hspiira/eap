@@ -105,7 +105,11 @@ function AreaBody({ series, loading, error, refreshing }: AreaBodyProps) {
       <AreaChart data={series as SeriesPoint[]} margin={{ left: 4, right: 8, top: 4 }}>
         <defs>
           {bands.map((band) => (
-            <SeriesGradient key={band.key} id={`fill-${band.key}`} color={`var(--color-${band.key})`} />
+            <SeriesGradient
+              key={band.key}
+              id={`fill-${band.key}`}
+              color={`var(--color-${band.key})`}
+            />
           ))}
         </defs>
         <CartesianGrid vertical={false} stroke="var(--color-border-default)" />

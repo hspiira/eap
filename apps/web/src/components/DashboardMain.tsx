@@ -9,7 +9,14 @@
 import { useMemo, useState } from "react"
 
 import { Link } from "@tanstack/react-router"
-import { ArrowUpRight, Building2, CalendarClock, ClipboardList, Plus, UserCheck } from "lucide-react"
+import {
+  ArrowUpRight,
+  Building2,
+  CalendarClock,
+  ClipboardList,
+  Plus,
+  UserCheck,
+} from "lucide-react"
 
 import { AttentionCard, buildAttentionItems } from "@/components/dashboard/AttentionCard"
 import { CardDelta } from "@/components/dashboard/CardBar"
@@ -17,7 +24,7 @@ import { CategoryDonutCard } from "@/components/dashboard/CategoryDonutCard"
 import { ImportHealthCard } from "@/components/dashboard/ImportHealthCard"
 import { RangeFilter } from "@/components/dashboard/RangeFilter"
 import { SessionsAreaCard } from "@/components/dashboard/SessionsAreaCard"
-import { type StatSpec,StatStrip } from "@/components/dashboard/StatStrip"
+import { type StatSpec, StatStrip } from "@/components/dashboard/StatStrip"
 import { TopClientsCard } from "@/components/dashboard/TopClientsCard"
 import { TrendingServicesCard } from "@/components/dashboard/TrendingServicesCard"
 import { OnboardingProgressCard } from "@/components/OnboardingProgressCard"

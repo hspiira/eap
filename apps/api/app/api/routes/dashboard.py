@@ -12,14 +12,17 @@ batch's unresolved rows are the queue that better reference data would unlock.
 Flow figures follow the requested range; the caller picks a preset or supplies
 its own dates. Bucket size is derived from the window rather than requested,
 so a year cannot be asked for one bucket per day.
+
+The actual queries live in ``DashboardQueryRunner`` (infrastructure): this
+route only does window math and response shaping, so it never imports an ORM
+model directly.
 """
 
 from datetime import UTC, date, datetime, timedelta
 
 from fastapi import APIRouter, Depends, Query
-from sqlalchemy import func, select
-from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.api.dependencies import get_dashboard_query_runner
 from app.api.schemas.dashboard_schemas import (
     CategoryCount,
     ClientSessions,
@@ -35,20 +38,10 @@ from app.api.schemas.dashboard_schemas import (
     ServiceTrend,
 )
 from app.core.authorization import require_same_tenant
-from app.core.database import get_db
 from app.core.security import TokenData
-from app.domain.enums import BaseStatus, EligibilityStatus, SessionStatus, SessionType
-from app.domain.enums.provider_network import ImportBatchStatus, ImportRowOutcome
+from app.domain.enums import SessionType
+from app.domain.enums.provider_network import ImportRowOutcome
 from app.domain.exceptions import ValidationException
-from app.infrastructure.models.client_model import ClientModel
-from app.infrastructure.models.eligible_member_model import EligibleMemberModel
-from app.infrastructure.models.provider_model import ProviderModel
-from app.infrastructure.models.service_model import ServiceModel
-from app.infrastructure.models.service_session_model import ServiceSessionModel
-from app.infrastructure.models.session_import_model import (
-    SessionImportBatchModel,
-    SessionImportRowModel,
-)
 from app.shared.decorators import readonly
 from app.shared.utils.datetime import utc_now
 
@@ -154,82 +147,6 @@ def resolve_range(preset: RangePreset, start_raw: str | None, end_raw: str | Non
     return ResolvedRange(preset, now - timedelta(days=days), now)
 
 
-def _completed_sessions(tenant_id: str):
-    return (
-        ServiceSessionModel.tenant_id == tenant_id,
-        ServiceSessionModel.deleted_at.is_(None),
-        ServiceSessionModel.status == SessionStatus.COMPLETED,
-    )
-
-
-def _within(start: datetime, end: datetime):
-    return (
-        ServiceSessionModel.scheduled_at >= start,
-        ServiceSessionModel.scheduled_at < end,
-    )
-
-
-def _utc_scheduled_at():
-    """Normalize before truncating.
-
-    date_trunc on a timestamptz buckets by the connection's timezone, which
-    moves a boundary session into the wrong bucket depending on server
-    configuration.
-    """
-    return func.timezone("UTC", ServiceSessionModel.scheduled_at)
-
-
-async def _count(db: AsyncSession, stmt) -> int:
-    return int((await db.execute(stmt)).scalar_one() or 0)
-
-
-async def _session_kpis(
-    db: AsyncSession, tenant_id: str, window: ResolvedRange
-) -> tuple[int, int, int]:
-    current = await _count(
-        db,
-        select(func.count(ServiceSessionModel.id)).where(
-            *_completed_sessions(tenant_id), *_within(window.start, window.end)
-        ),
-    )
-    prior = await _count(
-        db,
-        select(func.count(ServiceSessionModel.id)).where(
-            *_completed_sessions(tenant_id), *_within(window.prior_start, window.start)
-        ),
-    )
-    clients_served = await _count(
-        db,
-        select(func.count(func.distinct(ServiceSessionModel.client_id))).where(
-            *_completed_sessions(tenant_id), *_within(window.start, window.end)
-        ),
-    )
-    return current, prior, clients_served
-
-
-async def _coverage(db: AsyncSession, tenant_id: str) -> tuple[int, int, int]:
-    covered = await _count(
-        db,
-        select(func.count(EligibleMemberModel.id)).where(
-            EligibleMemberModel.tenant_id == tenant_id,
-            EligibleMemberModel.status == EligibilityStatus.ACTIVE,
-        ),
-    )
-    with_roster = await _count(
-        db,
-        select(func.count(func.distinct(EligibleMemberModel.client_id))).where(
-            EligibleMemberModel.tenant_id == tenant_id
-        ),
-    )
-    clients_total = await _count(
-        db,
-        select(func.count(ClientModel.id)).where(
-            ClientModel.tenant_id == tenant_id, ClientModel.deleted_at.is_(None)
-        ),
-    )
-    return covered, with_roster, clients_total
-
-
 def _bucket_start(moment: datetime, granularity: Granularity) -> date:
     day = moment.astimezone(UTC).date()
     if granularity == "day":
@@ -282,16 +199,9 @@ def _apply_split(point: SeriesPoint, session_type: SessionType | None, total: in
     point.total += total
 
 
-async def _sessions_series(
-    db: AsyncSession, tenant_id: str, window: ResolvedRange
-) -> list[SeriesPoint]:
+async def _sessions_series(runner, tenant_id: str, window: ResolvedRange) -> list[SeriesPoint]:
     granularity = window.granularity
-    bucket = func.date_trunc(granularity, _utc_scheduled_at())
-    rows = await db.execute(
-        select(bucket, ServiceSessionModel.session_type, func.count(ServiceSessionModel.id))
-        .where(*_completed_sessions(tenant_id), *_within(window.start, window.end))
-        .group_by(bucket, ServiceSessionModel.session_type)
-    )
+    rows = await runner.sessions_series(tenant_id, window.start, window.end, granularity)
 
     points: dict[str, SeriesPoint] = {}
     cursor = _bucket_start(window.start, granularity)
@@ -300,57 +210,25 @@ async def _sessions_series(
         points[_bucket_key(cursor, granularity)] = _empty_point(cursor, granularity)
         cursor = _next_bucket(cursor, granularity)
 
-    for bucket_at, session_type, total in rows:
-        key = _bucket_key(bucket_at.date(), granularity)
+    for bucket_date, session_type, total in rows:
+        key = _bucket_key(bucket_date, granularity)
         point = points.get(key)
         if point is not None:
-            _apply_split(point, session_type, int(total))
+            _apply_split(point, session_type, total)
     return list(points.values())
 
 
-async def _category_split(
-    db: AsyncSession, tenant_id: str, window: ResolvedRange
-) -> list[CategoryCount]:
-    rows = await db.execute(
-        select(ServiceSessionModel.category, func.count(ServiceSessionModel.id))
-        .where(
-            *_completed_sessions(tenant_id),
-            *_within(window.start, window.end),
-            ServiceSessionModel.category.is_not(None),
-        )
-        .group_by(ServiceSessionModel.category)
-        .order_by(func.count(ServiceSessionModel.id).desc())
-    )
-    return [CategoryCount(category=category.value, total=int(total)) for category, total in rows]
+async def _category_split(runner, tenant_id: str, window: ResolvedRange) -> list[CategoryCount]:
+    rows = await runner.category_split(tenant_id, window.start, window.end)
+    return [CategoryCount(category=category, total=total) for category, total in rows]
 
 
-async def _top_clients(
-    db: AsyncSession, tenant_id: str, window: ResolvedRange
-) -> list[ClientSessions]:
-    rows = await db.execute(
-        select(ClientModel.id, ClientModel.name, func.count(ServiceSessionModel.id))
-        .join(ClientModel, ClientModel.id == ServiceSessionModel.client_id)
-        .where(*_completed_sessions(tenant_id), *_within(window.start, window.end))
-        .group_by(ClientModel.id, ClientModel.name)
-        .order_by(func.count(ServiceSessionModel.id).desc())
-        .limit(TOP_CLIENTS_LIMIT)
-    )
+async def _top_clients(runner, tenant_id: str, window: ResolvedRange) -> list[ClientSessions]:
+    rows = await runner.top_clients(tenant_id, window.start, window.end, TOP_CLIENTS_LIMIT)
     return [
-        ClientSessions(client_id=client_id, client_name=name, total=int(total))
+        ClientSessions(client_id=client_id, client_name=name, total=total)
         for client_id, name, total in rows
     ]
-
-
-async def _service_counts(
-    db: AsyncSession, tenant_id: str, start: datetime, end: datetime
-) -> dict[str, tuple[str, int]]:
-    rows = await db.execute(
-        select(ServiceModel.id, ServiceModel.name, func.count(ServiceSessionModel.id))
-        .join(ServiceModel, ServiceModel.id == ServiceSessionModel.service_id)
-        .where(*_completed_sessions(tenant_id), *_within(start, end))
-        .group_by(ServiceModel.id, ServiceModel.name)
-    )
-    return {service_id: (name, int(total)) for service_id, name, total in rows}
 
 
 def _change_pct(total: int, prior: int) -> float | None:
@@ -359,12 +237,10 @@ def _change_pct(total: int, prior: int) -> float | None:
     return round(((total - prior) / prior) * 100, 1)
 
 
-async def _trending_services(
-    db: AsyncSession, tenant_id: str, window: ResolvedRange
-) -> list[ServiceTrend]:
+async def _trending_services(runner, tenant_id: str, window: ResolvedRange) -> list[ServiceTrend]:
     """Demand per service inside the range, measured against the prior window."""
-    current = await _service_counts(db, tenant_id, window.start, window.end)
-    prior = await _service_counts(db, tenant_id, window.prior_start, window.start)
+    current = await runner.service_counts(tenant_id, window.start, window.end)
+    prior = await runner.service_counts(tenant_id, window.prior_start, window.start)
     trends = [
         ServiceTrend(
             service_id=service_id,
@@ -380,28 +256,13 @@ async def _trending_services(
 
 
 async def _import_state(
-    db: AsyncSession, tenant_id: str
+    runner, tenant_id: str
 ) -> tuple[ImportBatchSummary | None, list[ImportQueueEntry], int]:
-    batch = (
-        await db.execute(
-            select(SessionImportBatchModel)
-            .where(
-                SessionImportBatchModel.tenant_id == tenant_id,
-                SessionImportBatchModel.status != ImportBatchStatus.ABANDONED,
-            )
-            .order_by(SessionImportBatchModel.created_at.desc())
-            .limit(1)
-        )
-    ).scalar_one_or_none()
+    batch = await runner.latest_import_batch(tenant_id)
     if batch is None:
         return None, [], 0
 
-    rows = await db.execute(
-        select(SessionImportRowModel.outcome, func.count(SessionImportRowModel.id))
-        .where(SessionImportRowModel.batch_id == batch.id)
-        .group_by(SessionImportRowModel.outcome)
-    )
-    by_outcome = {outcome: int(total) for outcome, total in rows}
+    by_outcome = await runner.import_row_outcomes(batch.id)
     queues = sorted(
         (
             ImportQueueEntry(outcome=outcome.value, total=by_outcome[outcome])
@@ -425,28 +286,9 @@ async def _import_state(
 
 
 async def _data_quality(
-    db: AsyncSession, tenant_id: str, clients_total: int, clients_with_roster: int
+    runner, tenant_id: str, clients_total: int, clients_with_roster: int
 ) -> DataQuality:
-    missing_outcome = await _count(
-        db,
-        select(func.count(ServiceSessionModel.id)).where(
-            *_completed_sessions(tenant_id), ServiceSessionModel.clinical_outcome.is_(None)
-        ),
-    )
-    missing_rate = await _count(
-        db,
-        select(func.count(ServiceSessionModel.id)).where(
-            *_completed_sessions(tenant_id), ServiceSessionModel.rate_ugx.is_(None)
-        ),
-    )
-    providers_pending = await _count(
-        db,
-        select(func.count(ProviderModel.id)).where(
-            ProviderModel.tenant_id == tenant_id,
-            ProviderModel.deleted_at.is_(None),
-            ProviderModel.status == BaseStatus.PENDING,
-        ),
-    )
+    missing_outcome, missing_rate, providers_pending = await runner.data_quality_counts(tenant_id)
     return DataQuality(
         sessions_missing_outcome=missing_outcome,
         sessions_missing_rate=missing_rate,
@@ -469,14 +311,16 @@ async def get_dashboard(
     start: str | None = Query(None, description="Window start when range is custom, ISO 8601"),
     end: str | None = Query(None, description="Window end when range is custom, ISO 8601"),
     _current_user: TokenData = Depends(require_same_tenant),
-    db: AsyncSession = Depends(get_db),
+    runner=Depends(get_dashboard_query_runner),
 ) -> DashboardResponse:
     """All dashboard figures in one read, computed against the same instant."""
     window = resolve_range(range_preset, start, end)
 
-    sessions, sessions_prior, clients_served = await _session_kpis(db, tenant_id, window)
-    covered, with_roster, clients_total = await _coverage(db, tenant_id)
-    import_batch, import_queues, backlog = await _import_state(db, tenant_id)
+    sessions, sessions_prior, clients_served = await runner.session_kpis(
+        tenant_id, window.start, window.end, window.prior_start
+    )
+    covered, with_roster, clients_total = await runner.coverage(tenant_id)
+    import_batch, import_queues, backlog = await _import_state(runner, tenant_id)
 
     return DashboardResponse(
         range=window.to_info(),
@@ -489,11 +333,11 @@ async def get_dashboard(
             clients_total=clients_total,
             import_backlog=backlog,
         ),
-        sessions_series=await _sessions_series(db, tenant_id, window),
-        sessions_by_category=await _category_split(db, tenant_id, window),
-        top_clients=await _top_clients(db, tenant_id, window),
-        trending_services=await _trending_services(db, tenant_id, window),
+        sessions_series=await _sessions_series(runner, tenant_id, window),
+        sessions_by_category=await _category_split(runner, tenant_id, window),
+        top_clients=await _top_clients(runner, tenant_id, window),
+        trending_services=await _trending_services(runner, tenant_id, window),
         import_queues=import_queues,
         import_batch=import_batch,
-        data_quality=await _data_quality(db, tenant_id, clients_total, with_roster),
+        data_quality=await _data_quality(runner, tenant_id, clients_total, with_roster),
     )

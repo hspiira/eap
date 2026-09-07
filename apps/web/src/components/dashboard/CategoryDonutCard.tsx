@@ -108,11 +108,7 @@ function Donut({ categories, config, total, active, onActive }: DonutProps) {
               if (!viewBox || !("cx" in viewBox)) return null
               return (
                 <text x={viewBox.cx} y={viewBox.cy} textAnchor="middle">
-                  <tspan
-                    x={viewBox.cx}
-                    y={viewBox.cy}
-                    className="fill-fg text-xl font-semibold"
-                  >
+                  <tspan x={viewBox.cx} y={viewBox.cy} className="fill-fg text-xl font-semibold">
                     {centreValue.toLocaleString()}
                   </tspan>
                   <tspan

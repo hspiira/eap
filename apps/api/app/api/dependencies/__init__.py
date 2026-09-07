@@ -69,6 +69,7 @@ from app.api.dependencies.provider import (
     get_session_name_reader,
 )
 from app.api.dependencies.reporting import (
+    get_dashboard_query_runner,
     get_report_query_runner,
     get_report_run_repository,
     get_report_template_repository,
@@ -99,6 +100,7 @@ __all__ = [
     "get_contact_repository",
     "get_contract_repository",
     "get_critical_incident_repository",
+    "get_dashboard_query_runner",
     "get_diagnosis_repository",
     "get_document_repository",
     "get_dsar_collector",
