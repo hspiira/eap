@@ -42,8 +42,12 @@ import app.domain.entities as entities_pkg
 # the accepted count, and one event per imported row would flood audit_logs for
 # a file of several thousand. The batch is the auditable act; the rows are its
 # detail, and each carries its own imported_session_id.
-# Net of the two the provider work removed, that is 146.
-KNOWN_SILENT_MUTATORS = 146
+# PractitionerImportRowEntity.mark_applied and quarantine are the same
+# bookkeeping for the practitioner workbook apply: the batch emits
+# PractitionerImportBatchApplied with actor and counts, and each row carries
+# its created ids and quarantine reason as persisted detail.
+# Net of the two the provider work removed, that is 148.
+KNOWN_SILENT_MUTATORS = 148
 
 
 def _entity_classes():

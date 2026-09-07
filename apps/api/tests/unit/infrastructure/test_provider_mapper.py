@@ -1,7 +1,5 @@
 from datetime import UTC, date, datetime
 
-import pytest
-
 from app.domain.enums import (
     AccreditationStatus,
     BaseStatus,
@@ -94,9 +92,16 @@ def test_missing_panel_status_reads_as_pending_not_active() -> None:
     assert profile.accreditation_status is AccreditationStatus.PENDING
 
 
-def test_missing_required_profile_field_is_rejected() -> None:
+def test_missing_tier_reads_as_unassessed() -> None:
+    """Tier and region are None until a person assesses the practitioner.
+
+    Imported records arrive without either, so absence is a modelled state,
+    not a malformed row. It grants no standing: the booking gate still
+    requires an Active panel and accreditation.
+    """
     model = _model()
     del model.provider_profile["tier"]
 
-    with pytest.raises(ValueError, match="missing required field 'tier'"):
-        ProviderMapper.to_entity(model)
+    profile = ProviderMapper.to_entity(model).provider_profile
+
+    assert profile.tier is None

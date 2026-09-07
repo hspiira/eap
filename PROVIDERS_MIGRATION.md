@@ -763,6 +763,42 @@ owner has directed that provider-module work proceed on the main branch.
   or catalogue entry), the P-01 catalogue vocabulary decision (product),
   and alias reconciliation itself, which stays a human API-driven step.
 
+  The apply step was implemented on 2026-09-07 under the same direction:
+  Admin-only `POST /practitioner-imports/{batch}/apply` (migration
+  `g1z4b6d8f0h2` adds `imported_provider_id`, `imported_organisation_id`
+  and `imported_affiliation_id` to the rows). Accepted rows only; a batch
+  with zero Accepted rows applies and creates nothing. Creation runs
+  through the audited entity path (creation event, save, `audit_change`),
+  and both staging and apply now emit persisted batch events
+  (`PractitionerImportBatchStaged` / `Applied` with actor, tenant, batch
+  and counts), closing the staging audit gap. Adopted decisions, policy
+  rather than data:
+
+  - Affiliation `valid_from` is the apply day in the provider boundary
+    timezone, read as "affiliated as of import". The workbook has no
+    dates and no historical validity is invented; `valid_until` is open.
+  - Transaction boundary: one request transaction, a savepoint per row.
+    A failing row rolls back to its savepoint and is quarantined as
+    NeedsReview with the error recorded; applied rows are kept and the
+    batch still closes Applied. A second apply is a 409. An organisation
+    is created in its own savepoint so a later failure in the same row
+    keeps the firm for following rows.
+  - Organisations dedupe case-insensitively by name within the tenant
+    and are created with Pending approval: imported paperwork is not
+    approval.
+  - `ProviderProfile.tier` and `region` became nullable (entity, mapper,
+    API schema) so an imported practitioner can exist unassessed with
+    panel and accreditation Pending. The booking gate never keyed on
+    tier or region, so eligibility is unchanged; such records fail the
+    gate on panel/accreditation as before.
+
+  Known limitations, recorded not fixed: apply does not detect the same
+  person across different files (identity stays with the alias pipeline
+  and human review); a quarantined row has no path back to Accepted until
+  review tooling exists; the one-organisation-name-per-tenant match is
+  exact-but-case-insensitive, so spelling variants of a firm create
+  separate organisations for a person to merge.
+
 - `apps/api/alembic` is outside the ruff gate, which scopes to `app tests
   scripts`. 65 pre-existing migrations would need reformatting to bring it in.
   Deliberately deferred rather than done in a release that is already extending

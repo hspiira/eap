@@ -1,18 +1,21 @@
 """The staging route: Admin-only writes, tenant-scoped reads, replay conflict."""
 
+from contextlib import asynccontextmanager
 from datetime import UTC, datetime
 from types import SimpleNamespace
-from unittest.mock import AsyncMock
+from unittest.mock import AsyncMock, Mock
 
 import pytest
 import pytest_asyncio
 from fastapi import FastAPI
 from httpx import ASGITransport, AsyncClient
 
-from app.api.dependencies import get_audit_event_handler
+from app.api.dependencies import get_audit_event_handler, get_provider_repository
 from app.api.dependencies.provider_network import (
     get_practitioner_import_repository,
+    get_provider_affiliation_repository,
     get_provider_alias_repository,
+    get_provider_organisation_repository,
 )
 from app.api.routes.practitioner_imports import router
 from app.core.authorization import get_current_user_entity
@@ -23,7 +26,7 @@ from app.domain.entities.practitioner_import import (
     PractitionerImportBatchEntity,
     PractitionerImportRowEntity,
 )
-from app.domain.enums.provider_network import PractitionerImportOutcome
+from app.domain.enums.provider_network import ImportBatchStatus, PractitionerImportOutcome
 from app.domain.enums.tenancy import TenantRole
 from app.domain.value_objects.core import TenantId, UserId
 from app.domain.value_objects.provider_network import (
@@ -83,13 +86,28 @@ async def api():
     app = FastAPI()
     app.include_router(router)
     register_exception_handlers(app)
-    state = SimpleNamespace(imports=AsyncMock(), aliases=AsyncMock(), db=AsyncMock(), role="Admin")
+    state = SimpleNamespace(
+        imports=AsyncMock(),
+        aliases=AsyncMock(),
+        providers=AsyncMock(),
+        organisations=AsyncMock(),
+        affiliations=AsyncMock(),
+        db=AsyncMock(),
+        role="Admin",
+    )
     state.imports.find_batch_by_hash.return_value = None
     state.imports.find_row_by_replay_key.return_value = None
     state.imports.get_batch.return_value = _batch()
     state.imports.list_rows.return_value = ([_row_entity()], 1)
     state.imports.outcome_counts.return_value = {"Accepted": 2}
     state.aliases.find_alias.return_value = None
+    state.organisations.find_organisation_by_name.return_value = None
+
+    @asynccontextmanager
+    async def _nested():
+        yield
+
+    state.db.begin_nested = Mock(side_effect=lambda: _nested())
 
     def _user() -> TokenData:
         return TokenData(user_id="u-1", tenant_id=TENANT, role=state.role)
@@ -101,6 +119,9 @@ async def api():
     app.dependency_overrides[get_current_user_entity] = _user_entity
     app.dependency_overrides[get_practitioner_import_repository] = lambda: state.imports
     app.dependency_overrides[get_provider_alias_repository] = lambda: state.aliases
+    app.dependency_overrides[get_provider_repository] = lambda: state.providers
+    app.dependency_overrides[get_provider_organisation_repository] = lambda: state.organisations
+    app.dependency_overrides[get_provider_affiliation_repository] = lambda: state.affiliations
     app.dependency_overrides[get_audit_event_handler] = lambda: AsyncMock()
     app.dependency_overrides[get_db] = lambda: state.db
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as http:
@@ -202,3 +223,42 @@ class TestReading:
         assert item["organisation_name"] == "Safe Places Uganda"
         assert item["provenance"] == {"OFFICE LOCATION": "Muyenga"}
         assert item["outcome"] == "Accepted"
+
+
+class TestApply:
+    @pytest.mark.parametrize("role", ["User", "Viewer"])
+    async def test_a_non_admin_may_not_apply(self, api, role):
+        api.role = role
+        response = await api.http.post(f"/practitioner-imports/b-1/apply?tenant_id={TENANT}")
+        assert response.status_code == 403
+        api.providers.save.assert_not_awaited()
+
+    async def test_another_tenants_caller_may_not_apply(self, api):
+        response = await api.http.post("/practitioner-imports/b-1/apply?tenant_id=t-other")
+        assert response.status_code == 403
+        api.providers.save.assert_not_awaited()
+
+    async def test_an_applied_batch_is_a_conflict(self, api):
+        batch = _batch()
+        batch.status = ImportBatchStatus.APPLIED
+        api.imports.get_batch.return_value = batch
+        response = await api.http.post(f"/practitioner-imports/b-1/apply?tenant_id={TENANT}")
+        assert response.status_code == 409
+        api.providers.save.assert_not_awaited()
+
+    async def test_applying_creates_from_the_accepted_row_and_reports_it(self, api):
+        response = await api.http.post(f"/practitioner-imports/b-1/apply?tenant_id={TENANT}")
+        assert response.status_code == 200, response.text
+        body = response.json()
+        assert body["failed"] == 0, body
+        assert body["created_providers"] == 1
+        assert body["created_organisations"] == 1
+        assert body["created_affiliations"] == 1
+        assert body["batch"]["status"] == "Applied"
+        row = body["rows"][0]
+        assert row["status"] == "applied"
+        assert row["provider_id"]
+        api.providers.save.assert_awaited_once()
+        api.organisations.save_organisation.assert_awaited_once()
+        api.affiliations.save_affiliation.assert_awaited_once()
+        api.imports.record_row_apply.assert_awaited_once()

@@ -15,8 +15,8 @@ from app.domain.enums import (
 
 
 class ProviderProfileSchema(BaseModel):
-    tier: ProviderTier
-    region: UgandaRegion
+    tier: ProviderTier | None = None
+    region: UgandaRegion | None = None
     accreditation_status: AccreditationStatus
     panel_status: PanelStatus = PanelStatus.ACTIVE
     accreditation_authority: OptionalSanitizedStr = None

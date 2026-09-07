@@ -48,6 +48,10 @@ class PractitionerImportRepository(ABC):
     ) -> PractitionerImportRowEntity | None: ...
 
     @abstractmethod
+    async def record_row_apply(self, row: PractitionerImportRowEntity) -> None:
+        """Persist a row's apply result: outcome, reasons and created record ids."""
+
+    @abstractmethod
     async def outcome_counts(
         self, tenant_id: TenantId, batch_id: PractitionerImportBatchId
     ) -> dict[str, int]: ...

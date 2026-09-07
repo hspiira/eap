@@ -22,7 +22,7 @@ class ProviderTierChanged(DomainEvent):
     """Audit trail for provider tier upgrades / downgrades."""
 
     provider_id: ProviderId
-    old_tier: str
+    old_tier: str | None
     new_tier: str
     actor: UserId
     reason: str

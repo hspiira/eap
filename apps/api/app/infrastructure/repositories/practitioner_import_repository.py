@@ -2,7 +2,7 @@
 
 from collections.abc import Sequence
 
-from sqlalchemy import func, select
+from sqlalchemy import func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.domain.entities.practitioner_import import (
@@ -91,6 +91,23 @@ class PractitionerImportRepositoryImpl(PractitionerImportRepository):
             )
         )
         return PractitionerImportMapper.row_to_entity(model) if model else None
+
+    async def record_row_apply(self, row: PractitionerImportRowEntity) -> None:
+        await self.session.execute(
+            update(PractitionerImportRowModel)
+            .where(
+                PractitionerImportRowModel.tenant_id == row.tenant_id.value,
+                PractitionerImportRowModel.id == row.id.value,
+            )
+            .values(
+                outcome=row.outcome.value,
+                reasons=list(row.reasons),
+                imported_provider_id=row.imported_provider_id,
+                imported_organisation_id=row.imported_organisation_id,
+                imported_affiliation_id=row.imported_affiliation_id,
+            )
+        )
+        await self.session.flush()
 
     async def outcome_counts(
         self, tenant_id: TenantId, batch_id: PractitionerImportBatchId

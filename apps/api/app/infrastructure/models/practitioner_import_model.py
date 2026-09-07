@@ -95,3 +95,6 @@ class PractitionerImportRowModel(CuidMixin, TenantMixin, Base, TimestampMixin):
     )
     reasons: Mapped[list | None] = mapped_column(JSON, nullable=True)
     provenance: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+    imported_provider_id: Mapped[str | None] = mapped_column(String(25), nullable=True)
+    imported_organisation_id: Mapped[str | None] = mapped_column(String(25), nullable=True)
+    imported_affiliation_id: Mapped[str | None] = mapped_column(String(25), nullable=True)

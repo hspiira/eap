@@ -64,6 +64,12 @@ class ProviderOrganisationRepository(ABC):
     async def save_organisation(self, organisation: ProviderOrganisationEntity) -> None: ...
 
     @abstractmethod
+    async def find_organisation_by_name(
+        self, tenant_id: TenantId, name: str
+    ) -> ProviderOrganisationEntity | None:
+        """Case-insensitive lookup so an import reuses a firm instead of duplicating it."""
+
+    @abstractmethod
     async def name_exists(
         self,
         tenant_id: TenantId,

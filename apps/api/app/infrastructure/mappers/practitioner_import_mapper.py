@@ -72,6 +72,9 @@ class PractitionerImportMapper:
             reasons=tuple(model.reasons or ()),
             provenance=dict(model.provenance or {}),
             created_at=ensure_utc(model.created_at),
+            imported_provider_id=model.imported_provider_id,
+            imported_organisation_id=model.imported_organisation_id,
+            imported_affiliation_id=model.imported_affiliation_id,
         )
 
     @staticmethod
@@ -94,5 +97,8 @@ class PractitionerImportMapper:
             outcome=entity.outcome,
             reasons=list(entity.reasons),
             provenance=entity.provenance,
+            imported_provider_id=entity.imported_provider_id,
+            imported_organisation_id=entity.imported_organisation_id,
+            imported_affiliation_id=entity.imported_affiliation_id,
             created_at=entity.created_at,
         )

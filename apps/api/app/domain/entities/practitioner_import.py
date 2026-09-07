@@ -14,6 +14,11 @@ from dataclasses import dataclass, field
 from datetime import datetime
 
 from app.domain.enums.provider_network import ImportBatchStatus, PractitionerImportOutcome
+from app.domain.events import DomainEvent
+from app.domain.events.provider_network import (
+    PractitionerImportBatchApplied,
+    PractitionerImportBatchStaged,
+)
 from app.domain.exceptions import DomainError
 from app.domain.value_objects.core import TenantId, UserId
 from app.domain.value_objects.provider_network import (
@@ -48,6 +53,7 @@ class PractitionerImportBatchEntity:
     applied_by: UserId | None = None
     applied_at: datetime | None = None
     notes: str | None = None
+    events: list[DomainEvent] = field(default_factory=list["DomainEvent"])
 
     def __post_init__(self) -> None:
         if not self.file_hash or not self.file_hash.strip():
@@ -56,6 +62,53 @@ class PractitionerImportBatchEntity:
             raise DomainError("Import batch requires a source system")
         if self.row_count < 0:
             raise DomainError("Import batch row count cannot be negative")
+
+    def record_staged(self, actor: UserId) -> None:
+        """Emit the staging event so the batch reaches the audit trail."""
+        self.events.append(
+            PractitionerImportBatchStaged(
+                occurred_at=self.created_at,
+                batch_id=self.id,
+                tenant_id=self.tenant_id,
+                source_system=self.source_system,
+                file_hash=self.file_hash,
+                row_count=self.row_count,
+                actor=actor,
+            )
+        )
+
+    def mark_applied(
+        self,
+        actor: UserId,
+        *,
+        at: datetime,
+        created_providers: int,
+        created_organisations: int,
+        created_affiliations: int,
+        failed_rows: int,
+    ) -> None:
+        """Close the batch. A batch that is not Staged refuses a second apply."""
+        if self.status is not ImportBatchStatus.STAGED:
+            raise DomainError(f"Cannot apply a batch in status {self.status.value}")
+        self.status = ImportBatchStatus.APPLIED
+        self.applied_by = actor
+        self.applied_at = at
+        self.updated_at = at
+        self.events.append(
+            PractitionerImportBatchApplied(
+                occurred_at=at,
+                batch_id=self.id,
+                tenant_id=self.tenant_id,
+                created_providers=created_providers,
+                created_organisations=created_organisations,
+                created_affiliations=created_affiliations,
+                failed_rows=failed_rows,
+                actor=actor,
+            )
+        )
+
+    def clear_events(self) -> None:
+        self.events.clear()
 
 
 @dataclass
@@ -82,6 +135,9 @@ class PractitionerImportRowEntity:
     created_at: datetime
     reasons: tuple[str, ...] = ()
     provenance: dict = field(default_factory=dict)
+    imported_provider_id: str | None = None
+    imported_organisation_id: str | None = None
+    imported_affiliation_id: str | None = None
 
     def __post_init__(self) -> None:
         if self.row_number < 1:
@@ -101,6 +157,35 @@ class PractitionerImportRowEntity:
     @property
     def needs_review(self) -> bool:
         return self.outcome in _REVIEW_OUTCOMES
+
+    @property
+    def is_applicable(self) -> bool:
+        """Only an Accepted row not yet applied may create records."""
+        return (
+            self.outcome is PractitionerImportOutcome.ACCEPTED and self.imported_provider_id is None
+        )
+
+    def mark_applied(
+        self,
+        provider_id: str,
+        organisation_id: str | None,
+        affiliation_id: str | None,
+    ) -> None:
+        if self.imported_provider_id is not None:
+            raise DomainError(
+                f"Row {self.row_number} was already applied as {self.imported_provider_id}"
+            )
+        self.imported_provider_id = provider_id
+        self.imported_organisation_id = organisation_id
+        self.imported_affiliation_id = affiliation_id
+
+    def quarantine(self, reason: str) -> None:
+        """Hold a row that failed to apply for a person, never a silent drop."""
+        self.imported_provider_id = None
+        self.imported_organisation_id = None
+        self.imported_affiliation_id = None
+        self.outcome = PractitionerImportOutcome.NEEDS_REVIEW
+        self.reasons = (*self.reasons, reason)
 
     def replay_key(self, file_hash: str) -> str:
         """Idempotency key. Sheet is part of row identity: two sheets share row numbers."""

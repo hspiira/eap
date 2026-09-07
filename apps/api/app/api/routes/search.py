@@ -60,7 +60,8 @@ def _client_item(client: ClientEntity) -> SearchResultItem:
 
 def _practitioner_item(provider: ProviderEntity) -> SearchResultItem:
     profile = provider.provider_profile
-    secondary = f"{profile.tier.value} · {profile.region.value}" if profile else None
+    parts = [v.value for v in ((profile.tier, profile.region) if profile else ()) if v]
+    secondary = " · ".join(parts) if parts else None
     return SearchResultItem(
         id=provider.id.value,
         label=provider.display_name,

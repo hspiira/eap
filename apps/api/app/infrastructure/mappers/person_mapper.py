@@ -110,8 +110,8 @@ class PersonMapper:
             if isinstance(expiry, str):
                 expiry = date.fromisoformat(expiry)
             provider_profile = ProviderProfile(
-                tier=ProviderTier(pp_raw["tier"]),
-                region=UgandaRegion(pp_raw["region"]),
+                tier=ProviderTier(pp_raw["tier"]) if pp_raw.get("tier") else None,
+                region=UgandaRegion(pp_raw["region"]) if pp_raw.get("region") else None,
                 accreditation_status=AccreditationStatus(pp_raw["accreditation_status"]),
                 panel_status=PanelStatus(pp_raw.get("panel_status", PanelStatus.ACTIVE.value)),
                 accreditation_authority=pp_raw.get("accreditation_authority"),
@@ -231,8 +231,8 @@ class PersonMapper:
         if entity.provider_profile:
             pp = entity.provider_profile
             provider_profile = {
-                "tier": pp.tier.value,
-                "region": pp.region.value,
+                "tier": pp.tier.value if pp.tier else None,
+                "region": pp.region.value if pp.region else None,
                 "accreditation_status": pp.accreditation_status.value,
                 "panel_status": pp.panel_status.value,
                 "accreditation_authority": pp.accreditation_authority,
