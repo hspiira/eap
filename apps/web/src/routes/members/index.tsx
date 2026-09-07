@@ -63,7 +63,11 @@ export const Route = createFileRoute("/members/")({
 
 const COLUMNS: ListColumn[] = [
   { header: "Member", sortField: "display_label" },
-  { header: "Status", sortField: "status", className: "text-center" },
+  {
+    header: <span className="sr-only">Status</span>,
+    sortField: "status",
+    className: "text-center",
+  },
   { header: "Member code", className: "text-fg/65" },
   { header: "Relationship", sortField: "relation", className: "text-fg/65" },
   { header: "Client", className: "text-fg/65" },

@@ -98,7 +98,11 @@ const COLUMNS: ListColumn[] = [
   { header: "Client", sortField: "name" },
   { header: "Code", sortField: "code" },
   { header: "Tier", sortField: "tier" },
-  { header: "Status", sortField: "status", className: "text-center" },
+  {
+    header: <span className="sr-only">Status</span>,
+    sortField: "status",
+    className: "text-center",
+  },
   { header: "Email", className: "text-fg/65" },
   { header: "Phone", className: "text-fg/65" },
   { header: "Employees", className: "text-fg/65 text-center" },
