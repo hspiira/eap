@@ -370,9 +370,10 @@ required, and each is recorded in `SESSIONS_REVIEW.md` with its evidence.
 | C1+C2 hydrated list + sort allowlist | done | `40a29d2` |
 | C4 backend filters | done | `3aa4594` |
 | C3+C4 frontend | done | `8b30ccd` |
+| Staging resolution + apply wiring | done, verified against the real file | `39459c6` |
 | D | open, needs the counselling team | - |
 
-## Next: staging resolution and the apply wiring
+## Done 2026-09-07: staging resolution and the apply wiring (`39459c6`)
 
 The one remaining engineering slice before a historical import can land rows.
 `HistoricalSessionWriterAdapter.record` deliberately refuses every row today,
@@ -390,7 +391,11 @@ because staging resolves neither members nor services. Closing that means:
    normalised category/type/status, preserved provenance.
 
 Blocked inputs, unchanged: the diagnosis vocabulary (clinician) and Phase D
-collection changes (counselling team).
+collection changes (counselling team). A real import additionally waits on
+data prerequisites, not code: approved practitioner aliases (5,227 rows held
+as UnmappedPractitioner in the end-to-end run), the client list and aliases
+(838 UnresolvedClient), the member roster (740 UnresolvedMember), and
+catalogue services matching the intervention canon (15 UnresolvedService).
 
 ## Sequencing summary
 
