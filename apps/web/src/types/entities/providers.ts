@@ -18,8 +18,9 @@ import type { LicenseInfo } from "./identity"
  * accreditation fields move only through the lifecycle commands.
  */
 export interface ProviderProfile {
-  tier: ProviderTier
-  region: UgandaRegion
+  /** Null until a person assesses the practitioner; imports never guess it. */
+  tier?: ProviderTier | null
+  region?: UgandaRegion | null
   accreditation_status: AccreditationStatus
   panel_status: PanelStatus
   accreditation_authority?: string | null

@@ -86,7 +86,9 @@ function ProviderDetailPage() {
     >
       <div className="flex flex-wrap items-center gap-2 border-b border-fg/10 bg-surface px-3 py-2">
         <ProviderTierBadge tier={profile.tier} />
-        <span className="text-xs text-fg/70">{getStatusLabel(profile.region)}</span>
+        <span className="text-xs text-fg/70">
+          {profile.region ? getStatusLabel(profile.region) : "Region unassessed"}
+        </span>
         <StatusBadge status={profile.panel_status} size="sm" />
         <StatusBadge status={profile.accreditation_status} size="sm" />
         <StatusBadge status={provider.status} size="sm" />
@@ -107,7 +109,10 @@ function ProviderDetailPage() {
             <DetailCard title="Practitioner">
               <DetailGrid>
                 <DetailRow label="Display name" value={provider.display_name} />
-                <DetailRow label="Region" value={getStatusLabel(profile.region)} />
+                <DetailRow
+                  label="Region"
+                  value={profile.region ? getStatusLabel(profile.region) : "Unassessed"}
+                />
                 <DetailRow label="Contact email" value={provider.email ?? ""} />
                 <DetailRow label="Contact phone" value={provider.phone ?? ""} />
                 <DetailRow label="Bio" value={profile.bio ?? ""} fullWidth />

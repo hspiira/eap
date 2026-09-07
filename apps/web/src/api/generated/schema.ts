@@ -3838,6 +3838,29 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/practitioner-imports/{batch_id}/apply": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Apply Batch
+         * @description Create records from the batch's Accepted rows, then close the batch.
+         *
+         *     Applying a second time is refused, so a replayed request cannot create
+         *     twice. A failing row is quarantined for review without sinking the batch.
+         */
+        post: operations["apply_batch_practitioner_imports__batch_id__apply_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/practitioner-imports/{batch_id}/rows": {
         parameters: {
             query?: never;
@@ -9060,7 +9083,7 @@ export interface components {
          * @description Per-row result of a staged historical import.
          * @enum {string}
          */
-        ImportRowOutcome: "Accepted" | "Duplicate" | "Conflicting" | "MissingPractitioner" | "UnmappedPractitioner" | "AmbiguousPractitioner" | "UnresolvedMember" | "UnresolvedService" | "Rejected";
+        ImportRowOutcome: "Accepted" | "Duplicate" | "Conflicting" | "MissingPractitioner" | "UnmappedPractitioner" | "AmbiguousPractitioner" | "UnresolvedClient" | "UnresolvedMember" | "UnresolvedService" | "Rejected";
         /** IncidentClose */
         IncidentClose: {
             /**
@@ -10277,6 +10300,53 @@ export interface components {
          * @enum {string}
          */
         PaymentStatus: "Pending" | "Paid" | "Overdue" | "Cancelled" | "Refunded";
+        /**
+         * PractitionerImportApplyResponse
+         * @description Outcome of applying a batch.
+         *
+         *     `reused_organisations` counts distinct firms that already existed;
+         *     `not_applicable` counts rows left untouched because a person has not
+         *     accepted them.
+         */
+        PractitionerImportApplyResponse: {
+            batch: components["schemas"]["PractitionerImportBatchResponse"];
+            /** Created Affiliations */
+            created_affiliations: number;
+            /** Created Organisations */
+            created_organisations: number;
+            /** Created Providers */
+            created_providers: number;
+            /** Failed */
+            failed: number;
+            /** Not Applicable */
+            not_applicable: number;
+            /** Reused Organisations */
+            reused_organisations: number;
+            /** Rows */
+            rows: components["schemas"]["PractitionerImportApplyRowResult"][];
+            /** Skipped Already Applied */
+            skipped_already_applied: number;
+        };
+        /**
+         * PractitionerImportApplyRowResult
+         * @description One Accepted row's apply result. Untouched rows appear only in counts.
+         */
+        PractitionerImportApplyRowResult: {
+            /** Affiliation Id */
+            affiliation_id?: string | null;
+            /** Error */
+            error?: string | null;
+            /** Organisation Id */
+            organisation_id?: string | null;
+            /** Provider Id */
+            provider_id?: string | null;
+            /** Row Number */
+            row_number: number;
+            /** Sheet Name */
+            sheet_name: string;
+            /** Status */
+            status: string;
+        };
         /** PractitionerImportBatchResponse */
         PractitionerImportBatchResponse: {
             /** Applied At */
@@ -10675,10 +10745,10 @@ export interface components {
             gender?: components["schemas"]["ProviderGender"] | null;
             /** @default Active */
             panel_status: components["schemas"]["PanelStatus"];
-            region: components["schemas"]["UgandaRegion"];
+            region?: components["schemas"]["UgandaRegion"] | null;
             /** Specialties */
             specialties?: string[];
-            tier: components["schemas"]["ProviderTier"];
+            tier?: components["schemas"]["ProviderTier"] | null;
         };
         /** ProviderResponse */
         ProviderResponse: {
@@ -20617,6 +20687,39 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PractitionerImportBatchResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    apply_batch_practitioner_imports__batch_id__apply_post: {
+        parameters: {
+            query: {
+                tenant_id: string;
+            };
+            header?: never;
+            path: {
+                batch_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PractitionerImportApplyResponse"];
                 };
             };
             /** @description Validation Error */

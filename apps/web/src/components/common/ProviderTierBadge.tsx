@@ -7,7 +7,18 @@ const TIER_TONE: Record<ProviderTier, string> = {
   [ProviderTier.T3]: "bg-neutral-100 text-neutral-600 border-neutral-300",
 }
 
-export function ProviderTierBadge({ tier, className }: { tier: ProviderTier; className?: string }) {
+export function ProviderTierBadge({
+  tier,
+  className,
+}: {
+  tier?: ProviderTier | null
+  className?: string
+}) {
+  // Unassessed, not a tier of its own: imported practitioners carry none
+  // until a person assigns one.
+  if (!tier) {
+    return <span className={cn("text-xs text-fg-subtle", className)}>Unassessed</span>
+  }
   return (
     <span
       className={cn(

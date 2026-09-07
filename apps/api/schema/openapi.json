@@ -7112,6 +7112,7 @@
           "MissingPractitioner",
           "UnmappedPractitioner",
           "AmbiguousPractitioner",
+          "UnresolvedClient",
           "UnresolvedMember",
           "UnresolvedService",
           "Rejected"
@@ -10156,6 +10157,130 @@
         "title": "PaymentStatus",
         "type": "string"
       },
+      "PractitionerImportApplyResponse": {
+        "description": "Outcome of applying a batch.\n\n`reused_organisations` counts distinct firms that already existed;\n`not_applicable` counts rows left untouched because a person has not\naccepted them.",
+        "properties": {
+          "batch": {
+            "$ref": "#/components/schemas/PractitionerImportBatchResponse"
+          },
+          "created_affiliations": {
+            "title": "Created Affiliations",
+            "type": "integer"
+          },
+          "created_organisations": {
+            "title": "Created Organisations",
+            "type": "integer"
+          },
+          "created_providers": {
+            "title": "Created Providers",
+            "type": "integer"
+          },
+          "failed": {
+            "title": "Failed",
+            "type": "integer"
+          },
+          "not_applicable": {
+            "title": "Not Applicable",
+            "type": "integer"
+          },
+          "reused_organisations": {
+            "title": "Reused Organisations",
+            "type": "integer"
+          },
+          "rows": {
+            "items": {
+              "$ref": "#/components/schemas/PractitionerImportApplyRowResult"
+            },
+            "title": "Rows",
+            "type": "array"
+          },
+          "skipped_already_applied": {
+            "title": "Skipped Already Applied",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "batch",
+          "created_providers",
+          "created_organisations",
+          "reused_organisations",
+          "created_affiliations",
+          "skipped_already_applied",
+          "failed",
+          "not_applicable",
+          "rows"
+        ],
+        "title": "PractitionerImportApplyResponse",
+        "type": "object"
+      },
+      "PractitionerImportApplyRowResult": {
+        "description": "One Accepted row's apply result. Untouched rows appear only in counts.",
+        "properties": {
+          "affiliation_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Affiliation Id"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error"
+          },
+          "organisation_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organisation Id"
+          },
+          "provider_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Provider Id"
+          },
+          "row_number": {
+            "title": "Row Number",
+            "type": "integer"
+          },
+          "sheet_name": {
+            "title": "Sheet Name",
+            "type": "string"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "sheet_name",
+          "row_number",
+          "status"
+        ],
+        "title": "PractitionerImportApplyRowResult",
+        "type": "object"
+      },
       "PractitionerImportBatchResponse": {
         "properties": {
           "applied_at": {
@@ -11253,7 +11378,14 @@
             "default": "Active"
           },
           "region": {
-            "$ref": "#/components/schemas/UgandaRegion"
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/UgandaRegion"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "specialties": {
             "items": {
@@ -11263,12 +11395,17 @@
             "type": "array"
           },
           "tier": {
-            "$ref": "#/components/schemas/ProviderTier"
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ProviderTier"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "required": [
-          "tier",
-          "region",
           "accreditation_status"
         ],
         "title": "ProviderProfileSchema",
@@ -29622,6 +29759,63 @@
           }
         ],
         "summary": "Get Batch",
+        "tags": [
+          "practitioner-imports"
+        ]
+      }
+    },
+    "/practitioner-imports/{batch_id}/apply": {
+      "post": {
+        "description": "Create records from the batch's Accepted rows, then close the batch.\n\nApplying a second time is refused, so a replayed request cannot create\ntwice. A failing row is quarantined for review without sinking the batch.",
+        "operationId": "apply_batch_practitioner_imports__batch_id__apply_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "batch_id",
+            "required": true,
+            "schema": {
+              "title": "Batch Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "tenant_id",
+            "required": true,
+            "schema": {
+              "title": "Tenant Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PractitionerImportApplyResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Apply Batch",
         "tags": [
           "practitioner-imports"
         ]
