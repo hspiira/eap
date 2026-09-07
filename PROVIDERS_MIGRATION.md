@@ -710,6 +710,30 @@ responsibility of the agent taking each phase, which must record its evidence.
   finding 2. Until they do, applying a staged batch imports nothing.
 - The privileged attribution-correction path from decision 2 is not built. Only
   the rejection half is implemented.
+- **CI is red on a provider audit test, and it is not flaky.** Recorded
+  2026-09-07 by the members-import agent; not fixed here, because
+  `apps/api/app/api/routes/providers.py` and the provider repository are held by
+  the provider worktrees. `tests/integration/test_provider_audit_persistence.py::TestAuditRecordsPersist::test_an_unchanged_command_writes_neither_state_nor_audit`
+  fails on every run, and fails identically at `75d500c`, before the member
+  import work, so it is pre-existing. It sits in the CI step
+  "Database-backed tests must execute, not skip", so the api job cannot go
+  green until it is fixed.
+
+  Cause: `EligibleProvider.change_tier` correctly returns early when the tier
+  is unchanged (`app/domain/entities/provider.py:199`), so the entity is not
+  touched. The route then calls `repo.save(provider)` unconditionally
+  (`app/api/routes/providers.py:229`), and `updated_at` carries
+  `onupdate=func.now()` (`app/infrastructure/models/base.py:98`), so the
+  database stamps a new timestamp on any UPDATE the mapper's `entity.updated_at`
+  cannot override. A reaffirming command therefore writes state while emitting
+  no audit event, which is the inverse of the intended guarantee.
+
+  Fix belongs with the provider core owner: skip the write when the command
+  emitted no event (`if not provider.events: return _response(provider)`), or
+  make `ProviderRepositoryImpl.save` a no-op for an unchanged aggregate. The
+  same shape applies to the other lifecycle commands, which all follow
+  `command -> save -> audit` unconditionally.
+
 - `apps/api/alembic` is outside the ruff gate, which scopes to `app tests
   scripts`. 65 pre-existing migrations would need reformatting to bring it in.
   Deliberately deferred rather than done in a release that is already extending
