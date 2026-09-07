@@ -103,7 +103,14 @@ describe("practitioner form", () => {
     for (const key of PROTECTED_KEYS) {
       expect(body, `general edit must not send ${key}`).not.toHaveProperty(key)
     }
-    expect(Object.keys(body).sort()).toEqual(["bio", "display_name", "email", "phone", "region"])
+    expect(Object.keys(body).sort()).toEqual([
+      "bio",
+      "display_name",
+      "email",
+      "gender",
+      "phone",
+      "region",
+    ])
   })
 
   it("offers no tier control on edit, because tier is a lifecycle command", async () => {

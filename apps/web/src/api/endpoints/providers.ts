@@ -15,6 +15,7 @@ import type {
   AccreditationStatus,
   BaseStatus,
   PanelStatus,
+  ProviderGender,
   ProviderTier,
   UgandaRegion,
 } from "@/types/enums"
@@ -46,6 +47,7 @@ export interface ProviderProfileInput {
   phone?: string | null
   region?: UgandaRegion
   bio?: string | null
+  gender?: ProviderGender | null
   license_info?: LicenseInfo | null
 }
 
