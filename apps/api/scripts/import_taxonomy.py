@@ -22,9 +22,15 @@ import os
 import sys
 from pathlib import Path
 
+SCRIPTS_DIR = Path(__file__).resolve().parent
+if str(SCRIPTS_DIR) not in sys.path:
+    sys.path.insert(0, str(SCRIPTS_DIR))
+
 API_ROOT = Path(__file__).resolve().parent.parent
 if str(API_ROOT) not in sys.path:
     sys.path.insert(0, str(API_ROOT))
+
+from import_support import Plan, report, send  # noqa: E402
 
 DATA = API_ROOT / "data" / "taxonomy"
 
@@ -37,45 +43,6 @@ SEED_RENAMES: dict[str, str] = {
     "Coaching & Mentorship": "Coaching/Mentorship",
     "Group Therapy": "Group Counselling",
 }
-
-
-class Plan:
-    """What one pass did, or would do. A plain class, not a dataclass: the
-    script-runnable check execs this module with a synthetic globals dict, and
-    `@dataclass` needs annotations that exec does not provide."""
-
-    def __init__(self) -> None:
-        self.created: list[str] = []
-        self.updated: list[str] = []
-        self.unchanged: list[str] = []
-        self.skipped: list[str] = []
-        self.failed: list[str] = []
-
-    def line(self, label: str) -> str:
-        return (
-            f"{label:18} create {len(self.created):3}  update {len(self.updated):3}  "
-            f"same {len(self.unchanged):3}  skip {len(self.skipped):3}  fail {len(self.failed):3}"
-        )
-
-
-async def _send(http, method: str, url: str, **kwargs):
-    """One request, waiting out the rate limiter rather than failing the import.
-
-    A catalogue load is hundreds of writes and will trip any sane per-client
-    limit. Retrying on the server's own retry-after keeps the importer honest:
-    it does not raise the limit, disable it, or write around it.
-    """
-    for attempt in range(6):
-        response = await http.request(method, url, **kwargs)
-        if response.status_code != 429:
-            return response
-        try:
-            wait = float(response.json().get("retry_after", 5))
-        except (ValueError, AttributeError):
-            wait = 5.0
-        print(f"    rate limited, waiting {wait:.0f}s (attempt {attempt + 1})", flush=True)
-        await asyncio.sleep(min(wait, 60) + 1)
-    return response
 
 
 def _load(name: str) -> list[dict]:
@@ -118,26 +85,19 @@ async def run(tenant_id: str, apply: bool) -> int:
         await _diagnoses(http, type_ids, diags_plan, apply)
         await _services(http, tenant_id, services_plan, apply)
 
-    print("\n" + ("APPLIED" if apply else "PLAN ONLY, nothing written"))
-    for label, plan in (
-        ("diagnosis types", types_plan),
-        ("diagnoses", diags_plan),
-        ("services", services_plan),
-    ):
-        print("  " + plan.line(label))
-    for label, plan in (
-        ("diagnosis types", types_plan),
-        ("diagnoses", diags_plan),
-        ("services", services_plan),
-    ):
-        for note in plan.skipped + plan.failed:
-            print(f"  {label}: {note}")
-    return 1 if any(p.failed for p in (types_plan, diags_plan, services_plan)) else 0
+    return report(
+        apply,
+        [
+            ("diagnosis types", types_plan),
+            ("diagnoses", diags_plan),
+            ("services", services_plan),
+        ],
+    )
 
 
 async def _types(http, plan: Plan, apply: bool) -> dict[str, str]:
     """Upsert every type by code, and return code -> id for the diagnoses pass."""
-    existing = {t["code"]: t for t in (await _send(http, "GET", "/diagnoses/types")).json()}
+    existing = {t["code"]: t for t in (await send(http, "GET", "/diagnoses/types")).json()}
     ids: dict[str, str] = {}
     for row in _load("diagnosis_types"):
         current = existing.get(row["code"])
@@ -145,7 +105,7 @@ async def _types(http, plan: Plan, apply: bool) -> dict[str, str]:
             if not apply:
                 plan.created.append(row["code"])
                 continue
-            response = await _send(http, "POST", "/diagnoses/types", json=row)
+            response = await send(http, "POST", "/diagnoses/types", json=row)
             if response.status_code != 201:
                 plan.failed.append(f"{row['code']}: {response.status_code} {response.text[:120]}")
                 continue
@@ -159,16 +119,16 @@ async def _types(http, plan: Plan, apply: bool) -> dict[str, str]:
         elif not apply:
             plan.updated.append(f"{row['code']} ({', '.join(changes)})")
         else:
-            response = await _send(http, "PATCH", f"/diagnoses/types/{current['id']}", json=changes)
+            response = await send(http, "PATCH", f"/diagnoses/types/{current['id']}", json=changes)
             (plan.updated if response.status_code == 200 else plan.failed).append(row["code"])
     return ids
 
 
 async def _diagnoses(http, type_ids: dict[str, str], plan: Plan, apply: bool) -> None:
-    tree = (await _send(http, "GET", "/diagnoses/types")).json()
+    tree = (await send(http, "GET", "/diagnoses/types")).json()
     by_id = {t["id"]: t["code"] for t in tree}
     existing: dict[str, dict] = {}
-    for item in (await _send(http, "GET", "/diagnoses")).json():
+    for item in (await send(http, "GET", "/diagnoses")).json():
         existing[item["code"]] = item
     for row in _load("diagnoses"):
         type_id = type_ids.get(row["type_code"])
@@ -187,7 +147,7 @@ async def _diagnoses(http, type_ids: dict[str, str], plan: Plan, apply: bool) ->
             if not apply:
                 plan.created.append(row["code"])
                 continue
-            response = await _send(http, "POST", "/diagnoses", json=payload)
+            response = await send(http, "POST", "/diagnoses", json=payload)
             if response.status_code == 409:
                 # The tree lists only available rows, so a retired diagnosis
                 # reads as missing. Its code is still taken, and recreating it
@@ -201,7 +161,7 @@ async def _diagnoses(http, type_ids: dict[str, str], plan: Plan, apply: bool) ->
                 plan.failed.append(f"{row['code']}: {response.status_code} {response.text[:120]}")
                 continue
             if not row.get("is_active", True):
-                await _send(
+                await send(
                     http, "POST", f"/diagnoses/{response.json()['id']}/active?is_active=false"
                 )
             plan.created.append(row["code"])
@@ -219,14 +179,14 @@ async def _diagnoses(http, type_ids: dict[str, str], plan: Plan, apply: bool) ->
             plan.updated.append(f"{row['code']} ({note})")
             continue
         if changes:
-            response = await _send(http, "PATCH", f"/diagnoses/{current['id']}", json=changes)
+            response = await send(http, "PATCH", f"/diagnoses/{current['id']}", json=changes)
             if response.status_code != 200:
                 plan.failed.append(f"{row['code']}: {response.status_code}")
                 continue
         if retire:
             # Availability moves through its own endpoint, which keeps
             # effective_until in step; a PATCH cannot set it.
-            response = await _send(
+            response = await send(
                 http,
                 "POST",
                 f"/diagnoses/{current['id']}/active?is_active={str(wanted_active).lower()}",
@@ -244,7 +204,7 @@ async def _services(http, tenant_id: str, plan: Plan, apply: bool) -> None:
     name is not in the catalogue and not in SEED_RENAMES is left alone and
     reported, never renamed or retired by guesswork.
     """
-    listed = (await _send(http, "GET", f"/services/?tenant_id={tenant_id}&limit=100")).json()
+    listed = (await send(http, "GET", f"/services/?tenant_id={tenant_id}&limit=100")).json()
     if not isinstance(listed, dict) or "items" not in listed:
         raise SystemExit(f"Unexpected services listing: {str(listed)[:200]}")
     existing = {row["name"]: row for row in listed["items"]}
@@ -257,7 +217,7 @@ async def _services(http, tenant_id: str, plan: Plan, apply: bool) -> None:
             plan.updated.append(f"{old} -> {new} (seed rename)")
             existing[new] = row
             continue
-        response = await _send(
+        response = await send(
             http, "PATCH", f"/services/{row['id']}?tenant_id={tenant_id}", json={"name": new}
         )
         if response.status_code == 200:
@@ -277,7 +237,7 @@ async def _services(http, tenant_id: str, plan: Plan, apply: bool) -> None:
             if not apply:
                 plan.created.append(row["name"])
                 continue
-            response = await _send(http, "POST", f"/services/?tenant_id={tenant_id}", json=payload)
+            response = await send(http, "POST", f"/services/?tenant_id={tenant_id}", json=payload)
             (plan.created if response.status_code == 201 else plan.failed).append(
                 row["name"]
                 if response.status_code == 201
@@ -294,7 +254,7 @@ async def _services(http, tenant_id: str, plan: Plan, apply: bool) -> None:
         elif not apply:
             plan.updated.append(f"{row['name']} ({', '.join(changes)})")
         else:
-            response = await _send(
+            response = await send(
                 http, "PATCH", f"/services/{current['id']}?tenant_id={tenant_id}", json=changes
             )
             (plan.updated if response.status_code == 200 else plan.failed).append(row["name"])

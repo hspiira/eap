@@ -1,5 +1,6 @@
 """Input sanitization utilities."""
 
+import html
 import re
 from typing import Any, ClassVar
 
@@ -23,14 +24,26 @@ class InputSanitizer:
 
     @classmethod
     def sanitize_html(cls, value: str) -> str:
-        """Remove all HTML tags and entities."""
+        """Remove HTML markup, without escaping text that never had any.
+
+        `nh3.clean` is an HTML sanitiser, so it escapes bare characters as well
+        as stripping tags: "I&M Bank" comes back "I&amp;M Bank" and is stored
+        that way, which is a corrupted name, not a safer one. Escaping belongs
+        where a value is rendered, not where it is stored.
+
+        Unescaping the cleaned output reproduces the input exactly only when
+        nothing was removed and the sole change was entity-escaping. When any
+        markup was stripped the two differ, and the sanitised output is kept
+        unchanged, so no input that carries markup is restored.
+        """
         if not value:
             return value
-        return nh3.clean(
+        cleaned = nh3.clean(
             value,
             tags=set(cls.ALLOWED_TAGS),
             attributes=cls.ALLOWED_ATTRIBUTES,
         )
+        return value if html.unescape(cleaned) == value else cleaned
 
     @classmethod
     def sanitize_identifier(cls, value: str) -> str:
