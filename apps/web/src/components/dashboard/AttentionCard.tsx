@@ -191,7 +191,7 @@ export function AttentionCard({
       <CardBar title="Needs attention">
         {!loading && high > 0 ? <CardStat value={`${high}`} label="blocking" /> : null}
       </CardBar>
-      <CardContent className="flex-1 p-0">
+      <CardContent className="max-h-[220px] flex-1 overflow-y-auto p-0">
         {loading ? (
           <div className="grid gap-2 p-3">
             <Skeleton className="h-9 w-full" />

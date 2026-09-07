@@ -141,7 +141,11 @@ function AreaBody({ series, loading, error, refreshing }: AreaBodyProps) {
             />
           }
         />
-        <ChartLegend content={<ChartLegendContent />} />
+        <ChartLegend
+          verticalAlign="top"
+          align="right"
+          content={<ChartLegendContent className="flex-nowrap justify-end pt-0 pb-2" />}
+        />
         {bands.map((band) => (
           <Area
             key={band.key}
