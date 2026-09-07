@@ -13,7 +13,11 @@ does not supply them and salutation is never read as gender (P-05).
 from dataclasses import dataclass, field
 from datetime import datetime
 
-from app.domain.enums.provider_network import ImportBatchStatus, PractitionerImportOutcome
+from app.domain.enums.provider_network import (
+    ImportBatchStatus,
+    ImportReasonCode,
+    PractitionerImportOutcome,
+)
 from app.domain.events import DomainEvent
 from app.domain.events.provider_network import (
     PractitionerImportBatchApplied,
@@ -29,6 +33,18 @@ from app.domain.value_objects.provider_network import (
 _REVIEW_OUTCOMES = frozenset(
     {PractitionerImportOutcome.NEEDS_REVIEW, PractitionerImportOutcome.REJECTED}
 )
+
+
+@dataclass(frozen=True)
+class ImportReviewReason:
+    """Why one staged row needs review, applied or apply failed (P-10).
+
+    `code` is the stable, machine-readable part; `message` is prose for
+    display. A consumer must never match on `message`.
+    """
+
+    code: ImportReasonCode
+    message: str
 
 
 @dataclass
@@ -133,7 +149,7 @@ class PractitionerImportRowEntity:
     contact_email: str | None
     outcome: PractitionerImportOutcome
     created_at: datetime
-    reasons: tuple[str, ...] = ()
+    reasons: tuple[ImportReviewReason, ...] = ()
     provenance: dict[str, str | None] = field(default_factory=dict[str, str | None])
     imported_provider_id: str | None = None
     imported_organisation_id: str | None = None
@@ -179,13 +195,13 @@ class PractitionerImportRowEntity:
         self.imported_organisation_id = organisation_id
         self.imported_affiliation_id = affiliation_id
 
-    def quarantine(self, reason: str) -> None:
+    def quarantine(self, code: ImportReasonCode, message: str) -> None:
         """Hold a row that failed to apply for a person, never a silent drop."""
         self.imported_provider_id = None
         self.imported_organisation_id = None
         self.imported_affiliation_id = None
         self.outcome = PractitionerImportOutcome.NEEDS_REVIEW
-        self.reasons = (*self.reasons, reason)
+        self.reasons = (*self.reasons, ImportReviewReason(code, message))
 
     def replay_key(self, file_hash: str) -> str:
         """Idempotency key. Sheet is part of row identity: two sheets share row numbers."""

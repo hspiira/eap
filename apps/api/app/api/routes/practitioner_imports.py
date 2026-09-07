@@ -19,6 +19,7 @@ from app.api.dependencies.provider_network import (
     get_provider_organisation_repository,
 )
 from app.api.schemas.practitioner_import_schemas import (
+    ImportReasonSchema,
     PractitionerImportApplyResponse,
     PractitionerImportApplyRowResult,
     PractitionerImportBatchResponse,
@@ -208,7 +209,7 @@ async def list_rows(
                 raw_profession=row.raw_profession,
                 mapped_profession=row.mapped_profession,
                 contact_email=row.contact_email,
-                reasons=list(row.reasons),
+                reasons=[ImportReasonSchema(code=r.code, message=r.message) for r in row.reasons],
                 provenance=row.provenance,
             )
             for row in items

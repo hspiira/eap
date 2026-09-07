@@ -799,6 +799,38 @@ owner has directed that provider-module work proceed on the main branch.
   exact-but-case-insensitive, so spelling variants of a firm create
   separate organisations for a person to merge.
 
+  2026-09-07, staging exercised for real: `POST /practitioner-imports` was
+  run against the local dev database (`evexia_db`, tenant `dev`) with the
+  actual workbook, not a synthetic fixture. First run, before the fixes
+  below: batch `kv8g55457voze8d7tu2maubg`, 168 rows staged, 60 Accepted, 108
+  NeedsReview. That batch was deleted and replaced after the code changes
+  below, rather than left inconsistent with the code that produced it.
+  Current batch `rbmhgppuptpyknd1j4hyciyz`, same 168 rows, **59 Accepted, 109
+  NeedsReview**, same `file_hash` as recorded in `PRACTITIONERS_REVIEW.md`.
+  Not applied. Full row export, organisation grouping, and the review gates
+  before `apply` are recorded in `practitioner-import-review/README.md`. A
+  dedicated Admin user, `practitioner-import-bot@example.com` in tenant
+  `dev`, was created to run this and left in place for traceability rather
+  than deleted.
+
+  Same session, three findings from that staging run
+  (`PRACTITIONERS_REVIEW.md` P-08 to P-10) were implemented and tested, not
+  just documented, at the user's explicit request before any real import:
+  `apply_practitioner_import.py` now sets a created practitioner's
+  `contact_phone` from the workbook's own mobile columns instead of always
+  `None` (P-08, phone half only; profession/specialty stays unset pending
+  the P-01 catalogue decision); `practitioner_import_staging.py` now flags
+  an organisation column that collides with a practitioner's own or another
+  practitioner's name, which previously produced zero review signal (P-09,
+  and the reason the Accepted count above dropped by exactly one); and
+  `PractitionerImportRowEntity.reasons` carries a `{code, message}` shape
+  via a new `ImportReasonCode` enum instead of a bare string, with the
+  mapper, JSON column, and `PractitionerImportRowPreview` schema updated to
+  match (P-10). `ruff`, `ruff format --check`, `lint-imports`, the
+  `app/domain` pyright gate, and the full practitioner-import unit and
+  PostgreSQL-backed integration suite (64 tests) all pass. Not run: web
+  contract regeneration, since no contract-consuming file changed.
+
 - `apps/api/alembic` is outside the ruff gate, which scopes to `app tests
   scripts`. 65 pre-existing migrations would need reformatting to bring it in.
   Deliberately deferred rather than done in a release that is already extending

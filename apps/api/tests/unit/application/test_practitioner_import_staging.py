@@ -10,7 +10,7 @@ from app.application.services.practitioner_import_staging import (
     PractitionerImportStagingService,
     StagedPractitionerRow,
 )
-from app.domain.enums.provider_network import PractitionerImportOutcome
+from app.domain.enums.provider_network import ImportReasonCode, PractitionerImportOutcome
 from app.domain.value_objects.core import TenantId
 from app.shared.utils.practitioner_workbook import WorkbookRow
 
@@ -125,8 +125,9 @@ class TestIdentityCandidates:
         first, second = await service.stage_rows(TENANT, HASH, rows, now=NOW)
         assert first.outcome is PractitionerImportOutcome.NEEDS_REVIEW
         assert second.outcome is PractitionerImportOutcome.NEEDS_REVIEW
-        assert "'EAP Consultants - General' row 9" in first.reasons[0]
-        assert "reconciled by a person" in first.reasons[0]
+        assert first.reasons[0].code is ImportReasonCode.DUPLICATE_NAME_CANDIDATE
+        assert "'EAP Consultants - General' row 9" in first.reasons[0].message
+        assert "reconciled by a person" in first.reasons[0].message
 
     async def test_a_repeated_name_within_one_sheet_needs_review_too(self):
         service, _, _ = _service()
@@ -136,6 +137,43 @@ class TestIdentityCandidates:
         assert second.outcome is PractitionerImportOutcome.NEEDS_REVIEW
 
 
+class TestOrganisationNameCollision:
+    """P-07/P-09: an organisation column that is really a practitioner's name."""
+
+    async def test_a_row_naming_itself_as_the_organisation_needs_review(self):
+        service, _, _ = _service()
+        staged = await _stage_one(service, _row(company="Jane Doe", organisation_name="Jane Doe"))
+        assert staged.outcome is PractitionerImportOutcome.NEEDS_REVIEW
+        collision = next(
+            r for r in staged.reasons if r.code is ImportReasonCode.ORGANISATION_NAME_COLLISION
+        )
+        assert "this row's own practitioner name" in collision.message
+
+    async def test_a_row_naming_another_practitioner_as_the_organisation_needs_review(self):
+        service, _, _ = _service()
+        rows = [
+            _row(),
+            _row(
+                row_number=58,
+                raw_name="Cynthia Achen",
+                company="Jane Doe",
+                organisation_name="Jane Doe",
+            ),
+        ]
+        first, second = await service.stage_rows(TENANT, HASH, rows, now=NOW)
+        assert first.outcome is PractitionerImportOutcome.ACCEPTED
+        assert second.outcome is PractitionerImportOutcome.NEEDS_REVIEW
+        assert second.reasons[0].code is ImportReasonCode.ORGANISATION_NAME_COLLISION
+        assert "'Minet EAP Partner list' row 3" in second.reasons[0].message
+
+    async def test_a_real_organisation_name_is_not_flagged(self):
+        service, _, _ = _service()
+        staged = await _stage_one(
+            service, _row(company="Safe Places Uganda", organisation_name="Safe Places Uganda")
+        )
+        assert staged.outcome is PractitionerImportOutcome.ACCEPTED
+
+
 class TestQuarantine:
     async def test_a_double_email_cell_is_never_split(self):
         cell = "janetkidda@gmail.com/info@safeplacesUganda.com"
@@ -143,8 +181,9 @@ class TestQuarantine:
         staged = await _stage_one(service, _row(contact_email=cell))
         assert staged.outcome is PractitionerImportOutcome.NEEDS_REVIEW
         assert staged.contact_email is None
-        assert cell in staged.reasons[0]
-        assert "by hand" in staged.reasons[0]
+        assert staged.reasons[0].code is ImportReasonCode.MULTI_EMAIL_CELL
+        assert cell in staged.reasons[0].message
+        assert "by hand" in staged.reasons[0].message
         assert staged.provenance is not None
 
     async def test_the_employee_contract_memo_is_not_enrolled(self):
@@ -160,14 +199,31 @@ class TestQuarantine:
             ),
         )
         assert staged.outcome is PractitionerImportOutcome.NEEDS_REVIEW
-        assert any("Employee" in reason for reason in staged.reasons)
+        assert any(
+            reason.code is ImportReasonCode.EMPLOYEE_CONTRACT_MEMO for reason in staged.reasons
+        )
 
     async def test_an_unmapped_role_needs_review(self):
         service, _, _ = _service()
         staged = await _stage_one(service, _row(raw_profession="Yoga/mindfulness"))
         assert staged.outcome is PractitionerImportOutcome.NEEDS_REVIEW
         assert staged.mapped_profession is None
-        assert "'Yoga/mindfulness'" in staged.reasons[0]
+        assert staged.reasons[0].code is ImportReasonCode.UNMAPPED_PROFESSION
+        assert "'Yoga/mindfulness'" in staged.reasons[0].message
+
+    async def test_an_unmapped_speciality_gets_its_own_code(self):
+        service, _, _ = _service()
+        staged = await _stage_one(
+            service,
+            _row(
+                sheet_name="EAP Consultants - General",
+                row_number=9,
+                profession_column="Speciality",
+                raw_profession="Rehab Services",
+            ),
+        )
+        assert staged.outcome is PractitionerImportOutcome.NEEDS_REVIEW
+        assert staged.reasons[0].code is ImportReasonCode.UNMAPPED_SPECIALITY
 
     async def test_a_row_with_no_usable_name_is_rejected(self):
         service, aliases, _ = _service()
@@ -186,5 +242,6 @@ class TestReplaySafety:
         service, aliases, _ = _service(existing_row=existing)
         staged = await _stage_one(service, _row())
         assert staged.outcome is PractitionerImportOutcome.DUPLICATE
-        assert "batch b-0" in staged.reasons[0]
+        assert staged.reasons[0].code is ImportReasonCode.ALREADY_STAGED
+        assert "batch b-0" in staged.reasons[0].message
         aliases.save_alias.assert_not_awaited()

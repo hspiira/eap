@@ -1,10 +1,15 @@
 """Mapping between practitioner import entities and their models."""
 
 from app.domain.entities.practitioner_import import (
+    ImportReviewReason,
     PractitionerImportBatchEntity,
     PractitionerImportRowEntity,
 )
-from app.domain.enums.provider_network import ImportBatchStatus, PractitionerImportOutcome
+from app.domain.enums.provider_network import (
+    ImportBatchStatus,
+    ImportReasonCode,
+    PractitionerImportOutcome,
+)
 from app.domain.value_objects.core import TenantId, UserId
 from app.domain.value_objects.provider_network import (
     PractitionerImportBatchId,
@@ -69,7 +74,10 @@ class PractitionerImportMapper:
             mapped_profession=model.mapped_profession,
             contact_email=model.contact_email,
             outcome=PractitionerImportOutcome(model.outcome),
-            reasons=tuple(model.reasons or ()),
+            reasons=tuple(
+                ImportReviewReason(ImportReasonCode(item["code"]), item["message"])
+                for item in (model.reasons or ())
+            ),
             provenance=dict(model.provenance or {}),
             created_at=ensure_utc(model.created_at),
             imported_provider_id=model.imported_provider_id,
@@ -95,7 +103,7 @@ class PractitionerImportMapper:
             mapped_profession=entity.mapped_profession,
             contact_email=entity.contact_email,
             outcome=entity.outcome,
-            reasons=list(entity.reasons),
+            reasons=[{"code": r.code.value, "message": r.message} for r in entity.reasons],
             provenance=entity.provenance,
             imported_provider_id=entity.imported_provider_id,
             imported_organisation_id=entity.imported_organisation_id,
