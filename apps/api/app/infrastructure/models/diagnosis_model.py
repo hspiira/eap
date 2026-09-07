@@ -2,9 +2,15 @@
 
 Reference data shared across tenants. Two-level hierarchy: ``DiagnosisType``
 (category, e.g. "Mental Ill Health") groups ``Diagnosis`` rows (specific
-condition, e.g. "Depression"). Versioned per ADR-012; rows are append-only
-with effective windows; clients filter to ``effective_until IS NULL`` for the
-current taxonomy.
+condition, e.g. "Depression").
+
+``code`` is the stable identity and never changes once sessions reference it.
+``name`` and ``description`` are display labels, edited in place, and every
+edit bumps ``version``. Retirement is dated: deactivating a row sets
+``effective_until``, and reactivating clears it, so the two conditions the read
+queries require always agree. Rows are not append-only, and a superseded label
+is not recoverable from these tables; a rendered report keeps the label it was
+built from in ``report_runs.output``.
 """
 
 from datetime import datetime
