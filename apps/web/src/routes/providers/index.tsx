@@ -4,12 +4,14 @@ import { createFileRoute, Link, useNavigate, useSearch } from "@tanstack/react-r
 import { ExternalLink, MoreHorizontal, Plus, Stethoscope } from "lucide-react"
 
 import { type ProviderListParams, providersApi } from "@/api/endpoints/providers"
+import { BulkActionWithReason } from "@/components/common/BulkActionWithReason"
 import { EmptyState } from "@/components/common/EmptyState"
 import { EntityListView, type ListColumn } from "@/components/common/EntityListView"
 import { EntityNameCell } from "@/components/common/EntityNameCell"
 import { FilterBar, FilterChip, FilterSearch, FilterTrigger } from "@/components/common/FilterBar"
 import { PageShell } from "@/components/common/PageShell"
 import { ProviderTierBadge } from "@/components/common/ProviderTierBadge"
+import { SelectionBar } from "@/components/common/SelectionBar"
 import { StatusBadge } from "@/components/common/StatusBadge"
 import { ROW_BORDER } from "@/components/common/tableStyles"
 import { ProviderFormSheet } from "@/components/providers/ProviderFormSheet"
@@ -23,7 +25,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { TableCell, TableRow } from "@/components/ui/table"
-import { useCanWrite } from "@/hooks/useCanWrite"
+import { useCanWrite, useCurrentRole } from "@/hooks/useCanWrite"
 import { useListPage } from "@/hooks/useListPage"
 import { useTableSelection } from "@/hooks/useTableSelection"
 import { nameInitials } from "@/lib/display"
@@ -31,7 +33,14 @@ import { normalizeErrorMessage } from "@/lib/errors"
 import { useEntityList } from "@/lib/queries"
 import { enumOptions, enumParam, listSearchSchema } from "@/lib/search-params"
 import type { Provider } from "@/types/entities"
-import { AccreditationStatus, PanelStatus, ProviderTier, UgandaRegion } from "@/types/enums"
+import {
+  AccreditationStatus,
+  BaseStatus,
+  PanelStatus,
+  ProviderTier,
+  TenantRole,
+  UgandaRegion,
+} from "@/types/enums"
 
 const TIER_OPTIONS = enumOptions(ProviderTier, "All tiers")
 const REGION_OPTIONS = enumOptions(UgandaRegion, "All regions")
@@ -73,6 +82,7 @@ function ProvidersListPage() {
     initialSort: { field: "display_name", desc: false },
   })
   const canWrite = useCanWrite()
+  const isAdmin = useCurrentRole() === TenantRole.ADMIN
   const [editing, setEditing] = useState<Provider | null>(null)
 
   const query = useEntityList<Provider, ProviderListParams>({
@@ -229,6 +239,81 @@ function ProvidersListPage() {
         onPageChange={list.setPage}
         selectAllState={selection.selectAllState}
         onToggleSelectAll={selection.toggleSelectAll}
+        toolbar={
+          isAdmin ? (
+            <SelectionBar count={selection.selectedIds.size} onClear={selection.clearSelection}>
+              <BulkActionWithReason
+                ids={selection.selectedIds}
+                label="Activate"
+                confirmTitle="Activate practitioners"
+                confirmDescription={(n) =>
+                  `Activate ${n} selected ${n === 1 ? "practitioner" : "practitioners"}?`
+                }
+                labelFor={(id) => items.find((i) => i.id === id)?.display_name ?? id}
+                action={(id, reason) =>
+                  providersApi.changeStatus(id, { status: BaseStatus.ACTIVE, reason })
+                }
+                invalidateKey={["providers"]}
+                verb="activated"
+                noun="practitioner"
+                onDone={selection.clearSelection}
+              />
+              <BulkActionWithReason
+                ids={selection.selectedIds}
+                label="Deactivate"
+                confirmTitle="Deactivate practitioners"
+                confirmDescription={(n) =>
+                  `Deactivate ${n} selected ${n === 1 ? "practitioner" : "practitioners"}?`
+                }
+                destructive
+                labelFor={(id) => items.find((i) => i.id === id)?.display_name ?? id}
+                action={(id, reason) =>
+                  providersApi.changeStatus(id, { status: BaseStatus.INACTIVE, reason })
+                }
+                invalidateKey={["providers"]}
+                verb="deactivated"
+                noun="practitioner"
+                onDone={selection.clearSelection}
+              />
+              <BulkActionWithReason
+                ids={selection.selectedIds}
+                label="Suspend from panel"
+                confirmTitle="Suspend practitioners from panel"
+                confirmDescription={(n) =>
+                  `Suspend ${n} selected ${n === 1 ? "practitioner" : "practitioners"} from the panel? They will not be bookable.`
+                }
+                destructive
+                labelFor={(id) => items.find((i) => i.id === id)?.display_name ?? id}
+                action={(id, reason) =>
+                  providersApi.changePanelStatus(id, {
+                    panel_status: PanelStatus.SUSPENDED,
+                    reason,
+                  })
+                }
+                invalidateKey={["providers"]}
+                verb="suspended from panel"
+                noun="practitioner"
+                onDone={selection.clearSelection}
+              />
+              <BulkActionWithReason
+                ids={selection.selectedIds}
+                label="Reactivate panel"
+                confirmTitle="Reactivate practitioners on panel"
+                confirmDescription={(n) =>
+                  `Reactivate ${n} selected ${n === 1 ? "practitioner" : "practitioners"} on the panel?`
+                }
+                labelFor={(id) => items.find((i) => i.id === id)?.display_name ?? id}
+                action={(id, reason) =>
+                  providersApi.changePanelStatus(id, { panel_status: PanelStatus.ACTIVE, reason })
+                }
+                invalidateKey={["providers"]}
+                verb="reactivated on panel"
+                noun="practitioner"
+                onDone={selection.clearSelection}
+              />
+            </SelectionBar>
+          ) : undefined
+        }
       />
     </PageShell>
   )

@@ -8,8 +8,12 @@ import { normalizeErrorMessage } from "@/lib/errors"
 const NAMED_FAILURES = 3
 
 export interface BulkActionOptions {
-  /** Applied to one id. There are no bulk endpoints, so this runs once per selected row. */
-  action: (id: string) => Promise<unknown>
+  /**
+   * Applied to one id. There are no bulk endpoints, so this runs once per
+   * selected row. `reason` is passed through unchanged when `run` receives
+   * one, for actions the API rejects without an audit reason.
+   */
+  action: (id: string, reason?: string) => Promise<unknown>
   /** Query key prefix to invalidate once the run finishes. */
   invalidateKey: readonly unknown[]
   /** Past participle naming what happened, used in the result message. */
@@ -22,7 +26,7 @@ export interface BulkActionOptions {
 }
 
 export interface BulkActionState {
-  run: (ids: ReadonlySet<string>) => Promise<void>
+  run: (ids: ReadonlySet<string>, reason?: string) => Promise<void>
   running: boolean
 }
 
@@ -51,7 +55,7 @@ export function useBulkAction({
   const [running, setRunning] = useState(false)
 
   const run = useCallback(
-    async (ids: ReadonlySet<string>) => {
+    async (ids: ReadonlySet<string>, reason?: string) => {
       if (ids.size === 0) return
       setRunning(true)
 
@@ -60,7 +64,7 @@ export function useBulkAction({
 
       for (const id of ids) {
         try {
-          await action(id)
+          await action(id, reason)
         } catch (err) {
           failedIds.push(id)
           if (firstError === null) firstError = err

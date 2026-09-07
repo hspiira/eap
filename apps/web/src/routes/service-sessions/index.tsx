@@ -295,6 +295,32 @@ function ServiceSessionsListPage() {
             <SelectionBar count={selection.selectedIds.size} onClear={selection.clearSelection}>
               <BulkAction
                 ids={selection.selectedIds}
+                label="No-show"
+                confirmTitle="Mark sessions as no-show"
+                confirmDescription={(n) =>
+                  `Mark ${n} selected ${n === 1 ? "session" : "sessions"} as no-show?`
+                }
+                action={serviceSessionsApi.noShow}
+                invalidateKey={["service-sessions"]}
+                verb="marked as no-show"
+                noun="session"
+                onDone={selection.clearSelection}
+              />
+              <BulkAction
+                ids={selection.selectedIds}
+                label="Restore"
+                confirmTitle="Restore sessions"
+                confirmDescription={(n) =>
+                  `Restore ${n} selected ${n === 1 ? "session" : "sessions"}?`
+                }
+                action={serviceSessionsApi.restore}
+                invalidateKey={["service-sessions"]}
+                verb="restored"
+                noun="session"
+                onDone={selection.clearSelection}
+              />
+              <BulkAction
+                ids={selection.selectedIds}
                 label="Archive"
                 confirmTitle="Archive sessions"
                 confirmDescription={(n) =>

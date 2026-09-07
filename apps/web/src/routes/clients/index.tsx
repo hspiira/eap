@@ -23,6 +23,7 @@ import {
 import { ClientFormSheet } from "@/components/clients/ClientFormSheet"
 import { ClientImportDialog } from "@/components/clients/ClientImportDialog"
 import { BulkAction } from "@/components/common/BulkAction"
+import { BulkActionWithReason } from "@/components/common/BulkActionWithReason"
 import { ConfirmDialog } from "@/components/common/ConfirmDialog"
 import { EmptyState } from "@/components/common/EmptyState"
 import { EntityListView, type ListColumn } from "@/components/common/EntityListView"
@@ -59,7 +60,7 @@ import {
 import { TableCell, TableRow } from "@/components/ui/table"
 import { useToast } from "@/contexts/ToastContext"
 import { useCanWrite, useCurrentRole } from "@/hooks/useCanWrite"
-import { useListPage } from "@/hooks/useListPage"
+import { NEWEST_FIRST, useListPage } from "@/hooks/useListPage"
 import { useTableSelection } from "@/hooks/useTableSelection"
 import { nameInitials } from "@/lib/display"
 import { normalizeErrorMessage } from "@/lib/errors"
@@ -127,7 +128,11 @@ function ClientsListPage() {
     toggleSort,
     setFilter,
     sortParams,
-  } = useListPage({ searchParams, navigate })
+  } = useListPage({
+    searchParams,
+    navigate,
+    initialSort: NEWEST_FIRST,
+  })
   const activeTier = searchParams.tier
   const activeParentClientId = searchParams.parent_client_id
   const includeArchived = searchParams.archived === true
@@ -622,6 +627,39 @@ function ClientsListPage() {
                 action={clientsApi.archive}
                 invalidateKey={["clients"]}
                 verb="archived"
+                noun="client"
+                onDone={selection.clearSelection}
+              />
+            ) : null}
+            {canWrite ? (
+              <BulkAction
+                ids={selection.selectedIds}
+                label="Restore"
+                confirmTitle="Restore clients"
+                confirmDescription={(n) =>
+                  `Restore ${n} selected ${n === 1 ? "client" : "clients"} to the active list?`
+                }
+                labelFor={(id) => items.find((i) => i.id === id)?.name ?? id}
+                action={clientsApi.restore}
+                invalidateKey={["clients"]}
+                verb="restored"
+                noun="client"
+                onDone={selection.clearSelection}
+              />
+            ) : null}
+            {canArchive ? (
+              <BulkActionWithReason
+                ids={selection.selectedIds}
+                label="Terminate"
+                confirmTitle="Terminate clients"
+                confirmDescription={(n) =>
+                  `Terminate ${n} selected ${n === 1 ? "client" : "clients"}? This ends the engagement.`
+                }
+                destructive
+                labelFor={(id) => items.find((i) => i.id === id)?.name ?? id}
+                action={clientsApi.terminate}
+                invalidateKey={["clients"]}
+                verb="terminated"
                 noun="client"
                 onDone={selection.clearSelection}
               />

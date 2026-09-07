@@ -7,11 +7,13 @@ import {
   type ProviderOrganisationListParams,
   providerOrganisationsApi,
 } from "@/api/endpoints/provider-organisations"
+import { BulkActionWithReason } from "@/components/common/BulkActionWithReason"
 import { EmptyState } from "@/components/common/EmptyState"
 import { EntityListView, type ListColumn } from "@/components/common/EntityListView"
 import { EntityNameCell } from "@/components/common/EntityNameCell"
 import { FilterBar, FilterChip, FilterSearch, FilterTrigger } from "@/components/common/FilterBar"
 import { PageShell } from "@/components/common/PageShell"
+import { SelectionBar } from "@/components/common/SelectionBar"
 import { StatusBadge } from "@/components/common/StatusBadge"
 import { ROW_BORDER } from "@/components/common/tableStyles"
 import { ProviderOrganisationFormSheet } from "@/components/providers/ProviderOrganisationFormSheet"
@@ -25,7 +27,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { TableCell, TableRow } from "@/components/ui/table"
-import { useCanWrite } from "@/hooks/useCanWrite"
+import { useCanWrite, useCurrentRole } from "@/hooks/useCanWrite"
 import { useListPage } from "@/hooks/useListPage"
 import { useTableSelection } from "@/hooks/useTableSelection"
 import { nameInitials } from "@/lib/display"
@@ -33,7 +35,7 @@ import { normalizeErrorMessage } from "@/lib/errors"
 import { useEntityList } from "@/lib/queries"
 import { boolParam, enumOptions, enumParam, listSearchSchema } from "@/lib/search-params"
 import type { ProviderOrganisation } from "@/types/entities"
-import { OrganisationApprovalStatus } from "@/types/enums"
+import { OrganisationApprovalStatus, TenantRole } from "@/types/enums"
 
 const APPROVAL_OPTIONS = enumOptions(OrganisationApprovalStatus, "All approval states")
 
@@ -58,6 +60,7 @@ function ProviderOrganisationsListPage() {
   const navigate = useNavigate({ from: "/provider-organisations/" })
   const list = useListPage({ searchParams, navigate, initialSort: { field: "name", desc: false } })
   const canWrite = useCanWrite()
+  const isAdmin = useCurrentRole() === TenantRole.ADMIN
   const [editing, setEditing] = useState<ProviderOrganisation | null>(null)
 
   const query = useEntityList<ProviderOrganisation, ProviderOrganisationListParams>({
@@ -191,6 +194,89 @@ function ProviderOrganisationsListPage() {
         onPageChange={list.setPage}
         selectAllState={selection.selectAllState}
         onToggleSelectAll={selection.toggleSelectAll}
+        toolbar={
+          isAdmin ? (
+            <SelectionBar count={selection.selectedIds.size} onClear={selection.clearSelection}>
+              <BulkActionWithReason
+                ids={selection.selectedIds}
+                label="Approve"
+                confirmTitle="Approve organisations"
+                confirmDescription={(n) =>
+                  `Approve ${n} selected ${n === 1 ? "organisation" : "organisations"} as a supplier?`
+                }
+                labelFor={(id) => items.find((i) => i.id === id)?.name ?? id}
+                action={(id, reason) => providerOrganisationsApi.runCommand(id, "approve", reason)}
+                invalidateKey={["provider-organisations"]}
+                verb="approved"
+                noun="organisation"
+                onDone={selection.clearSelection}
+              />
+              <BulkActionWithReason
+                ids={selection.selectedIds}
+                label="Suspend"
+                confirmTitle="Suspend organisations"
+                confirmDescription={(n) =>
+                  `Suspend ${n} selected ${n === 1 ? "organisation" : "organisations"} as a supplier?`
+                }
+                destructive
+                labelFor={(id) => items.find((i) => i.id === id)?.name ?? id}
+                action={(id, reason) => providerOrganisationsApi.runCommand(id, "suspend", reason)}
+                invalidateKey={["provider-organisations"]}
+                verb="suspended"
+                noun="organisation"
+                onDone={selection.clearSelection}
+              />
+              <BulkActionWithReason
+                ids={selection.selectedIds}
+                label="Revoke"
+                confirmTitle="Revoke organisation approval"
+                confirmDescription={(n) =>
+                  `Revoke supplier approval for ${n} selected ${n === 1 ? "organisation" : "organisations"}?`
+                }
+                destructive
+                labelFor={(id) => items.find((i) => i.id === id)?.name ?? id}
+                action={(id, reason) => providerOrganisationsApi.runCommand(id, "revoke", reason)}
+                invalidateKey={["provider-organisations"]}
+                verb="revoked"
+                noun="organisation"
+                onDone={selection.clearSelection}
+              />
+              <BulkActionWithReason
+                ids={selection.selectedIds}
+                label="Deactivate"
+                confirmTitle="Deactivate organisations"
+                confirmDescription={(n) =>
+                  `Deactivate ${n} selected ${n === 1 ? "organisation" : "organisations"}?`
+                }
+                destructive
+                labelFor={(id) => items.find((i) => i.id === id)?.name ?? id}
+                action={(id, reason) =>
+                  providerOrganisationsApi.runCommand(id, "deactivate", reason)
+                }
+                invalidateKey={["provider-organisations"]}
+                verb="deactivated"
+                noun="organisation"
+                onDone={selection.clearSelection}
+              />
+              <BulkActionWithReason
+                ids={selection.selectedIds}
+                label="Reactivate"
+                confirmTitle="Reactivate organisations"
+                confirmDescription={(n) =>
+                  `Reactivate ${n} selected ${n === 1 ? "organisation" : "organisations"}?`
+                }
+                labelFor={(id) => items.find((i) => i.id === id)?.name ?? id}
+                action={(id, reason) =>
+                  providerOrganisationsApi.runCommand(id, "reactivate", reason)
+                }
+                invalidateKey={["provider-organisations"]}
+                verb="reactivated"
+                noun="organisation"
+                onDone={selection.clearSelection}
+              />
+            </SelectionBar>
+          ) : undefined
+        }
       />
     </PageShell>
   )

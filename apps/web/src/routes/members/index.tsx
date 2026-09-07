@@ -15,6 +15,7 @@ import {
 } from "lucide-react"
 
 import { type MemberDuplicateCandidate, membersApi } from "@/api/endpoints/members"
+import { BulkAction } from "@/components/common/BulkAction"
 import { EmptyState } from "@/components/common/EmptyState"
 import { EntityListView, type ListColumn } from "@/components/common/EntityListView"
 import { FilterBar, FilterChip, FilterSearch, FilterTrigger } from "@/components/common/FilterBar"
@@ -44,7 +45,7 @@ import {
 import { TableCell, TableRow } from "@/components/ui/table"
 import { useToast } from "@/contexts/ToastContext"
 import { useCanWrite, useCurrentRole } from "@/hooks/useCanWrite"
-import { useListPage } from "@/hooks/useListPage"
+import { NEWEST_FIRST, useListPage } from "@/hooks/useListPage"
 import { useTableSelection } from "@/hooks/useTableSelection"
 import { normalizeErrorMessage } from "@/lib/errors"
 import { useEntityList } from "@/lib/queries"
@@ -99,7 +100,11 @@ type StatusFilter = (typeof STATUS_OPTIONS)[number]["value"]
 function MembersListPage() {
   const searchParams = useSearch({ from: "/members/" })
   const navigate = useNavigate({ from: "/members/" })
-  const list = useListPage({ searchParams, navigate })
+  const list = useListPage({
+    searchParams,
+    navigate,
+    initialSort: NEWEST_FIRST,
+  })
   const canWrite = useCanWrite()
   const queryClient = useQueryClient()
   const toast = useToast()
@@ -354,6 +359,45 @@ function MembersListPage() {
                 Merge selected
               </Button>
             ) : null}
+            <BulkAction
+              ids={selection.selectedIds}
+              label="Suspend"
+              confirmTitle="Suspend members"
+              confirmDescription={(n) => `Suspend ${n} selected member${n === 1 ? "" : "s"}?`}
+              action={membersApi.suspend}
+              invalidateKey={["members"]}
+              verb="suspended"
+              noun="member"
+              labelFor={(id) => mergeMembers.find((m) => m.id === id)?.display_label ?? id}
+              onDone={selection.clearSelection}
+            />
+            <BulkAction
+              ids={selection.selectedIds}
+              label="Reinstate"
+              confirmTitle="Reinstate members"
+              confirmDescription={(n) => `Reinstate ${n} selected member${n === 1 ? "" : "s"}?`}
+              action={membersApi.reinstate}
+              invalidateKey={["members"]}
+              verb="reinstated"
+              noun="member"
+              labelFor={(id) => mergeMembers.find((m) => m.id === id)?.display_label ?? id}
+              onDone={selection.clearSelection}
+            />
+            <BulkAction
+              ids={selection.selectedIds}
+              label="Terminate"
+              confirmTitle="Terminate members"
+              confirmDescription={(n) =>
+                `Terminate ${n} selected member${n === 1 ? "" : "s"}? This ends their eligibility.`
+              }
+              destructive
+              action={membersApi.terminate}
+              invalidateKey={["members"]}
+              verb="terminated"
+              noun="member"
+              labelFor={(id) => mergeMembers.find((m) => m.id === id)?.display_label ?? id}
+              onDone={selection.clearSelection}
+            />
             <Button
               type="button"
               variant="outline"
