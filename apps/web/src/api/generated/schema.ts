@@ -5001,7 +5001,9 @@ export interface paths {
          * Stage Import
          * @description Stage rows for review. Writes no sessions and has no billing side effects.
          *
-         *     Restaging the same file in one tenant is a conflict, not a second batch.
+         *     Restaging a file whose batch is still awaiting a decision is a conflict,
+         *     not a second batch. Restaging one that has been applied or abandoned is how
+         *     rows re-judge against reference data that has since improved.
          */
         post: operations["stage_import_session_imports_post"];
         delete?: never;
