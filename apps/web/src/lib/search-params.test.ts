@@ -56,4 +56,29 @@ describe("listSearchSchema with a flag", () => {
     expect(validate({ new: "1", search: "acme" })).toEqual({ new: true, search: "acme" })
     expect(validate({ search: "   " })).toEqual({})
   })
+
+  it("carries the table state the list hooks keep in the URL", () => {
+    expect(validate({ page: 3, sort: "name", desc: true })).toEqual({
+      page: 3,
+      sort: "name",
+      desc: true,
+    })
+  })
+
+  it("accepts the string forms a hand-typed URL produces", () => {
+    expect(validate({ page: "4", desc: "true", sort: "status" })).toEqual({
+      page: 4,
+      sort: "status",
+      desc: true,
+    })
+  })
+
+  /** Page 1 and ascending are the defaults, so they leave no trace in the URL. */
+  it("drops page 1, a fractional or negative page, and an unset desc", () => {
+    expect(validate({ page: 1, desc: false })).toEqual({})
+    expect(validate({ page: 0 })).toEqual({})
+    expect(validate({ page: -2 })).toEqual({})
+    expect(validate({ page: 2.5 })).toEqual({})
+    expect(validate({ page: "many" })).toEqual({})
+  })
 })

@@ -17,7 +17,7 @@ import { FilterBar, FilterChip, FilterSearch, FilterTrigger } from "@/components
 import { IconButton } from "@/components/common/IconButton"
 import { PageShell } from "@/components/common/PageShell"
 import { TableSkeleton } from "@/components/common/PageSkeletons"
-import { compareSort, nextSort, SortHeader, type SortState } from "@/components/common/SortHeader"
+import { compareSort, SortHeader, type SortState } from "@/components/common/SortHeader"
 import { STICKY_TABLE_HEAD } from "@/components/common/tableStyles"
 import { EngagementFormSheet } from "@/components/EngagementFormSheet"
 import { Button } from "@/components/ui/button"
@@ -36,6 +36,7 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { useCanWrite } from "@/hooks/useCanWrite"
+import { useUrlSort } from "@/hooks/useUrlSort"
 import { formatDate } from "@/lib/format"
 import { enumParam, listSearchSchema } from "@/lib/search-params"
 import { cn } from "@/lib/utils"
@@ -80,7 +81,11 @@ function EngagementsListPage() {
   const navigate = useNavigate({ from: "/engagements/" })
   const [searchInput, setSearchInput] = useState(searchParams.search ?? "")
   const [addOpen, setAddOpen] = useState(false)
-  const [sort, setSort] = useState<SortState>({ field: "due_date", desc: false })
+  const { sort, toggleSort } = useUrlSort({
+    searchParams,
+    navigate,
+    initialSort: { field: "due_date", desc: false },
+  })
   const canWrite = useCanWrite()
   useEffect(() => {
     if (searchParams.new) {
@@ -111,7 +116,6 @@ function EngagementsListPage() {
     const type = next === "all" ? undefined : (next as EngagementType)
     navigate({ search: (prev) => ({ ...prev, type }), replace: true })
   }
-  const toggleSort = (field: string) => setSort((prev) => nextSort(prev, field))
   const overdueCount = allItems.filter((e) => isOverdue(e.due_date, e.status)).length
   const hasFilters =
     Boolean(searchInput) ||

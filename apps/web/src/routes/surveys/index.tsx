@@ -12,7 +12,7 @@ import { IconButton } from "@/components/common/IconButton"
 import { PageShell } from "@/components/common/PageShell"
 import { TableSkeleton } from "@/components/common/PageSkeletons"
 import { SelectionBar } from "@/components/common/SelectionBar"
-import { compareSort, nextSort, SortHeader, type SortState } from "@/components/common/SortHeader"
+import { compareSort, SortHeader, type SortState } from "@/components/common/SortHeader"
 import { STICKY_TABLE_HEAD } from "@/components/common/tableStyles"
 import { SurveyFormSheet } from "@/components/SurveyFormSheet"
 import { Button } from "@/components/ui/button"
@@ -32,6 +32,7 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { useTableSelection } from "@/hooks/useTableSelection"
+import { useUrlSort } from "@/hooks/useUrlSort"
 import { formatDate } from "@/lib/format"
 import { enumParam, listSearchSchema } from "@/lib/search-params"
 import { cn } from "@/lib/utils"
@@ -60,7 +61,11 @@ function SurveysListPage() {
   const navigate = useNavigate({ from: "/surveys/" })
   const [searchInput, setSearchInput] = useState(searchParams.search ?? "")
   const [addOpen, setAddOpen] = useState(false)
-  const [sort, setSort] = useState<SortState>({ field: "period_start", desc: true })
+  const { sort, toggleSort } = useUrlSort({
+    searchParams,
+    navigate,
+    initialSort: { field: "period_start", desc: true },
+  })
   useEffect(() => {
     if (searchParams.new) {
       setAddOpen(true)
@@ -85,7 +90,6 @@ function SurveysListPage() {
     const status = next === "all" ? undefined : (next as SurveyStatus)
     navigate({ search: (prev) => ({ ...prev, status }), replace: true })
   }
-  const toggleSort = (field: string) => setSort((prev) => nextSort(prev, field))
   const hasFilters = Boolean(searchInput) || Boolean(searchParams.status)
 
   return (
