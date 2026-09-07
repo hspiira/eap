@@ -68,7 +68,7 @@ const COLUMNS: ListColumn[] = [
   {
     header: <span className="sr-only">Status</span>,
     sortField: "status",
-    className: "w-8 px-2",
+    className: "w-8 px-2 text-center",
   },
   { header: "Member", sortField: "display_label" },
   { header: "Member code", className: "text-fg/65" },
@@ -473,7 +473,7 @@ function MemberRow({
       <TableCell className="px-3 py-1.5">
         <Checkbox aria-label={`Select ${label}`} checked={selected} onCheckedChange={onToggle} />
       </TableCell>
-      <TableCell className="px-2 py-1.5">
+      <TableCell className="px-2 py-1.5 text-center">
         <StatusIcon status={member.status} />
       </TableCell>
       <TableCell className="max-w-[14rem] truncate py-1.5 text-sm font-medium text-fg">
