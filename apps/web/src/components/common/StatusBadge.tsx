@@ -37,6 +37,7 @@ export function StatusBadge({ status, size = "default", className, iconOnly }: S
         <Tooltip>
           <TooltipTrigger asChild>
             <span
+              role="img"
               aria-label={config.label}
               className={cn(
                 "inline-flex items-center justify-center rounded-sm",

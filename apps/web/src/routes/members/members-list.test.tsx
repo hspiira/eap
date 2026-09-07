@@ -140,8 +140,7 @@ describe("member roster", () => {
 
   it("shows status as an icon with an accessible label rather than a badge column", async () => {
     renderWithProviders(<Page />)
-    // Visually an icon, but still announced, and the column header stays
-    // screen-reader-only so the icon column has a name without a visible label.
+    // Visually an icon with the label on hover, not badge text in the cell.
     expect(await screen.findByRole("img", { name: "Active" })).toBeInTheDocument()
     expect(screen.queryByText("Suspended")).not.toBeInTheDocument()
   })

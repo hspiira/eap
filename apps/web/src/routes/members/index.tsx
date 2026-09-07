@@ -3,19 +3,15 @@ import { useCallback, useState } from "react"
 import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { createFileRoute, Link, useNavigate, useSearch } from "@tanstack/react-router"
 import {
-  CheckCircle2,
-  CircleDashed,
-  Clock,
   Download,
   ExternalLink,
   FileDown,
   FileUp,
   MoreHorizontal,
-  PauseCircle,
   Plus,
   ScanSearch,
+  User,
   Users,
-  XCircle,
 } from "lucide-react"
 
 import { type MemberDuplicateCandidate, membersApi } from "@/api/endpoints/members"
@@ -25,6 +21,7 @@ import { FilterBar, FilterChip, FilterSearch, FilterTrigger } from "@/components
 import { IconButton } from "@/components/common/IconButton"
 import { PageShell } from "@/components/common/PageShell"
 import { SelectionBar } from "@/components/common/SelectionBar"
+import { StatusBadge } from "@/components/common/StatusBadge"
 import { ROW_BORDER } from "@/components/common/tableStyles"
 import { MemberFormSheet } from "@/components/MemberFormSheet"
 import { MemberMergeDialog } from "@/components/MemberMergeDialog"
@@ -65,12 +62,8 @@ export const Route = createFileRoute("/members/")({
 })
 
 const COLUMNS: ListColumn[] = [
-  {
-    header: <span className="sr-only">Status</span>,
-    sortField: "status",
-    className: "w-8 px-2 text-center",
-  },
   { header: "Member", sortField: "display_label" },
+  { header: "Status", sortField: "status", className: "text-center" },
   { header: "Member code", className: "text-fg/65" },
   { header: "Relationship", sortField: "relation", className: "text-fg/65" },
   { header: "Client", className: "text-fg/65" },
@@ -78,23 +71,6 @@ const COLUMNS: ListColumn[] = [
   { header: "Personal email", className: "text-fg/65" },
   { header: "Phone", className: "text-fg/65" },
 ]
-
-const STATUS_ICONS: Record<string, { icon: typeof CheckCircle2; className: string }> = {
-  [EligibilityStatus.ACTIVE]: { icon: CheckCircle2, className: "text-primary" },
-  [EligibilityStatus.PENDING]: { icon: Clock, className: "text-warning" },
-  [EligibilityStatus.SUSPENDED]: { icon: PauseCircle, className: "text-fg/45" },
-  [EligibilityStatus.TERMINATED]: { icon: XCircle, className: "text-danger" },
-}
-
-function StatusIcon({ status }: { status: string }) {
-  const entry = STATUS_ICONS[status] ?? { icon: CircleDashed, className: "text-fg/40" }
-  const Icon = entry.icon
-  return (
-    <span title={status} aria-label={status} role="img" className="inline-flex">
-      <Icon className={`size-3.5 ${entry.className}`} />
-    </span>
-  )
-}
 
 const RELATION_OPTIONS = [
   { value: "all", label: "All relationships" },
@@ -473,11 +449,19 @@ function MemberRow({
       <TableCell className="px-3 py-1.5">
         <Checkbox aria-label={`Select ${label}`} checked={selected} onCheckedChange={onToggle} />
       </TableCell>
-      <TableCell className="px-2 py-1.5 text-center">
-        <StatusIcon status={member.status} />
+      <TableCell className="max-w-[14rem] truncate py-1.5">
+        <div className="flex items-center gap-2.5">
+          <span
+            aria-hidden
+            className="grid size-6 shrink-0 place-items-center bg-primary/10 text-primary"
+          >
+            <User className="size-3.5" />
+          </span>
+          <span className="truncate text-sm font-medium text-fg">{label}</span>
+        </div>
       </TableCell>
-      <TableCell className="max-w-[14rem] truncate py-1.5 text-sm font-medium text-fg">
-        {label}
+      <TableCell className="text-center">
+        <StatusBadge status={member.status} iconOnly />
       </TableCell>
       <TableCell className="py-1.5 text-xs text-fg/70">{member.employer_member_id}</TableCell>
       <TableCell className="py-1.5 text-xs text-fg/70">{member.relation}</TableCell>
