@@ -146,6 +146,7 @@ class SessionImportRowEntity:
     provider_id: ProviderId | None = None
     provider_affiliation_id: ProviderAffiliationId | None = None
     imported_session_id: str | None = None
+    staged_replay_key: str | None = None
     reasons: tuple[str, ...] = field(default_factory=tuple)
     # Resolved subject: who the session was for and what was delivered.
     client_id: str | None = None
@@ -198,7 +199,17 @@ class SessionImportRowEntity:
         return self.outcome in _REVIEW_OUTCOMES
 
     def replay_key(self, file_hash: str) -> str:
-        """Idempotency key. Prefers a stable source id, falls back to file+row."""
+        """The key this row claims, or defers with.
+
+        Staging decides it, because only staging knows whether the source row
+        is already accounted for elsewhere; a row that found an earlier claim
+        defers instead of claiming the same key twice. `staged_replay_key`
+        carries that decision. Without one the key is derived, which is what a
+        row built outside staging gets: a stable source id if the source has
+        one, otherwise the file and row number.
+        """
+        if self.staged_replay_key:
+            return self.staged_replay_key
         if self.source_record_key:
             return f"key:{self.source_record_key}"
         return f"file:{file_hash}:row:{self.row_number}"

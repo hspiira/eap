@@ -128,7 +128,9 @@ async def stage_import(
 ):
     """Stage rows for review. Writes no sessions and has no billing side effects.
 
-    Restaging the same file in one tenant is a conflict, not a second batch.
+    Restaging a file whose batch is still awaiting a decision is a conflict,
+    not a second batch. Restaging one that has been applied or abandoned is how
+    rows re-judge against reference data that has since improved.
     """
     content = await file.read()
     if len(content) > MAX_IMPORT_BYTES:
@@ -137,11 +139,11 @@ async def stage_import(
     tenant = TenantId(tenant_id)
 
     existing = await imports.find_batch_by_hash(tenant, file_hash)
-    if existing is not None and existing.status is ImportBatchStatus.ABANDONED:
-        # An abandoned batch is one somebody superseded on purpose. Holding its
-        # hash against the file would make abandoning it pointless: the same
-        # extract could never be staged again once the review data it needed
-        # had finally arrived.
+    if existing is not None and existing.status is not ImportBatchStatus.STAGED:
+        # Only an undecided batch holds its file against a second staging. Once
+        # one is applied or abandoned, staging the extract again is how rows
+        # that could not be resolved on thinner reference data get re-judged;
+        # rows the earlier batch already accounted for come back as duplicates.
         existing = None
     if existing is not None:
         message = f"This file was already staged as batch {existing.id.value}"
@@ -152,6 +154,11 @@ async def stage_import(
             details={"file": message},
         )
 
+    # An earlier judging of this same file gives up every row it never
+    # imported, so those source rows can be judged again against reference data
+    # that has since improved. Rows that did import keep their keys and come
+    # back as duplicates.
+    await imports.release_superseded_rows(tenant, file_hash)
     source_rows = parse_source_rows(content, source_record_key_field)
     preflight_source_keys(source_rows, source_record_key_field)
     now = utc_now()
@@ -189,6 +196,7 @@ async def stage_import(
                 source_record_key=staged.source_record_key,
                 raw_practitioner_name=staged.raw_practitioner_name,
                 session_date=staged.session_date,
+                staged_replay_key=staged.replay_key,
                 outcome=staged.outcome,
                 delivery_context=staged.delivery_context,
                 provider_id=staged.provider_id,

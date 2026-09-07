@@ -34,11 +34,11 @@ from app.infrastructure.models.base import (
 class SessionImportBatchModel(CuidMixin, TenantMixin, Base, TimestampMixin):
     """One import attempt and its provenance.
 
-    The tenant/hash uniqueness makes restaging the same file within a tenant an
-    explicit conflict rather than a silent second batch. It skips abandoned
-    batches: one was superseded on purpose, and holding its hash would mean an
-    extract could never be staged again once the review data it waited on had
-    arrived.
+    The tenant/hash uniqueness makes restaging the same file an explicit
+    conflict while a batch of it is still awaiting a decision. It stops there:
+    once a batch is applied or abandoned, staging the extract again is the only
+    way to re-judge rows that could not be resolved when reference data was
+    thinner, and the rows' replay keys are what stop a second import.
     """
 
     __tablename__ = "session_import_batches"
@@ -49,7 +49,7 @@ class SessionImportBatchModel(CuidMixin, TenantMixin, Base, TimestampMixin):
             "tenant_id",
             "file_hash",
             unique=True,
-            postgresql_where=text("status <> 'Abandoned'"),
+            postgresql_where=text("status = 'Staged'"),
         ),
     )
 

@@ -258,6 +258,16 @@ class TestReplay:
         assert staged.outcome is ImportRowOutcome.DUPLICATE
         assert "batch b-old" in staged.reasons[0]
 
+    async def test_a_duplicate_defers_the_key_instead_of_claiming_it_again(self):
+        """Exactly one row may hold a key, or the same source imports twice."""
+        existing = AsyncMock()
+        existing.row_number = 7
+        existing.batch_id = SessionImportBatchId("b-old")
+        service, _ = _service(existing_row=existing)
+        staged = await _stage(service, _row(row_number=42))
+        assert staged.replay_key == f"duplicate:b-old:file:{HASH}:row:42"
+        assert staged.replay_key != f"file:{HASH}:row:42"
+
     async def test_the_replay_key_uses_file_hash_and_row_when_no_source_key(self):
         service, _ = _service()
         staged = await _stage(service, _row(row_number=42))

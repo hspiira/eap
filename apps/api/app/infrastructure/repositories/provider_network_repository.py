@@ -51,6 +51,7 @@ from app.infrastructure.models.session_import_model import (
     SessionImportBatchModel,
     SessionImportRowModel,
 )
+from app.shared.utils.replay_key import RELEASED_PREFIX
 
 _ORGANISATION_SORTS = {
     "name": ProviderOrganisationModel.name,
@@ -62,11 +63,6 @@ _ORGANISATION_SORTS = {
 async def _count(session: AsyncSession, statement: Select) -> int:
     subquery = statement.order_by(None).subquery()
     return int(await session.scalar(select(func.count()).select_from(subquery)) or 0)
-
-
-#: Marks a replay key that no longer claims its source row. The original key
-#: follows the batch id, so what the row staged stays readable.
-RELEASED_PREFIX = "abandoned:"
 
 
 class ProviderOrganisationRepositoryImpl(ProviderOrganisationRepository):
@@ -425,15 +421,34 @@ class SessionImportRepositoryImpl(SessionImportRepository):
         await self.session.flush()
 
     async def release_replay_keys(self, tenant_id: TenantId, batch_id: SessionImportBatchId) -> int:
+        return await self._release(tenant_id, SessionImportRowModel.batch_id == batch_id.value)
+
+    async def release_superseded_rows(self, tenant_id: TenantId, file_hash: str) -> int:
+        return await self._release(
+            tenant_id,
+            SessionImportRowModel.batch_id.in_(
+                select(SessionImportBatchModel.id).where(
+                    SessionImportBatchModel.tenant_id == tenant_id.value,
+                    SessionImportBatchModel.file_hash == file_hash,
+                )
+            ),
+        )
+
+    async def _release(self, tenant_id: TenantId, scope) -> int:
+        """Give up the keys of rows in `scope` that never produced a session."""
         result = await self.session.execute(
             update(SessionImportRowModel)
             .where(
                 SessionImportRowModel.tenant_id == tenant_id.value,
-                SessionImportRowModel.batch_id == batch_id.value,
+                scope,
+                SessionImportRowModel.imported_session_id.is_(None),
                 SessionImportRowModel.replay_key.not_like(f"{RELEASED_PREFIX}%"),
             )
             .values(
-                replay_key=RELEASED_PREFIX + batch_id.value + ":" + SessionImportRowModel.replay_key
+                replay_key=RELEASED_PREFIX
+                + SessionImportRowModel.batch_id
+                + ":"
+                + SessionImportRowModel.replay_key
             )
         )
         await self.session.flush()
