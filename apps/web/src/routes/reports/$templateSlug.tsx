@@ -7,8 +7,13 @@ import { EmptyState } from "@/components/common/EmptyState"
 import { PageShell } from "@/components/common/PageShell"
 import { WaveSummaryBody } from "@/components/reports/CareCallbackWaveSummary"
 import { PerClientRenewalPack } from "@/components/reports/PerClientRenewalPack"
-import { BackLink, UnknownTemplate } from "@/components/reports/ReportShared"
+import {
+  BackLink,
+  DemoTemplateUnavailable,
+  UnknownTemplate,
+} from "@/components/reports/ReportShared"
 import { Button } from "@/components/ui/button"
+import { useFixtures } from "@/lib/fixtures"
 import { cn } from "@/lib/utils"
 
 export const Route = createFileRoute("/reports/$templateSlug")({
@@ -116,8 +121,12 @@ function CareCallbackWaveSummary() {
 
 function ReportTemplatePage() {
   const { templateSlug } = Route.useParams()
+  const fixtures = useFixtures()
 
-  if (templateSlug === "per-client-renewal") return <PerClientRenewalPack />
+  if (templateSlug === "per-client-renewal") {
+    if (!fixtures) return <DemoTemplateUnavailable title="Per-client renewal pack" />
+    return <PerClientRenewalPack />
+  }
   if (templateSlug === "care-callback-summary") return <CareCallbackWaveSummary />
   return <UnknownTemplate slug={templateSlug} />
 }

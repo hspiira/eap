@@ -10,11 +10,14 @@ import {
 } from "lucide-react"
 
 import { PageShell } from "@/components/common/PageShell"
+import { useFixtures } from "@/lib/fixtures"
 import { cn } from "@/lib/utils"
 
 export const Route = createFileRoute("/reports/")({
   component: ReportsLandingPage,
 })
+
+type TemplateAvailability = "ready" | "demo" | "planned"
 
 interface ReportTemplate {
   slug: string
@@ -22,7 +25,7 @@ interface ReportTemplate {
   description: string
   cadence: string
   icon: LucideIcon
-  ready: boolean
+  availability: TemplateAvailability
 }
 
 const TEMPLATES: ReportTemplate[] = [
@@ -33,7 +36,7 @@ const TEMPLATES: ReportTemplate[] = [
       "Sessions by month, diagnosis prevalence, care-callback outcomes, satisfaction distribution.",
     cadence: "Annual / on-renewal",
     icon: FileText,
-    ready: true,
+    availability: "demo",
   },
   {
     slug: "care-callback-summary",
@@ -42,7 +45,7 @@ const TEMPLATES: ReportTemplate[] = [
       "PHQ-9 / WOS-5 deltas, crisis-flag count, by-counsellor outcomes for a single wave.",
     cadence: "Per wave",
     icon: PieChart,
-    ready: true,
+    availability: "ready",
   },
   {
     slug: "tier-portfolio",
@@ -50,7 +53,7 @@ const TEMPLATES: ReportTemplate[] = [
     description: "Active clients by Tier A/B/C, contract values, renewal-window heatmap.",
     cadence: "Monthly",
     icon: Ribbon,
-    ready: false,
+    availability: "planned",
   },
   {
     slug: "anchor-cohort-benchmark",
@@ -58,7 +61,7 @@ const TEMPLATES: ReportTemplate[] = [
     description: "Cross-tenant aggregate (k-floor 10) for benchmarking against the anchor cohort.",
     cadence: "Quarterly",
     icon: Sparkles,
-    ready: false,
+    availability: "planned",
   },
 ]
 
@@ -88,11 +91,14 @@ function ReportsLandingPage() {
 }
 
 function ReportTemplateCard({ template }: { template: ReportTemplate }) {
+  const fixtures = useFixtures()
   const Icon = template.icon
   const base =
     "group flex h-full flex-col gap-3 rounded-sm border border-fg/10 bg-surface p-4 transition-colors"
+  const openable =
+    template.availability === "ready" || (template.availability === "demo" && fixtures)
 
-  if (!template.ready) {
+  if (!openable) {
     return (
       <div className={cn(base, "opacity-60")} aria-disabled="true">
         <CardHeader template={template} icon={Icon} />
@@ -112,6 +118,11 @@ function ReportTemplateCard({ template }: { template: ReportTemplate }) {
     >
       <CardHeader template={template} icon={Icon} />
       <p className="text-sm text-fg/65">{template.description}</p>
+      {template.availability === "demo" ? (
+        <span className="inline-flex w-fit items-center rounded-sm border border-warning/40 bg-warning-soft px-1.5 py-0.5 text-[10px] font-medium tracking-wide text-warning-fg">
+          Demonstration data
+        </span>
+      ) : null}
       <span className="mt-auto inline-flex items-center gap-1 text-sm font-medium text-primary">
         Open template <ArrowRight className="size-3.5" />
       </span>
