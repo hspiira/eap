@@ -6,6 +6,7 @@ import {
   Archive,
   ArchiveRestore,
   Bookmark,
+  BookmarkCheck,
   Building2,
   CircleX,
   Download,
@@ -27,13 +28,13 @@ import {
 import { ClientFormSheet } from "@/components/clients/ClientFormSheet"
 import { ClientImportDialog } from "@/components/clients/ClientImportDialog"
 import { BulkAction } from "@/components/common/BulkAction"
-import { BulkActionButton } from "@/components/common/BulkActionButton"
 import { BulkActionWithReason } from "@/components/common/BulkActionWithReason"
 import { ConfirmDialog } from "@/components/common/ConfirmDialog"
 import { EmptyState } from "@/components/common/EmptyState"
 import { EntityListView, type ListColumn } from "@/components/common/EntityListView"
 import { EntityNameCell } from "@/components/common/EntityNameCell"
 import { FilterBar, FilterChip, FilterSearch, FilterTrigger } from "@/components/common/FilterBar"
+import { IconButton } from "@/components/common/IconButton"
 import { PageShell } from "@/components/common/PageShell"
 import { SelectionBar } from "@/components/common/SelectionBar"
 import { StatusBadge } from "@/components/common/StatusBadge"
@@ -313,32 +314,24 @@ function ClientsListPage() {
       actions={
         <>
           {canWrite ? (
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              className="h-7 gap-1.5 px-2"
-              onClick={saveCurrentView}
-            >
-              <Bookmark className="size-3.5" />
-              Save view
-            </Button>
+            <IconButton label="Save view" icon={Bookmark} onClick={saveCurrentView} />
           ) : null}
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            className="h-7 gap-1.5 px-2"
-            onClick={scanDuplicates}
-          >
-            <ScanSearch className="size-3.5" />
-            Find duplicates
-          </Button>
+          <IconButton label="Find duplicates" icon={ScanSearch} onClick={scanDuplicates} />
           {savedViews.length > 0 ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button type="button" variant="ghost" size="sm" className="h-7 px-2">
-                  Views
+                {/* Not IconButton: a tooltip trigger and a menu trigger both
+                    want to be the button, and the menu is the one that has to
+                    hold the ref. The title carries the name instead. */}
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  aria-label="Saved views"
+                  title="Saved views"
+                  className="size-7 shrink-0 p-0 text-fg/70"
+                >
+                  <BookmarkCheck className="size-3.5" aria-hidden />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
@@ -365,23 +358,16 @@ function ClientsListPage() {
               </DropdownMenuContent>
             </DropdownMenu>
           ) : null}
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            className="h-7 gap-1.5 px-2"
+          <IconButton
+            label="Download import template"
+            icon={FileDown}
             onClick={() =>
               void download(clientsApi.getImportTemplate(), "clients-import-template.csv")
             }
-          >
-            <FileDown className="size-3.5" />
-            Template
-          </Button>
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            className="h-7 gap-1.5 px-2"
+          />
+          <IconButton
+            label="Export"
+            icon={Download}
             onClick={() =>
               void download(
                 clientsApi.exportCsv({
@@ -394,22 +380,15 @@ function ClientsListPage() {
                 "clients.csv",
               )
             }
-          >
-            <Download className="size-3.5" />
-            Export
-          </Button>
+          />
           {canWrite ? (
             <>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                className="h-7 gap-1.5 px-2"
+              <IconButton
+                label="Import"
+                icon={FileUp}
+                emphasis="raised"
                 onClick={() => setImportOpen(true)}
-              >
-                <FileUp className="size-3.5" />
-                Import
-              </Button>
+              />
               <Button
                 size="sm"
                 className="h-7 gap-1.5 px-2.5"
@@ -581,10 +560,9 @@ function ClientsListPage() {
                     ))}
                   </SelectContent>
                 </Select>
-                <BulkActionButton
+                <IconButton
                   label="Apply tag"
                   icon={Tag}
-                  running={false}
                   disabled={!bulkTagId}
                   onClick={() => {
                     void clientsApi
@@ -599,10 +577,9 @@ function ClientsListPage() {
                       )
                   }}
                 />
-                <BulkActionButton
+                <IconButton
                   label="Export selected"
                   icon={Download}
-                  running={false}
                   onClick={() =>
                     void download(
                       clientsApi.exportSelected([...selection.selectedIds]),

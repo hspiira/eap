@@ -212,16 +212,12 @@ function ServiceSessionsListPage() {
           <IconButton label="Export" icon={Download} />
           <span className="mx-1 h-4 w-px bg-fg/15" aria-hidden />
           {canWrite && (
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              className="h-7 gap-1.5 px-2.5"
+            <IconButton
+              label="Import"
+              icon={FileUp}
+              emphasis="raised"
               onClick={() => setImportOpen(true)}
-            >
-              <FileUp className="size-3.5" />
-              Import
-            </Button>
+            />
           )}
           {canWrite && (
             <Button size="sm" className="h-7 gap-1.5 px-2.5" onClick={() => setAddOpen(true)}>

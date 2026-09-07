@@ -20,7 +20,6 @@ import {
 
 import { type MemberDuplicateCandidate, membersApi } from "@/api/endpoints/members"
 import { BulkAction } from "@/components/common/BulkAction"
-import { BulkActionButton } from "@/components/common/BulkActionButton"
 import { EmptyState } from "@/components/common/EmptyState"
 import { EntityListView, type ListColumn } from "@/components/common/EntityListView"
 import { FilterBar, FilterChip, FilterSearch, FilterTrigger } from "@/components/common/FilterBar"
@@ -179,7 +178,7 @@ function MembersListPage() {
       actions={
         <>
           <IconButton
-            label="Export members"
+            label="Export"
             icon={Download}
             onClick={() =>
               void download(
@@ -193,39 +192,21 @@ function MembersListPage() {
               )
             }
           />
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            className="h-7 gap-1.5 px-2"
+          <IconButton
+            label="Download import template"
+            icon={FileDown}
             onClick={() =>
               void download(membersApi.getImportTemplate(), "members-import-template.csv")
             }
-          >
-            <FileDown className="size-3.5" />
-            Template
-          </Button>
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            className="h-7 gap-1.5 px-2"
-            onClick={scanDuplicates}
-          >
-            <ScanSearch className="size-3.5" />
-            Find duplicates
-          </Button>
+          />
+          <IconButton label="Find duplicates" icon={ScanSearch} onClick={scanDuplicates} />
           {canWrite ? (
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              className="h-7 gap-1.5 rounded-none px-2"
+            <IconButton
+              label="Import"
+              icon={FileUp}
+              emphasis="raised"
               onClick={() => setImportOpen(true)}
-            >
-              <FileUp className="size-3.5" />
-              Import
-            </Button>
+            />
           ) : null}
           {canWrite ? (
             <Button
@@ -354,11 +335,10 @@ function MembersListPage() {
         toolbar={
           <SelectionBar count={selection.selectedIds.size} onClear={selection.clearSelection}>
             {role === "Admin" && mergePair ? (
-              <BulkActionButton
+              <IconButton
                 label="Merge selected"
                 icon={Merge}
                 destructive
-                running={false}
                 onClick={() => setMergeOpen(true)}
               />
             ) : null}
@@ -404,10 +384,9 @@ function MembersListPage() {
               labelFor={(id) => mergeMembers.find((m) => m.id === id)?.display_label ?? id}
               onDone={selection.clearSelection}
             />
-            <BulkActionButton
+            <IconButton
               label="Export selected"
               icon={Download}
-              running={false}
               onClick={() =>
                 void download(
                   membersApi.exportCsv({ member_ids: [...selection.selectedIds] }),

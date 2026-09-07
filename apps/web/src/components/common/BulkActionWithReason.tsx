@@ -2,7 +2,7 @@ import { useState } from "react"
 
 import type { LucideIcon } from "lucide-react"
 
-import { BulkActionButton } from "@/components/common/BulkActionButton"
+import { IconButton } from "@/components/common/IconButton"
 import { ReasonDialog } from "@/components/providers/ReasonDialog"
 import { type BulkActionOptions, useBulkAction } from "@/hooks/useBulkAction"
 
@@ -48,11 +48,11 @@ export function BulkActionWithReason({
 
   return (
     <>
-      <BulkActionButton
+      <IconButton
         label={label}
         icon={Icon}
         destructive={destructive}
-        running={running}
+        disabled={running}
         onClick={() => setConfirmOpen(true)}
       />
       <ReasonDialog

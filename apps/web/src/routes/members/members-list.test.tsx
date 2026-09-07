@@ -98,7 +98,7 @@ describe("member roster", () => {
     mocks.search = { client_id: "client-1", relation: "Employee" }
     const user = userEvent.setup()
     renderWithProviders(<Page />)
-    await user.click(screen.getByRole("button", { name: "Export members" }))
+    await user.click(screen.getByRole("button", { name: "Export" }))
     expect(mocks.exportCsv).toHaveBeenCalledWith(
       expect.objectContaining({ client_id: "client-1", relation: "Employee" }),
     )
