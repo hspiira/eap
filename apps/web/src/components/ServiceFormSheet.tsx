@@ -142,11 +142,7 @@ export function ServiceFormSheet({ open, onOpenChange, service, onSaved }: Servi
           <Input id="sv-name" placeholder="Individual counselling" {...register("name")} />
         </FormField>
         <div className="grid grid-cols-[1fr_8rem] gap-3">
-          <FormField
-            label="Category"
-            error={errors.category?.message}
-            htmlFor="sv-category"
-          >
+          <FormField label="Category" error={errors.category?.message} htmlFor="sv-category">
             <Controller
               control={control}
               name="category"
@@ -182,11 +178,7 @@ export function ServiceFormSheet({ open, onOpenChange, service, onSaved }: Servi
             />
           </FormField>
         </div>
-        <FormField
-          label="Description"
-          error={errors.description?.message}
-          htmlFor="sv-description"
-        >
+        <FormField label="Description" error={errors.description?.message} htmlFor="sv-description">
           <Input id="sv-description" {...register("description")} />
         </FormField>
       </FormSection>

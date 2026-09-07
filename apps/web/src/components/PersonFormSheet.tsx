@@ -430,20 +430,12 @@ export function PersonFormSheet({
                 ))}
               </datalist>
             </FormField>
-            <FormField
-              label="Department"
-              error={errors.department?.message}
-              htmlFor="ps-dept"
-            >
+            <FormField label="Department" error={errors.department?.message} htmlFor="ps-dept">
               <Input id="ps-dept" placeholder="People Ops" {...register("department")} />
             </FormField>
           </div>
           <div className="grid grid-cols-2 gap-3">
-            <FormField
-              label="Employee ID"
-              error={errors.employee_id?.message}
-              htmlFor="ps-empid"
-            >
+            <FormField label="Employee ID" error={errors.employee_id?.message} htmlFor="ps-empid">
               <Input
                 id="ps-empid"
                 placeholder="MNT-014"
@@ -451,11 +443,7 @@ export function PersonFormSheet({
                 {...register("employee_id")}
               />
             </FormField>
-            <FormField
-              label="Family ID"
-              error={errors.family_id?.message}
-              htmlFor="ps-family"
-            >
+            <FormField label="Family ID" error={errors.family_id?.message} htmlFor="ps-family">
               <Input id="ps-family" className="font-mono" {...register("family_id")} />
             </FormField>
           </div>
@@ -467,11 +455,7 @@ export function PersonFormSheet({
             >
               <Input id="ps-empstart" type="date" {...register("employment_start")} />
             </FormField>
-            <FormField
-              label="End date"
-              error={errors.employment_end?.message}
-              htmlFor="ps-empend"
-            >
+            <FormField label="End date" error={errors.employment_end?.message} htmlFor="ps-empend">
               <Input id="ps-empend" type="date" {...register("employment_end")} />
             </FormField>
           </div>
@@ -553,18 +537,10 @@ export function PersonFormSheet({
       {/* 3. Safety net: emergency contact next, before admin trivia. */}
       <FormSection title="Emergency contact">
         <div className="grid grid-cols-2 gap-3">
-          <FormField
-            label="Name"
-            error={errors.emergency_name?.message}
-            htmlFor="ps-ename"
-          >
+          <FormField label="Name" error={errors.emergency_name?.message} htmlFor="ps-ename">
             <Input id="ps-ename" placeholder="Jane Doe" {...register("emergency_name")} />
           </FormField>
-          <FormField
-            label="Phone"
-            error={errors.emergency_phone?.message}
-            htmlFor="ps-ephone"
-          >
+          <FormField label="Phone" error={errors.emergency_phone?.message} htmlFor="ps-ephone">
             <Input
               id="ps-ephone"
               type="tel"
@@ -573,11 +549,7 @@ export function PersonFormSheet({
             />
           </FormField>
         </div>
-        <FormField
-          label="Email"
-          error={errors.emergency_email?.message}
-          htmlFor="ps-eemail"
-        >
+        <FormField label="Email" error={errors.emergency_email?.message} htmlFor="ps-eemail">
           <Input
             id="ps-eemail"
             type="email"
@@ -592,11 +564,7 @@ export function PersonFormSheet({
       {!isEdit ? (
         <FormSection title="Account preferences">
           <div className="grid grid-cols-3 gap-3">
-            <FormField
-              label="Password"
-              error={errors.password?.message}
-              htmlFor="ps-password"
-            >
+            <FormField label="Password" error={errors.password?.message} htmlFor="ps-password">
               <Input
                 id="ps-password"
                 type="password"

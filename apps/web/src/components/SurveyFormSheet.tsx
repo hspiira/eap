@@ -137,11 +137,7 @@ export function SurveyFormSheet({
             {...register("name")}
           />
         </FormField>
-        <FormField
-          label="Description"
-          error={errors.description?.message}
-          htmlFor="sf-description"
-        >
+        <FormField label="Description" error={errors.description?.message} htmlFor="sf-description">
           <Input
             id="sf-description"
             placeholder="Internal notes for the team."

@@ -159,11 +159,7 @@ export function EngagementFormSheet({
             {...register("name")}
           />
         </FormField>
-        <FormField
-          label="Description"
-          error={errors.description?.message}
-          htmlFor="ef-description"
-        >
+        <FormField label="Description" error={errors.description?.message} htmlFor="ef-description">
           <Input
             id="ef-description"
             placeholder="Internal notes: appears on the engagement detail."
@@ -218,11 +214,7 @@ export function EngagementFormSheet({
         description="Snapshot of rate-card terms for this engagement."
       >
         <div className="grid grid-cols-[1fr_6rem] gap-3">
-          <FormField
-            label="Hourly rate"
-            error={errors.hourly_rate?.message}
-            htmlFor="ef-rate"
-          >
+          <FormField label="Hourly rate" error={errors.hourly_rate?.message} htmlFor="ef-rate">
             <Input
               id="ef-rate"
               type="number"
@@ -234,11 +226,7 @@ export function EngagementFormSheet({
               {...register("hourly_rate")}
             />
           </FormField>
-          <FormField
-            label="Currency"
-            error={errors.currency?.message}
-            htmlFor="ef-currency"
-          >
+          <FormField label="Currency" error={errors.currency?.message} htmlFor="ef-currency">
             <Input id="ef-currency" maxLength={3} {...register("currency")} />
           </FormField>
         </div>

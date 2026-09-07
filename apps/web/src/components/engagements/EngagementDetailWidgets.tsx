@@ -297,11 +297,7 @@ export function HoursPanel({
           value={hours}
           onChange={(e) => setHours(e.target.value)}
         />
-        <Input
-          placeholder="Note"
-          value={note}
-          onChange={(e) => setNote(e.target.value)}
-        />
+        <Input placeholder="Note" value={note} onChange={(e) => setNote(e.target.value)} />
         <Button
           type="button"
           size="sm"

@@ -141,10 +141,7 @@ export function ServiceAssignmentFormSheet({
         <Input type="hidden" {...register("service_id")} />
       </FormSection>
 
-      <FormSection
-        title="Notes"
-        description="Active-period dates derive from the parent contract."
-      >
+      <FormSection title="Notes" description="Active-period dates derive from the parent contract.">
         <FormField label="Notes" error={errors.notes?.message} htmlFor="sa-notes">
           <Textarea
             id="sa-notes"
