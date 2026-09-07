@@ -7,7 +7,7 @@ catalogue and diagnosis taxonomy in `TAXONOMY_CATALOGUE.md`. Opened
 Each item carries the evidence that established it. Strike an item through when
 it lands and record the commit. Do not remove one without being asked.
 
-Status: 6 of 12 done, 5 open, 1 withdrawn.
+Status: 6 of 12 done, 5 open, 1 withdrawn. One web item parked, see the note at the end.
 
 ## Priority order
 
@@ -405,3 +405,19 @@ global. Auditing a global write needs either a nullable tenant on audit rows, a
 platform tenant to attribute them to, or a separate trail for reference data.
 That is a design decision and should not be settled by picking whichever makes
 the insert succeed.
+
+## Parked: newest-first on the clients and members lists
+
+`60eb512` gave every list page an explicit `NEWEST_FIRST` default sort.
+`clients/index.tsx` and `members/index.tsx` need the same two lines, an import
+of `NEWEST_FIRST` and `initialSort: NEWEST_FIRST` on their `useListPage` call,
+and both edits are sitting in the working tree uncommitted.
+
+They are not in that commit because both files also carry another session's
+in-flight `BulkActionWithReason` work, about forty lines each, and committing
+them would have dragged unfinished work in. The change is additive and cannot
+conflict, so it will land with whoever commits those files.
+
+Recorded here so it is not lost if that work is discarded rather than
+committed. Verify with: both files import `NEWEST_FIRST` and pass it as
+`initialSort`.
