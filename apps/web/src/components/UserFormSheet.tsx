@@ -109,7 +109,7 @@ function UserCreateSheet({ open, onOpenChange, onSaved }: UserFormSheetProps) {
       open={open}
       onOpenChange={onOpenChange}
       title="Add user"
-      description="Create a new platform login. The user can complete profile details after first sign-in."
+      description="Create a platform login. Profile details can follow after first sign-in."
       size="md"
       onSubmit={submit}
       isSubmitting={formState.isSubmitting}

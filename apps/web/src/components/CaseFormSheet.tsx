@@ -85,7 +85,7 @@ export function CaseFormSheet({ open, onOpenChange, onSaved }: CaseFormSheetProp
       open={open}
       onOpenChange={onOpenChange}
       title="Open a case"
-      description="Intake a new clinical case for an eligible member. Everything else (counsellor assignment, notes, closure) happens from the case once it's open."
+      description="Open a clinical case for a member. Assignment, notes and closure happen on the case."
       size="lg"
       onSubmit={submit}
       isSubmitting={formState.isSubmitting}

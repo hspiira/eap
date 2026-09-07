@@ -122,7 +122,7 @@ export function TagFormSheet({ open, onOpenChange, tag, onSaved }: TagFormSheetP
       <FormField label="Description" error={errors.description?.message} htmlFor="tag-description">
         <Input
           id="tag-description"
-          placeholder="What is this tag used for?"
+          placeholder="When to apply this tag"
           {...register("description")}
         />
       </FormField>
