@@ -15305,6 +15305,11 @@
             "description": "Successful Response"
           }
         },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
         "summary": "Root"
       }
     },
@@ -16203,6 +16208,11 @@
             "description": "Validation Error"
           }
         },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
         "summary": "Azure AD SSO callback (exchanges code for internal JWT)",
         "tags": [
           "authentication"
@@ -16223,6 +16233,11 @@
             "description": "Successful Response"
           }
         },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
         "summary": "Initiate Azure AD SSO (redirects to Microsoft login)",
         "tags": [
           "authentication"
@@ -16265,6 +16280,11 @@
             "description": "Validation Error"
           }
         },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
         "summary": "Authenticate user and get access token",
         "tags": [
           "authentication"
@@ -16307,6 +16327,11 @@
             "description": "Validation Error"
           }
         },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
         "summary": "Revoke refresh token (logout)",
         "tags": [
           "authentication"
@@ -16383,6 +16408,11 @@
             "description": "Validation Error"
           }
         },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
         "summary": "Refresh access token",
         "tags": [
           "authentication"
@@ -16418,6 +16448,11 @@
             "description": "Validation Error"
           }
         },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
         "summary": "Set initial admin password using one-time token",
         "tags": [
           "authentication"
@@ -25291,6 +25326,11 @@
             "description": "Successful Response"
           }
         },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
         "summary": "Health"
       }
     },
@@ -29984,6 +30024,11 @@
             "description": "Validation Error"
           }
         },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
         "summary": "List Specialties",
         "tags": [
           "provider-specialties"
@@ -34108,6 +34153,11 @@
             "description": "Validation Error"
           }
         },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
         "summary": "Public webhook ingestion (HMAC-verified, idempotent)",
         "tags": [
           "surveys"
@@ -34338,6 +34388,11 @@
             "description": "Validation Error"
           }
         },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
         "summary": "Check if tenant code is available",
         "tags": [
           "tenants"
