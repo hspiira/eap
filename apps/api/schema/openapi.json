@@ -12186,6 +12186,11 @@
             "description": "User ID of approver",
             "title": "Approved By"
           },
+          "attendance": {
+            "$ref": "#/components/schemas/SessionAttendance",
+            "default": "Individual",
+            "description": "Individual names a member; CompanyWide names a client and a headcount"
+          },
           "category": {
             "anyOf": [
               {
@@ -12196,6 +12201,18 @@
               }
             ],
             "description": "Individual / Group / Family / Couples"
+          },
+          "client_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Required for a CompanyWide session. For an Individual session it is taken from the member, so that the two cannot disagree",
+            "title": "Client Id"
           },
           "client_type": {
             "anyOf": [
@@ -12285,9 +12302,16 @@
             "title": "Location"
           },
           "member_id": {
-            "description": "Member identifier",
-            "title": "Member Id",
-            "type": "string"
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Required for an Individual session, forbidden for a CompanyWide one",
+            "title": "Member Id"
           },
           "partner_name": {
             "anyOf": [
@@ -12382,7 +12406,6 @@
         "required": [
           "service_id",
           "provider_id",
-          "member_id",
           "scheduled_at",
           "delivery_context"
         ],
@@ -12462,6 +12485,10 @@
             "description": "User ID of approver",
             "title": "Approved By"
           },
+          "attendance": {
+            "$ref": "#/components/schemas/SessionAttendance",
+            "description": "Individual or CompanyWide"
+          },
           "cancellation_reason": {
             "anyOf": [
               {
@@ -12484,6 +12511,11 @@
               }
             ],
             "description": "Individual / Group / Family / Couples"
+          },
+          "client_id": {
+            "description": "The client the session is attributed to",
+            "title": "Client Id",
+            "type": "string"
           },
           "client_type": {
             "anyOf": [
@@ -12619,9 +12651,16 @@
             "title": "Location"
           },
           "member_id": {
-            "description": "Member identifier",
-            "title": "Member Id",
-            "type": "string"
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Absent on a company-wide session",
+            "title": "Member Id"
           },
           "notes": {
             "anyOf": [
@@ -12754,7 +12793,8 @@
           "tenant_id",
           "service_id",
           "provider_id",
-          "member_id",
+          "attendance",
+          "client_id",
           "scheduled_at",
           "delivery_context",
           "status",
@@ -13039,6 +13079,15 @@
         "title": "ServiceUpdateGroupSettings",
         "type": "object"
       },
+      "SessionAttendance": {
+        "description": "Who a session was delivered to.\n\nCOMPANY_WIDE covers a health talk or site visit: a real session delivered to\na client with no individual to name. It is not the same as not knowing who\nattended. The source extract holds 569 rows marked Staff or Dependant with\nno member id, and those are unresolved identities that stay staged rather\nthan becoming member-less sessions. Keeping the two apart is what lets\nvalidation require a headcount here and a member there.",
+        "enum": [
+          "Individual",
+          "CompanyWide"
+        ],
+        "title": "SessionAttendance",
+        "type": "string"
+      },
       "SessionCategory": {
         "enum": [
           "Individual",
@@ -13050,11 +13099,12 @@
         "type": "string"
       },
       "SessionClinicalStatus": {
-        "description": "Clinical continuation outcome recorded by the counsellor at session end.\n\nDistinct from SessionStatus (scheduling lifecycle).\nTO_BE_CONTINUED:  client returns for follow-up (xlsx: T).\nREFERRED:         client referred elsewhere (xlsx: R).\nCOMPLETED:        case episode closed this session (xlsx: C).",
+        "description": "Clinical continuation outcome recorded by the counsellor at session end.\n\nDistinct from SessionStatus (scheduling lifecycle).\nTO_BE_CONTINUED:  client returns for follow-up (xlsx: T).\nREFERRED:         client referred elsewhere (xlsx: R).\nCOMPLETED:        case episode closed this session (xlsx: C).\nTERMINATED:       engagement ended without completing.",
         "enum": [
           "ToBeContinued",
           "Referred",
-          "Completed"
+          "Completed",
+          "Terminated"
         ],
         "title": "SessionClinicalStatus",
         "type": "string"

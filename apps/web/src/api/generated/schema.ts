@@ -11082,8 +11082,18 @@ export interface components {
              * @description User ID of approver
              */
             approved_by?: string | null;
+            /**
+             * @description Individual names a member; CompanyWide names a client and a headcount
+             * @default Individual
+             */
+            attendance: components["schemas"]["SessionAttendance"];
             /** @description Individual / Group / Family / Couples */
             category?: components["schemas"]["SessionCategory"] | null;
+            /**
+             * Client Id
+             * @description Required for a CompanyWide session. For an Individual session it is taken from the member, so that the two cannot disagree
+             */
+            client_id?: string | null;
             /** @description New or repeat client */
             client_type?: components["schemas"]["ClientType"] | null;
             /** @description Clinical continuation outcome */
@@ -11117,9 +11127,9 @@ export interface components {
             location?: string | null;
             /**
              * Member Id
-             * @description Member identifier
+             * @description Required for an Individual session, forbidden for a CompanyWide one
              */
-            member_id: string;
+            member_id?: string | null;
             /**
              * Partner Name
              * @description Partner name (couples/family sessions)
@@ -11217,6 +11227,8 @@ export interface components {
              * @description User ID of approver
              */
             approved_by?: string | null;
+            /** @description Individual or CompanyWide */
+            attendance: components["schemas"]["SessionAttendance"];
             /**
              * Cancellation Reason
              * @description Cancellation reason
@@ -11224,6 +11236,11 @@ export interface components {
             cancellation_reason?: string | null;
             /** @description Individual / Group / Family / Couples */
             category?: components["schemas"]["SessionCategory"] | null;
+            /**
+             * Client Id
+             * @description The client the session is attributed to
+             */
+            client_id: string;
             /** @description New or repeat client */
             client_type?: components["schemas"]["ClientType"] | null;
             /** @description Clinical continuation outcome */
@@ -11282,9 +11299,9 @@ export interface components {
             location?: string | null;
             /**
              * Member Id
-             * @description Member identifier
+             * @description Absent on a company-wide session
              */
-            member_id: string;
+            member_id?: string | null;
             /**
              * Notes
              * @description Session notes
@@ -11466,6 +11483,19 @@ export interface components {
             max_participants?: number | null;
         };
         /**
+         * SessionAttendance
+         * @description Who a session was delivered to.
+         *
+         *     COMPANY_WIDE covers a health talk or site visit: a real session delivered to
+         *     a client with no individual to name. It is not the same as not knowing who
+         *     attended. The source extract holds 569 rows marked Staff or Dependant with
+         *     no member id, and those are unresolved identities that stay staged rather
+         *     than becoming member-less sessions. Keeping the two apart is what lets
+         *     validation require a headcount here and a member there.
+         * @enum {string}
+         */
+        SessionAttendance: "Individual" | "CompanyWide";
+        /**
          * SessionCategory
          * @enum {string}
          */
@@ -11478,9 +11508,10 @@ export interface components {
          *     TO_BE_CONTINUED:  client returns for follow-up (xlsx: T).
          *     REFERRED:         client referred elsewhere (xlsx: R).
          *     COMPLETED:        case episode closed this session (xlsx: C).
+         *     TERMINATED:       engagement ended without completing.
          * @enum {string}
          */
-        SessionClinicalStatus: "ToBeContinued" | "Referred" | "Completed";
+        SessionClinicalStatus: "ToBeContinued" | "Referred" | "Completed" | "Terminated";
         /**
          * SessionDeliveryContext
          * @description How the practitioner delivered, or will deliver, this session.

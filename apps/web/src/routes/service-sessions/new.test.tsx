@@ -315,3 +315,47 @@ describe("ServiceSessionFormSheet: create", () => {
     expect(screen.getByText(/accreditation expired on 2026-01-01/i)).toBeInTheDocument()
   })
 })
+
+// --- Company-wide sessions ---------------------------------------------------
+//
+// A health talk is delivered to a client with nobody individual to name. The
+// source extract holds 642 of them, and none could be recorded while a member
+// was required.
+
+describe("ServiceSessionFormSheet: company-wide sessions", () => {
+  async function chooseCompanyWide() {
+    const user = userEvent.setup()
+    await user.click(screen.getByRole("combobox", { name: /delivered to/i }))
+    await user.click(await screen.findByRole("option", { name: /company wide/i }))
+  }
+
+  it("asks for a client instead of a member", async () => {
+    renderWithProviders(<ServiceSessionFormSheet open onOpenChange={() => {}} />)
+    expect(screen.getByText(/^Member$/)).toBeInTheDocument()
+
+    await chooseCompanyWide()
+
+    await waitFor(() => expect(screen.getByText(/^Client$/)).toBeInTheDocument())
+    expect(screen.queryByText(/^Member$/)).not.toBeInTheDocument()
+  })
+
+  it("will not submit without a headcount, the only measure of its reach", async () => {
+    renderWithProviders(<ServiceSessionFormSheet open onOpenChange={() => {}} />)
+    await chooseCompanyWide()
+
+    fireEvent.click(screen.getByRole("button", { name: /create session/i }))
+
+    expect(await screen.findByText(/needs a headcount/i)).toBeInTheDocument()
+    expect(createMock).not.toHaveBeenCalled()
+  })
+
+  it("does not ask a company-wide session for a member", async () => {
+    renderWithProviders(<ServiceSessionFormSheet open onOpenChange={() => {}} />)
+    await chooseCompanyWide()
+
+    fireEvent.click(screen.getByRole("button", { name: /create session/i }))
+
+    await screen.findByText(/needs a headcount/i)
+    expect(screen.queryByText(/member is required/i)).not.toBeInTheDocument()
+  })
+})

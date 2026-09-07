@@ -78,7 +78,7 @@ function ServiceSessionDetailPage() {
 
   const { data: member = null } = useQuery({
     queryKey: entityDetailKey("members", session?.member_id ?? ""),
-    queryFn: () => membersApi.getById(session!.member_id),
+    queryFn: () => membersApi.getById(session!.member_id!),
     enabled: !!session?.member_id,
   })
 

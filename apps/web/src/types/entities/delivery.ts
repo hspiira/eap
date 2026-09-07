@@ -6,6 +6,7 @@ import type {
   KPICategory,
   MeasurementUnit,
   ServiceCategory,
+  SessionAttendance,
   SessionCategory,
   SessionClinicalStatus,
   SessionDeliveryContext,
@@ -35,7 +36,16 @@ export interface Service extends BaseEntity {
 /** Mirrors BE `ServiceSessionResponse`: field names and types are wire-true. */
 export interface ServiceSession extends BaseEntity {
   service_id: string
-  member_id: string
+  /**
+   * Who the session was delivered to. `CompanyWide` is a health talk or site
+   * visit: a real session delivered to a client with nobody individual to
+   * name, so it carries a headcount and no member.
+   */
+  attendance: SessionAttendance
+  /** Absent on a company-wide session. */
+  member_id?: string | null
+  /** Every session is attributed to a client, including one with no member. */
+  client_id: string
   provider_id?: string | null
   /**
    * How the session was delivered. `Unknown` belongs to historical records

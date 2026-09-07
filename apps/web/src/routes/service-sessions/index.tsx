@@ -381,9 +381,12 @@ function SessionRow({
 }) {
   const linkedService = servicesById.get(row.service_id) ?? null
   const counsellor = row.provider_id ? (providersById.get(row.provider_id) ?? null) : null
+  // A company-wide session has no member to fetch, and asking for one would
+  // report it as unavailable rather than as deliberately absent.
   const { data: linkedMember = null } = useQuery({
-    queryKey: queryKeys.members.detail(row.member_id),
-    queryFn: () => membersApi.getById(row.member_id),
+    queryKey: queryKeys.members.detail(row.member_id ?? ""),
+    queryFn: () => membersApi.getById(row.member_id!),
+    enabled: Boolean(row.member_id),
     staleTime: 10 * 60_000,
   })
   const personLabel = linkedMember ? memberLabel(linkedMember) : "Member unavailable"
@@ -420,13 +423,17 @@ function SessionRow({
         {timeLabel}
       </TableCell>
       <TableCell className="max-w-44 truncate">
-        <Link
-          to="/members/$memberId"
-          params={{ memberId: row.member_id }}
-          className="text-xs text-fg/75 hover:text-primary"
-        >
-          {personLabel}
-        </Link>
+        {row.member_id ? (
+          <Link
+            to="/members/$memberId"
+            params={{ memberId: row.member_id }}
+            className="text-xs text-fg/75 hover:text-primary"
+          >
+            {personLabel}
+          </Link>
+        ) : (
+          <span className="text-xs text-fg-muted">Company-wide</span>
+        )}
       </TableCell>
       <TableCell className="max-w-36 truncate text-xs text-fg/75">
         {linkedMember?.client_name ?? <Blank />}
@@ -495,11 +502,13 @@ function SessionRow({
                   View details
                 </Link>
               </DropdownMenuItem>
-              <DropdownMenuItem asChild>
-                <Link to="/members/$memberId" params={{ memberId: row.member_id }}>
-                  View member
-                </Link>
-              </DropdownMenuItem>
+              {row.member_id ? (
+                <DropdownMenuItem asChild>
+                  <Link to="/members/$memberId" params={{ memberId: row.member_id }}>
+                    View member
+                  </Link>
+                </DropdownMenuItem>
+              ) : null}
               <DropdownMenuItem asChild>
                 <Link to="/services/$serviceId" params={{ serviceId: row.service_id }}>
                   View service
