@@ -3799,6 +3799,62 @@ export interface paths {
         patch: operations["change_provider_tier_panel__provider_id__tier_patch"];
         trace?: never;
     };
+    "/practitioner-imports": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Stage Import
+         * @description Stage the workbook's rows for review. Nothing is applied.
+         *
+         *     Restaging the same file in one tenant is a conflict, not a second batch.
+         */
+        post: operations["stage_import_practitioner_imports_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/practitioner-imports/{batch_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Batch */
+        get: operations["get_batch_practitioner_imports__batch_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/practitioner-imports/{batch_id}/rows": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Rows */
+        get: operations["list_rows_practitioner_imports__batch_id__rows_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/provider-affiliations": {
         parameters: {
             query?: never;
@@ -4123,6 +4179,40 @@ export interface paths {
         head?: never;
         /** Audited accreditation change */
         patch: operations["change_accreditation_providers__provider_id__accreditation_patch"];
+        trace?: never;
+    };
+    "/providers/{provider_id}/engagement-documents": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The engagement-document checklist for one practitioner */
+        get: operations["list_engagement_documents_providers__provider_id__engagement_documents_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/providers/{provider_id}/engagement-documents/{document_kind}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Audited upsert of one checklist entry */
+        put: operations["upsert_engagement_document_providers__provider_id__engagement_documents__document_kind__put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/providers/{provider_id}/panel-status": {
@@ -6292,6 +6382,11 @@ export interface components {
              * File
              * @description UTF-8 CSV using the client import template
              */
+            file: string;
+        };
+        /** Body_stage_import_practitioner_imports_post */
+        Body_stage_import_practitioner_imports_post: {
+            /** File */
             file: string;
         };
         /** Body_stage_import_session_imports_post */
@@ -8671,6 +8766,50 @@ export interface components {
             /** Period Start */
             period_start?: string | null;
         };
+        /**
+         * EngagementDocumentKind
+         * @description The seven engagement documents tracked per practitioner (P-02).
+         * @enum {string}
+         */
+        EngagementDocumentKind: "Contract" | "KYC" | "CertificateOfRegistration" | "MoA" | "UcaLicence" | "DeclarationForm" | "LeadConsultantCV";
+        /** EngagementDocumentResponse */
+        EngagementDocumentResponse: {
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            document_kind: components["schemas"]["EngagementDocumentKind"];
+            /** Id */
+            id: string;
+            /** Note */
+            note: string | null;
+            /** Provider Id */
+            provider_id: string;
+            state: components["schemas"]["EngagementDocumentState"];
+            /** Tenant Id */
+            tenant_id: string;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+        };
+        /**
+         * EngagementDocumentState
+         * @description Whether an engagement document is on file, absent, or being chased.
+         * @enum {string}
+         */
+        EngagementDocumentState: "Present" | "Missing" | "Open";
+        /**
+         * EngagementDocumentUpsert
+         * @description Set one checklist entry. The document kind comes from the path.
+         */
+        EngagementDocumentUpsert: {
+            /** Note */
+            note?: string | null;
+            state: components["schemas"]["EngagementDocumentState"];
+        };
         /** EngagementResponse */
         EngagementResponse: {
             /** Activated At */
@@ -10138,6 +10277,82 @@ export interface components {
          * @enum {string}
          */
         PaymentStatus: "Pending" | "Paid" | "Overdue" | "Cancelled" | "Refunded";
+        /** PractitionerImportBatchResponse */
+        PractitionerImportBatchResponse: {
+            /** Applied At */
+            applied_at: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** File Hash */
+            file_hash: string;
+            /** File Name */
+            file_name: string;
+            /** Id */
+            id: string;
+            /** Outcome Counts */
+            outcome_counts: {
+                [key: string]: number;
+            };
+            /** Row Count */
+            row_count: number;
+            /** Source System */
+            source_system: string;
+            status: components["schemas"]["ImportBatchStatus"];
+            /** Tenant Id */
+            tenant_id: string;
+        };
+        /**
+         * PractitionerImportOutcome
+         * @description Per-row result of a staged practitioner workbook import.
+         *
+         *     Not ImportRowOutcome: those values name session-extract resolutions
+         *     (member, service, practitioner lookup) that do not exist here, and none
+         *     of them means "a person must decide before this row can be applied".
+         * @enum {string}
+         */
+        PractitionerImportOutcome: "Accepted" | "NeedsReview" | "Duplicate" | "Rejected";
+        /** PractitionerImportRowListResponse */
+        PractitionerImportRowListResponse: {
+            /** Has More */
+            has_more: boolean;
+            /** Items */
+            items: components["schemas"]["PractitionerImportRowPreview"][];
+            /** Limit */
+            limit: number;
+            /** Page */
+            page: number;
+            /** Total */
+            total: number;
+        };
+        /** PractitionerImportRowPreview */
+        PractitionerImportRowPreview: {
+            /** Contact Email */
+            contact_email: string | null;
+            /** Mapped Profession */
+            mapped_profession: string | null;
+            /** Normalized Name */
+            normalized_name: string | null;
+            /** Organisation Name */
+            organisation_name: string | null;
+            outcome: components["schemas"]["PractitionerImportOutcome"];
+            /** Provenance */
+            provenance: {
+                [key: string]: unknown;
+            };
+            /** Raw Name */
+            raw_name: string | null;
+            /** Raw Profession */
+            raw_profession: string | null;
+            /** Reasons */
+            reasons: string[];
+            /** Row Number */
+            row_number: number;
+            /** Sheet Name */
+            sheet_name: string;
+        };
         /**
          * PresentingProblem
          * @description Top-level category of the presenting concern at intake.
@@ -20347,6 +20562,113 @@ export interface operations {
             };
         };
     };
+    stage_import_practitioner_imports_post: {
+        parameters: {
+            query: {
+                tenant_id: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["Body_stage_import_practitioner_imports_post"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PractitionerImportBatchResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_batch_practitioner_imports__batch_id__get: {
+        parameters: {
+            query: {
+                tenant_id: string;
+            };
+            header?: never;
+            path: {
+                batch_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PractitionerImportBatchResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_rows_practitioner_imports__batch_id__rows_get: {
+        parameters: {
+            query: {
+                tenant_id: string;
+                /** @description Filter the review queue */
+                outcome?: components["schemas"]["PractitionerImportOutcome"] | null;
+                /** @description Page number */
+                page?: number;
+                /** @description Items per page */
+                limit?: number;
+            };
+            header?: never;
+            path: {
+                batch_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PractitionerImportRowListResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     list_affiliations_provider_affiliations_get: {
         parameters: {
             query: {
@@ -21186,6 +21508,73 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ProviderResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_engagement_documents_providers__provider_id__engagement_documents_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                provider_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EngagementDocumentResponse"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    upsert_engagement_document_providers__provider_id__engagement_documents__document_kind__put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                provider_id: string;
+                document_kind: components["schemas"]["EngagementDocumentKind"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EngagementDocumentUpsert"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EngagementDocumentResponse"];
                 };
             };
             /** @description Validation Error */
