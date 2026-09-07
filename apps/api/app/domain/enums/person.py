@@ -54,13 +54,10 @@ class MemberRelation(str, Enum):
 
 
 class MemberGender(str, Enum):
-    """Optional demographic value captured for member-facing wellness context."""
+    """Optional demographic value. Restricted to Male/Female by product decision."""
 
     FEMALE = "Female"
     MALE = "Male"
-    NON_BINARY = "NonBinary"
-    PREFER_NOT_TO_SAY = "PreferNotToSay"
-    UNKNOWN = "Unknown"
 
 
 class NextOfKinRelationship(str, Enum):

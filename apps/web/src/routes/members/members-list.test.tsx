@@ -104,7 +104,7 @@ describe("member roster", () => {
     )
   })
 
-  it("shows contact detail as plain copyable text, not inside a link", async () => {
+  it("links the member name to their detail page, keeping other contact detail plain", async () => {
     mocks.list.mockResolvedValue({
       items: [
         makeMember({
@@ -121,9 +121,8 @@ describe("member roster", () => {
     })
     renderWithProviders(<Page />)
 
-    // The name is no longer a link, so a click-drag selects rather than navigates.
     const name = await screen.findByText("Amina Namukasa")
-    expect(name.closest("a")).toBeNull()
+    expect(name.closest("a")).not.toBeNull()
 
     for (const value of [
       "Acme Ltd",

@@ -163,6 +163,7 @@ async def create_provider(
             accreditation_status=AccreditationStatus.PENDING,
             panel_status=PanelStatus.PENDING,
             bio=data.bio,
+            gender=data.gender,
         ),
         license_info=data.license_info,
         created_at=now,
@@ -200,6 +201,7 @@ async def update_provider(
         license_info=data.license_info if "license_info" in provided else UNSET,
         region=data.region if "region" in provided else UNSET,
         bio=data.bio if "bio" in provided else UNSET,
+        gender=data.gender if "gender" in provided else UNSET,
     )
     await repo.save(provider)
     await audit_change(provider, audit_handler, current_user, request)

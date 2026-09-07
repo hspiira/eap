@@ -8,6 +8,7 @@ from app.api.schemas.base import OptionalSanitizedStr
 from app.domain.enums import (
     AccreditationStatus,
     PanelStatus,
+    ProviderGender,
     ProviderTier,
     UgandaRegion,
 )
@@ -22,6 +23,7 @@ class ProviderProfileSchema(BaseModel):
     accreditation_expiry: date | None = None
     specialties: list[str] = Field(default_factory=list)
     bio: OptionalSanitizedStr = None
+    gender: ProviderGender | None = None
 
     model_config = ConfigDict(from_attributes=True)
 

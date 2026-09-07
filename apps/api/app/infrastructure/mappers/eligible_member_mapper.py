@@ -18,6 +18,21 @@ from app.infrastructure.models.eligible_member_model import (
 from app.shared.utils.datetime import ensure_utc
 
 
+def _member_gender(value: str | None) -> MemberGender | None:
+    """Parse a stored gender value, tolerating a value retired from the enum.
+
+    `MemberGender` was trimmed to Male/Female. A row written under the wider
+    enum reads as unset rather than raising, so an old record does not break
+    the member on load.
+    """
+    if not value:
+        return None
+    try:
+        return MemberGender(value)
+    except ValueError:
+        return None
+
+
 class EligibleMemberMapper:
     @staticmethod
     def to_entity(model: EligibleMemberModel) -> EligibleMember:
@@ -37,7 +52,7 @@ class EligibleMemberMapper:
             personal_email=Email(model.personal_email) if model.personal_email else None,
             display_label=model.display_label,
             date_of_birth=model.date_of_birth,
-            gender=MemberGender(model.gender) if model.gender else None,
+            gender=_member_gender(model.gender),
             phone=model.phone,
             staff_number=model.staff_number,
             national_id=model.national_id,

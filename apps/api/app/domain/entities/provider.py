@@ -14,6 +14,7 @@ from app.domain.enums import (
     AccreditationStatus,
     BaseStatus,
     PanelStatus,
+    ProviderGender,
     ProviderIdentityProvenance,
     ProviderTier,
     UgandaRegion,
@@ -41,7 +42,7 @@ class _Unset:
 UNSET = _Unset()
 
 _ENTITY_FIELDS = ("display_name", "contact_email", "contact_phone", "license_info")
-_PROFILE_FIELDS = ("region", "bio")
+_PROFILE_FIELDS = ("region", "bio", "gender")
 
 
 def _require_reason(reason: str) -> str:
@@ -110,6 +111,7 @@ class ProviderEntity:
         license_info: dict[str, object] | None | _Unset = UNSET,
         region: UgandaRegion | _Unset = UNSET,
         bio: str | None | _Unset = UNSET,
+        gender: ProviderGender | None | _Unset = UNSET,
     ) -> tuple[str, ...]:
         """Apply a partial update to ordinary contact and profile fields.
 
@@ -124,6 +126,7 @@ class ProviderEntity:
             "license_info": license_info,
             "region": region,
             "bio": bio,
+            "gender": gender,
         }
         provided = {
             name: value for name, value in requested.items() if not isinstance(value, _Unset)

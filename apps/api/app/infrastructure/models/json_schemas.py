@@ -103,6 +103,7 @@ class ProviderProfileDict(TypedDict):
     accreditation_expiry: NotRequired[str | None]  # ISO date YYYY-MM-DD
     specialties: NotRequired[list[str]]
     bio: NotRequired[str | None]
+    gender: NotRequired[str | None]  # ProviderGender enum value: "Female" or "Male"
 
 
 class EmergencyContactDict(TypedDict):

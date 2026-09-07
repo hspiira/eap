@@ -4,6 +4,7 @@ from datetime import date
 from app.domain.enums import (
     AccreditationStatus,
     PanelStatus,
+    ProviderGender,
     ProviderTier,
     RelationType,
     StaffRole,
@@ -42,6 +43,7 @@ class ProviderProfile:
     accreditation_expiry: date | None = None
     specialties: tuple[str, ...] = ()
     bio: str | None = None
+    gender: ProviderGender | None = None
 
 
 @dataclass(frozen=True)

@@ -7,6 +7,7 @@ from app.domain.enums import (
     AccreditationStatus,
     BaseStatus,
     PanelStatus,
+    ProviderGender,
     ProviderIdentityProvenance,
     ProviderTier,
     UgandaRegion,
@@ -86,6 +87,7 @@ class ProviderMapper:
             accreditation_expiry=expiry,
             specialties=tuple(profile.get("specialties") or ()),
             bio=profile.get("bio"),
+            gender=ProviderGender(profile["gender"]) if profile.get("gender") else None,
         )
 
     @staticmethod
@@ -103,4 +105,5 @@ class ProviderMapper:
             else None,
             "specialties": list(profile.specialties),
             "bio": profile.bio,
+            "gender": profile.gender.value if profile.gender else None,
         }

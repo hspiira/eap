@@ -65,6 +65,7 @@ def test_provider_mapper_persists_json_safe_profile() -> None:
         "accreditation_expiry": "2027-06-30",
         "specialties": ["Counselling"],
         "bio": "Trauma-informed practitioner",
+        "gender": None,
     }
 
 

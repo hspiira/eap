@@ -454,15 +454,21 @@ function MemberRow({
         <Checkbox aria-label={`Select ${label}`} checked={selected} onCheckedChange={onToggle} />
       </TableCell>
       <TableCell className="max-w-[14rem] truncate py-1.5">
-        <div className="flex items-center gap-2.5">
+        <Link
+          to="/members/$memberId"
+          params={{ memberId: member.id }}
+          className="flex items-center gap-2.5"
+        >
           <span
             aria-hidden
             className="grid size-6 shrink-0 place-items-center bg-primary/10 text-primary"
           >
             <User className="size-3.5" />
           </span>
-          <span className="truncate text-sm font-medium text-fg">{label}</span>
-        </div>
+          <span className="truncate text-sm font-medium text-fg group-hover:text-primary">
+            {label}
+          </span>
+        </Link>
       </TableCell>
       <TableCell className="text-center">
         <StatusBadge status={member.status} iconOnly />

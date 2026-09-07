@@ -9577,10 +9577,10 @@ export interface components {
         };
         /**
          * MemberGender
-         * @description Optional demographic value captured for member-facing wellness context.
+         * @description Optional demographic value. Restricted to Male/Female by product decision.
          * @enum {string}
          */
-        MemberGender: "Female" | "Male" | "NonBinary" | "PreferNotToSay" | "Unknown";
+        MemberGender: "Female" | "Male";
         /** MemberImportIssue */
         MemberImportIssue: {
             /** Field */
@@ -10202,6 +10202,7 @@ export interface components {
             display_name: string;
             /** Email */
             email?: string | null;
+            gender?: components["schemas"]["ProviderGender"] | null;
             /** License Info */
             license_info?: {
                 [key: string]: unknown;
@@ -10243,6 +10244,12 @@ export interface components {
              */
             scheduled_at: string;
         };
+        /**
+         * ProviderGender
+         * @description Practitioner gender. Restricted to Male/Female by product decision.
+         * @enum {string}
+         */
+        ProviderGender: "Female" | "Male";
         /**
          * ProviderIdentityProvenance
          * @description Where a practitioner's owned name and contact details came from.
@@ -10343,6 +10350,7 @@ export interface components {
             accreditation_status: components["schemas"]["AccreditationStatus"];
             /** Bio */
             bio?: string | null;
+            gender?: components["schemas"]["ProviderGender"] | null;
             /** @default Active */
             panel_status: components["schemas"]["PanelStatus"];
             region: components["schemas"]["UgandaRegion"];
@@ -10450,6 +10458,7 @@ export interface components {
             display_name?: string | null;
             /** Email */
             email?: string | null;
+            gender?: components["schemas"]["ProviderGender"] | null;
             /** License Info */
             license_info?: {
                 [key: string]: unknown;

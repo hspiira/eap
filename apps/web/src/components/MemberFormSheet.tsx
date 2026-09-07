@@ -34,9 +34,6 @@ const RELATION_VALUES = RELATIONS.map(({ value }) => value) as [MemberRelation, 
 const GENDERS = [
   { value: MemberGender.FEMALE, label: "Female" },
   { value: MemberGender.MALE, label: "Male" },
-  { value: MemberGender.NON_BINARY, label: "Non-binary" },
-  { value: MemberGender.PREFER_NOT_TO_SAY, label: "Prefer not to say" },
-  { value: MemberGender.UNKNOWN, label: "Unknown" },
 ] as const
 const GENDER_VALUES = GENDERS.map(({ value }) => value) as [MemberGender, ...MemberGender[]]
 const optionalText = () => z.string().trim().optional()
@@ -405,7 +402,7 @@ function MemberIdentifierFields({ form }: { form: UseEntityFormSheetReturn<Membe
   return (
     <FormSection
       title="Identification"
-      description="Optional. Recorded for verification; none of these is the member code."
+      description="Recorded for verification; none of these is the member code."
     >
       <div className="grid gap-4 sm:grid-cols-3">
         <FormField

@@ -250,13 +250,10 @@ export enum MemberRelation {
   DEPENDENT_OTHER = "DependentOther",
 }
 
-/** Optional member demographic values. */
+/** Optional member demographic value. Restricted to Male/Female by product decision. */
 export enum MemberGender {
   FEMALE = "Female",
   MALE = "Male",
-  NON_BINARY = "NonBinary",
-  PREFER_NOT_TO_SAY = "PreferNotToSay",
-  UNKNOWN = "Unknown",
 }
 
 /** Relationships used by restricted member next-of-kin contacts. */
@@ -320,6 +317,12 @@ export enum ProviderTier {
   T1 = "T1",
   T2 = "T2",
   T3 = "T3",
+}
+
+/** Practitioner gender: mirrors BE `ProviderGender`. Restricted to Male/Female. */
+export enum ProviderGender {
+  FEMALE = "Female",
+  MALE = "Male",
 }
 
 /**
