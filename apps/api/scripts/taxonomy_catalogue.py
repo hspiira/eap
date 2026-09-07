@@ -14,9 +14,36 @@ reference list is in docs/TAXONOMY_CATALOGUE.md.
 from __future__ import annotations
 
 import json
+import sys
 from pathlib import Path
 
-OUT = Path(__file__).resolve().parents[1] / "data/taxonomy"
+API = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(API))
+
+from app.domain.enums import ServiceCategory  # noqa: E402
+
+OUT = API / "data/taxonomy"
+
+# Services that carry no programme category on purpose, and why. A null
+# category is how the model says "never draws down an entitlement": the
+# drawdown reports "Service has no category, nothing to draw down against"
+# (app/application/use_cases/authorization_drawdown.py:73) rather than failing
+# or silently consuming. Naming them here keeps a deliberate null separable
+# from a forgotten one, and makes force-fitting a category fail the build.
+UNCAPPED: dict[str, str] = {
+    "Psychiatric Assessment": "Referral for diagnosis, not a session against a cap.",
+    "Individual Assessment": "Assessment, not treatment. No cap applies.",
+    "Group Assessment": "Commissioned by the employer for a work unit, not by a member.",
+    "Health Talk": "Company-wide psychoeducation with no individual entitlement.",
+    "Mental Health Talk": "Company-wide psychoeducation with no individual entitlement.",
+    "Medical Health Talk": "Company-wide psychoeducation with no individual entitlement.",
+    "Change Management Talk": "Company-wide psychoeducation with no individual entitlement.",
+    "Empowerment Talk": "Company-wide psychoeducation with no individual entitlement.",
+    "Training": "Commissioned by the employer. The employer is the client.",
+    "Site Visit": "Delivery location, not an intervention. See TAXONOMY_FINDINGS.md item 6.",
+    "Hospital Visit": "Delivery location, not an intervention. See TAXONOMY_FINDINGS.md item 6.",
+    "Home Visit": "Delivery location, not an intervention. See TAXONOMY_FINDINGS.md item 6.",
+}
 
 # (name, ServiceCategory or None, is_group_service, description)
 SERVICES: list[tuple[str, str | None, bool, str]] = [
@@ -80,7 +107,7 @@ SERVICES: list[tuple[str, str | None, bool, str]] = [
     ),
     (
         "Trauma Group Counselling",
-        None,
+        "CISMResponse",
         True,
         "Group work with employees exposed to the same traumatic event, such as a "
         "robbery, a fatal accident, or a violent incident at a work site. This service "
@@ -90,8 +117,9 @@ SERVICES: list[tuple[str, str | None, bool, str]] = [
         "or depressive symptoms after a traumatic event. What is supported is screening, "
         "practical and social support, and referral of those who develop symptoms into "
         "trauma-focused therapy, which WHO recommends as trauma-focused cognitive "
-        "behavioural therapy or EMDR. Its programme category is unresolved pending a "
-        "decision on whether incident response is a separate entitlement.",
+        "behavioural therapy or EMDR. Categorised as CISM response, which is what "
+        "incident-driven group work draws against; that is an entitlement "
+        "classification and does not license debriefing as the method.",
     ),
     (
         "Psychotherapy",
@@ -1841,6 +1869,28 @@ DIAGNOSES += [
 ]
 
 
+def _check_categories(services: list[dict]) -> None:
+    """Every service is either programme-capped or declared uncapped.
+
+    ``services.category`` drives entitlement drawdown, so a value that is not a
+    ``ServiceCategory`` would be refused by the column's CHECK constraint, and a
+    null nobody declared is indistinguishable from an oversight.
+    """
+    valid = {e.value for e in ServiceCategory}
+    for service in services:
+        name, category = service["name"], service["category"]
+        if category is None:
+            if name not in UNCAPPED:
+                raise ValueError(
+                    f"{name} has no category and is not declared in UNCAPPED. "
+                    "Give it a ServiceCategory or record why it is never capped."
+                )
+        elif category not in valid:
+            raise ValueError(f"{name} has category {category!r}, which is not a ServiceCategory")
+        elif name in UNCAPPED:
+            raise ValueError(f"{name} is declared uncapped but carries category {category!r}")
+
+
 def build() -> None:
     """Write the three import payloads."""
     OUT.mkdir(parents=True, exist_ok=True)
@@ -1891,6 +1941,7 @@ def build() -> None:
     names = [s["name"] for s in services]
     if len(names) != len(set(names)):
         raise ValueError("duplicate service name")
+    _check_categories(services)
 
     for filename, payload in (
         ("diagnosis_types.json", types),

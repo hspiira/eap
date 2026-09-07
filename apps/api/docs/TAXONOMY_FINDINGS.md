@@ -7,7 +7,7 @@ catalogue and diagnosis taxonomy in `TAXONOMY_CATALOGUE.md`. Opened
 Each item carries the evidence that established it. Strike an item through when
 it lands and record the commit. Do not remove one without being asked.
 
-Status: 3 of 11 done, 8 open.
+Status: 4 of 11 done, 7 open.
 
 ## Priority order
 
@@ -19,7 +19,7 @@ cited elsewhere.
 | 1 | ~~The taxonomy's versioning contract is not implemented~~ | Correctness | Done |
 | 2 | ~~A diagnosis cannot be moved between types through the API~~ | Missing capability | Done |
 | 3 | ~~Diagnosis descriptions are writable but never displayed~~ | Product gap | Done |
-| 4 | `ServiceCategory` cannot classify 13 of 20 services | Schema, needs product decision | Open |
+| 4 | ~~`ServiceCategory` cannot classify 13 of 20 services~~ | Decided: do not extend the enum | Done |
 | 5 | `data/seed_data.json` cannot load against the current schema | Broken dev path | Open |
 | 6 | Three visit services duplicate `service_sessions.location` | Redundancy | Open |
 | 7 | `services.is_group_service` duplicates `service_sessions.category` | Redundancy | Open |
@@ -161,17 +161,56 @@ that is a behaviour change, not a display fix, and is not part of this item.
 Two stale claims corrected while in the file: the selector's docstring
 described the type groups as ICD-10 categories, which the taxonomy is not.
 
-## 4. `ServiceCategory` cannot classify 13 of 20 services
+## 4. ~~`ServiceCategory` cannot classify 13 of 20 services~~
 
 `app/domain/enums/session.py:71-77` has seven values and none covers assessment
-or psychoeducation. The catalogue therefore ships 13 services with
+or psychoeducation. The catalogue therefore shipped 13 services with
 `category: null`, covering 474 sessions in the source extract. Category is what
-selects the authorization for entitlement drawdown, so those sessions consume
-nothing.
+selects the authorization for entitlement drawdown.
 
-Needs a product decision, not only code: extending the enum changes the CHECK
-constraint on both `services.category` and `authorizations.service_category`.
-Five of the seven existing values have no support anywhere in the source data.
+**Correction to how this was first reported.** I wrote that those sessions
+"silently consume nothing". The word silently was wrong.
+`ConsumeAuthorizationForSessionUseCase.execute` returns
+`DrawdownResult(None, "Service has no category, nothing to draw down against")`
+(`app/application/use_cases/authorization_drawdown.py:73-74`), the response
+carries it, and `test_an_untyped_service_draws_down_nothing`
+(`tests/unit/application/test_authorization_drawdown.py:118-123`) already pins
+it. A null category is reported, not swallowed. That changes what this finding
+is: not a missing signal, but a question about whether these services should be
+capped at all.
+
+**Decision: do not extend the enum.** Three reasons, in order of weight.
+
+1. No evidence of demand. `ProgrammeSessionCap` values come from contracts, and
+   there is no contract data showing a cap on assessment or psychoeducation. An
+   enum value nothing grants is a value nothing can draw against.
+2. The enum already has this disease. Five of its seven values,
+   `CrisisIntervention`, `SubstanceUse`, `ManagerConsult`, `WorkLifeReferral`
+   and `CISMResponse`, had no support anywhere in the source data. Adding an
+   eighth unused value makes the enum less trustworthy, not more complete.
+3. For most of the 13, a null category is the correct answer rather than a gap.
+   A health talk delivered to a room has no individual entitlement to draw
+   against, which is the same distinction `SessionAttendance.COMPANY_WIDE`
+   already draws at the session level.
+
+**What landed instead.**
+
+- `Trauma Group Counselling` is now `CISMResponse`. Incident-driven group work
+  is exactly what that value is for; it was unmapped only because nothing had
+  ever been mapped to it. This is an entitlement classification and does not
+  license debriefing as the method, which WHO recommends against; the
+  description says so.
+- The remaining 12 are declared in an `UNCAPPED` table in
+  `scripts/taxonomy_catalogue.py`, each with the reason it is never capped, and
+  `_check_categories` enforces the pairing at build time. A service with a null
+  category that nobody declared fails the build; so does a declared-uncapped
+  service that later acquires a category, and so does any category that is not
+  a `ServiceCategory` value. A deliberate null is now separable from a
+  forgotten one, and force-fitting fails loudly.
+
+Categorised services went from 7 to 8 of 20. Reopen this if a contract ever
+grants a cap on assessment or psychoeducation, which is the evidence that was
+missing.
 
 ## 5. `data/seed_data.json` cannot load against the current schema
 
