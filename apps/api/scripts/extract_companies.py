@@ -27,6 +27,22 @@ if str(API_ROOT) not in sys.path:
 OUT = API_ROOT / "data" / "taxonomy" / "clients.json"
 
 
+#: Spellings the Staff sheet uses that the Companies mapping never saw, and the
+#: company each one names. Explicit rather than matched by resemblance: which
+#: company a name belongs to is a decision, and it is recorded here so a later
+#: environment resolves it the same way this one did.
+#:
+#: "Stanbic Bank Uganda" is the bank's registered name and the only spelling the
+#: Staff sheet uses for it. The Companies mapping already collapses eleven
+#: Stanbic spellings into "Stanbic Bank", including "Stanbic" alone and two
+#: misspellings, and the environment holds exactly one Stanbic client. This
+#: follows that decision rather than making a new one, but it is still an
+#: identity call and the client owner should confirm it.
+EXTRA_ALIASES: dict[str, str] = {
+    "Stanbic Bank Uganda": "Stanbic Bank",
+}
+
+
 def _clean(value: object) -> str | None:
     text = str(value).strip() if value is not None else ""
     return text or None
@@ -51,6 +67,10 @@ def extract(workbook: Path) -> tuple[list[dict], list[str]]:
     aliases: dict[str, set[str]] = defaultdict(set)
     conflicts: dict[str, set[str]] = defaultdict(set)
     notes: list[str] = []
+
+    for source, canonical in EXTRA_ALIASES.items():
+        conflicts[_normalise(source)].add(canonical)
+        aliases[canonical].add(source)
 
     for row in rows:
         source = _clean(row[0])

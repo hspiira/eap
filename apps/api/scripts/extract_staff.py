@@ -26,7 +26,7 @@ import io
 import os
 import re
 import sys
-from collections import Counter, defaultdict
+from collections import Counter
 from pathlib import Path
 
 API_ROOT = Path(__file__).resolve().parent.parent
@@ -108,7 +108,8 @@ def build(rows: list[dict], codes: dict[str, str]) -> tuple[list[dict], list[dic
     notes: list[str] = []
     unresolved: Counter = Counter()
     dropped_emails: list[tuple[str | None, str]] = []
-    seen: dict[tuple[str, str], int] = defaultdict(int)
+    pending: list[dict] = []
+    seen: dict[tuple[str, str], str] = {}
 
     for index, row in enumerate(rows, start=2):
         company = _clean(row.get("Company"))
@@ -137,21 +138,29 @@ def build(rows: list[dict], codes: dict[str, str]) -> tuple[list[dict], list[dic
             # it would collide on employer_member_id, and deriving one from the
             # name is exactly the inference the migration rules forbid.
             held.append(_held(index, company, staff_id, name, "Staff_ID carries no staff number"))
+            pending.append({"Company": company, "Name of Employee": name, "Staff Number": ""})
             continue
 
         key = (code, staff_id)
-        seen[key] += 1
-        if seen[key] > 1:
+        first = seen.get(key)
+        if first is not None:
+            # One person entered twice is a tidy-up; two people under one id is
+            # a question for the client. They read the same in the sheet and
+            # must not read the same in the report.
+            repeat = first == name
             held.append(
                 _held(
                     index,
                     company,
                     staff_id,
                     name,
-                    f"Staff_ID {staff_id!r} repeats within {company!r}",
+                    f"exact repeat of an earlier row; {name!r} is imported once"
+                    if repeat
+                    else f"Staff_ID {staff_id!r} is shared with {first!r}",
                 )
             )
             continue
+        seen[key] = name
 
         email = _clean(row.get("Email Address")) or ""
         if email and not EMAIL.match(email):
@@ -192,15 +201,21 @@ def build(rows: list[dict], codes: dict[str, str]) -> tuple[list[dict], list[dic
     prefixes = Counter(h["company"] for h in held if h["reason"].endswith("no staff number"))
     for company, count in prefixes.most_common():
         notes.append(
-            f"{company!r}: {count} rows have no staff number; the client must supply "
-            "Staff_IDs before these people can be on the roster"
+            f"{company!r}: {count} rows have no staff number; send "
+            "staff_roster_pending.csv to the client to fill the Staff Number column"
         )
-    return ready, held, notes
+    shared = [h for h in held if "is shared with" in h["reason"]]
+    for row in shared:
+        notes.append(f"{row['staff_id']}: {row['reason']}; neither person is imported twice")
+    repeats = sum(1 for h in held if "exact repeat" in h["reason"])
+    if repeats:
+        notes.append(f"{repeats} rows are exact repeats of an earlier row and need no decision")
+    return ready, held, pending, notes
 
 
 async def run(workbook: Path, tenant_id: str) -> int:
     codes = await _client_codes(tenant_id)
-    ready, held, notes = build(_rows(workbook), codes)
+    ready, held, pending, notes = build(_rows(workbook), codes)
 
     OUT_DIR.mkdir(parents=True, exist_ok=True)
     buffer = io.StringIO(newline="")
@@ -217,8 +232,21 @@ async def run(workbook: Path, tenant_id: str) -> int:
     held_writer.writerows(held)
     (OUT_DIR / "staff_roster_held.csv").write_text(held_buffer.getvalue())
 
+    if pending:
+        # The client fills one column and sends it back; nothing else about
+        # these people is known, and nothing about them is guessed here.
+        pending_buffer = io.StringIO(newline="")
+        pending_writer = csv.DictWriter(
+            pending_buffer, fieldnames=["Company", "Name of Employee", "Staff Number"]
+        )
+        pending_writer.writeheader()
+        pending_writer.writerows(pending)
+        (OUT_DIR / "staff_roster_pending.csv").write_text(pending_buffer.getvalue())
+
     print(f"staff_roster.csv       {len(ready)} rows ready to import")
     print(f"staff_roster_held.csv  {len(held)} rows held for a person")
+    if pending:
+        print(f"staff_roster_pending.csv  {len(pending)} rows awaiting a staff number")
     for note in notes:
         print(f"  note: {note}")
     return 0
