@@ -1694,6 +1694,25 @@
         "title": "CaseStatus",
         "type": "string"
       },
+      "CategoryCount": {
+        "description": "Completed sessions per session category over the trend window.",
+        "properties": {
+          "category": {
+            "title": "Category",
+            "type": "string"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "category",
+          "total"
+        ],
+        "title": "CategoryCount",
+        "type": "object"
+      },
       "ClientAliasMergeRequest": {
         "description": "Move aliases from another client into the selected client.",
         "properties": {
@@ -2671,6 +2690,30 @@
           "updated_at"
         ],
         "title": "ClientSavedViewResponse",
+        "type": "object"
+      },
+      "ClientSessions": {
+        "description": "Completed sessions per client over the trend window.",
+        "properties": {
+          "client_id": {
+            "title": "Client Id",
+            "type": "string"
+          },
+          "client_name": {
+            "title": "Client Name",
+            "type": "string"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "client_id",
+          "client_name",
+          "total"
+        ],
+        "title": "ClientSessions",
         "type": "object"
       },
       "ClientStatsResponse": {
@@ -4661,6 +4704,150 @@
         ],
         "title": "DSARRequestType",
         "type": "string"
+      },
+      "DashboardKpis": {
+        "description": "Headline counts for the KPI strip.",
+        "properties": {
+          "clients_served_90d": {
+            "description": "Distinct clients with a completed session in the last 90 days",
+            "title": "Clients Served 90D",
+            "type": "integer"
+          },
+          "clients_total": {
+            "description": "Clients on the tenant, any status",
+            "title": "Clients Total",
+            "type": "integer"
+          },
+          "clients_with_roster": {
+            "description": "Clients that have at least one eligible member on file",
+            "title": "Clients With Roster",
+            "type": "integer"
+          },
+          "covered_members": {
+            "description": "Eligible members with Active status",
+            "title": "Covered Members",
+            "type": "integer"
+          },
+          "import_backlog": {
+            "description": "Rows in the current import batch still blocked on an unresolved identity",
+            "title": "Import Backlog",
+            "type": "integer"
+          },
+          "sessions_90d": {
+            "description": "Completed sessions in the last 90 days",
+            "title": "Sessions 90D",
+            "type": "integer"
+          },
+          "sessions_prior_90d": {
+            "description": "Completed sessions in the 90 days before that, for the delta",
+            "title": "Sessions Prior 90D",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "sessions_90d",
+          "sessions_prior_90d",
+          "clients_served_90d",
+          "covered_members",
+          "clients_with_roster",
+          "clients_total",
+          "import_backlog"
+        ],
+        "title": "DashboardKpis",
+        "type": "object"
+      },
+      "DashboardResponse": {
+        "description": "The whole dashboard in one authenticated, tenant-scoped read.",
+        "properties": {
+          "data_quality": {
+            "$ref": "#/components/schemas/DataQuality"
+          },
+          "import_batch": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ImportBatchSummary"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Absent when the tenant has never staged an import"
+          },
+          "import_queues": {
+            "items": {
+              "$ref": "#/components/schemas/ImportQueueEntry"
+            },
+            "title": "Import Queues",
+            "type": "array"
+          },
+          "kpis": {
+            "$ref": "#/components/schemas/DashboardKpis"
+          },
+          "sessions_by_category": {
+            "items": {
+              "$ref": "#/components/schemas/CategoryCount"
+            },
+            "title": "Sessions By Category",
+            "type": "array"
+          },
+          "sessions_monthly": {
+            "items": {
+              "$ref": "#/components/schemas/MonthlySessions"
+            },
+            "title": "Sessions Monthly",
+            "type": "array"
+          },
+          "top_clients": {
+            "items": {
+              "$ref": "#/components/schemas/ClientSessions"
+            },
+            "title": "Top Clients",
+            "type": "array"
+          }
+        },
+        "required": [
+          "kpis",
+          "sessions_monthly",
+          "sessions_by_category",
+          "top_clients",
+          "import_queues",
+          "data_quality"
+        ],
+        "title": "DashboardResponse",
+        "type": "object"
+      },
+      "DataQuality": {
+        "description": "Derived gaps that block reporting, each one an actionable queue.",
+        "properties": {
+          "clients_without_roster": {
+            "description": "Clients with no eligible members on file",
+            "title": "Clients Without Roster",
+            "type": "integer"
+          },
+          "providers_pending": {
+            "description": "Practitioners not yet activated",
+            "title": "Providers Pending",
+            "type": "integer"
+          },
+          "sessions_missing_outcome": {
+            "description": "Completed sessions with no clinical outcome recorded",
+            "title": "Sessions Missing Outcome",
+            "type": "integer"
+          },
+          "sessions_missing_rate": {
+            "description": "Completed sessions with no rate",
+            "title": "Sessions Missing Rate",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "sessions_missing_outcome",
+          "sessions_missing_rate",
+          "clients_without_roster",
+          "providers_pending"
+        ],
+        "title": "DataQuality",
+        "type": "object"
       },
       "DateRangeSchema": {
         "description": "Date range schema.",
@@ -7115,6 +7302,65 @@
         ],
         "title": "ImportBatchStatus",
         "type": "string"
+      },
+      "ImportBatchSummary": {
+        "description": "The batch the backlog figures describe.",
+        "properties": {
+          "accepted": {
+            "title": "Accepted",
+            "type": "integer"
+          },
+          "applied_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Applied At"
+          },
+          "file_name": {
+            "title": "File Name",
+            "type": "string"
+          },
+          "row_count": {
+            "title": "Row Count",
+            "type": "integer"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "file_name",
+          "status",
+          "row_count",
+          "accepted"
+        ],
+        "title": "ImportBatchSummary",
+        "type": "object"
+      },
+      "ImportQueueEntry": {
+        "description": "One unresolved outcome bucket in the current import batch.",
+        "properties": {
+          "outcome": {
+            "title": "Outcome",
+            "type": "string"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "outcome",
+          "total"
+        ],
+        "title": "ImportQueueEntry",
+        "type": "object"
       },
       "ImportReasonCode": {
         "description": "Machine-readable code for a staged row's outcome reason (P-10).\n\nA message alone is fine to display but not to build a review UI or any\nother consumer against: rewording it silently breaks a string match.\nEvery reason attached to a row carries one of these alongside its\nhuman-readable message.",
@@ -9640,6 +9886,26 @@
           "currency"
         ],
         "title": "MoneyCreate",
+        "type": "object"
+      },
+      "MonthlySessions": {
+        "description": "One month of completed sessions. The series is always 12 entries, zero-filled.",
+        "properties": {
+          "month": {
+            "description": "Calendar month, YYYY-MM",
+            "title": "Month",
+            "type": "string"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "month",
+          "total"
+        ],
+        "title": "MonthlySessions",
         "type": "object"
       },
       "NextOfKinRelationship": {
@@ -23283,6 +23549,54 @@
         "summary": "Record a CISM phase on the response timeline",
         "tags": [
           "critical-incidents"
+        ]
+      }
+    },
+    "/dashboard": {
+      "get": {
+        "description": "All dashboard figures in one read, computed against the same instant.",
+        "operationId": "get_dashboard_dashboard_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "tenant_id",
+            "required": true,
+            "schema": {
+              "title": "Tenant Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DashboardResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Aggregate dashboard figures for the caller's tenant",
+        "tags": [
+          "dashboard"
         ]
       }
     },

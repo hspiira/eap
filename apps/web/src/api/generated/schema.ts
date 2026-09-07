@@ -2051,6 +2051,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/dashboard": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Aggregate dashboard figures for the caller's tenant
+         * @description All dashboard figures in one read, computed against the same instant.
+         */
+        get: operations["get_dashboard_dashboard_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/diagnoses": {
         parameters: {
             query?: never;
@@ -6662,6 +6682,16 @@ export interface components {
          */
         CaseStatus: "Intake" | "Assessment" | "Active" | "Closed" | "ReferredOut" | "NoShowClosed";
         /**
+         * CategoryCount
+         * @description Completed sessions per session category over the trend window.
+         */
+        CategoryCount: {
+            /** Category */
+            category: string;
+            /** Total */
+            total: number;
+        };
+        /**
          * ClientAliasMergeRequest
          * @description Move aliases from another client into the selected client.
          */
@@ -7086,6 +7116,18 @@ export interface components {
             tenant_id: string;
             /** Updated At */
             updated_at: string;
+        };
+        /**
+         * ClientSessions
+         * @description Completed sessions per client over the trend window.
+         */
+        ClientSessions: {
+            /** Client Id */
+            client_id: string;
+            /** Client Name */
+            client_name: string;
+            /** Total */
+            total: number;
         };
         /**
          * ClientStatsResponse
@@ -8044,6 +8086,91 @@ export interface components {
          * @enum {string}
          */
         DSARRequestType: "Export" | "Erasure";
+        /**
+         * DashboardKpis
+         * @description Headline counts for the KPI strip.
+         */
+        DashboardKpis: {
+            /**
+             * Clients Served 90D
+             * @description Distinct clients with a completed session in the last 90 days
+             */
+            clients_served_90d: number;
+            /**
+             * Clients Total
+             * @description Clients on the tenant, any status
+             */
+            clients_total: number;
+            /**
+             * Clients With Roster
+             * @description Clients that have at least one eligible member on file
+             */
+            clients_with_roster: number;
+            /**
+             * Covered Members
+             * @description Eligible members with Active status
+             */
+            covered_members: number;
+            /**
+             * Import Backlog
+             * @description Rows in the current import batch still blocked on an unresolved identity
+             */
+            import_backlog: number;
+            /**
+             * Sessions 90D
+             * @description Completed sessions in the last 90 days
+             */
+            sessions_90d: number;
+            /**
+             * Sessions Prior 90D
+             * @description Completed sessions in the 90 days before that, for the delta
+             */
+            sessions_prior_90d: number;
+        };
+        /**
+         * DashboardResponse
+         * @description The whole dashboard in one authenticated, tenant-scoped read.
+         */
+        DashboardResponse: {
+            data_quality: components["schemas"]["DataQuality"];
+            /** @description Absent when the tenant has never staged an import */
+            import_batch?: components["schemas"]["ImportBatchSummary"] | null;
+            /** Import Queues */
+            import_queues: components["schemas"]["ImportQueueEntry"][];
+            kpis: components["schemas"]["DashboardKpis"];
+            /** Sessions By Category */
+            sessions_by_category: components["schemas"]["CategoryCount"][];
+            /** Sessions Monthly */
+            sessions_monthly: components["schemas"]["MonthlySessions"][];
+            /** Top Clients */
+            top_clients: components["schemas"]["ClientSessions"][];
+        };
+        /**
+         * DataQuality
+         * @description Derived gaps that block reporting, each one an actionable queue.
+         */
+        DataQuality: {
+            /**
+             * Clients Without Roster
+             * @description Clients with no eligible members on file
+             */
+            clients_without_roster: number;
+            /**
+             * Providers Pending
+             * @description Practitioners not yet activated
+             */
+            providers_pending: number;
+            /**
+             * Sessions Missing Outcome
+             * @description Completed sessions with no clinical outcome recorded
+             */
+            sessions_missing_outcome: number;
+            /**
+             * Sessions Missing Rate
+             * @description Completed sessions with no rate
+             */
+            sessions_missing_rate: number;
+        };
         /**
          * DateRangeSchema
          * @description Date range schema.
@@ -9131,6 +9258,32 @@ export interface components {
          */
         ImportBatchStatus: "Staged" | "Applied" | "Abandoned";
         /**
+         * ImportBatchSummary
+         * @description The batch the backlog figures describe.
+         */
+        ImportBatchSummary: {
+            /** Accepted */
+            accepted: number;
+            /** Applied At */
+            applied_at?: string | null;
+            /** File Name */
+            file_name: string;
+            /** Row Count */
+            row_count: number;
+            /** Status */
+            status: string;
+        };
+        /**
+         * ImportQueueEntry
+         * @description One unresolved outcome bucket in the current import batch.
+         */
+        ImportQueueEntry: {
+            /** Outcome */
+            outcome: string;
+            /** Total */
+            total: number;
+        };
+        /**
          * ImportReasonCode
          * @description Machine-readable code for a staged row's outcome reason (P-10).
          *
@@ -10157,6 +10310,19 @@ export interface components {
              * @description ISO 3-letter currency code
              */
             currency: string;
+        };
+        /**
+         * MonthlySessions
+         * @description One month of completed sessions. The series is always 12 entries, zero-filled.
+         */
+        MonthlySessions: {
+            /**
+             * Month
+             * @description Calendar month, YYYY-MM
+             */
+            month: string;
+            /** Total */
+            total: number;
         };
         /**
          * NextOfKinRelationship
@@ -16979,6 +17145,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CriticalIncidentResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_dashboard_dashboard_get: {
+        parameters: {
+            query: {
+                tenant_id: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DashboardResponse"];
                 };
             };
             /** @description Validation Error */
