@@ -226,6 +226,291 @@ Measure whether representative staff can find a known client/provider, distingui
 same-name records, start a common task, and find their account settings without
 guidance. Record observations before claiming the redesign is faster or easier.
 
-This review changed documentation only. No app behaviour was changed or tested
-as part of the proposed redesign. Keep this file updated with separate
-implementation, passing-test, browser-verification, and deployment evidence.
+The original review changed documentation only. Phases 1 to 3 are now
+implemented; their separate implementation, test, browser-verification and
+deployment evidence is recorded below. Phase 4 is deferred and untouched.
+
+---
+
+# Implementation record, phases 1 to 3
+
+Implemented 2026-09-07 on `chore/monorepo`, base `aa2b327`. Phase 4 deferred.
+Nothing is deployed and no shared database was touched. Several agents held
+uncommitted work in this tree during the change; what that meant for the
+generated contract is recorded under "Concurrent work" below.
+
+## Status separation
+
+| Claim | State |
+| --- | --- |
+| Implemented | Yes, phases 1 to 3. |
+| Unit/component tests passing | Yes. Counts under "Test evidence". |
+| Contract regenerated | Yes, and idempotent on re-run. |
+| Verified in a real browser against the live API | Partly. See "Browser verification". |
+| Deployed | No. No environment other than a local throwaway database was touched. |
+
+## Phase 1: header and profile menu
+
+`apps/web/src/components/DashboardHeader.tsx` was rewritten and reads
+left to right as sidebar control, workspace name, search launcher, account menu.
+
+- One sidebar control. The header trigger is the only one. The collapsed
+  sidebar's logo was a second expand control and is now an inert mark with a
+  tooltip (`AppSidebar.tsx`, `CollapsedHeader`).
+- One search control. The sidebar's two launchers (expanded and collapsed) are
+  removed; the header carries a field-like button on desktop and an icon button
+  below `md`, both opening the same dialog.
+- The global page title is gone. Every route either renders `PageShell`, which
+  provides its own breadcrumb trail and heading, renders its own heading
+  (`routes/incidents/index.tsx:27`), or is a layout or a redirect. `routeTitle`,
+  `ROUTE_TITLES` and `PageTitle` became unreachable and were deleted with their
+  test file `routeTitle.test.ts`. Page breadcrumbs and page actions are
+  untouched.
+- Workspace context is persistent in both sidebar states, in the header. The
+  sidebar header now shows the product mark instead, so the workspace name
+  appears once. `toProperCase` moved to `lib/display.ts` and is shared, so the
+  header and the old sidebar rendering agree.
+- Identity prefers the account's display name and falls back to email
+  (`useAccountIdentity`). The avatar initial follows the same value. Inside the
+  menu the email appears under the name when both exist.
+- Appearance is explicit Light / Dark / System with the current choice ticked,
+  in the account menu. The unlabelled cycling icon button is gone.
+- The notification bell and the `#help` link are removed. Neither had an event
+  source or a destination.
+- Saved sidebar preference is unchanged: `AppLayout` still reads and writes
+  `uiStorage`. Existing routes are unchanged.
+
+### Design decisions taken here
+
+1. **Workspace name in the header, product name in the sidebar.** Keeping the
+   workspace in the sidebar would have hidden it whenever the sidebar was
+   collapsed, which fails "show the current workspace persistently". Showing it
+   in both would have duplicated the label the redesign set out to de-duplicate.
+2. **`routeTitle` deleted rather than kept.** Nothing else referenced it once
+   the header title went. Keeping a tested but unreachable function would
+   overstate coverage.
+3. **The collapsed logo is no longer a button.** "Keep one sidebar expansion
+   control" is only true if the logo stops being a second one.
+
+## Phase 2: search contract
+
+New: `apps/api/app/api/schemas/search_schemas.py`,
+`apps/api/app/api/routes/search.py`, registered in
+`apps/api/app/api/routes/__init__.py`.
+
+`POST /search?tenant_id=…` with body `{ q, limit }` returns three categories:
+`clients`, `practitioners`, `provider_organisations`. Each carries
+`items[{ id, label, secondary, type }]`, `has_more` and `failed`.
+
+- **Authorisation is the source module's, not a second policy.** The route
+  depends on `require_same_tenant`, which is exactly what guards
+  `clients.py:1035`, `providers.py:80` and `provider_organisations.py:84`.
+  Search therefore cannot reach further than the lists it searches, and detail
+  routes still authorise their own reads.
+- **Tenant and permissions come from the authenticated context.**
+  `require_same_tenant` compares the token's tenant against the requested one
+  before any query runs; a refusal touches no repository (tested).
+- **Admin is not treated as clinical access.** No clinical surface is searched
+  at all: no members, cases, notes, diagnoses, documents or survey text. The
+  three categories carry no clinical fields.
+- **Existing queries reused.** `ClientRepository.list_all`,
+  `ProviderRepository.search` and
+  `ProviderOrganisationRepository.list_organisations`. No new SQL, no new
+  index, and therefore no index claimed without a measured plan. Soft-deleted
+  rows are excluded by the base repository; archived clients are excluded by
+  `list_all`'s existing default.
+- **Bounded, with no count over inaccessible records.** Each category
+  over-fetches one row; `has_more` comes from that extra row rather than from a
+  `COUNT`. `limit` is 1 to 10, default 5. `q` is 1 to 100 characters, and a
+  query shorter than two characters after stripping runs no record query.
+- **Minimal projection.** Four fields per hit. Secondary labels are the client
+  code, the practitioner's `tier · region`, and the organisation's registration
+  number. Practitioner contact email and bio are deliberately not returned:
+  they are not needed to choose between two same-name practitioners, and a
+  search preview discloses even when the detail route would refuse.
+- **Category failures are isolated.** Each category runs inside
+  `_run_category`, which marks that category `failed`, rolls back so a failed
+  statement cannot poison the next category, and lets the others return.
+- **Types map to routes on the frontend**, in `search-registry.ts`. The
+  response never names a destination, so it cannot redirect the app.
+- No external search engine, vector database or AI query interpretation.
+
+### The query travels in the body, and why
+
+Found during live verification and fixed rather than documented away. With `q`
+as a query parameter the handler logged nothing, but the server access log
+recorded the term anyway:
+
+    INFO: "GET /search?tenant_id=…&q=nakato HTTP/1.1" 200 OK
+
+A search term routinely names a person, and any proxy in front of the app logs
+URLs too. The endpoint is therefore a `POST` whose body carries `q`, and the
+access log now shows only `POST /search?tenant_id=…`. `GET` returns 405, and a
+`q` appended to the URL is ignored in favour of the body. All three are tested.
+
+Failure logging records the category and the exception class only, never the
+exception string: a SQLAlchemy error message embeds its statement and its
+parameters, and the parameter here is the search text. A mutation test confirms
+the assertion has teeth: replacing `logger.error(...type(exc).__name__)` with
+`logger.exception(...)` makes `test_the_raw_query_is_absent_from_the_failure_log`
+fail.
+
+## Phase 3: search experience
+
+New `apps/web/src/components/search/GlobalSearch.tsx` replaces
+`CommandPalette.tsx`, which is deleted.
+
+- Cmd/Ctrl+K and the header launcher both open it. There is no competing
+  Cmd+K handler: the sidebar's shortcut is Cmd+B (`ui/sidebar.tsx:10`) and
+  `SheetForm` binds Cmd+Enter.
+- Groups are Records (three labelled categories), Pages and Actions.
+- **Pages and actions match locally; records come from the API.** cmdk's own
+  filtering is switched off (`shouldFilter: false`), so a record matched on a
+  field the label does not show, such as a registration number, is not silently
+  dropped by a second client-side filter.
+- **One navigation registry.** `lib/navigation.ts` holds the items, flags,
+  platform-admin and clinical-scope gates, active-state resolution and search
+  aliases; `hooks/useNavigation.ts` applies the per-session gates. Both the
+  sidebar and the dialog read it, so a label, permission or feature flag cannot
+  drift between them. Providers stays one entry owning `/providers` and
+  `/provider-organisations`, per this repo's provider navigation decision.
+- **Actions have verified entry points.** Add client, Add practitioner, Add
+  organisation and Schedule session, each labelled as the button it stands in
+  for and each navigating to a list route with `?new=true`, the handoff
+  `useListPage` already reads. Selecting one opens the ordinary form with its
+  normal validation; nothing mutates from a search result. Viewers do not see
+  them. No wellness nugget command, no member action.
+- **Interaction.** 250 ms debounce; a two-character floor; requests cancelled
+  by consuming TanStack Query's abort signal; five per category; per-category
+  failure rows; a whole-request failure row distinct from no results; a
+  "Searching records…" state that also covers the debounce window; and
+  See all links only where a category is truncated, carrying the query as
+  `?search=`.
+- **No stale results.** The query key contains the debounced text and there is
+  no `placeholderData`, so a previous query's rows cannot render under a newer
+  one.
+- **State is cleared on identity and workspace change.** The key includes user
+  id and tenant id, so a different session structurally cannot read cached
+  rows; `clearGlobalSearch` additionally cancels in-flight requests and drops
+  the cache, and is called from `authActions.logout` and from
+  `tenantActions.setCurrentTenant`.
+- **Accessibility.** `CommandDialog` gained a required visually hidden title
+  and description; it previously had neither, so the dialog announced as
+  unlabelled. Its own close button is hidden because it sat on top of the
+  search input; Escape still closes and Radix returns focus to the launcher.
+  Arrow keys and Enter come from cmdk's option roles.
+- Page-level table search and filters are untouched.
+
+Not added, as instructed: member search, clinical-content search, recent-record
+history, wellness commands, real notifications.
+
+## Test evidence
+
+Run in a clean `git worktree` at `aa2b327` carrying only this change set, so no
+concurrent agent's uncommitted work influenced the result.
+
+Backend, from `apps/api`:
+
+- `ruff check app tests scripts`: all checks passed.
+- `ruff format --check app tests scripts`: 606 files already formatted.
+- `lint-imports`: 3 contracts kept, 0 broken.
+- `pytest tests/unit`: **1569 passed**.
+- `pytest tests/unit/api/test_global_search_routes.py`: **37 passed**, covering
+  anonymous refusal, cross-tenant refusal with no repository call, Admin/User/
+  Viewer reads, four-field projection, bio and contact-email non-disclosure,
+  a practitioner with no profile, truncation and the over-fetch-by-one, absence
+  of any count, out-of-range limit and over-long query, the sub-floor query,
+  per-category failure with rollback, empty-not-failed, GET returning 405, a URL
+  `q` being ignored, and the query's absence from the failure log.
+
+Frontend, from `apps/web`:
+
+- `tsc --noEmit`: clean.
+- `eslint .`: clean.
+- `prettier --check` on the files in this change set: clean.
+- `vitest run`: **617 passed across 75 files**, including the pre-existing
+  `types/enums.contract.test.ts`.
+- New: `GlobalSearch.test.tsx` (31), `DashboardHeader.test.tsx` (18),
+  `navigation.test.ts` (18), `search-registry.test.ts` (13),
+  `search-state.test.ts` (5), `search-teardown.test.ts` (4),
+  `endpoints/search.test.ts` (4). `AppSidebar.test.tsx` extended to 8.
+
+Contract: `dump_openapi.py` then `openapi-typescript` produces
+`+175 / -0` in `openapi.json` and `+133 / -0` in `schema.ts` against
+`aa2b327`, and re-running produces the same diff, so `pnpm contracts:check`
+would pass for this commit.
+
+## Live API verification
+
+Servers started from this change set's checkout: API on `127.0.0.1:8010`, web
+on `localhost:3010`, `VITE_USE_FIXTURES=false`, against a throwaway database
+`eap_navsearch` created for this purpose and migrated to head. Records were
+created through the real API, not inserted as fixtures: seven clients including
+an exact-match "Acme", three practitioners including two both named "Alice
+Nakato", two provider organisations.
+
+Observed against the running API:
+
+| Case | Result |
+| --- | --- |
+| Unauthenticated `POST /search` | 401 |
+| Cross-tenant `tenant_id` with a valid token | 403 |
+| `GET /search` | 405 |
+| `limit=11` | 422 |
+| 101-character `q` | 422 |
+| One-character `q` | 200, zero records, `failed: false` |
+| `q=acme` | 5 clients with `has_more: true` out of 7 matching, 1 practitioner, 1 organisation |
+| `q=nakato` | both same-name practitioners, disambiguated `T1 · Central` and `T3 · Eastern` |
+| Item keys | exactly `id`, `label`, `secondary`, `type` |
+| Access log after POST searches | no search term recorded |
+
+## Browser verification
+
+**Incomplete, and not claimed as done.** Browser tooling was unavailable to
+this session, so no authenticated click-through of the dialog, the account
+menu, the three themes, both sidebar states, the mobile layout or keyboard
+focus restoration has been driven in a real browser.
+
+What was established without a browser:
+
+- Both servers run from this checkout and serve these modules: the dev server
+  returns the new `GlobalSearch.tsx` and a 404 for the deleted
+  `CommandPalette.tsx`, and the served `DashboardHeader.tsx` contains no `Bell`
+  or `HelpCircle` and does contain Appearance, My profile and Sign out.
+- The live API behaviour above, over HTTP, with fixtures disabled.
+- Component tests drive the dialog through Radix and cmdk in jsdom: opening on
+  both shortcuts, Escape dismissal, the accessible dialog name, option roles,
+  ordering, and every result state.
+
+jsdom is not a browser. It does not establish layout at any breakpoint, the
+three themes, or focus restoration to the launcher.
+
+**Follow-up, owner: the next agent with browser tooling.** Run
+`/chrome` to enable browser tools, start both servers as recorded above, sign
+in, and check: the dialog at a mobile width, both sidebar states, Light, Dark
+and System, arrow-key navigation and Enter, Escape returning focus to the
+launcher, See all landing on a filtered list, and sign-out leaving no cached
+result behind. Record the outcome here before this section is called closed.
+
+## Deployment
+
+Nothing deployed. No shared or target environment was inspected or migrated.
+The only database touched is the local throwaway `eap_navsearch`.
+
+## Concurrent work in this tree
+
+Other agents held uncommitted changes here throughout, including a
+`ProviderGender` enum added to the provider profile and a narrowing of
+`MemberGender` on the frontend. Two consequences, recorded so neither is read
+as this change's doing:
+
+1. The generated contract was regenerated in an isolated worktree at
+   `aa2b327` plus this change set only, so `openapi.json` and `schema.ts`
+   carry the search additions and nothing else. `ProviderGender` is absent from
+   the artifacts committed here; the agent who owns it regenerates with their
+   own commit.
+2. In the shared working tree, `types/enums.contract.test.ts` fails on
+   `MemberGender offers every value the API can return`. That is their
+   uncommitted frontend narrowing meeting a contract generated from `aa2b327`.
+   It passes in this change set's isolated worktree, and resolves when they
+   commit their backend change with a regenerated contract.
