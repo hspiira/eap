@@ -46,6 +46,11 @@ export interface ServiceSession extends BaseEntity {
   member_id?: string | null
   /** Every session is attributed to a client, including one with no member. */
   client_id: string
+  /** Display names resolved by the list endpoint; absent means unresolved. */
+  client_name?: string | null
+  member_display_label?: string | null
+  provider_display_name?: string | null
+  service_name?: string | null
   provider_id?: string | null
   /**
    * How the session was delivered. `Unknown` belongs to historical records

@@ -5,7 +5,6 @@ import { createFileRoute, Link, useNavigate, useSearch } from "@tanstack/react-r
 import { CalendarClock, Download, ExternalLink, MoreHorizontal, Plus } from "lucide-react"
 
 import { membersApi } from "@/api/endpoints/members"
-import { providersApi } from "@/api/endpoints/providers"
 import { type ServiceSessionListParams, serviceSessionsApi } from "@/api/endpoints/service-sessions"
 import { servicesApi } from "@/api/endpoints/services"
 import { BulkAction } from "@/components/common/BulkAction"
@@ -46,16 +45,19 @@ import { normalizeErrorMessage } from "@/lib/errors"
 import { formatDate } from "@/lib/format"
 import { useEntityList } from "@/lib/queries"
 import { queryKeys } from "@/lib/query-keys"
-import { enumParam, listSearchSchema } from "@/lib/search-params"
+import { enumOptions, enumParam, listSearchSchema } from "@/lib/search-params"
 import { cn } from "@/lib/utils"
-import type { Provider, Service, ServiceSession } from "@/types/entities"
-import { SessionStatus } from "@/types/enums"
+import type { ServiceSession } from "@/types/entities"
+import { SessionCategory, SessionClinicalStatus, SessionStatus, SessionType } from "@/types/enums"
 import { getStatusLabel } from "@/utils/statusColors"
 
 export const Route = createFileRoute("/service-sessions/")({
   component: ServiceSessionsListPage,
   validateSearch: listSearchSchema({
     status: enumParam(SessionStatus),
+    session_type: enumParam(SessionType),
+    category: enumParam(SessionCategory),
+    clinical_outcome: enumParam(SessionClinicalStatus),
     service_id: (v) => (typeof v === "string" && v.trim() ? v : undefined),
     member_id: (v) => (typeof v === "string" && v.trim() ? v : undefined),
     range: (v): Exclude<RangeFilter, "all"> | undefined =>
@@ -72,6 +74,10 @@ const STATUS_OPTIONS = [
   { value: SessionStatus.NO_SHOW, label: "No show" },
 ] as const
 
+const MODE_OPTIONS = enumOptions(SessionType, "All modes")
+const CATEGORY_OPTIONS = enumOptions(SessionCategory, "All categories")
+const OUTCOME_OPTIONS = enumOptions(SessionClinicalStatus, "All outcomes")
+
 const RANGE_OPTIONS = [
   { value: "all", label: "All time" },
   { value: "today", label: "Today" },
@@ -81,6 +87,9 @@ const RANGE_OPTIONS = [
 ] as const
 
 type StatusFilter = (typeof STATUS_OPTIONS)[number]["value"]
+type ModeFilter = (typeof MODE_OPTIONS)[number]["value"]
+type CategoryFilter = (typeof CATEGORY_OPTIONS)[number]["value"]
+type OutcomeFilter = (typeof OUTCOME_OPTIONS)[number]["value"]
 type RangeFilter = (typeof RANGE_OPTIONS)[number]["value"]
 
 const ROW_BORDER = "border-fg/8"
@@ -125,29 +134,12 @@ function ServiceSessionsListPage() {
   const handleRangeChange = (next: RangeFilter) =>
     setFilter("range", next === "all" ? undefined : next)
 
-  const { data: servicesData } = useQuery({
-    queryKey: ["services", "lookup"],
-    queryFn: () => servicesApi.list({ limit: 100 }),
+  const { data: activeServiceForChip = null } = useQuery({
+    queryKey: ["services", "detail", activeServiceId ?? ""],
+    queryFn: () => servicesApi.getById(activeServiceId!),
+    enabled: !!activeServiceId,
     staleTime: 5 * 60_000,
   })
-  const servicesById = useMemo(() => {
-    const m = new Map<string, Service>()
-    for (const s of servicesData?.items ?? []) m.set(s.id, s)
-    return m
-  }, [servicesData])
-
-  // Counsellors are looked up in one call, as services are. Per-row fetches
-  // would add a second request per row on top of the member one.
-  const { data: providersData } = useQuery({
-    queryKey: ["providers", "lookup"],
-    queryFn: () => providersApi.list({ limit: 200 }),
-    staleTime: 5 * 60_000,
-  })
-  const providersById = useMemo(() => {
-    const m = new Map<string, Provider>()
-    for (const p of providersData?.items ?? []) m.set(p.id, p)
-    return m
-  }, [providersData])
 
   const { data: activeMemberForChip = null } = useQuery({
     queryKey: queryKeys.members.detail(activeMemberId ?? ""),
@@ -163,6 +155,9 @@ function ServiceSessionsListPage() {
       limit,
       search: activeSearch,
       status: activeStatus,
+      session_type: searchParams.session_type,
+      category: searchParams.category,
+      clinical_outcome: searchParams.clinical_outcome,
       service_id: activeServiceId,
       member_id: activeMemberId,
       ...rangeParams,
@@ -180,10 +175,13 @@ function ServiceSessionsListPage() {
     Boolean(activeStatus) ||
     Boolean(activeServiceId) ||
     Boolean(activeMemberId) ||
+    Boolean(searchParams.session_type) ||
+    Boolean(searchParams.category) ||
+    Boolean(searchParams.clinical_outcome) ||
     activeRange !== "all"
 
   const activeServiceLabel = activeServiceId
-    ? (servicesById.get(activeServiceId)?.name ?? activeServiceId.slice(0, 8))
+    ? (activeServiceForChip?.name ?? activeServiceId.slice(0, 8))
     : null
   const activeMemberLabel = activeMemberId
     ? activeMemberForChip
@@ -226,6 +224,24 @@ function ServiceSessionsListPage() {
           value={(activeStatus ?? "all") as StatusFilter}
           options={STATUS_OPTIONS}
           onChange={handleStatusChange}
+        />
+        <FilterTrigger
+          label="All modes"
+          value={(searchParams.session_type ?? "all") as ModeFilter}
+          options={MODE_OPTIONS}
+          onChange={(v) => setFilter("session_type", v === "all" ? undefined : v)}
+        />
+        <FilterTrigger
+          label="All categories"
+          value={(searchParams.category ?? "all") as CategoryFilter}
+          options={CATEGORY_OPTIONS}
+          onChange={(v) => setFilter("category", v === "all" ? undefined : v)}
+        />
+        <FilterTrigger
+          label="All outcomes"
+          value={(searchParams.clinical_outcome ?? "all") as OutcomeFilter}
+          options={OUTCOME_OPTIONS}
+          onChange={(v) => setFilter("clinical_outcome", v === "all" ? undefined : v)}
         />
         <FilterTrigger
           icon={CalendarClock}
@@ -340,8 +356,6 @@ function ServiceSessionsListPage() {
                     <SessionRow
                       key={row.id}
                       row={row}
-                      servicesById={servicesById}
-                      providersById={providersById}
                       isSelected={selection.selectedIds.has(row.id)}
                       onToggle={() => selection.toggleSelect(row.id)}
                     />
@@ -368,28 +382,14 @@ function Blank() {
 
 function SessionRow({
   row,
-  servicesById,
-  providersById,
   isSelected,
   onToggle,
 }: {
   row: ServiceSession
-  servicesById: Map<string, Service>
-  providersById: Map<string, Provider>
   isSelected: boolean
   onToggle: () => void
 }) {
-  const linkedService = servicesById.get(row.service_id) ?? null
-  const counsellor = row.provider_id ? (providersById.get(row.provider_id) ?? null) : null
-  // A company-wide session has no member to fetch, and asking for one would
-  // report it as unavailable rather than as deliberately absent.
-  const { data: linkedMember = null } = useQuery({
-    queryKey: queryKeys.members.detail(row.member_id ?? ""),
-    queryFn: () => membersApi.getById(row.member_id!),
-    enabled: Boolean(row.member_id),
-    staleTime: 10 * 60_000,
-  })
-  const personLabel = linkedMember ? memberLabel(linkedMember) : "Member unavailable"
+  const personLabel = row.member_display_label ?? "Member unavailable"
   const scheduled = new Date(row.scheduled_at)
   const dateLabel = formatDate(scheduled)
   const timeLabel = scheduled.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
@@ -436,16 +436,16 @@ function SessionRow({
         )}
       </TableCell>
       <TableCell className="max-w-36 truncate text-xs text-fg/75">
-        {linkedMember?.client_name ?? <Blank />}
+        {row.client_name ?? <Blank />}
       </TableCell>
       <TableCell className="max-w-36 truncate text-xs text-fg/75">
-        {counsellor && row.provider_id ? (
+        {row.provider_display_name && row.provider_id ? (
           <Link
             to="/providers/$providerId"
             params={{ providerId: row.provider_id }}
             className="hover:text-primary"
           >
-            {counsellor.display_name}
+            {row.provider_display_name}
           </Link>
         ) : (
           <Blank />
@@ -455,12 +455,9 @@ function SessionRow({
         <Link
           to="/services/$serviceId"
           params={{ serviceId: row.service_id }}
-          className={cn(
-            "text-xs text-fg/75 hover:text-primary",
-            !linkedService?.name && "font-mono",
-          )}
+          className={cn("text-xs text-fg/75 hover:text-primary", !row.service_name && "font-mono")}
         >
-          {linkedService?.name ?? row.service_id.slice(0, 8)}
+          {row.service_name ?? row.service_id.slice(0, 8)}
         </Link>
       </TableCell>
       <TableCell className="text-xs text-fg/75">{row.session_type ?? <Blank />}</TableCell>
