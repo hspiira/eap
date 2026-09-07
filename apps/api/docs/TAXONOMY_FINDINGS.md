@@ -421,3 +421,22 @@ conflict, so it will land with whoever commits those files.
 Recorded here so it is not lost if that work is discarded rather than
 committed. Verify with: both files import `NEWEST_FIRST` and pass it as
 `initialSort`.
+
+## Discovered: the web suite has a full-run-only flake
+
+`src/routes/clients/client-members.test.tsx` and
+`src/routes/service-sessions/new.test.tsx` fail in a full `pnpm test:web` run
+and pass when run on their own. The count varies between runs, three failures
+one time and one the next, and it reproduces with an unrelated one-line change
+stashed, so it is not caused by any single edit.
+
+Both files log `An update to EntityPicker inside a test was not wrapped in
+act(...)` and the same for `DiagnosisSelector`, which is the usual signature of
+a state update landing after the assertion. That makes them sensitive to
+whatever else is running, so the failure moves around as the suite grows.
+
+Not mine to fix: both files sit in another session's active area, and the suite
+grew from 79 files to 83 during this session while that work landed. Recorded
+so the next person to see a red web job does not spend the time I did proving
+it was pre-existing. Reproduce with `pnpm test:web` twice and compare the
+failure list.
