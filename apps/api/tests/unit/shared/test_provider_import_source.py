@@ -49,8 +49,11 @@ class TestValues:
         rows = parse_source_rows(_csv("not a date,A,A,L1"), None)
         assert rows[0].session_date is None
 
+    # 12-Sep-25 is the reference extract's own format; every one of its 7,470
+    # rows was rejected as dateless before the two-digit year parsed.
     @pytest.mark.parametrize(
-        "raw,expected_day", [("2025-04-02", 2), ("02/04/2025", 2), ("02-Apr-2025", 2)]
+        "raw,expected_day",
+        [("2025-04-02", 2), ("02/04/2025", 2), ("02-Apr-2025", 2), ("12-Sep-25", 12)],
     )
     def test_common_date_formats_parse(self, raw, expected_day):
         rows = parse_source_rows(_csv(f"{raw},A,A,L1"), None)

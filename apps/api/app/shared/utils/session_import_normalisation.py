@@ -63,6 +63,8 @@ _SESSION_TYPE: dict[str, SessionType] = {
 # 25 of the 50 distinct spellings map; the other 25 are topic, time or
 # session-type bleed ("Depression", "10:00AM", "online") and stay unmapped.
 _CATEGORY: dict[str, SessionCategory] = {
+    "group talk": SessionCategory.GROUP,
+    "couples": SessionCategory.COUPLES,
     "individual": SessionCategory.INDIVIDUAL,
     "individual conselling": SessionCategory.INDIVIDUAL,
     "individual counselling": SessionCategory.INDIVIDUAL,
@@ -152,3 +154,31 @@ def map_diagnosis(raw: str | None) -> str | Unmapped | None:
 def map_classification(raw: str | None) -> str | Unmapped | None:
     """Map a CLASSIFICATION value; the table is empty pending a clinician."""
     return _lookup("CLASSIFICATION", _CLASSIFICATION, raw)
+
+
+#: INTERVENTION spellings to canonical service names. Spelling and casing
+#: variants only; resolution against the tenant's catalogue happens at staging,
+#: so a canonical name with no catalogue entry stages UnresolvedService rather
+#: than creating a service. "No show" is a status bleed, not a service, and
+#: stays unmapped on purpose.
+_INTERVENTIONS: dict[str, str] = {
+    "individual counselling": "Individual Counselling",
+    "health talk": "Health Talk",
+    "family therapy": "Family Therapy",
+    "coaching/mentorship": "Coaching/Mentorship",
+    "site visit": "Site Visit",
+    "physical wellness": "Physical Wellness",
+    "couple counselling": "Couple Counselling",
+    "group counselling": "Group Counselling",
+    "mental health talk": "Mental Health Talk",
+    "psychiatric assessment": "Psychiatric Assessment",
+    "hospital visit": "Hospital Visit",
+    "psychotherapy": "Psychotherapy",
+    "home visit": "Home Visit",
+    "empowerment talks": "Empowerment Talk",
+}
+
+
+def map_intervention(value: str | None) -> str | Unmapped | None:
+    """Canonical service name for an INTERVENTION spelling."""
+    return _lookup("INTERVENTION", _INTERVENTIONS, value)

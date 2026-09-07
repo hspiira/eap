@@ -114,6 +114,17 @@ class SessionImportRowModel(CuidMixin, TenantMixin, Base, TimestampMixin):
     provider_id: Mapped[str | None] = mapped_column(String(25), nullable=True, index=True)
     provider_affiliation_id: Mapped[str | None] = mapped_column(String(25), nullable=True)
     reasons: Mapped[list | None] = mapped_column(JSON, nullable=True)
+    client_id: Mapped[str | None] = mapped_column(String(25), nullable=True, index=True)
+    attendance: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    member_id: Mapped[str | None] = mapped_column(String(25), nullable=True, index=True)
+    service_id: Mapped[str | None] = mapped_column(String(25), nullable=True)
+    session_type: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    category: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    clinical_outcome: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    session_status: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    client_type: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    rate_ugx: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    session_number: Mapped[int | None] = mapped_column(Integer, nullable=True)
     imported_session_id: Mapped[str | None] = mapped_column(
         String(25), ForeignKey("service_sessions.id", ondelete="SET NULL"), nullable=True
     )

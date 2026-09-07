@@ -10,7 +10,12 @@ import hashlib
 from fastapi import APIRouter, Depends, Query, Request, UploadFile, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.dependencies import get_audit_event_handler
+from app.api.dependencies import (
+    get_audit_event_handler,
+    get_client_repository,
+    get_eligible_member_repository,
+    get_service_repository,
+)
 from app.api.dependencies.pagination import PageParams, pagination
 from app.api.dependencies.provider_network import (
     get_historical_session_writer,
@@ -42,11 +47,14 @@ from app.domain.entities.session_import import (
 from app.domain.enums.provider_network import ImportRowOutcome
 from app.domain.enums.tenancy import TenantRole
 from app.domain.exceptions import DomainError, NotFoundError
+from app.domain.repositories.client_repository import ClientRepository
+from app.domain.repositories.eligible_member_repository import EligibleMemberRepository
 from app.domain.repositories.provider_network_repository import (
     ProviderAffiliationRepository,
     ProviderAliasRepository,
     SessionImportRepository,
 )
+from app.domain.repositories.service_repository import ServiceRepository
 from app.domain.value_objects.core import TenantId, UserId
 from app.domain.value_objects.provider_network import (
     SessionImportBatchId,
@@ -101,6 +109,9 @@ async def stage_import(
     aliases: ProviderAliasRepository = Depends(get_provider_alias_repository),
     affiliations: ProviderAffiliationRepository = Depends(get_provider_affiliation_repository),
     audit_handler=Depends(get_audit_event_handler),
+    clients: ClientRepository = Depends(get_client_repository),
+    members: EligibleMemberRepository = Depends(get_eligible_member_repository),
+    services: ServiceRepository = Depends(get_service_repository),
     db: AsyncSession = Depends(get_db),
 ):
     """Stage rows for review. Writes no sessions and has no billing side effects.
@@ -141,7 +152,12 @@ async def stage_import(
     await imports.save_batch(batch)
 
     service = SessionImportStagingService(
-        ProviderAliasReconciliationService(aliases), affiliations, imports
+        ProviderAliasReconciliationService(aliases),
+        affiliations,
+        imports,
+        clients,
+        members,
+        services,
     )
     entities: list[SessionImportRowEntity] = []
     for source_row in source_rows:
@@ -160,6 +176,17 @@ async def stage_import(
                 provider_id=staged.provider_id,
                 provider_affiliation_id=staged.provider_affiliation_id,
                 reasons=staged.reasons,
+                client_id=staged.client_id,
+                attendance=staged.attendance,
+                member_id=staged.member_id,
+                service_id=staged.service_id,
+                session_type=staged.normalised.session_type,
+                category=staged.normalised.category,
+                clinical_outcome=staged.normalised.clinical_status,
+                session_status=staged.normalised.session_status,
+                client_type=staged.normalised.client_type,
+                rate_ugx=staged.normalised.rate_ugx,
+                session_number=staged.normalised.session_number,
                 created_at=now,
             )
         )

@@ -7,6 +7,14 @@ the source says and what reconciliation decided; nothing here writes a session.
 from dataclasses import dataclass, field
 from datetime import date, datetime
 
+from app.domain.enums import (
+    ClientType,
+    SessionAttendance,
+    SessionCategory,
+    SessionClinicalStatus,
+    SessionStatus,
+    SessionType,
+)
 from app.domain.enums.provider_network import (
     DeliveryContext,
     ImportBatchStatus,
@@ -139,6 +147,19 @@ class SessionImportRowEntity:
     provider_affiliation_id: ProviderAffiliationId | None = None
     imported_session_id: str | None = None
     reasons: tuple[str, ...] = field(default_factory=tuple)
+    # Resolved subject: who the session was for and what was delivered.
+    client_id: str | None = None
+    attendance: SessionAttendance | None = None
+    member_id: str | None = None
+    service_id: str | None = None
+    # Normalised activity-log values; None where the source did not map.
+    session_type: SessionType | None = None
+    category: SessionCategory | None = None
+    clinical_outcome: SessionClinicalStatus | None = None
+    session_status: SessionStatus | None = None
+    client_type: ClientType | None = None
+    rate_ugx: int | None = None
+    session_number: int | None = None
 
     def __post_init__(self) -> None:
         if self.row_number < 1:

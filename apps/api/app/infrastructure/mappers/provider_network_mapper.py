@@ -11,6 +11,14 @@ from app.domain.entities.session_import import (
     SessionImportBatchEntity,
     SessionImportRowEntity,
 )
+from app.domain.enums import (
+    ClientType,
+    SessionAttendance,
+    SessionCategory,
+    SessionClinicalStatus,
+    SessionStatus,
+    SessionType,
+)
 from app.domain.enums.provider_network import (
     AliasResolutionState,
     DeliveryContext,
@@ -243,6 +251,19 @@ class SessionImportMapper:
             else None,
             imported_session_id=model.imported_session_id,
             reasons=tuple(model.reasons or ()),
+            client_id=model.client_id,
+            attendance=SessionAttendance(model.attendance) if model.attendance else None,
+            member_id=model.member_id,
+            service_id=model.service_id,
+            session_type=SessionType(model.session_type) if model.session_type else None,
+            category=SessionCategory(model.category) if model.category else None,
+            clinical_outcome=(
+                SessionClinicalStatus(model.clinical_outcome) if model.clinical_outcome else None
+            ),
+            session_status=SessionStatus(model.session_status) if model.session_status else None,
+            client_type=ClientType(model.client_type) if model.client_type else None,
+            rate_ugx=model.rate_ugx,
+            session_number=model.session_number,
             created_at=ensure_utc(model.created_at),
         )
 
@@ -265,5 +286,16 @@ class SessionImportMapper:
             else None,
             imported_session_id=entity.imported_session_id,
             reasons=list(entity.reasons) or None,
+            client_id=entity.client_id,
+            attendance=entity.attendance.value if entity.attendance else None,
+            member_id=entity.member_id,
+            service_id=entity.service_id,
+            session_type=entity.session_type.value if entity.session_type else None,
+            category=entity.category.value if entity.category else None,
+            clinical_outcome=entity.clinical_outcome.value if entity.clinical_outcome else None,
+            session_status=entity.session_status.value if entity.session_status else None,
+            client_type=entity.client_type.value if entity.client_type else None,
+            rate_ugx=entity.rate_ugx,
+            session_number=entity.session_number,
             created_at=entity.created_at,
         )
