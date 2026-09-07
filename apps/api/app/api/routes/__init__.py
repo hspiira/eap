@@ -19,6 +19,7 @@ from app.api.routes.clinical_notes import router as clinical_notes_router
 from app.api.routes.contacts import router as contacts_router
 from app.api.routes.contracts import router as contracts_router
 from app.api.routes.critical_incidents import router as critical_incidents_router
+from app.api.routes.dashboard import router as dashboard_router
 from app.api.routes.diagnoses import router as diagnoses_router
 from app.api.routes.documents import router as documents_router
 from app.api.routes.dsar import router as dsar_router
@@ -90,6 +91,7 @@ def register_routers(app: FastAPI) -> None:
     app.include_router(kpis_router)
     app.include_router(audit_router)
     app.include_router(search_router)
+    app.include_router(dashboard_router)
 
 
 __all__ = [
@@ -106,6 +108,7 @@ __all__ = [
     "contacts_router",
     "contracts_router",
     "critical_incidents_router",
+    "dashboard_router",
     "diagnoses_router",
     "documents_router",
     "dsar_router",
