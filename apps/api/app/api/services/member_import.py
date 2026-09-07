@@ -210,11 +210,34 @@ class MemberRowImporter:
         return member
 
 
+#: The source's status word to the transition that reaches it.
+_STATUS_TRANSITIONS = {
+    EligibilityStatus.ACTIVE.value.casefold(): (
+        EligibilityStatus.ACTIVE,
+        EligibleMember.reinstate,
+    ),
+    EligibilityStatus.SUSPENDED.value.casefold(): (
+        EligibilityStatus.SUSPENDED,
+        EligibleMember.suspend,
+    ),
+    EligibilityStatus.TERMINATED.value.casefold(): (
+        EligibilityStatus.TERMINATED,
+        EligibleMember.terminate,
+    ),
+}
+
+
 def _apply_imported_status(member: EligibleMember, status: str | None) -> None:
-    imported = (status or "Pending").strip().casefold()
-    if imported == EligibilityStatus.ACTIVE.value.casefold():
-        member.reinstate()
-    elif imported == EligibilityStatus.SUSPENDED.value.casefold():
-        member.suspend()
-    elif imported == EligibilityStatus.TERMINATED.value.casefold():
-        member.terminate()
+    """Move the new member to the status the source records, if it is not there.
+
+    Enrolment already creates an Active member, so a roster that says Active,
+    as a full staff extract does for every row, asked the entity to reinstate
+    a member that was never suspended and the domain refused. A transition is
+    only run when it changes something.
+    """
+    wanted = _STATUS_TRANSITIONS.get((status or "Pending").strip().casefold())
+    if wanted is None:
+        return
+    target, transition = wanted
+    if member.status is not target:
+        transition(member)
