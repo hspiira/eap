@@ -320,10 +320,10 @@ export function ServiceSessionFormSheet({
       title={isEdit ? "Edit session" : watchedBackfill ? "Log past session" : "Schedule session"}
       description={
         isEdit
-          ? "Update the time, location, or notes for this session."
+          ? "Update the time, location, or notes."
           : watchedBackfill
-            ? "Record a session that already happened. Marked Completed and tagged in the audit trail."
-            : "Schedule a session for a member against a service. Lifecycle changes (complete / cancel / no-show) happen later from the detail view."
+            ? "Record a session that already happened. It is marked Completed and audited."
+            : "Book a session for a member, or for a whole company."
       }
       size="lg"
       onSubmit={submit}
@@ -380,7 +380,7 @@ export function ServiceSessionFormSheet({
           <FormField
             label="Headcount"
             required
-            description="Number of participants: at least 2."
+            description="At least 2."
             error={errors.headcount?.message}
             htmlFor="ss-headcount"
           >
@@ -389,7 +389,7 @@ export function ServiceSessionFormSheet({
         ) : null}
       </FormSection>
 
-      <FormSection title="Subject">
+      <FormSection title="Participants">
         {/* Asked first: it decides whether the rest of this section wants a
             member or a client and a headcount. */}
         <FormField
@@ -407,18 +407,12 @@ export function ServiceSessionFormSheet({
                 value={field.value}
                 onChange={field.onChange}
                 options={Object.values(SessionAttendance)}
-                placeholder="One member, or the whole company?"
               />
             )}
           />
         </FormField>
         {watchedAttendance === SessionAttendance.COMPANY_WIDE ? (
-          <FormField
-            label="Client"
-            required
-            error={errors.client_id?.message}
-            hint="A health talk or site visit is recorded against the client, with no member."
-          >
+          <FormField label="Client" required error={errors.client_id?.message}>
             <ClientPicker
               value={watch("client_id") ?? ""}
               onChange={(id) =>
@@ -451,7 +445,6 @@ export function ServiceSessionFormSheet({
                 value={field.value}
                 onChange={field.onChange}
                 options={Object.values(ClientType)}
-                placeholder="New or returning?"
               />
             )}
           />
@@ -472,7 +465,7 @@ export function ServiceSessionFormSheet({
             >
               <Input
                 id="ss-partner-rel"
-                placeholder="e.g. Spouse"
+                placeholder="Spouse"
                 {...register("partner_relationship")}
               />
             </FormField>
@@ -480,10 +473,7 @@ export function ServiceSessionFormSheet({
         ) : null}
       </FormSection>
 
-      <FormSection
-        title="Practitioner"
-        description="Who delivers the session, and whether they deliver it directly or for a supplier firm."
-      >
+      <FormSection title="Practitioner" description="Who delivered it, and under what arrangement.">
         <FormField label="Practitioner" required error={errors.service_provider_id?.message}>
           <ProviderPicker
             value={watchedProvider ?? ""}
@@ -524,7 +514,7 @@ export function ServiceSessionFormSheet({
           </FormField>
           <FormField
             label="Session number"
-            description="Position in the member's episode, e.g. 3 of 6."
+            description="Position in the member's episode."
             error={errors.session_number?.message}
             htmlFor="ss-session-no"
           >
@@ -553,8 +543,7 @@ export function ServiceSessionFormSheet({
                 This session already happened
               </span>
               <span className="block text-xs text-fg-muted">
-                Backfill a past session. It will be marked Completed and tagged with a logged-at
-                timestamp + reason in the audit trail.
+                Marked Completed, and audited with your reason.
               </span>
             </label>
           </div>
@@ -569,40 +558,26 @@ export function ServiceSessionFormSheet({
         </FormField>
         {watchedBackfill ? (
           <FormField
-            label="Reason for back-entry"
+            label="Reason"
             required
-            description="Why is this being logged after the fact? Visible in the audit log."
+            description="Recorded in the audit log."
             error={errors.backfill_reason?.message}
             htmlFor="ss-backfill-reason"
           >
             <Input
               id="ss-backfill-reason"
-              placeholder="e.g. Phone session: paper notes, entered next day"
+              placeholder="Paper notes, entered next day"
               {...register("backfill_reason")}
             />
           </FormField>
         ) : null}
-        <FormField
-          label="Location"
-          description="Physical address, video link, or 'Phone'."
-          error={errors.location?.message}
-          htmlFor="ss-location"
-        >
-          <Input
-            id="ss-location"
-            placeholder="e.g. Room 4 / Zoom / Phone"
-            {...register("location")}
-          />
+        <FormField label="Location" error={errors.location?.message} htmlFor="ss-location">
+          <Input id="ss-location" placeholder="Room 4, Zoom, or Phone" {...register("location")} />
         </FormField>
       </FormSection>
 
       <FormSection title="Clinical">
-        <FormField
-          label="Issue / topic"
-          description="Presenting issue, in the taxonomy's terms."
-          error={errors.issue_topic?.message}
-          htmlFor="ss-issue"
-        >
+        <FormField label="Issue / topic" error={errors.issue_topic?.message} htmlFor="ss-issue">
           <Input id="ss-issue" {...register("issue_topic")} />
         </FormField>
         <FormField label="Diagnosis" error={errors.diagnosis_id?.message}>
@@ -625,7 +600,7 @@ export function ServiceSessionFormSheet({
         {isEdit ? (
           <FormField
             label="Notes"
-            description="Internal notes, not shared with the subject."
+            description="Not shared with the member."
             error={errors.notes?.message}
             htmlFor="ss-notes"
           >
