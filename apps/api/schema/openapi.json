@@ -8392,6 +8392,62 @@
         "title": "MemberGender",
         "type": "string"
       },
+      "MemberImportCommitRequest": {
+        "additionalProperties": false,
+        "description": "A slice of confirmed rows. Each row is committed on its own.",
+        "properties": {
+          "rows": {
+            "items": {
+              "$ref": "#/components/schemas/MemberImportCommitRow"
+            },
+            "maxItems": 100,
+            "minItems": 1,
+            "title": "Rows",
+            "type": "array"
+          }
+        },
+        "required": [
+          "rows"
+        ],
+        "title": "MemberImportCommitRequest",
+        "type": "object"
+      },
+      "MemberImportCommitResponse": {
+        "properties": {
+          "results": {
+            "items": {
+              "$ref": "#/components/schemas/MemberImportRowResult"
+            },
+            "title": "Results",
+            "type": "array"
+          }
+        },
+        "required": [
+          "results"
+        ],
+        "title": "MemberImportCommitResponse",
+        "type": "object"
+      },
+      "MemberImportCommitRow": {
+        "additionalProperties": false,
+        "description": "One row the client confirmed for import, replayed from the preview.",
+        "properties": {
+          "row": {
+            "minimum": 1.0,
+            "title": "Row",
+            "type": "integer"
+          },
+          "values": {
+            "$ref": "#/components/schemas/MemberImportRowValues"
+          }
+        },
+        "required": [
+          "row",
+          "values"
+        ],
+        "title": "MemberImportCommitRow",
+        "type": "object"
+      },
       "MemberImportIssue": {
         "properties": {
           "field": {
@@ -8539,6 +8595,16 @@
           "state": {
             "title": "State",
             "type": "string"
+          },
+          "values": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/MemberImportRowValues"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "required": [
@@ -8550,6 +8616,209 @@
           "state"
         ],
         "title": "MemberImportRowPreview",
+        "type": "object"
+      },
+      "MemberImportRowResult": {
+        "description": "What happened to a single row once it was written.",
+        "properties": {
+          "member_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Member Id"
+          },
+          "message": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Message"
+          },
+          "row": {
+            "title": "Row",
+            "type": "integer"
+          },
+          "state": {
+            "title": "State",
+            "type": "string"
+          }
+        },
+        "required": [
+          "row",
+          "state"
+        ],
+        "title": "MemberImportRowResult",
+        "type": "object"
+      },
+      "MemberImportRowValues": {
+        "additionalProperties": false,
+        "description": "The raw CSV values for one roster row, as the parser read them.\n\nThe preview echoes these back so the confirmation step can send one row at a\ntime without re-uploading the file.",
+        "properties": {
+          "client_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Client Code"
+          },
+          "date_of_birth": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Date Of Birth"
+          },
+          "display_label": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Display Label"
+          },
+          "employer_member_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Employer Member Id"
+          },
+          "gender": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Gender"
+          },
+          "national_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "National Id"
+          },
+          "passport_number": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Passport Number"
+          },
+          "personal_email": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Personal Email"
+          },
+          "phone": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Phone"
+          },
+          "primary_employee_member_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Primary Employee Member Id"
+          },
+          "relation": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Relation"
+          },
+          "staff_number": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Staff Number"
+          },
+          "status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Status"
+          },
+          "work_email": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Work Email"
+          }
+        },
+        "title": "MemberImportRowValues",
         "type": "object"
       },
       "MemberListResponse": {
@@ -26883,7 +27152,7 @@
     },
     "/members/import": {
       "post": {
-        "description": "Preview or import a roster using only explicit, stable member IDs.",
+        "description": "Check a roster row by row, and on confirmation import each row on its own.",
         "operationId": "import_members_members_import_post",
         "parameters": [
           {
@@ -26937,6 +27206,53 @@
           }
         ],
         "summary": "Import Members",
+        "tags": [
+          "members"
+        ]
+      }
+    },
+    "/members/import/commit": {
+      "post": {
+        "description": "Import a slice of previewed rows, re-checking and committing each one alone.\n\nThe client sends the roster in slices so it can show progress. A row that\nfails is reported and skipped; the rows already written stay written.",
+        "operationId": "commit_member_import_members_import_commit_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MemberImportCommitRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MemberImportCommitResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Commit Member Import",
         "tags": [
           "members"
         ]

@@ -267,10 +267,16 @@ export function ClientImportDialog({ open, onOpenChange, onImported }: ClientImp
                 <Table className="text-left text-xs">
                   <TableHeader className="sticky top-0 bg-surface text-fg-muted">
                     <TableRow>
-                      <TableHead className="h-auto px-2 py-1.5 font-medium">Row</TableHead>
-                      <TableHead className="h-auto px-2 py-1.5 font-medium">Client</TableHead>
-                      <TableHead className="h-auto px-2 py-1.5 font-medium">Match</TableHead>
-                      <TableHead className="h-auto px-2 py-1.5 font-medium">Decision</TableHead>
+                      <TableHead className="h-auto px-2 py-1.5 text-xs font-medium">Row</TableHead>
+                      <TableHead className="h-auto px-2 py-1.5 text-xs font-medium">
+                        Client
+                      </TableHead>
+                      <TableHead className="h-auto px-2 py-1.5 text-xs font-medium">
+                        Match
+                      </TableHead>
+                      <TableHead className="h-auto px-2 py-1.5 text-xs font-medium">
+                        Decision
+                      </TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -278,16 +284,18 @@ export function ClientImportDialog({ open, onOpenChange, onImported }: ClientImp
                       const decision = decisions[row.row]?.action ?? row.default_action
                       return (
                         <TableRow key={row.row} className="border-fg/8">
-                          <TableCell className="px-2 py-1.5 text-fg-muted">{row.row}</TableCell>
-                          <TableCell className="max-w-56 px-2 py-1.5 text-fg">
+                          <TableCell className="px-2 py-1.5 text-xs text-fg-muted">
+                            {row.row}
+                          </TableCell>
+                          <TableCell className="max-w-56 px-2 py-1.5 text-xs text-fg">
                             <div>{row.name}</div>
                             {row.code ? <div className="text-fg-muted">{row.code}</div> : null}
                           </TableCell>
-                          <TableCell className="max-w-48 px-2 py-1.5 text-fg-muted">
+                          <TableCell className="max-w-48 px-2 py-1.5 text-xs text-fg-muted">
                             {row.matched_client_name ??
                               (row.state === "invalid" ? "Invalid" : "New")}
                           </TableCell>
-                          <TableCell className="px-2 py-1.5">
+                          <TableCell className="px-2 py-1.5 text-xs">
                             <Select
                               value={decision}
                               disabled={row.state === "invalid"}

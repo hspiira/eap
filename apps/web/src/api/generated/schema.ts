@@ -3281,9 +3281,32 @@ export interface paths {
         put?: never;
         /**
          * Import Members
-         * @description Preview or import a roster using only explicit, stable member IDs.
+         * @description Check a roster row by row, and on confirmation import each row on its own.
          */
         post: operations["import_members_members_import_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/members/import/commit": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Commit Member Import
+         * @description Import a slice of previewed rows, re-checking and committing each one alone.
+         *
+         *     The client sends the roster in slices so it can show progress. A row that
+         *     fails is reported and skipped; the rows already written stay written.
+         */
+        post: operations["commit_member_import_members_import_commit_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -9581,6 +9604,28 @@ export interface components {
          * @enum {string}
          */
         MemberGender: "Female" | "Male";
+        /**
+         * MemberImportCommitRequest
+         * @description A slice of confirmed rows. Each row is committed on its own.
+         */
+        MemberImportCommitRequest: {
+            /** Rows */
+            rows: components["schemas"]["MemberImportCommitRow"][];
+        };
+        /** MemberImportCommitResponse */
+        MemberImportCommitResponse: {
+            /** Results */
+            results: components["schemas"]["MemberImportRowResult"][];
+        };
+        /**
+         * MemberImportCommitRow
+         * @description One row the client confirmed for import, replayed from the preview.
+         */
+        MemberImportCommitRow: {
+            /** Row */
+            row: number;
+            values: components["schemas"]["MemberImportRowValues"];
+        };
         /** MemberImportIssue */
         MemberImportIssue: {
             /** Field */
@@ -9626,6 +9671,58 @@ export interface components {
             staff_number?: string | null;
             /** State */
             state: string;
+            values?: components["schemas"]["MemberImportRowValues"] | null;
+        };
+        /**
+         * MemberImportRowResult
+         * @description What happened to a single row once it was written.
+         */
+        MemberImportRowResult: {
+            /** Member Id */
+            member_id?: string | null;
+            /** Message */
+            message?: string | null;
+            /** Row */
+            row: number;
+            /** State */
+            state: string;
+        };
+        /**
+         * MemberImportRowValues
+         * @description The raw CSV values for one roster row, as the parser read them.
+         *
+         *     The preview echoes these back so the confirmation step can send one row at a
+         *     time without re-uploading the file.
+         */
+        MemberImportRowValues: {
+            /** Client Code */
+            client_code?: string | null;
+            /** Date Of Birth */
+            date_of_birth?: string | null;
+            /** Display Label */
+            display_label?: string | null;
+            /** Employer Member Id */
+            employer_member_id?: string | null;
+            /** Gender */
+            gender?: string | null;
+            /** National Id */
+            national_id?: string | null;
+            /** Passport Number */
+            passport_number?: string | null;
+            /** Personal Email */
+            personal_email?: string | null;
+            /** Phone */
+            phone?: string | null;
+            /** Primary Employee Member Id */
+            primary_employee_member_id?: string | null;
+            /** Relation */
+            relation?: string | null;
+            /** Staff Number */
+            staff_number?: string | null;
+            /** Status */
+            status?: string | null;
+            /** Work Email */
+            work_email?: string | null;
         };
         /** MemberListResponse */
         MemberListResponse: {
@@ -19084,6 +19181,39 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["MemberImportResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    commit_member_import_members_import_commit_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MemberImportCommitRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MemberImportCommitResponse"];
                 };
             };
             /** @description Validation Error */

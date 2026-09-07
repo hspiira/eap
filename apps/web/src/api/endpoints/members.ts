@@ -42,6 +42,24 @@ export interface MemberNextOfKinRequest {
   is_primary?: boolean
 }
 
+/** The parsed CSV values the preview echoes back, replayed row by row on confirm. */
+export interface MemberImportRowValues {
+  client_code: string | null
+  employer_member_id: string | null
+  staff_number: string | null
+  display_label: string | null
+  work_email: string | null
+  personal_email: string | null
+  gender: string | null
+  date_of_birth: string | null
+  phone: string | null
+  national_id: string | null
+  passport_number: string | null
+  status: string | null
+  relation: string | null
+  primary_employee_member_id: string | null
+}
+
 export interface MemberImportRow {
   row: number
   client_code: string | null
@@ -52,6 +70,17 @@ export interface MemberImportRow {
   state: string
   message?: string | null
   default_action: "import" | "skip"
+  values?: MemberImportRowValues | null
+}
+
+export type MemberImportRowState = "imported" | "skipped" | "duplicate" | "invalid" | "failed"
+
+/** What the server did with one confirmed row. */
+export interface MemberImportRowResult {
+  row: number
+  state: MemberImportRowState
+  member_id?: string | null
+  message?: string | null
 }
 
 export interface MemberImportIssue {
@@ -106,6 +135,13 @@ export const membersApi = {
       `/members/import?dry_run=${String(dryRun)}`,
       body,
     )
+  },
+
+  /** Import a slice of previewed rows. Each row is committed on its own server side. */
+  async commitImport(
+    rows: Array<{ row: number; values: MemberImportRowValues }>,
+  ): Promise<{ results: MemberImportRowResult[] }> {
+    return apiClient.post<{ results: MemberImportRowResult[] }>("/members/import/commit", { rows })
   },
 
   async list(params?: MemberListParams): Promise<PaginatedResponse<Member>> {

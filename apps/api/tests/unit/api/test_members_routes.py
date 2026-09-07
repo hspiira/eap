@@ -250,6 +250,130 @@ async def test_roster_preview_preserves_parser_issue_fields(api):
     ]
 
 
+def commit_row(row=2, **values):
+    return {
+        "row": row,
+        "values": {
+            "client_code": "ACME",
+            "employer_member_id": "HR-1",
+            "display_label": "Amina",
+            **values,
+        },
+    }
+
+
+async def test_roster_preview_returns_the_values_the_commit_step_replays(api):
+    api.clients.get_by_code.return_value = SimpleNamespace(
+        id=ClientId("c1"), name="Acme", tenant_id=TenantId("t1")
+    )
+
+    response = await api.http.post(
+        "/members/import?dry_run=true",
+        files={
+            "file": (
+                "members.csv",
+                b"Company Code,Staff_ID,Name of Employee\nACME,HR-1,Amina\n",
+                "text/csv",
+            )
+        },
+    )
+
+    assert response.status_code == 200, response.text
+    assert response.json()["rows"][0]["values"] == {
+        "client_code": "ACME",
+        "employer_member_id": "HR-1",
+        "staff_number": None,
+        "display_label": "Amina",
+        "work_email": None,
+        "personal_email": None,
+        "gender": None,
+        "date_of_birth": None,
+        "phone": None,
+        "national_id": None,
+        "passport_number": None,
+        "status": None,
+        "relation": None,
+        "primary_employee_member_id": None,
+    }
+
+
+async def test_import_commit_writes_every_row_in_its_own_transaction(api):
+    api.clients.get_by_code.return_value = SimpleNamespace(
+        id=ClientId("c1"), name="Acme", tenant_id=TenantId("t1")
+    )
+
+    response = await api.http.post(
+        "/members/import/commit",
+        json={
+            "rows": [
+                commit_row(2),
+                commit_row(3, employer_member_id="HR-2", display_label="Bosco"),
+            ]
+        },
+    )
+
+    assert response.status_code == 200, response.text
+    assert [row["state"] for row in response.json()["results"]] == ["imported", "imported"]
+    assert api.db.commit.await_count == 2
+
+
+async def test_import_commit_keeps_going_after_a_row_fails(api):
+    api.clients.get_by_code.return_value = SimpleNamespace(
+        id=ClientId("c1"), name="Acme", tenant_id=TenantId("t1")
+    )
+    saves = {"n": 0}
+
+    async def fail_first(_member):
+        saves["n"] += 1
+        if saves["n"] == 1:
+            raise ValueError("member is not writable")
+
+    api.members.save.side_effect = fail_first
+
+    response = await api.http.post(
+        "/members/import/commit",
+        json={
+            "rows": [
+                commit_row(2),
+                commit_row(3, employer_member_id="HR-2", display_label="Bosco"),
+            ]
+        },
+    )
+
+    assert response.status_code == 200, response.text
+    results = response.json()["results"]
+    assert results[0]["state"] == "failed"
+    assert results[0]["message"] == "member is not writable"
+    assert results[1]["state"] == "imported"
+    assert api.db.rollback.await_count == 1
+    assert api.db.commit.await_count == 1
+
+
+async def test_import_commit_never_overwrites_an_existing_member(api):
+    api.clients.get_by_code.return_value = SimpleNamespace(
+        id=ClientId("c1"), name="Acme", tenant_id=TenantId("t1")
+    )
+    api.members.find_by_employer_member_id.return_value = member()
+
+    response = await api.http.post("/members/import/commit", json={"rows": [commit_row()]})
+
+    assert response.status_code == 200, response.text
+    assert response.json()["results"][0]["state"] == "duplicate"
+    api.db.commit.assert_not_awaited()
+
+
+async def test_import_commit_rejects_a_company_code_outside_the_tenant(api):
+    api.clients.get_by_code.return_value = None
+
+    response = await api.http.post("/members/import/commit", json={"rows": [commit_row()]})
+
+    assert response.status_code == 200, response.text
+    result = response.json()["results"][0]
+    assert result["state"] == "invalid"
+    assert "does not resolve" in result["message"]
+    api.db.commit.assert_not_awaited()
+
+
 async def test_member_import_template_is_server_generated(api):
     response = await api.http.get("/members/import/template")
 
