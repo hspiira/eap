@@ -240,6 +240,39 @@ spellings, and PRIV-01 forbids free text reaching an employer aggregate.
 reported as `Unmapped`, and a test asserts the count of each per column so a
 future file that drifts is visible.
 
+**Decided (B2, implemented).** The tables live in
+`apps/api/app/shared/utils/session_import_normalisation.py`, importable from
+any layer, importing only `app.domain.enums`. Lookup keys are strip, collapse
+internal whitespace, casefold; no other transformation. Blank returns `None`,
+an unlisted value returns `Unmapped(column, value)`, and nothing defaults.
+Every entry was enumerated from the reference extract at
+`0e8fa212455ea42bba48574eb46c639ade1238bc9fa7382bfc7eee1951774e44`
+(7,470 populated rows).
+
+- `CATEGORY`: 25 of the 50 distinct spellings map, covering 7,024 rows; 49
+  rows across the other 25 spellings stay `Unmapped` and 397 are blank. The
+  rule adopted: spellings naming a session format map (including the typos
+  `Indididual` and `individuual`, and the group formats `Onsite Group`,
+  `Health talk`, `Group Presentation`); spellings naming a topic or time stay
+  unmapped (`Depression`, `Relationship`, `Marriage`, `10:00AM`, `online`).
+  The file's own `SESSION CATEGORY` column corroborates this: rows with
+  `CATEGORY` of `Relationship` or `Post RTA debrief and sessions` are cleaned
+  there as `Individual`, so topic spellings do not indicate the format. Known
+  per-row inconsistency: 6 of the 50 `Group session` rows are cleaned as
+  `Couples`; the mapping is per value and maps the spelling as written.
+- `GENDER` is a classifier, not a gender mapping: `Female`/`Male` spellings
+  return `MemberGender` (6,828 rows), `Group`/`group` return
+  `SessionAttendance.COMPANY_WIDE` (642 rows), nothing else appears.
+- **Blocked on a clinician:** the `DIAGNOSIS TYPE` (63 distinct),
+  `DIAGNOSIS` (251) and `CLASSIFICATION` (28) tables exist and are empty, so
+  every value stages as `Unmapped` until the controlled clinical list exists.
+  Engineering must not populate them.
+- `CLIENT FEEDBACK` has no mapper by design; PRIV-01 forbids the free text
+  reaching an aggregate. The module docstring says so.
+- `INTERVENTION` (26 distinct) maps to the service catalogue, not to a domain
+  enum, so it needs catalogue identifiers and belongs to the staging wiring
+  task, not to this module. Still open.
+
 ### B3. Status mapping
 
 **Owns** the same module as B2. Same agent.
@@ -248,6 +281,13 @@ The source status spans two enums. `Ongoing` to `ToBeContinued`, `Completed` to
 `Completed`, `Referred` to `Referred`, `Terminated` to the new `Terminated`, and
 `No Show` to `SessionStatus`, not to a clinical outcome. The 811 rows with no
 status get none; do not default them.
+
+**Decided (B3, implemented).** `map_status` returns a frozen `StatusMapping`
+with `clinical_status` and `session_status` fields, exactly one set, so a
+caller cannot collapse the two enums into one string. On the reference
+extract: 6,658 rows map to a clinical status (6,408 `Ongoing`, 215
+`Completed`, 25 `Referred`, 10 `Terminated`), 1 `No Show` row maps to
+`SessionStatus.NO_SHOW`, 811 blanks return `None`, and nothing is unmapped.
 
 ---
 
