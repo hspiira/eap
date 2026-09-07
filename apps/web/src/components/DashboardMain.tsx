@@ -37,10 +37,10 @@ interface KpiSpec {
 }
 
 const TONE_BADGE: Record<KpiTone, string> = {
-  info: "bg-info-soft text-info ring-info/20",
-  danger: "bg-danger-soft text-danger ring-danger/20",
-  success: "bg-success-soft text-success ring-success/20",
-  warning: "bg-warning-soft text-warning ring-warning/20",
+  info: "bg-info-soft text-info-fg ring-info/20",
+  danger: "bg-danger-soft text-danger-fg ring-danger/20",
+  success: "bg-success-soft text-success-fg ring-success/20",
+  warning: "bg-warning-soft text-warning-fg ring-warning/20",
 }
 
 interface QuickAction {

@@ -73,7 +73,9 @@ describe("getStatusColors", () => {
     for (const status of statuses) {
       const colors = getStatusColors(status)
       if (colors.tone === "neutral") {
-        expect(colors.text).not.toContain("text-white")
+        // White is only safe because the neutral fill is a mid grey, never the
+        // near-white surface token this once used.
+        expect(colors.bg).toBe("bg-status-neutral")
       }
     }
   })
@@ -108,19 +110,19 @@ describe("getStatusColors", () => {
     expect(getStatusColors("in_progress")).toEqual(getStatusColors("InProgress"))
   })
 
-  it("Closed sits on the mid grey, not on a near-white surface", () => {
+  it("Closed sits on the grey status chip, not on a near-white surface", () => {
     expect(getStatusColors("Closed")).toEqual({
       tone: "neutral",
-      bg: "bg-fg-muted",
-      text: "text-bg",
-      border: "border-fg-muted",
+      bg: "bg-status-neutral",
+      text: "text-white",
+      border: "border-status-neutral",
     })
   })
 
   it("unmapped statuses land on the neutral fill rather than white-on-white", () => {
     const colors = getStatusColors("SomeUnmappedFutureStatus")
     expect(colors.tone).toBe("neutral")
-    expect(colors.text).toBe("text-bg")
+    expect(colors.bg).toBe("bg-status-neutral")
   })
 })
 
@@ -167,9 +169,9 @@ describe("both themes use the solid role colour", () => {
     }
   })
 
-  it("takes its foreground from the bg token, so it flips with the theme", () => {
-    for (const status of ["Active", "Pending", "Declined"]) {
-      expect(getStatusColors(status).text, status).toBe("text-bg")
+  it("puts white on every fill, because every fill is deep in both themes", () => {
+    for (const status of ["Active", "Pending", "Declined", "Suspended", "InProgress"]) {
+      expect(getStatusColors(status).text, status).toBe("text-white")
     }
   })
 })

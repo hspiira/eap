@@ -19,22 +19,21 @@
  * begun), and `BaseStatus.PENDING` is the default a row is created with, so it
  * is the latter. Blue is reserved for work that is genuinely under way.
  *
- * Both themes use the solid role colour, with the foreground flipping via the
- * `bg` token: white on the fill in light, near-black in dark. The dark palette
- * makes each role a light colour (--danger is #e37d97 there), so white on the
- * fill measures about 2:1 and fails; near-black measures 7.16:1 or better.
- * Measured contrast of fill against `text-bg`, all passing WCAG AA 4.5:1:
- *   success 5.07 light / 8.09 dark   warning 5.02 / 11.86
- *   danger  8.41 / 7.21              info    6.70 / 7.79
- *   neutral 7.81 / 7.04
+ * Both themes fill with the solid role colour and put white on it. The dark
+ * roles are their own values rather than the light ones reused: a fill deep
+ * enough to carry white text has to stay clear of a near-black page, so each
+ * dark role is set where neither constraint is tight. Measured, white on the
+ * fill then the chip against the page:
+ *   success 5.07 / 7.00 light   5.35 / 3.70 dark
+ *   warning 5.02 / 6.94 light   5.40 / 3.67 dark
+ *   danger  8.41 / 4.22 light   5.47 / 3.62 dark
+ *   info    6.70 / 5.30 light   5.52 / 3.58 dark
+ *   neutral 7.81 / 7.81 light   5.33 / 3.72 dark
+ * Text needs 4.5:1 and a component boundary needs 3:1 (WCAG 1.4.11).
  *
- * The success and danger hues are taken from Cursor's diff colours, sampled
- * from a screenshot: green #1f8a66 at hue 160 and red #d02d56 at hue 345. The
- * hues carry over; the lightness does not. Cursor uses them as small text on
- * near-black, where their red measures 3.95:1, and as a light-theme fill the
- * green measures 4.30:1 against white. Each role is set to the deepest
- * lightness at that hue which keeps every pair the app actually renders above
- * 4.5:1, including role text on the soft tint used by the dashboard cards.
+ * The success and danger hues come from Cursor's diff colours, sampled from a
+ * screenshot: green #1f8a66 at hue 160 and red #d02d56 at hue 345. The hues
+ * carry over, the lightness is set per theme to clear both constraints.
  *
  * Icons are keyed by status first and tone second. In an icon-only column the
  * shape is what tells two statuses of the same tone apart, and Carbon asks for
@@ -103,32 +102,32 @@ const TONE_COLORS: Record<StatusTone, StatusColorConfig> = {
   success: {
     tone: "success",
     bg: "bg-success",
-    text: "text-bg",
+    text: "text-white",
     border: "border-success",
   },
   info: {
     tone: "info",
     bg: "bg-info",
-    text: "text-bg",
+    text: "text-white",
     border: "border-info",
   },
   warning: {
     tone: "warning",
     bg: "bg-warning",
-    text: "text-bg",
+    text: "text-white",
     border: "border-warning",
   },
   danger: {
     tone: "danger",
     bg: "bg-danger",
-    text: "text-bg",
+    text: "text-white",
     border: "border-danger",
   },
   neutral: {
     tone: "neutral",
-    bg: "bg-fg-muted",
-    text: "text-bg",
-    border: "border-fg-muted",
+    bg: "bg-status-neutral",
+    text: "text-white",
+    border: "border-status-neutral",
   },
 }
 

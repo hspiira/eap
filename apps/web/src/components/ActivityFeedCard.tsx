@@ -41,10 +41,10 @@ interface ActivityFeedCardProps {
 const TABS = ["All", "Sessions", "Cases", "Contracts"] as const
 
 const TONE_RING: Record<ActivityTone, string> = {
-  info: "bg-info-soft text-info ring-info/20",
-  success: "bg-success-soft text-success ring-success/20",
-  warning: "bg-warning-soft text-warning ring-warning/20",
-  danger: "bg-danger-soft text-danger ring-danger/20",
+  info: "bg-info-soft text-info-fg ring-info/20",
+  success: "bg-success-soft text-success-fg ring-success/20",
+  warning: "bg-warning-soft text-warning-fg ring-warning/20",
+  danger: "bg-danger-soft text-danger-fg ring-danger/20",
 }
 
 export function ActivityFeedCard({ activities, limit = 6 }: ActivityFeedCardProps = {}) {

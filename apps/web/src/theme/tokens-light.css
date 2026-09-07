@@ -70,6 +70,9 @@
   --info-soft: #dbeafe;
   --info-fg: #1e3a8a;
 
+  /* Grey chip for an inert status. */
+  --status-neutral: #525252;
+
   /* Focus ring + selection. */
   --ring: var(--brand);
   --selection-bg: rgb(15 81 50 / 0.15);
