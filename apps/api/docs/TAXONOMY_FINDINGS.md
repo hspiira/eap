@@ -7,7 +7,7 @@ catalogue and diagnosis taxonomy in `TAXONOMY_CATALOGUE.md`. Opened
 Each item carries the evidence that established it. Strike an item through when
 it lands and record the commit. Do not remove one without being asked.
 
-Status: 4 of 11 done, 7 open.
+Status: 5 of 11 done, 6 open.
 
 ## Priority order
 
@@ -20,7 +20,7 @@ cited elsewhere.
 | 2 | ~~A diagnosis cannot be moved between types through the API~~ | Missing capability | Done |
 | 3 | ~~Diagnosis descriptions are writable but never displayed~~ | Product gap | Done |
 | 4 | ~~`ServiceCategory` cannot classify 13 of 20 services~~ | Decided: do not extend the enum | Done |
-| 5 | `data/seed_data.json` cannot load against the current schema | Broken dev path | Open |
+| 5 | ~~`data/seed_data.json` cannot load against the current schema~~ | Broken dev path | Done |
 | 6 | Three visit services duplicate `service_sessions.location` | Redundancy | Open |
 | 7 | `services.is_group_service` duplicates `service_sessions.category` | Redundancy | Open |
 | 8 | `services` has no `code` and is matched on `name` | Design, needs product decision | Open |
@@ -212,15 +212,54 @@ Categorised services went from 7 to 8 of 20. Reopen this if a contract ever
 grants a cap on assessment or psychoeducation, which is the evidence that was
 missing.
 
-## 5. `data/seed_data.json` cannot load against the current schema
+## 5. ~~`data/seed_data.json` cannot load against the current schema~~
 
 All ten rows under `services` carry a category the `service_category_check`
 constraint from migration `a5b8c1d4e7f0` rejects: Counseling, Workshop, Crisis,
 Referral, Training, Assessment, Webinar. None is a `ServiceCategory` value, so
 `uv run python scripts/load_seed_data.py` fails on that table at head.
 
-Fix: remap the ten values onto the enum or null them. The file is shared, so
-coordinate before editing.
+**Two rejections, not one.** Verified against PostgreSQL with the schema built
+from the models. Through the ORM, which is the path the loader takes,
+`EnumValueType` raises `ValueError: Invalid ServiceCategory value: 'Counseling'`
+in Python before the statement reaches the database. Through raw SQL, the
+`service_category_check` constraint raises `CheckViolationError`. All ten rows
+were refused; my first report named only the constraint.
+
+**Landed.** The ten categories are remapped, and the file's one-object-per-line
+formatting is preserved, so the diff is ten lines and not the whole file.
+
+| Row | Was | Now | Why |
+| --- | --- | --- | --- |
+| s01 Individual Counseling | Counseling | `ShortTermCounselling` | One-to-one counselling |
+| s02 Group Workshop - Stress | Workshop | null | Psychoeducation, uncapped per item 4 |
+| s03 Crisis Support | Crisis | `CrisisIntervention` | 24/7 crisis line |
+| s04 Legal Consultation | Referral | `WorkLifeReferral` | Legal advice is a work-life service |
+| s05 Financial Counseling | Counseling | `WorkLifeReferral` | Financial consultation is work-life, not clinical |
+| s06 Manager Training | Training | null | Employer-commissioned |
+| s07 Assessment | Assessment | null | No cap applies, per item 4 |
+| s08 Webinar - Wellness | Webinar | null | Psychoeducation |
+| s09 Follow-up Session | Counseling | `ShortTermCounselling` | Counselling |
+| s10 Couples Counseling | Counseling | `ShortTermCounselling` | Counselling |
+
+`ManagerConsult` stays unused deliberately. It means consulting with a manager
+about an employee, not delivering training to managers, and mapping s06 to it
+to improve enum coverage is the force-fitting item 4 exists to prevent.
+
+Verified by inserting all ten rows against a schema built from the models: all
+ten now commit, where all ten previously failed. Pinned by
+`tests/unit/application/test_seed_data_enums.py`, 5 tests asserting the seed
+against the enums rather than a snapshot, so a new row with a made-up value
+fails there instead of at load time. Confirmed the tests catch the original
+defect by stashing the fix: 2 of 5 fail against the old file.
+
+`data/README.md` claimed enum values in the JSON match the application, which
+was false when written. It now points at the test that keeps it true.
+
+Root cause worth noting: typing the column in migration `a5b8c1d4e7f0` is what
+made the seed invalid, and phase 1 of `SERVICES_MIGRATION.md` audited the
+*database* for unmappable values and found none, because the tables were empty.
+Nothing audited the seed file.
 
 ## 6. Three visit services duplicate `service_sessions.location`
 

@@ -19,3 +19,5 @@ uv run python scripts/load_seed_data.py --clear
 ```
 
 The script uses the app’s `DATABASE_URL`, inserts in dependency order, and keeps the seed IDs so all references remain valid. Enum values in the JSON match the application (e.g. `"Active"`, `"Monthly"`).
+
+That last point is enforced, not assumed: `tests/unit/application/test_seed_data_enums.py` checks the seed against the enums themselves. It exists because ten `services` rows once carried categories no `ServiceCategory` had, which broke the loader silently until someone ran it.
