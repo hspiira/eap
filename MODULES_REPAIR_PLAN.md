@@ -256,45 +256,63 @@ answer strings as employer-facing chart labels.
 never appear in aggregate JSON or printed reports; small cohorts and totals obey
 the same policy on every endpoint. Retain categorical aggregate functionality.
 
-### SEC-04: 157 mutating routes authenticate the caller but never check they may write
+### SEC-04: 100 mutating routes authenticated the caller but never checked they may write
 
-**Evidence: reproduced by dependency-tree scan.** SEC-03's repair has two
-halves. The tenant half is closed: `TransitionUseCase.execute` now requires the
-owning tenant and refuses a mismatch, and the entity-ID reads are scoped. The
-write-role half is not. Walking the built dependency tree of all 349 mounted
-routes for the four unsafe methods found 157 that resolve a user but never
-reach `require_not_viewer`, `require_admin`, `require_tenant_role` or
-`require_self_or_admin`.
+**Status: closed.** Evidence: reproduced by dependency-tree scan, then fixed.
 
-A same-tenant Viewer therefore still reaches, among others: every case
-transition (`POST /cases/{id}/close`, `/refer-out`, `/assign-counsellor`), every
-clinical-note write including `/sign` and `/amend`, every contract command
-including `/terminate` and `PATCH /pricing`, all four DSAR mutations including
-`/execute-erasure`, every user lifecycle command including `/ban` and
-`PATCH /role`, and every tenant command including `/terminate`. This is decision
-3 in this plan: "Viewers cannot mutate."
+SEC-03's repair has two halves. The tenant half was closed first:
+`TransitionUseCase.execute` requires the owning tenant and refuses a mismatch,
+and the entity-ID reads are scoped. This is the write-role half.
 
-The count is larger than SEC-03 recorded because SEC-03 named the routes its
-probe exercised; this is the exhaustive inventory of the same defect class.
+**Correction to the first count recorded here.** The initial scan reported 157
+and named `POST /cases/{id}/close`, clinical-note `/sign`, `/users/{id}/ban`
+and `/tenants/{id}/terminate` among the exposed routes. That was wrong, and the
+claim is withdrawn. `require_tenant_role` and `require_self_or_role` are
+factories whose inner function is named `_require`; matching only the factory
+name missed them, so 57 already-gated routes were counted as exposed. Cases,
+clinical notes, users, tenants, industries and members all carry their own
+gate. The corrected figure is **100**.
 
-**Repair, owner: stream 1.** Do not hand-edit 157 route signatures; that is how
-twelve of them lost their tenant check in the first place. Apply the gate once,
-where every request passes, and refuse an unsafe method for a Viewer token
-unless the route is on an explicit allowlist. The allowlist is small and must be
-justified per entry: the unauthenticated auth endpoints, `POST /search`, the
-signed survey webhook, and a Viewer's own password and preferences. Lock the
-allowlist with the same style of test as `test_route_authorization`, so a new
-mutating route is gated by default and an exception has to be argued for in a
-diff.
+What was genuinely reachable by a same-tenant Viewer: every DSAR mutation
+(`/dsar/export`, `/dsar/erasure`, `/dsar/{id}/cancel`, `/execute-export`,
+`/execute-erasure`), every contract command including `/terminate` and
+`PATCH /pricing`, benchmark consent withdrawal, the care-callback campaign
+lifecycle and member enrolment, every outreach-record transition including
+`/triage` and `/escalate`, critical incidents, documents including
+`PATCH /confidentiality`, engagements, KPIs, services, service assignments,
+service sessions, survey campaigns, contacts, client tags, activities, report
+template creation and runs, and `POST /utilisation-events`. Decision 3 in this
+plan is "Viewers cannot mutate", and decision 3 also puts pricing changes and
+DSAR execution behind tenant Admin specifically.
 
-**Sequencing.** This edit touches route files that streams 2 and 3 currently
-hold. Land it after their commits, or it invalidates their test runs and
-conflicts with their diffs.
+**Repair.** `block_viewer_writes` in `app/core/authorization.py`, registered as
+an application-level dependency in `app/main.py`, so no route can be added
+outside it. It refuses an unsafe method to a Viewer's token unless the route is
+in `VIEWER_WRITABLE`, which holds six entries, each with its reason in the
+source: the four auth endpoints, `POST /search` (a read whose query is a body),
+and the signed survey webhook. Anonymous requests pass through, because whether
+a route may be called without a token is a separate question that
+`test_route_authorization` holds.
 
-**Close only when:** a same-tenant Viewer receives 403 on every mutating route
-not on the allowlist; the denied request performs no save, export or erasure;
-an Admin and a User in the same tenant still succeed where their role allows;
-and the allowlist test fails when a new mutating route is added without a gate.
+Route signatures were deliberately not edited. Hand-editing a hundred of them
+is how twelve lost their tenant check in the first place, and an opt-in gate is
+only as good as the memory of whoever adds the next route.
+
+**Verified:** `test_viewer_write_gate` refuses a Viewer through the real
+application on eight representative routes, confirms `/search` still gets past
+the gate, confirms Admin and User are untouched, confirms reads and anonymous
+requests are untouched, and pins the allowlist so growth is deliberate. Removing
+the registration fails eight of those tests. Unit 1731 passed, coverage 67.48%.
+Integration and e2e 500 passed, 1 failed, that failure being the pre-existing
+provider audit test recorded in `PROVIDERS_MIGRATION.md`.
+
+**Left open, deliberately.** The 100 routes now rely on the blanket gate rather
+than on a role stated at the route. That is a weaker statement of intent than
+`Depends(require_not_viewer)` at each one, and decision 3's stricter rule, that
+pricing changes and DSAR execution require tenant Admin rather than merely
+not-Viewer, is still not enforced. A test asserts the count does not grow while
+that is outstanding. Assigning explicit roles route by route is follow-up work
+for each module owner.
 
 ## P2: workflows and data correctness
 
@@ -599,18 +617,19 @@ Keep unchecked items open until their stated acceptance checks pass.
   - [x] ~~Close SEC-02.~~ All twelve unawaited calls replaced with the
         synchronous `assert_same_tenant`; `test_use_case_call_sites` fails the
         build if the async form is called outside `Depends` again.
-  - [~] SEC-03: tenant half closed. `TransitionUseCase.execute` takes a required
-        keyword-only `tenant_id`, enforced fail-closed in both directions, and
-        all 82 route call sites plus the one application-layer call site pass
-        the authenticated caller's tenant. **The write-role half is open: see
-        SEC-04.**
+  - [x] ~~Close SEC-03.~~ Tenant half: `TransitionUseCase.execute` takes a
+        required keyword-only `tenant_id`, enforced fail-closed in both
+        directions, and all 82 route call sites plus the one application-layer
+        call site pass the authenticated caller's tenant. Write-role half:
+        closed by SEC-04's blanket gate. Per-route role statements remain
+        follow-up work for each module owner.
   - [x] ~~Close AUTH-01 for logout, expiry, SSO and delayed responses.~~
         `resetIdentityState` is reached from all of them; verified against a
         real query client, including a response arriving after the reset.
-  - [~] Anonymous and wrong-tenant regression cases added
+  - [~] Anonymous, wrong-tenant and wrong-role regression cases added
         (`test_cross_tenant_reads`, `test_route_authorization`,
-        `test_transition_use_case`). Wrong-role cases wait on SEC-04.
-        Wrong-scope cases on clinical routes are not written yet.
+        `test_transition_use_case`, `test_viewer_write_gate`). Wrong-scope
+        cases on clinical routes are not written yet.
   - [ ] Verify forbidden operations have no save, export or erasure side effects.
         Partly done: the transition guard is asserted to leave the aggregate
         unchanged and unsaved. Not yet done for DSAR export/erasure.
@@ -654,7 +673,7 @@ do not start work on a claimed path without agreeing the handover here first.
 
 | Stream | Findings | Owner | State |
 | --- | --- | --- | --- |
-| 1. Access control and session state | SEC-01, SEC-02, SEC-03, AUTH-01 | stream 1 agent (this branch, `chore/monorepo`) | SEC-01, SEC-02 and AUTH-01 closed; SEC-03 tenant half closed, write-role half open as SEC-04 |
+| 1. Access control and session state | SEC-01, SEC-02, SEC-03, SEC-04, AUTH-01 | stream 1 agent (this branch, `chore/monorepo`) | all closed; per-route roles left as module-owner follow-up, see SEC-04 |
 | 2. Reporting and privacy | REP-01, PRIV-01, REP-02, DATA-01 | delegated 2026-09-07 | in progress |
 | 3. Module integration | API-01, ENG-01, AUD-01 | delegated 2026-09-07 | in progress |
 | 3b. Module integration, later round | SUR-01, INC-01, CASE-01, BILL-01 | unclaimed | open |

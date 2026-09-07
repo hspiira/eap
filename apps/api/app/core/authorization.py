@@ -14,7 +14,7 @@ Use get_*_for_current_tenant (or get_user_in_tenant) for by-ID routes so tenant
 is derived from the loaded entity.
 """
 
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, HTTPException, Request, status
 
 from app.api.dependencies import (
     get_audit_repository,
@@ -495,3 +495,52 @@ async def get_person_by_user_id_for_current_tenant(
             detail="Person not found",
         )
     return person
+
+
+# --- The blanket write gate (SEC-04) ------------------------------------------
+
+UNSAFE_METHODS = frozenset({"POST", "PUT", "PATCH", "DELETE"})
+
+#: The only mutating routes a Viewer's token may reach, with the reason each is
+#: here. Everything else is refused. Adding an entry has to be argued for in a
+#: diff, which is the point: 100 mutating routes reached a Viewer because the
+#: gate was opt-in and nobody noticed the ones that never opted in.
+VIEWER_WRITABLE: dict[tuple[str, str], str] = {
+    ("POST", "/auth/login"): "obtains the token",
+    ("POST", "/auth/logout"): "a Viewer must be able to end their own session",
+    ("POST", "/auth/refresh"): "a Viewer must be able to keep their own session",
+    ("POST", "/auth/set-initial-password"): "consumes a single-use invite token",
+    ("POST", "/search"): "a read expressed as POST because the query is a body",
+    ("POST", "/survey-campaigns/{campaign_id}/webhook"): "signed provider webhook",
+}
+
+
+async def block_viewer_writes(
+    request: Request,
+    current_user: TokenData | None = Depends(get_current_user_optional),
+) -> None:
+    """Refuse an unsafe method to a Viewer unless the route is allowlisted.
+
+    ``require_not_viewer`` exists and works, but it is opt-in, so the gate is
+    only as good as the memory of whoever added the last route. A scan of the
+    built dependency tree found 100 mutating routes that authenticated the
+    caller and never checked they could write, including every DSAR mutation
+    and every contract command. Gating once, here, makes the default deny and
+    turns each exception into a line someone has to justify.
+
+    Anonymous requests pass through: whether a route may be called without a
+    token is the route's own decision, and ``test_route_authorization`` holds
+    that surface separately.
+    """
+    if request.method not in UNSAFE_METHODS or current_user is None:
+        return
+    if (current_user.role or "").casefold() != TenantRole.VIEWER.value.casefold():
+        return
+    route = request.scope.get("route")
+    path = getattr(route, "path", None) or request.url.path
+    if (request.method, path) in VIEWER_WRITABLE:
+        return
+    raise HTTPException(
+        status_code=status.HTTP_403_FORBIDDEN,
+        detail="Viewers have read-only access",
+    )
