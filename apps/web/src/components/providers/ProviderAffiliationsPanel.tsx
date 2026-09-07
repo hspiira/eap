@@ -138,7 +138,6 @@ export function ProviderAffiliationsPanel({ providerId }: { providerId: string }
       >
         <FormField
           label="Ends before"
-          optional
           description="The last covered day is the day before this date. Leave empty for an open-ended affiliation."
           htmlFor="affiliation-valid-until"
         >

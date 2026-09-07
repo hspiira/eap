@@ -139,7 +139,6 @@ export function SurveyFormSheet({
         </FormField>
         <FormField
           label="Description"
-          optional
           error={errors.description?.message}
           htmlFor="sf-description"
         >

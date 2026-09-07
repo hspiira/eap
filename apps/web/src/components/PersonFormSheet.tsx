@@ -432,7 +432,6 @@ export function PersonFormSheet({
             </FormField>
             <FormField
               label="Department"
-              optional
               error={errors.department?.message}
               htmlFor="ps-dept"
             >
@@ -442,7 +441,6 @@ export function PersonFormSheet({
           <div className="grid grid-cols-2 gap-3">
             <FormField
               label="Employee ID"
-              optional
               error={errors.employee_id?.message}
               htmlFor="ps-empid"
             >
@@ -455,7 +453,6 @@ export function PersonFormSheet({
             </FormField>
             <FormField
               label="Family ID"
-              optional
               error={errors.family_id?.message}
               htmlFor="ps-family"
             >
@@ -465,7 +462,6 @@ export function PersonFormSheet({
           <div className="grid grid-cols-2 gap-3">
             <FormField
               label="Start date"
-              optional
               error={errors.employment_start?.message}
               htmlFor="ps-empstart"
             >
@@ -473,7 +469,6 @@ export function PersonFormSheet({
             </FormField>
             <FormField
               label="End date"
-              optional
               error={errors.employment_end?.message}
               htmlFor="ps-empend"
             >
@@ -546,7 +541,6 @@ export function PersonFormSheet({
             </FormField>
             <FormField
               label="Guardian user ID"
-              optional
               error={errors.guardian_id?.message}
               htmlFor="ps-guardian"
             >
@@ -561,7 +555,6 @@ export function PersonFormSheet({
         <div className="grid grid-cols-2 gap-3">
           <FormField
             label="Name"
-            optional
             error={errors.emergency_name?.message}
             htmlFor="ps-ename"
           >
@@ -569,7 +562,6 @@ export function PersonFormSheet({
           </FormField>
           <FormField
             label="Phone"
-            optional
             error={errors.emergency_phone?.message}
             htmlFor="ps-ephone"
           >
@@ -583,7 +575,6 @@ export function PersonFormSheet({
         </div>
         <FormField
           label="Email"
-          optional
           error={errors.emergency_email?.message}
           htmlFor="ps-eemail"
         >
@@ -603,7 +594,6 @@ export function PersonFormSheet({
           <div className="grid grid-cols-3 gap-3">
             <FormField
               label="Password"
-              optional
               error={errors.password?.message}
               htmlFor="ps-password"
             >
@@ -617,7 +607,6 @@ export function PersonFormSheet({
             </FormField>
             <FormField
               label="Language"
-              optional
               error={errors.preferred_language?.message}
               htmlFor="ps-lang"
             >
@@ -640,7 +629,7 @@ export function PersonFormSheet({
                 )}
               />
             </FormField>
-            <FormField label="Timezone" optional error={errors.timezone?.message} htmlFor="ps-tz">
+            <FormField label="Timezone" error={errors.timezone?.message} htmlFor="ps-tz">
               <Input
                 id="ps-tz"
                 placeholder="Africa/Kampala"

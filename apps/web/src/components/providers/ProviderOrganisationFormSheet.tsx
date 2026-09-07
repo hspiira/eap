@@ -105,7 +105,6 @@ export function ProviderOrganisationFormSheet({
 
       <FormField
         label="Registration number"
-        optional
         error={errors.registration_number?.message}
         hint="Leave empty to clear."
         htmlFor="org-registration"
@@ -115,7 +114,6 @@ export function ProviderOrganisationFormSheet({
 
       <FormField
         label="Contact email"
-        optional
         error={errors.contact_email?.message}
         hint="Leave empty to clear."
         htmlFor="org-email"
@@ -125,7 +123,6 @@ export function ProviderOrganisationFormSheet({
 
       <FormField
         label="Contact phone"
-        optional
         error={errors.contact_phone?.message}
         hint="Leave empty to clear."
         htmlFor="org-phone"

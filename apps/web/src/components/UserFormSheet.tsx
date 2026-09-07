@@ -123,7 +123,6 @@ function UserCreateSheet({ open, onOpenChange, onSaved }: UserFormSheetProps) {
         </FormField>
         <FormField
           label="Initial password"
-          optional
           description="Leave blank to send a passwordless invite. Min 8 characters."
           error={errors.password?.message}
           htmlFor="us-password"
@@ -132,6 +131,7 @@ function UserCreateSheet({ open, onOpenChange, onSaved }: UserFormSheetProps) {
         </FormField>
         <FormField
           label="Role"
+          required
           description="Defaults to User. Admins can manage tenant settings, users, and SSO."
           error={errors.role?.message}
           htmlFor="us-role"
@@ -156,10 +156,9 @@ function UserCreateSheet({ open, onOpenChange, onSaved }: UserFormSheetProps) {
           />
         </FormField>
       </FormSection>
-      <FormSection title="Preferences" description="Optional. The user can change these later.">
+      <FormSection title="Preferences" description="The user can change these later.">
         <FormField
           label="Preferred language"
-          optional
           error={errors.preferred_language?.message}
           htmlFor="us-lang"
         >
@@ -184,7 +183,6 @@ function UserCreateSheet({ open, onOpenChange, onSaved }: UserFormSheetProps) {
         </FormField>
         <FormField
           label="Timezone"
-          optional
           description="IANA tz, e.g. Africa/Kampala."
           error={errors.timezone?.message}
           htmlFor="us-tz"
@@ -251,7 +249,6 @@ function UserEditSheet({ open, onOpenChange, user, onSaved }: UserFormSheetProps
       <FormSection title="Preferences">
         <FormField
           label="Preferred language"
-          optional
           error={errors.preferred_language?.message}
           htmlFor="us-lang"
         >
@@ -276,7 +273,6 @@ function UserEditSheet({ open, onOpenChange, user, onSaved }: UserFormSheetProps
         </FormField>
         <FormField
           label="Timezone"
-          optional
           description="IANA tz, e.g. Africa/Kampala."
           error={errors.timezone?.message}
           htmlFor="us-tz"

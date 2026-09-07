@@ -161,7 +161,6 @@ export function EngagementFormSheet({
         </FormField>
         <FormField
           label="Description"
-          optional
           error={errors.description?.message}
           htmlFor="ef-description"
         >
@@ -205,7 +204,6 @@ export function EngagementFormSheet({
           </FormField>
           <FormField
             label="Due date"
-            optional
             description="Slips trigger an Overdue indicator in the list."
             error={errors.due_date?.message}
             htmlFor="ef-due"
@@ -217,12 +215,11 @@ export function EngagementFormSheet({
 
       <FormSection
         title="Commercials"
-        description="Optional. Snapshot of rate-card terms for this engagement."
+        description="Snapshot of rate-card terms for this engagement."
       >
         <div className="grid grid-cols-[1fr_6rem] gap-3">
           <FormField
             label="Hourly rate"
-            optional
             error={errors.hourly_rate?.message}
             htmlFor="ef-rate"
           >
@@ -239,7 +236,6 @@ export function EngagementFormSheet({
           </FormField>
           <FormField
             label="Currency"
-            optional
             error={errors.currency?.message}
             htmlFor="ef-currency"
           >
@@ -248,7 +244,6 @@ export function EngagementFormSheet({
         </div>
         <FormField
           label="Budget (hours)"
-          optional
           description="Leave blank for open-ended."
           error={errors.budget_hours?.message}
           htmlFor="ef-budget"
@@ -265,8 +260,8 @@ export function EngagementFormSheet({
         </FormField>
       </FormSection>
 
-      <FormSection title="Lead consultant" description="Optional. Owner accountable for delivery.">
-        <FormField label="Lead" optional error={errors.lead_user_id?.message}>
+      <FormSection title="Lead consultant" description="Owner accountable for delivery.">
+        <FormField label="Lead" error={errors.lead_user_id?.message}>
           <UserPicker
             value={watchedLead ?? ""}
             onChange={(id) =>

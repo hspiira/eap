@@ -143,9 +143,9 @@ export function ServiceAssignmentFormSheet({
 
       <FormSection
         title="Notes"
-        description="Optional. Active-period dates derive from the parent contract."
+        description="Active-period dates derive from the parent contract."
       >
-        <FormField label="Notes" optional error={errors.notes?.message} htmlFor="sa-notes">
+        <FormField label="Notes" error={errors.notes?.message} htmlFor="sa-notes">
           <Textarea
             id="sa-notes"
             rows={3}

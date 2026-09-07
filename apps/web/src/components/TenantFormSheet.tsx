@@ -186,6 +186,7 @@ export function TenantFormSheet({ open, onOpenChange, tenant, onSaved }: TenantF
 
       <FormField
         label="Subscription tier"
+        required
         description="Defaults to Free."
         error={errors.subscription_tier?.message}
         htmlFor="tenant-tier"
@@ -247,7 +248,7 @@ export function TenantFormSheet({ open, onOpenChange, tenant, onSaved }: TenantF
 
       <FormField
         label="Custom branding"
-        optional
+        required
         description="Allow the tenant to use custom branding and override theme colours."
         error={errors.custom_branding?.message}
         htmlFor="tenant-branding"

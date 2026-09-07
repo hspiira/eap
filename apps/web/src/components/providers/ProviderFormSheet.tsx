@@ -149,7 +149,6 @@ export function ProviderFormSheet({
 
         <FormField
           label="Contact email"
-          optional
           description="How to reach the practitioner. This is not a login, and linking an account does not change it."
           error={errors.email?.message}
           hint="Leave empty to clear."
@@ -165,7 +164,6 @@ export function ProviderFormSheet({
 
         <FormField
           label="Contact phone"
-          optional
           error={errors.phone?.message}
           hint="Leave empty to clear."
           htmlFor="prv-phone"
@@ -219,7 +217,7 @@ export function ProviderFormSheet({
           />
         </FormField>
 
-        <FormField label="Bio" optional error={errors.bio?.message} htmlFor="prv-bio">
+        <FormField label="Bio" error={errors.bio?.message} htmlFor="prv-bio">
           <Textarea id="prv-bio" rows={4} {...register("bio")} />
         </FormField>
       </FormSection>
