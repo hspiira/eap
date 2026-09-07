@@ -1,18 +1,22 @@
 """Survey campaign + webhook routes (Phase 3 #D-Survey / SAD §6.4)."""
 
 import json
+from typing import Literal
 
-from fastapi import APIRouter, Depends, Header, HTTPException, Request, status
+from fastapi import APIRouter, Depends, Header, HTTPException, Query, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.dependencies import (
+    PageParams,
     get_audit_event_handler,
     get_survey_campaign_repository,
     get_survey_response_repository,
+    pagination,
 )
 from app.api.schemas.survey_schemas import (
     SurveyAggregateResponse,
     SurveyCampaignCreate,
+    SurveyCampaignListResponse,
     SurveyCampaignResponse,
     SurveyResponseAcceptedResponse,
     WebhookPayload,
@@ -30,6 +34,7 @@ from app.core.authorization import assert_same_tenant
 from app.core.database import get_db
 from app.core.security import TokenData, get_current_user
 from app.domain.entities.survey_campaign import SurveyCampaign
+from app.domain.enums import SurveyCampaignStatus
 from app.domain.repositories.survey_repository import (
     SurveyCampaignRepository,
     SurveyResponseRepository,
@@ -103,17 +108,45 @@ async def create_survey_campaign(
 
 @router.get(
     "/survey-campaigns",
-    response_model=list[SurveyCampaignResponse],
+    response_model=SurveyCampaignListResponse,
     summary="List survey campaigns for the current tenant",
 )
 @readonly()
 async def list_survey_campaigns(
     current_user: TokenData = Depends(get_current_user),
+    campaign_status: SurveyCampaignStatus | None = Query(None, alias="status"),
+    client_id: str | None = Query(None),
+    search: str | None = Query(None),
+    pg: PageParams = Depends(pagination()),
+    sort_by: Literal[
+        "created_at", "updated_at", "name", "status", "period_start", "period_end", "response_count"
+    ] = Query("created_at"),
+    sort_desc: bool = Query(True),
     repo: SurveyCampaignRepository = Depends(get_survey_campaign_repository),
     db: AsyncSession = Depends(get_db),
 ):
-    rows = await repo.list_for_tenant(TenantId(current_user.tenant_id))
-    return [_to_campaign_response(c) for c in rows]
+    tenant = TenantId(current_user.tenant_id)
+    client = ClientId(client_id) if client_id else None
+    rows = await repo.list_for_tenant(
+        tenant,
+        status=campaign_status,
+        client_id=client,
+        search=search,
+        limit=pg.limit,
+        offset=pg.offset,
+        sort_by=sort_by,
+        sort_desc=sort_desc,
+    )
+    total = await repo.count_for_tenant(
+        tenant, status=campaign_status, client_id=client, search=search
+    )
+    return SurveyCampaignListResponse(
+        items=[_to_campaign_response(c) for c in rows],
+        total=total,
+        page=pg.page,
+        limit=pg.limit,
+        has_more=pg.offset + pg.limit < total,
+    )
 
 
 @router.get(

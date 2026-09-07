@@ -76,6 +76,16 @@ class EngagementResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
+class EngagementListResponse(BaseModel):
+    """The canonical list envelope: server-side filters, totals and paging."""
+
+    items: list[EngagementResponse]
+    total: int
+    page: int
+    limit: int
+    has_more: bool
+
+
 class EngagementSummaryResponse(BaseModel):
     engagement_id: str
     client_id: str

@@ -3,7 +3,13 @@
 from dataclasses import dataclass
 
 from app.domain.events.base import DomainEvent
-from app.domain.value_objects.core import ClientId, EngagementId, TenantId, UserId
+from app.domain.value_objects.core import (
+    ClientId,
+    DeliverableId,
+    EngagementId,
+    TenantId,
+    UserId,
+)
 
 
 @dataclass(frozen=True)
@@ -38,3 +44,18 @@ class HoursLogged(DomainEvent):
     engagement_id: "EngagementId"
     user_id: UserId
     hours: float
+
+
+@dataclass(frozen=True)
+class DeliverableAdded(DomainEvent):
+    engagement_id: "EngagementId"
+    deliverable_id: DeliverableId
+    title: str
+
+
+@dataclass(frozen=True)
+class DeliverableStatusChanged(DomainEvent):
+    engagement_id: "EngagementId"
+    deliverable_id: DeliverableId
+    from_status: str
+    to_status: str

@@ -2,8 +2,10 @@
 
 from app.domain.entities.survey_campaign import SurveyCampaign
 from app.domain.entities.survey_response import SurveyResponse
+from app.domain.enums import SurveyCampaignStatus
 from app.domain.repositories.base_repository import BaseRepository
 from app.domain.value_objects.core import (
+    ClientId,
     SurveyCampaignId,
     SurveyResponseId,
     TenantId,
@@ -12,8 +14,26 @@ from app.domain.value_objects.core import (
 
 class SurveyCampaignRepository(BaseRepository[SurveyCampaign, SurveyCampaignId]):
     async def list_for_tenant(
-        self, tenant_id: TenantId, *, limit: int = 50, offset: int = 0
+        self,
+        tenant_id: TenantId,
+        *,
+        status: SurveyCampaignStatus | None = None,
+        client_id: ClientId | None = None,
+        search: str | None = None,
+        limit: int = 50,
+        offset: int = 0,
+        sort_by: str = "created_at",
+        sort_desc: bool = True,
     ) -> list[SurveyCampaign]: ...
+
+    async def count_for_tenant(
+        self,
+        tenant_id: TenantId,
+        *,
+        status: SurveyCampaignStatus | None = None,
+        client_id: ClientId | None = None,
+        search: str | None = None,
+    ) -> int: ...
 
 
 class SurveyResponseRepository(BaseRepository[SurveyResponse, SurveyResponseId]):

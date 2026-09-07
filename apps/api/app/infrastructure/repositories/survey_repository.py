@@ -1,15 +1,17 @@
 """SQLAlchemy implementations of the Survey repositories (Phase 3 #D-Survey)."""
 
-from sqlalchemy import select
+from sqlalchemy import Select, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.domain.entities.survey_campaign import SurveyCampaign
 from app.domain.entities.survey_response import SurveyResponse
+from app.domain.enums import SurveyCampaignStatus
 from app.domain.repositories.survey_repository import (
     SurveyCampaignRepository,
     SurveyResponseRepository,
 )
 from app.domain.value_objects.core import (
+    ClientId,
     SurveyCampaignId,
     SurveyResponseId,
     TenantId,
@@ -22,6 +24,35 @@ from app.infrastructure.models.survey_model import (
     SurveyCampaignModel,
     SurveyResponseModel,
 )
+
+_SORTABLE = {
+    "created_at": SurveyCampaignModel.created_at,
+    "updated_at": SurveyCampaignModel.updated_at,
+    "name": SurveyCampaignModel.name,
+    "status": SurveyCampaignModel.status,
+    "period_start": SurveyCampaignModel.period_start,
+    "period_end": SurveyCampaignModel.period_end,
+    "response_count": SurveyCampaignModel.response_count,
+}
+
+
+def _filtered(
+    stmt: Select,
+    tenant_id: TenantId,
+    *,
+    status: SurveyCampaignStatus | None,
+    client_id: ClientId | None,
+    search: str | None,
+) -> Select:
+    """Apply the tenant scope and the list filters shared by list and count."""
+    stmt = stmt.where(SurveyCampaignModel.tenant_id == tenant_id.value)
+    if status is not None:
+        stmt = stmt.where(SurveyCampaignModel.status == status)
+    if client_id is not None:
+        stmt = stmt.where(SurveyCampaignModel.client_id == client_id.value)
+    if search:
+        stmt = stmt.where(SurveyCampaignModel.name.ilike(f"%{search}%"))
+    return stmt
 
 
 class SurveyCampaignRepositoryImpl(SurveyCampaignRepository):
@@ -62,17 +93,47 @@ class SurveyCampaignRepositoryImpl(SurveyCampaignRepository):
         return existing is not None
 
     async def list_for_tenant(
-        self, tenant_id: TenantId, *, limit: int = 50, offset: int = 0
+        self,
+        tenant_id: TenantId,
+        *,
+        status: SurveyCampaignStatus | None = None,
+        client_id: ClientId | None = None,
+        search: str | None = None,
+        limit: int = 50,
+        offset: int = 0,
+        sort_by: str = "created_at",
+        sort_desc: bool = True,
     ) -> list[SurveyCampaign]:
+        column = _SORTABLE.get(sort_by, SurveyCampaignModel.created_at)
+        stmt = _filtered(
+            select(SurveyCampaignModel),
+            tenant_id,
+            status=status,
+            client_id=client_id,
+            search=search,
+        )
         stmt = (
-            select(SurveyCampaignModel)
-            .where(SurveyCampaignModel.tenant_id == tenant_id.value)
-            .order_by(SurveyCampaignModel.created_at.desc())
-            .limit(limit)
-            .offset(offset)
+            stmt.order_by(column.desc() if sort_desc else column.asc()).limit(limit).offset(offset)
         )
         rows = (await self._session.execute(stmt)).scalars().all()
         return [SurveyCampaignMapper.to_entity(r) for r in rows]
+
+    async def count_for_tenant(
+        self,
+        tenant_id: TenantId,
+        *,
+        status: SurveyCampaignStatus | None = None,
+        client_id: ClientId | None = None,
+        search: str | None = None,
+    ) -> int:
+        stmt = _filtered(
+            select(func.count()).select_from(SurveyCampaignModel),
+            tenant_id,
+            status=status,
+            client_id=client_id,
+            search=search,
+        )
+        return int((await self._session.execute(stmt)).scalar_one())
 
 
 class SurveyResponseRepositoryImpl(SurveyResponseRepository):

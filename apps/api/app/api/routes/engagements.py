@@ -1,17 +1,22 @@
 """Engagement routes (Phase 4 #D-Engagement / SAD §5.2.8)."""
 
-from fastapi import APIRouter, Depends, HTTPException, Request, status
+from typing import Literal
+
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.dependencies import (
+    PageParams,
     get_audit_event_handler,
     get_engagement_repository,
+    pagination,
 )
 from app.api.schemas.engagement_schemas import (
     DeliverableCreate,
     DeliverableResponse,
     DeliverableStatusUpdate,
     EngagementCreate,
+    EngagementListResponse,
     EngagementResponse,
     EngagementSummaryResponse,
     HoursLogCreate,
@@ -32,6 +37,7 @@ from app.core.authorization import assert_same_tenant
 from app.core.database import get_db
 from app.core.security import TokenData, get_current_user
 from app.domain.entities.engagement import Deliverable, Engagement, HoursLogEntry
+from app.domain.enums import EngagementStatus
 from app.domain.repositories.engagement_repository import EngagementRepository
 from app.domain.value_objects.core import (
     ClientId,
@@ -122,17 +128,45 @@ async def create_engagement(
 
 @router.get(
     "/engagements",
-    response_model=list[EngagementResponse],
+    response_model=EngagementListResponse,
     summary="List engagements for the current tenant",
 )
 @readonly()
 async def list_engagements(
     current_user: TokenData = Depends(get_current_user),
+    engagement_status: EngagementStatus | None = Query(None, alias="status"),
+    client_id: str | None = Query(None),
+    search: str | None = Query(None),
+    pg: PageParams = Depends(pagination()),
+    sort_by: Literal[
+        "created_at", "updated_at", "name", "status", "period_start", "period_end"
+    ] = Query("created_at"),
+    sort_desc: bool = Query(True),
     repo: EngagementRepository = Depends(get_engagement_repository),
     db: AsyncSession = Depends(get_db),
 ):
-    rows = await repo.list_for_tenant(TenantId(current_user.tenant_id))
-    return [_to_engagement_response(e) for e in rows]
+    tenant = TenantId(current_user.tenant_id)
+    client = ClientId(client_id) if client_id else None
+    rows = await repo.list_for_tenant(
+        tenant,
+        status=engagement_status,
+        client_id=client,
+        search=search,
+        limit=pg.limit,
+        offset=pg.offset,
+        sort_by=sort_by,
+        sort_desc=sort_desc,
+    )
+    total = await repo.count_for_tenant(
+        tenant, status=engagement_status, client_id=client, search=search
+    )
+    return EngagementListResponse(
+        items=[_to_engagement_response(e) for e in rows],
+        total=total,
+        page=pg.page,
+        limit=pg.limit,
+        has_more=pg.offset + pg.limit < total,
+    )
 
 
 @router.get(
@@ -191,12 +225,13 @@ async def add_deliverable(
     audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
 ):
-    deliverable = await AddDeliverableUseCase(repo).execute(
+    engagement, deliverable = await AddDeliverableUseCase(repo).execute(
         engagement_id=EngagementId(engagement_id),
         title=data.title,
         description=data.description,
         due_date=data.due_date,
     )
+    await audit_change(engagement, audit_handler, current_user, request)
     return _to_deliverable_response(deliverable)
 
 
@@ -216,11 +251,12 @@ async def update_deliverable_status(
     audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
 ):
-    d = await UpdateDeliverableStatusUseCase(repo).execute(
+    engagement, d = await UpdateDeliverableStatusUseCase(repo).execute(
         engagement_id=EngagementId(engagement_id),
         deliverable_id=DeliverableId(deliverable_id),
         status=data.status,
     )
+    await audit_change(engagement, audit_handler, current_user, request)
     return _to_deliverable_response(d)
 
 
@@ -240,13 +276,14 @@ async def log_hours(
     audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
 ):
-    entry = await LogHoursUseCase(repo).execute(
+    engagement, entry = await LogHoursUseCase(repo).execute(
         engagement_id=EngagementId(engagement_id),
         user_id=UserId(data.user_id),
         logged_on=data.logged_on,
         hours=data.hours,
         note=data.note,
     )
+    await audit_change(engagement, audit_handler, current_user, request)
     return _to_hours_response(entry)
 
 
