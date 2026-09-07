@@ -108,10 +108,19 @@ describe("account menu", () => {
     expect(screen.queryByText("asha.k@example.com")).not.toBeInTheDocument()
   })
 
-  it("falls back to the email when the account has no display name", async () => {
+  it("shows a name built from the email when the account has no display name", async () => {
     mocks.getById.mockResolvedValue({ id: "u-1", display_name: null, role: "Admin" })
     renderWithProviders(<DashboardHeader />)
-    expect(await screen.findByText("asha.k@example.com")).toBeInTheDocument()
+    // The nav label says who you are, not how you sign in.
+    expect(await screen.findByText("Asha K")).toBeInTheDocument()
+    expect(screen.queryByText("asha.k@example.com")).not.toBeInTheDocument()
+  })
+
+  it("never shows a raw email as the nav label", async () => {
+    mocks.getById.mockResolvedValue({ id: "u-1", display_name: null, role: "Admin" })
+    renderWithProviders(<DashboardHeader />)
+    const trigger = await screen.findByLabelText("Account menu")
+    expect(trigger.textContent).not.toContain("@")
   })
 
   it("shows the email inside the menu, under the name", async () => {

@@ -26,7 +26,7 @@ import {
 import { SidebarTrigger, useSidebar } from "@/components/ui/sidebar"
 import { useToast } from "@/contexts/ToastContext"
 import { authActions } from "@/lib/auth-store"
-import { toProperCase } from "@/lib/display"
+import { accountDisplayName, toProperCase } from "@/lib/display"
 import { queryKeys } from "@/lib/query-keys"
 import { openGlobalSearch } from "@/lib/search-state"
 import { cn } from "@/lib/utils"
@@ -135,7 +135,7 @@ function AppearanceSection() {
   )
 }
 
-/** Display name where the account has one, email only as a fallback. */
+/** The account's name. The email is detail inside the menu, not the label. */
 function useAccountIdentity() {
   const email = useAuthStore((s) => s.email)
   const userId = useAuthStore((s) => s.user_id)
@@ -147,11 +147,11 @@ function useAccountIdentity() {
     staleTime: 5 * 60_000,
   })
 
-  const name = user?.display_name?.trim() || null
+  const name = accountDisplayName(user?.display_name, email)
   return {
     name,
     email: email ?? null,
-    primary: name ?? email ?? "Account",
+    primary: name ?? "Account",
     role: user?.role ?? null,
   }
 }
@@ -205,7 +205,7 @@ function UserMenu() {
             <AccountAvatar label={identity.primary} size="md" />
             <div className="min-w-0">
               <p className="truncate text-sm font-medium text-fg">{identity.primary}</p>
-              {identity.name && identity.email ? (
+              {identity.email ? (
                 <p className="truncate text-xs text-fg-muted">{identity.email}</p>
               ) : null}
               <p className="truncate text-xs text-fg-muted">
