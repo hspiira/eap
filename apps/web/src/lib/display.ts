@@ -57,3 +57,14 @@ export function nameInitials(name: string): string {
 export function personInitials(person: Person, user?: User | null): string {
   return nameInitials(displayName(person, user))
 }
+
+/**
+ * Title-cases a stored name for display. Tenant names are stored as entered,
+ * which is often all upper or all lower case.
+ */
+export function toProperCase(value: string): string {
+  return value
+    .split(/\s+/)
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+    .join(" ")
+}
