@@ -12,7 +12,9 @@ class SessionCompleted(DomainEvent):
     """Event raised when a service session is completed."""
 
     session_id: SessionId
-    member_id: EligibleMemberId
+    # Absent on a company-wide session, which is delivered to a client with
+    # nobody individual to name.
+    member_id: EligibleMemberId | None
 
 
 @dataclass(frozen=True)

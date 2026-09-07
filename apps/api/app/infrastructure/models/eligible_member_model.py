@@ -32,6 +32,15 @@ class EligibleMemberModel(CuidMixin, TenantMixin, Base, TimestampMixin):
             "employer_member_id",
             name="uq_eligible_member_employer_id_per_client",
         ),
+        # A superset of the primary key, so it adds no constraint of its own.
+        # It exists so service_sessions can carry a composite foreign key and
+        # have the database refuse a member from a different client.
+        UniqueConstraint(
+            "tenant_id",
+            "client_id",
+            "id",
+            name="uq_eligible_member_tenant_client_id",
+        ),
     )
 
     client_id: Mapped[str] = mapped_column(String(25), nullable=False, index=True)

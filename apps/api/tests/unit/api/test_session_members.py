@@ -8,6 +8,7 @@ from httpx import ASGITransport, AsyncClient
 
 from app.api.dependencies import (
     get_audit_event_handler,
+    get_client_repository,
     get_eligible_member_repository,
     get_provider_repository,
     get_service_repository,
@@ -84,7 +85,9 @@ async def api():
         db=AsyncMock(),
         user=TokenData(user_id="u1", tenant_id="t1", role="Admin"),
     )
-    state.members.get_by_id.return_value = SimpleNamespace(tenant_id=TenantId("t1"))
+    state.members.get_by_id.return_value = SimpleNamespace(
+        id=EligibleMemberId("m1"), tenant_id=TenantId("t1"), client_id=ClientId("c1")
+    )
     state.providers.get_by_id.return_value = _bookable_provider()
     state.providers.get_for_booking.return_value = _bookable_provider()
     state.affiliations = AsyncMock()
@@ -98,8 +101,13 @@ async def api():
         is_active=True, approval_status=_APPROVED
     )
     state.services.get_by_id.return_value = SimpleNamespace(tenant_id=TenantId("t1"))
+    state.clients = AsyncMock()
+    state.clients.get_by_id.return_value = SimpleNamespace(
+        id=ClientId("c1"), tenant_id=TenantId("t1")
+    )
     for dep, value in {
         get_eligible_member_repository: state.members,
+        get_client_repository: state.clients,
         get_provider_repository: state.providers,
         get_service_repository: state.services,
         get_service_session_repository: state.sessions,
@@ -238,6 +246,7 @@ async def completable(api):
         tenant_id=TenantId("t1"),
         service_id=ServiceId("s1"),
         provider_id=PersonId("p1"),
+        client_id=ClientId("c1"),
         member_id=EligibleMemberId("m1"),
         scheduled_at=now,
         status=SessionStatus.SCHEDULED,
@@ -530,4 +539,89 @@ async def test_a_viewer_cannot_reschedule(api):
     response = await _reschedule(api)
 
     assert response.status_code == 403, response.text
+    api.sessions.save.assert_not_awaited()
+
+
+# --- Company-wide sessions -----------------------------------------------------
+#
+# A health talk is delivered to a client with nobody individual to name. The
+# source extract holds 642 of them and none could be recorded while member_id
+# was required.
+
+
+async def test_a_health_talk_is_created_against_the_client_with_no_member(api):
+    response = await api.http.post(
+        "/service-sessions/?tenant_id=t1",
+        json={
+            "provider_id": "p1",
+            "service_id": "s1",
+            "client_id": "c1",
+            "attendance": "CompanyWide",
+            "headcount": 40,
+            "scheduled_at": "2026-09-10T09:00:00Z",
+            "delivery_context": "Direct",
+        },
+    )
+
+    assert response.status_code == 201, response.text
+    body = response.json()
+    assert body["attendance"] == "CompanyWide"
+    assert body["member_id"] is None
+    assert body["client_id"] == "c1"
+    saved = api.sessions.save.call_args.args[0]
+    assert saved.member_id is None
+    assert saved.headcount == 40
+
+
+async def test_a_company_wide_session_naming_a_member_is_refused(api):
+    response = await api.http.post(
+        "/service-sessions/?tenant_id=t1",
+        json={
+            "provider_id": "p1",
+            "service_id": "s1",
+            "client_id": "c1",
+            "member_id": "m1",
+            "attendance": "CompanyWide",
+            "headcount": 40,
+            "scheduled_at": "2026-09-10T09:00:00Z",
+            "delivery_context": "Direct",
+        },
+    )
+
+    assert response.status_code == 422, response.text
+    api.sessions.save.assert_not_awaited()
+
+
+async def test_a_company_wide_session_without_a_headcount_is_refused(api):
+    """Headcount is the only measure of group reach, so it is not optional."""
+    response = await api.http.post(
+        "/service-sessions/?tenant_id=t1",
+        json={
+            "provider_id": "p1",
+            "service_id": "s1",
+            "client_id": "c1",
+            "attendance": "CompanyWide",
+            "scheduled_at": "2026-09-10T09:00:00Z",
+            "delivery_context": "Direct",
+        },
+    )
+
+    assert response.status_code == 422, response.text
+    api.sessions.save.assert_not_awaited()
+
+
+async def test_an_individual_session_takes_its_client_from_the_member(api):
+    """The request cannot disagree with the member about the client."""
+    response = await api.http.post("/service-sessions/?tenant_id=t1", json=PAYLOAD)
+
+    assert response.status_code == 201, response.text
+    assert response.json()["client_id"] == "c1"
+    assert api.sessions.save.call_args.args[0].client_id == ClientId("c1")
+
+
+async def test_an_individual_session_without_a_member_is_refused(api):
+    payload = {k: v for k, v in PAYLOAD.items() if k != "member_id"}
+    response = await api.http.post("/service-sessions/?tenant_id=t1", json=payload)
+
+    assert response.status_code == 422, response.text
     api.sessions.save.assert_not_awaited()

@@ -11,6 +11,7 @@ from app.application.use_cases.base import BaseUseCase
 from app.domain.entities.service_session import ServiceSessionEntity
 from app.domain.enums import (
     ClientType,
+    SessionAttendance,
     SessionCategory,
     SessionClinicalStatus,
     SessionDeliveryContext,
@@ -21,6 +22,7 @@ from app.domain.repositories.service_session_repository import (
     ServiceSessionRepository,
 )
 from app.domain.value_objects.core import (
+    ClientId,
     EligibleMemberId,
     ProviderId,
     ServiceId,
@@ -44,9 +46,11 @@ class CreateServiceSessionUseCase(BaseUseCase[ServiceSessionEntity, SessionId]):
         tenant_id: TenantId,
         service_id: ServiceId,
         provider_id: ProviderId,
-        member_id: EligibleMemberId,
+        client_id: ClientId,
         scheduled_at: datetime,
         delivery_context: SessionDeliveryContext,
+        attendance: SessionAttendance = SessionAttendance.INDIVIDUAL,
+        member_id: EligibleMemberId | None = None,
         provider_affiliation_id: str | None = None,
         location: str | None = None,
         session_type: SessionType | None = None,
@@ -69,6 +73,8 @@ class CreateServiceSessionUseCase(BaseUseCase[ServiceSessionEntity, SessionId]):
             tenant_id=tenant_id,
             service_id=service_id,
             provider_id=provider_id,
+            client_id=client_id,
+            attendance=attendance,
             member_id=member_id,
             scheduled_at=scheduled_at,
             delivery_context=delivery_context,

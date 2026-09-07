@@ -72,7 +72,8 @@ async def log_session_events(event: SessionCompleted | SessionCancelled) -> None
     if isinstance(event, SessionCancelled):
         logger.info(f"{event_type}: Session {session_id} - Reason: {event.reason}")
     elif isinstance(event, SessionCompleted):
-        logger.info(f"{event_type}: Session {session_id} for Member {event.member_id.value}")
+        subject = event.member_id.value if event.member_id else "a company-wide audience"
+        logger.info(f"{event_type}: Session {session_id} for {subject}")
 
 
 # =============================================================================
@@ -125,9 +126,9 @@ async def track_session_completion(event: SessionCompleted) -> None:
     - Send to analytics platform
     - Update utilization reports
     """
+    member = event.member_id.value if event.member_id else None
     logger.debug(
-        f"Would track session completion: session={event.session_id.value}, "
-        f"member={event.member_id.value}"
+        f"Would track session completion: session={event.session_id.value}, member={member}"
     )
     # TODO: Implement analytics tracking
 

@@ -26,6 +26,7 @@ from app.domain.enums import (
     UgandaRegion,
 )
 from app.domain.value_objects.core import (
+    ClientId,
     EligibleMemberId,
     ProviderId,
     ProviderProfile,
@@ -79,6 +80,7 @@ def _record(**overrides) -> HistoricalSessionRecord:
         tenant_id=TenantId("t-1"),
         service_id=ServiceId("svc-1"),
         provider_id=ProviderId("prov-1"),
+        client_id=ClientId("cli-1"),
         member_id=EligibleMemberId("m-1"),
         delivered_at=PAST,
         delivery_context=SessionDeliveryContext.UNKNOWN,

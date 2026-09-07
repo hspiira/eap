@@ -8,6 +8,7 @@ from app.core.encryption import decrypt, encrypt
 from app.domain.entities.service_session import ServiceSessionEntity
 from app.domain.enums import (
     ClientType,
+    SessionAttendance,
     SessionCategory,
     SessionClinicalStatus,
     SessionDeliveryContext,
@@ -15,6 +16,7 @@ from app.domain.enums import (
     SessionType,
 )
 from app.domain.value_objects.core import (
+    ClientId,
     EligibleMemberId,
     ProviderId,
     ServiceId,
@@ -44,7 +46,7 @@ class ServiceSessionMapper:
         tenant_id = TenantId(model.tenant_id)
         service_id = ServiceId(model.service_id)
         provider_id = ProviderId(model.provider_id)
-        member_id = EligibleMemberId(model.member_id)
+        member_id = EligibleMemberId(model.member_id) if model.member_id else None
 
         # Reconstruct enums
         status = SessionStatus(model.status)
@@ -55,6 +57,8 @@ class ServiceSessionMapper:
             tenant_id=tenant_id,
             service_id=service_id,
             provider_id=provider_id,
+            client_id=ClientId(model.client_id),
+            attendance=SessionAttendance(model.attendance),
             member_id=member_id,
             scheduled_at=ensure_utc(model.scheduled_at),
             # An absent value reads as Unknown, never as Direct: decision 2 forbids
@@ -109,7 +113,9 @@ class ServiceSessionMapper:
             tenant_id=entity.tenant_id.value,
             service_id=entity.service_id.value,
             provider_id=entity.provider_id.value,
-            member_id=entity.member_id.value,
+            client_id=entity.client_id.value,
+            attendance=entity.attendance,
+            member_id=entity.member_id.value if entity.member_id else None,
             scheduled_at=ensure_utc(entity.scheduled_at),
             delivery_context=entity.delivery_context,
             provider_affiliation_id=entity.provider_affiliation_id,

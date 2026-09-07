@@ -16,6 +16,7 @@ from app.api.dependencies import (
     get_audit_event_handler,
     get_authorization_repository,
     get_case_repository,
+    get_client_repository,
     get_eligible_member_repository,
     get_provider_repository,
     get_service_repository,
@@ -58,11 +59,13 @@ from app.core.authorization import (
 )
 from app.core.database import get_db
 from app.core.security import TokenData, get_current_user
+from app.domain.entities.eligible_member import EligibleMember
 from app.domain.entities.service_session import ServiceSessionEntity
-from app.domain.enums import SessionDeliveryContext, SessionStatus
+from app.domain.enums import SessionAttendance, SessionDeliveryContext, SessionStatus
 from app.domain.enums.provider_network import OrganisationApprovalStatus
 from app.domain.exceptions import NotFoundError, ValidationException
 from app.domain.repositories.case_repository import CaseRepository
+from app.domain.repositories.client_repository import ClientRepository
 from app.domain.repositories.eap_programme_repository import AuthorizationRepository
 from app.domain.repositories.eligible_member_repository import EligibleMemberRepository
 from app.domain.repositories.provider_network_repository import (
@@ -87,6 +90,7 @@ from app.domain.services.provider_eligibility import (
 )
 from app.domain.value_objects.core import (
     CaseId,
+    ClientId,
     EligibleMemberId,
     ProviderId,
     ServiceId,
@@ -112,7 +116,9 @@ def to_service_session_response(
         tenant_id=session.tenant_id.value,
         service_id=session.service_id.value,
         provider_id=session.provider_id.value,
-        member_id=session.member_id.value,
+        client_id=session.client_id.value,
+        attendance=session.attendance,
+        member_id=session.member_id.value if session.member_id else None,
         scheduled_at=session.scheduled_at,
         delivery_context=session.delivery_context,
         provider_affiliation_id=session.provider_affiliation_id,
@@ -256,6 +262,35 @@ async def _many(
 # ==================== COMMANDS (Use Cases) ====================
 
 
+async def _resolve_attendance(
+    data: ServiceSessionCreate,
+    tenant_id: str,
+    member_repo: EligibleMemberRepository,
+    client_repo: ClientRepository,
+) -> tuple[EligibleMember | None, ClientId]:
+    """Resolve who a session was delivered to, and the client it belongs to.
+
+    An individual session takes its client from the member rather than from the
+    request, so the two cannot disagree and a caller cannot attribute one
+    client's member to another client's session. A company-wide session names
+    the client directly, because there is no member to take it from.
+    """
+    if data.attendance is SessionAttendance.COMPANY_WIDE:
+        client = await client_repo.get_by_id(ClientId(data.client_id or ""))
+        if client is None or client.tenant_id.value != tenant_id:
+            raise NotFoundError(
+                "Client not found", resource_type="Client", resource_id=data.client_id or ""
+            )
+        return None, client.id
+
+    member = await member_repo.get_by_id(EligibleMemberId(data.member_id or ""))
+    if member is None or member.tenant_id.value != tenant_id:
+        raise NotFoundError(
+            "Member not found", resource_type="Member", resource_id=data.member_id or ""
+        )
+    return member, member.client_id
+
+
 @router.post(
     "/",
     response_model=ServiceSessionResponse,
@@ -271,6 +306,7 @@ async def create_service_session(
     current_user: TokenData = Depends(require_same_tenant),
     session_repo: ServiceSessionRepository = Depends(get_service_session_repository),
     member_repo: EligibleMemberRepository = Depends(get_eligible_member_repository),
+    client_repo: ClientRepository = Depends(get_client_repository),
     provider_repo: ProviderRepository = Depends(get_provider_repository),
     service_repo: ServiceRepository = Depends(get_service_repository),
     affiliation_repo: ProviderAffiliationRepository = Depends(get_provider_affiliation_repository),
@@ -282,9 +318,7 @@ async def create_service_session(
     db: AsyncSession = Depends(get_db),
 ):
     """Create a new service session."""
-    member = await member_repo.get_by_id(EligibleMemberId(data.member_id))
-    if member is None or member.tenant_id.value != tenant_id:
-        raise NotFoundError("Member not found", resource_type="Member", resource_id=data.member_id)
+    member, client_id = await _resolve_attendance(data, tenant_id, member_repo, client_repo)
     scheduled_at = ensure_utc(data.scheduled_at)
     _reject_unknown_context(data.delivery_context)
     await _require_bookable(
@@ -307,7 +341,9 @@ async def create_service_session(
         tenant_id=TenantId(tenant_id),
         service_id=ServiceId(data.service_id),
         provider_id=ProviderId(data.provider_id),
-        member_id=EligibleMemberId(data.member_id),
+        client_id=client_id,
+        attendance=data.attendance,
+        member_id=member.id if member else None,
         scheduled_at=scheduled_at,
         delivery_context=data.delivery_context,
         provider_affiliation_id=data.provider_affiliation_id,

@@ -109,6 +109,16 @@ async def db():
         )
         await session.commit()
     async with sessions() as session:
+        # The member's client, which service_sessions now points at directly.
+        await session.execute(
+            text(
+                "INSERT INTO clients (id, tenant_id, name, code, status, contact_info,"
+                " is_verified, created_at, updated_at)"
+                " VALUES ('client-1', :tenant, 'Attribution Client', 'ATTR', 'Active',"
+                " '{}', true, now(), now())"
+            ),
+            {"tenant": TENANT},
+        )
         await session.execute(
             text(
                 "INSERT INTO eligible_members (id, tenant_id, client_id, employer_member_id,"
@@ -151,6 +161,7 @@ async def _add_session(db, session_id: str, scheduled_at: datetime, status: Sess
                 tenant_id=TENANT,
                 service_id="svc-1",
                 provider_id=PROVIDER,
+                client_id="client-1",
                 member_id="member-1",
                 scheduled_at=scheduled_at,
                 delivery_context=SessionDeliveryContext.ORGANISATION,

@@ -9,6 +9,7 @@ from datetime import datetime
 
 from app.domain.enums import (
     ClientType,
+    SessionAttendance,
     SessionCategory,
     SessionClinicalStatus,
     SessionDeliveryContext,
@@ -18,6 +19,7 @@ from app.domain.enums import (
 from app.domain.events import DomainEvent, SessionCancelled, SessionCompleted, SessionRescheduled
 from app.domain.exceptions import ConflictError, DomainError
 from app.domain.value_objects.core import (
+    ClientId,
     EligibleMemberId,
     ProviderId,
     ServiceId,
@@ -34,7 +36,7 @@ class ServiceSessionEntity:
     tenant_id: TenantId
     service_id: ServiceId
     provider_id: ProviderId
-    member_id: EligibleMemberId
+    client_id: ClientId
     scheduled_at: datetime
     status: SessionStatus
     created_at: datetime
@@ -42,6 +44,10 @@ class ServiceSessionEntity:
     reschedule_count: int
 
     # Optional fields (with defaults)
+    # A company-wide session has no member, so the client is what a session is
+    # always attributed to and the member is what it sometimes has.
+    attendance: SessionAttendance = SessionAttendance.INDIVIDUAL
+    member_id: EligibleMemberId | None = None
     delivery_context: SessionDeliveryContext = SessionDeliveryContext.UNKNOWN
     provider_affiliation_id: str | None = None
     completed_at: datetime | None = None
@@ -69,6 +75,25 @@ class ServiceSessionEntity:
     clinical_outcome: SessionClinicalStatus | None = None  # ToBeContinued / Referred / Completed
 
     events: list[DomainEvent] = field(default_factory=list[DomainEvent])
+
+    def __post_init__(self) -> None:
+        self._require_attendance_matches_member()
+
+    def _require_attendance_matches_member(self) -> None:
+        """An individual session names its member; a company-wide one has none.
+
+        Enforced on the aggregate rather than only at the route, because the
+        historical import writes sessions without passing through one. A
+        member-less individual session would otherwise be indistinguishable
+        from a health talk, and an unresolved identity would look like a
+        deliberate absence.
+        """
+        if self.attendance is SessionAttendance.COMPANY_WIDE:
+            if self.member_id is not None:
+                raise DomainError("A company-wide session cannot name a member")
+            return
+        if self.member_id is None:
+            raise DomainError("An individual session requires a member")
 
     def complete(self, duration: int, notes: str | None = None) -> None:
         if self.status not in {SessionStatus.SCHEDULED, SessionStatus.RESCHEDULED}:

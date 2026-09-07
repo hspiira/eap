@@ -18,12 +18,13 @@ from dataclasses import dataclass
 from datetime import datetime
 
 from app.domain.entities.service_session import ServiceSessionEntity
-from app.domain.enums import SessionDeliveryContext, SessionStatus
+from app.domain.enums import SessionAttendance, SessionDeliveryContext, SessionStatus
 from app.domain.exceptions import DomainError
 from app.domain.repositories.provider_repository import ProviderRepository
 from app.domain.repositories.service_session_repository import ServiceSessionRepository
 from app.domain.services.provider_network_calendar import boundary_day
 from app.domain.value_objects.core import (
+    ClientId,
     EligibleMemberId,
     ProviderId,
     ServiceId,
@@ -48,9 +49,11 @@ class HistoricalSessionRecord:
     tenant_id: TenantId
     service_id: ServiceId
     provider_id: ProviderId
-    member_id: EligibleMemberId
+    client_id: ClientId
     delivered_at: datetime
     delivery_context: SessionDeliveryContext
+    attendance: SessionAttendance = SessionAttendance.INDIVIDUAL
+    member_id: EligibleMemberId | None = None
     provider_affiliation_id: str | None = None
     source_batch_id: str | None = None
     source_row_number: int | None = None
@@ -78,6 +81,8 @@ class RecordHistoricalSessionUseCase:
             tenant_id=record.tenant_id,
             service_id=record.service_id,
             provider_id=record.provider_id,
+            client_id=record.client_id,
+            attendance=record.attendance,
             member_id=record.member_id,
             scheduled_at=record.delivered_at,
             delivery_context=record.delivery_context,

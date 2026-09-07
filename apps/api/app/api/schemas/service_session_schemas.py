@@ -12,6 +12,7 @@ from pydantic import BaseModel, ConfigDict, Field, model_validator
 from app.api.schemas.base import OptionalSanitizedStr, SanitizedStr
 from app.domain.enums import (
     ClientType,
+    SessionAttendance,
     SessionCategory,
     SessionClinicalStatus,
     SessionDeliveryContext,
@@ -27,7 +28,20 @@ class ServiceSessionCreate(BaseModel):
 
     service_id: str = Field(..., description="Service identifier")
     provider_id: str = Field(..., description="Provider (person) identifier")
-    member_id: str = Field(..., description="Member identifier")
+    attendance: SessionAttendance = Field(
+        SessionAttendance.INDIVIDUAL,
+        description="Individual names a member; CompanyWide names a client and a headcount",
+    )
+    member_id: str | None = Field(
+        None, description="Required for an Individual session, forbidden for a CompanyWide one"
+    )
+    client_id: str | None = Field(
+        None,
+        description=(
+            "Required for a CompanyWide session. For an Individual session it is taken "
+            "from the member, so that the two cannot disagree"
+        ),
+    )
     scheduled_at: datetime = Field(..., description="Scheduled date and time")
     delivery_context: SessionDeliveryContext = Field(
         ...,
@@ -62,6 +76,26 @@ class ServiceSessionCreate(BaseModel):
     clinical_outcome: SessionClinicalStatus | None = Field(
         None, description="Clinical continuation outcome"
     )
+
+    @model_validator(mode="after")
+    def validate_attendance(self) -> "ServiceSessionCreate":
+        """A health talk names a client and a headcount; a session names a member.
+
+        Rejecting rather than defaulting matters here: a CompanyWide session
+        that silently accepted a member would be indistinguishable from an
+        individual one, and the headcount is the only measure of group reach.
+        """
+        if self.attendance is SessionAttendance.COMPANY_WIDE:
+            if self.member_id:
+                raise ValueError("A company-wide session cannot name a member")
+            if not self.client_id:
+                raise ValueError("A company-wide session requires a client")
+            if self.headcount is None:
+                raise ValueError("A company-wide session requires a headcount")
+            return self
+        if not self.member_id:
+            raise ValueError("An individual session requires a member")
+        return self
 
 
 class ServiceSessionCompleteRequest(BaseModel):
@@ -159,7 +193,9 @@ class ServiceSessionResponse(BaseModel):
     tenant_id: str = Field(..., description="Tenant identifier")
     service_id: str = Field(..., description="Service identifier")
     provider_id: str = Field(..., description="Provider (person) identifier")
-    member_id: str = Field(..., description="Member identifier")
+    attendance: SessionAttendance = Field(..., description="Individual or CompanyWide")
+    member_id: str | None = Field(None, description="Absent on a company-wide session")
+    client_id: str = Field(..., description="The client the session is attributed to")
     scheduled_at: datetime = Field(..., description="Scheduled date and time")
     delivery_context: SessionDeliveryContext = Field(..., description="How this was delivered")
     provider_affiliation_id: str | None = Field(
