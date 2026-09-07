@@ -187,6 +187,139 @@ Still open:
   dimensions an operator would actually slice by.
 - The detail page was not reviewed.
 
+## Decision 1 (settled 2026-09-07): a session belongs to a client, and may have no member
+
+The product owner has confirmed that company-wide sessions such as health talks
+must be capturable. They are group sessions delivered to a client, with no
+individual to name. This settles S-01 and S-02 together and everything below
+depends on it.
+
+**A session is attributed to a client. A member is optional.**
+
+- `client_id` becomes a required field on the session.
+- `member_id` becomes optional.
+- A new `SessionAttendance` enum states which kind a session is:
+  `Individual` (one named member) or `CompanyWide` (the client at large).
+
+**Why an enum and not simply a null member.** Two different facts would
+otherwise share one representation. "A health talk had no individual attendee"
+and "we do not know who attended" are not the same, and the source contains 569
+of the second kind: rows marked Staff or Dependant with no `CLIENT-ID#`. Those
+must never become sessions that look deliberately member-less. They stay staged
+as `UnresolvedMember` and are corrected or left alone, per the rule in
+`CLAUDE.md` that unresolved identities are quarantined and never invented.
+`headcount` also only means something for `CompanyWide`, and the enum is what
+lets validation say so.
+
+### Phase A: the aggregate, the schema and the migration
+
+Closes S-01, S-02, S-03. Migration parent is `a1p3d0d2e4f6`.
+
+1. `SessionAttendance` in `app/domain/enums/session.py`; add `TERMINATED` to
+   `SessionClinicalStatus`, which currently cannot express the 10 terminated
+   rows (S-03).
+2. `ServiceSessionEntity`: add `client_id`, add `attendance`, change `member_id`
+   to `EligibleMemberId | None`.
+3. `service_session_model`: three columns, plus constraints that follow the
+   idioms this table already uses:
+   - `ForeignKeyConstraint(["tenant_id", "client_id"], ["clients.tenant_id", "clients.id"], ondelete="RESTRICT")`,
+     mirroring the existing `fk_service_sessions_provider_tenant`.
+   - `CheckConstraint("(attendance = 'CompanyWide') = (member_id IS NULL)")`,
+     mirroring the existing `session_affiliation_matches_context_check`.
+   - `ForeignKeyConstraint(["tenant_id", "client_id", "member_id"], ["eligible_members.tenant_id", "eligible_members.client_id", "eligible_members.id"])`,
+     so the database, not only the application, refuses a member from a
+     different client. This needs a new unique index on
+     `eligible_members (tenant_id, client_id, id)`; it is a superset of the
+     primary key, so it is guaranteed unique and cheap to add.
+   - Extend `session_clinical_outcome_check` for the new outcome. The enum
+     check constraints are generated from the enum, so this is a rewrite of
+     that one constraint in the migration, not a new pattern.
+4. Migration, in this order, which is safe because `member_id` is `NOT NULL`
+   today and therefore every existing row resolves a client:
+   add `client_id` and `attendance` nullable → backfill `client_id` from
+   `eligible_members` by join and `attendance = 'Individual'` for every row →
+   set both `NOT NULL` → alter `member_id` to nullable → add the constraints.
+   The downgrade must refuse to run if any `CompanyWide` row exists, rather
+   than silently discarding sessions that the old schema cannot hold.
+5. Application validation on create and update: a `CompanyWide` session takes a
+   headcount and no member; an `Individual` session takes a member whose client
+   matches. Headcount is enforced in application validation only, not as a check
+   constraint, because 614 historical group rows have none and a constraint
+   would make them unwritable.
+
+### Phase B: import staging
+
+Closes S-04 and S-06. No row is imported before this exists.
+
+6. **Replay key.** For this file, do not populate `source_record_key`;
+   `_replay_key` then produces `file:{hash}:row:{n}`, which is correct and
+   already implemented. Add a preflight to staging that refuses a nominated
+   source-key column whose values are not unique across the file. That turns
+   S-04 from a silent data-loss footgun into a startup error: `ACTIVITY LOG ID`
+   collides on 669 rows and would otherwise mark them `Duplicate` and drop them.
+   Record the file hash and the key strategy on the batch.
+7. **Normalisation tables**, one per column, version-controlled and applied at
+   staging, with `Unmapped` for anything not listed. Ownership differs by column
+   and that matters:
+   - Engineering can map `SESSION TYPE`, `CATEGORY`, `CLIENT TYPE`, `STATUS`
+     and `INTERVENTION`: small, closed sets whose variants are spelling and case.
+   - `GENDER` is not a mapping job. `Group` appears as a gender on 642 rows and
+     is not one; it is the signal that the row is `CompanyWide`. It maps to
+     attendance, and the member gender is simply absent.
+   - `DIAGNOSIS TYPE` (63 values), `DIAGNOSIS` (251) and `CLASSIFICATION` (28)
+     need a clinician. Sixty-three free-text diagnosis strings against a
+     controlled clinical list is a clinical decision, not a string function,
+     and no fuzzy matching should be used on them.
+   - `CLIENT FEEDBACK` is not imported as a category at all. It is free text
+     with 56 spellings, and PRIV-01 in `MODULES_REPAIR_PLAN.md` forbids free
+     text reaching an employer aggregate.
+8. Map the source status onto the two enums it actually spans: `Ongoing` to
+   `ToBeContinued`, `Completed` to `Completed`, `Referred` to `Referred`,
+   `Terminated` to the new `Terminated`, and `No Show` to `SessionStatus`, not
+   to a clinical outcome. The 811 rows with no status get none, not a default.
+
+### Phase C: the read path
+
+Closes S-07 and S-08, and finishes the UI started in `7a9ab41`.
+
+9. Add `client_id`, `client_name`, `member_display_label`,
+   `provider_display_name` and `service_name` to the session list response, as
+   the members list already does with `client_name`. This removes the per-row
+   member fetch and lets the Client column render for `CompanyWide` sessions,
+   which have no member to read it from.
+10. Constrain `sort_by` to an explicit list and expose sort only on those
+    columns; it is currently a free string passed through.
+11. Add filters for counsellor, mode, category and outcome, which are the
+    dimensions an operator slices by and none of which are filterable today.
+
+### Phase D: better than the activity log
+
+Closes S-05. These are collection changes, not code, and each needs the
+counselling team to agree before a field is made required.
+
+12. **Require headcount on company-wide sessions.** It is the only measure of
+    group reach and is currently recorded on 28 of 7,470 rows. Without it,
+    health talks are counted as one session each and their actual reach is
+    invisible.
+13. **Retire `ISSUE GROUP`** (6,492 of 7,470 are `Other`) and
+    `PARTNER RELATIONSHIP` (empty in every row) from reporting. Keep
+    `partner_relationship` on the aggregate for couples work, but do not
+    present either as a reportable field until collection changes.
+14. **Stop collecting gender as a session shape.** Once attendance is explicit,
+    `GENDER` returns to being the member's attribute only.
+15. Consider replacing free-text `CLIENT FEEDBACK` with a short controlled
+    scale plus an optional free-text note held outside aggregates. 3,357 rows
+    already have no feedback at all, so the current field is closer to optional
+    than it appears.
+
+### What is not in this plan
+
+The session detail page was not reviewed. Billing from `rate_ugx` was not
+reviewed. No import has been run and nothing here has been verified in a
+browser.
+
+## Superseded: the original recommended order
+
 ## Recommended order
 
 1. **S-01 and S-02 together** — the decision on member-less sessions and the
