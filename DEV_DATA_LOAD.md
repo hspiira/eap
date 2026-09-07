@@ -28,16 +28,16 @@ version control.
 | `services` | 18 | `scripts/import_taxonomy.py` |
 | `clients` | 43 | `scripts/import_clients.py` |
 | `client_aliases` | 63 | `scripts/import_clients.py` |
-| `providers` | 60 | `POST /practitioner-imports/{batch}/apply` |
+| `providers` | 113 | `POST /practitioner-imports/{batch}/apply` |
 | `provider_organisations` | 13 | same apply |
 | `provider_affiliations` | 43 | same apply |
-| `provider_aliases` resolved | 64 | `scripts/resolve_provider_aliases.py` |
-| `provider_aliases` unmapped | 204 | queued, awaiting a person |
+| `provider_aliases` resolved | 170 | `scripts/resolve_provider_aliases.py` |
+| `provider_aliases` unmapped | 142 | queued, awaiting a person |
 | `eligible_members` | 3,305 | `scripts/import_members.py` |
-| `service_sessions` | 86 | `POST /session-imports/{batch}/apply` |
+| `service_sessions` | 369 | `POST /session-imports/{batch}/apply` |
 
-The 86 sessions are 85 imported from the activity log plus one that predates
-the load.
+The 369 sessions are 368 imported from the activity log over two passes plus
+one that predates the load.
 
 ## Order, and why it is not arbitrary
 
@@ -115,46 +115,57 @@ and five are blank, and the preflight refuses such a column rather than let a
 repeat silently stage as a duplicate. Rows are keyed by file hash and row
 number instead, which is stable for this extract.
 
-7,471 rows staged, 85 applied:
+7,471 rows staged twice. The first pass, before the canonical practitioners
+existed, imported 85 and held 5,283 on an unknown counselor. The second, after
+they were created, imported 283 more:
 
 | Rows | Outcome | What it waits on |
 | --- | --- | --- |
-| 85 | Accepted, imported | done |
-| 5,283 | UnmappedPractitioner | practitioner records that do not exist |
-| 1,458 | UnresolvedMember | rosters for 23 clients, and 73 rows with no member id |
+| 6,444 | UnresolvedMember | rosters for the clients the log names |
 | 637 | MissingPractitioner | the row names no counselor at all |
-| 5 | UnresolvedService | an intervention with no catalogue service |
-| 3 | UnresolvedClient | a company that resolves to no client |
+| 283 | Accepted, imported | done |
+| 85 | Duplicate | already imported by the first pass |
+| 14 | UnresolvedService | an intervention with no catalogue service |
+| 6 | UnresolvedClient | a company that resolves to no client |
+| 2 | UnmappedPractitioner | two spellings nobody has decided |
 
-### The practitioner records are the real blocker
+### The practitioners were created from the canonical list
 
 The activity log names 121 distinct counselors. The practitioners workbook
-produced 60 practitioners. Only **4** of the 121 are among them.
+produced 60, and only 4 of the 121 were among them: Daniel Kanamara alone
+accounts for 1,304 sessions and was not a practitioner, nor were Stella
+Twinamatsiko (911), Faith (852), Cynthia Miiro (614) or Olivia Kaggwa (539).
 
-48 of the remaining names map, through the client's own `Counselors` sheet, to
-a canonical practitioner who is not in the practitioners workbook at all:
-Daniel Kanamara alone accounts for 1,304 sessions, Stella Twinamatsiko 911,
-Faith 852, Cynthia Miiro 614, Olivia Kaggwa 539. Another 69 names have no
-mapping and no matching practitioner, 407 rows between them.
+The `Counselors` sheet's `CANONICAL LIST` column is a curated one-spelling-per-
+person list of 56 names, authored by somebody who knows them.
+`scripts/build_canonical_practitioners.py` writes the 53 that were not already
+practitioners into a workbook the practitioner import reads, so they were
+created through the same staged, reviewed, audited path as every other
+practitioner rather than by a route invented for them. Names already held were
+left out, so applying could not produce a second record for one person.
 
-No amount of alias work moves those rows. Either the client supplies these
-practitioners, or somebody authorises creating them from the canonical name
-list, which means provider records with no profession, tier, accreditation or
-organisation. That is a decision, not a data fix, and it is the single largest
-thing standing between this environment and a complete session history.
+UnmappedPractitioner fell from 5,283 rows to 2. What it bought in imports is
+smaller, 283 sessions, because the rows behind it then hit the member step.
 
-### The member rosters are the second blocker
+Two things to know about these 53 records. They carry a name and nothing else:
+no profession, tier, region, accreditation or organisation, and they are
+`Pending`, which is not bookable, exactly as decision P-05 requires. And seven
+of them are a single word, so they cannot tell two people apart: `David`,
+`Esau`, `Faith`, `Kebbie`, `Dr. Love`, `Dr. Kalisa`, `Dr. Kasenene`. They are
+what the source calls those counselors, and 852 sessions hang off `Faith`
+alone, but somebody who knows the team should give each a full name before
+this reaches production.
 
-1,385 of the 1,458 UnresolvedMember rows name a member id that is not on the
-client's roster, spread over 23 clients. Only five clients have any roster at
-all, because the Staff sheet covers six companies: Stanbic Bank 398 rows,
-Absa 270, Diamond Trust Bank 132, KPMG 123, I&M Bank 79, KCB Bank 75, and so
-on down to two rows each for Agro Consortium, Coca-Cola and Ithuba. Absa, KCB,
-Dfcu, HRAF and the rest have no members loaded because no roster was supplied
-for them.
+### The member rosters are now the blocker
 
-The other 73 rows name an individual and carry no member id. They stay staged
-rather than being attached to somebody by name.
+6,444 rows name a member the client's roster does not hold, or name no member
+id at all. Only five clients have any roster, because the Staff sheet covers
+six companies while the activity log names 23. Rows that used to stall at the
+practitioner step now reach the member step and stop there, which is why this
+number rose as the practitioner one fell.
+
+Rows that name an individual and carry no member id stay staged rather than
+being attached to somebody by name.
 
 ## Practitioner alias resolution
 
@@ -196,17 +207,15 @@ or the reviewed sheet.
 
 Ordered by how many rows each one releases.
 
-1. **The practitioners who delivered the sessions.** 5,283 session rows name a
-   counselor with no practitioner record. Supply them, or authorise creating
-   them from the canonical list without profession, tier or accreditation.
-2. **Member rosters for the other clients.** 1,385 session rows name a member
-   id on a client with no roster loaded. The Staff sheet covers six companies;
-   the activity log names 23.
-3. **IDI staff numbers.** 1,653 employees wait on one column;
+1. **Member rosters for the other clients.** 6,444 session rows wait on them.
+   The Staff sheet covers six companies; the activity log names 23.
+2. **IDI staff numbers.** 1,653 employees wait on one column;
    `staff_roster_pending.csv` is ready to send.
-4. **204 unmapped practitioner aliases**, 117 of them activity-log spellings.
-5. **637 session rows that name no counselor**, and 73 that name an individual
-   with no member id. Both are source gaps, not mapping gaps.
+3. **Full names for seven canonical practitioners**, and a profession, tier and
+   region for all 53, before any of them can be booked.
+4. **637 session rows that name no counselor**, and rows that name an
+   individual with no member id. Both are source gaps, not mapping gaps.
+5. **142 unmapped practitioner aliases**, of which 2 block session rows.
 6. **109 `NeedsReview` rows** in the practitioner import batch
    (`rbmhgppuptpyknd1j4hyciyz`), which apply correctly passed over.
 7. **Confirm the `Stanbic Bank Uganda` alias.** It is recorded and applied; it
@@ -214,18 +223,32 @@ Ordered by how many rows each one releases.
 8. **Clinician sign-off** on the 16 diagnosis types and 88 diagnoses.
 9. `Crisis Intervention` exists in dev but is not in the workbook catalogue;
    the taxonomy importer reports it and leaves it alone rather than retiring
-   it. 5 session rows fail on an intervention with no catalogue service.
+   it. 14 session rows fail on an intervention with no catalogue service.
 
-## Recorded for whoever picks up the session importer
+## Re-staging, and the three faults that blocked it
 
-A staged session row keeps its resolved ids and its raw practitioner name, and
-nothing else from the source. It does not keep the raw company, member
-reference, intervention or status it was judged from, so a batch cannot be
-re-judged when the reference data improves: the only recovery is to abandon it
-and stage the extract again. The practitioner import rows keep a full
-provenance JSON and do not have this problem. Giving session rows the same
-would turn every future reference-data load into a re-judge instead of a
-re-stage, and is the change worth making before a production load.
+Reference data improves and rows that could not be resolved before now can.
+That is what the Duplicate row outcome is for, and it did not work. Three
+faults, each hidden behind the one before it, found by trying to use it:
+
+1. The file-hash uniqueness covered every batch, so an extract could never be
+   staged a second time and Duplicate was unreachable for any file. It now
+   covers only a batch still awaiting a decision.
+2. A duplicate row claimed the same replay key as the row it deferred to, so
+   the outcome could not be persisted even when reached. It now defers with a
+   key naming the batch that holds the claim. The key staging decided is also
+   the one stored: the entity used to re-derive it and quietly drop the
+   decision, which made the first fix look like it had done nothing.
+3. A row that imported nothing still claimed its source row, so a second
+   staging returned all 7,471 rows as duplicates. Staging now releases the
+   rows of earlier judgings of the same file that produced no session.
+
+A staged session row still keeps only its resolved ids and its raw
+practitioner name, not the raw company, member reference, intervention or
+status it was judged from, so a re-judge means staging the extract again
+rather than re-scoring the rows in place. The practitioner import rows keep a
+full provenance JSON and do not have this problem. Giving session rows the same
+is the change worth making before a production load.
 
 ## Backup
 
