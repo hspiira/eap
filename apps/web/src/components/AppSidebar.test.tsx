@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from "vitest"
 
 import { renderWithProviders } from "@/test/utils"
 
-const mocks = vi.hoisted(() => ({ open: true }))
+const mocks = vi.hoisted(() => ({ open: true, clinical: true }))
 
 vi.mock("@tanstack/react-router", () => ({
   Link: ({ children, to }: { children: React.ReactNode; to: string }) => (
@@ -13,10 +13,7 @@ vi.mock("@tanstack/react-router", () => ({
 }))
 vi.mock("@/hooks/useCanWrite", () => ({
   useIsPlatformAdmin: () => ({ isPlatformAdmin: false, isLoading: false }),
-  useHasClinicalScope: () => ({ hasScope: true, isLoading: false }),
-}))
-vi.mock("@/store/slices/tenantSlice", () => ({
-  useTenantStore: () => ({ name: "acme" }),
+  useHasClinicalScope: () => ({ hasScope: mocks.clinical, isLoading: false }),
 }))
 vi.mock("@/components/ui/sidebar", async (importOriginal) => ({
   ...(await importOriginal<object>()),
@@ -59,5 +56,43 @@ describe("AppSidebar MVP gating", () => {
     for (const el of disabled) {
       expect(el.tagName).not.toBe("A")
     }
+  })
+})
+
+/**
+ * The header owns the workspace label, the search launcher and the expand
+ * control. Duplicating any of them here is what the redesign removed.
+ */
+describe("AppSidebar has no duplicate header controls", () => {
+  it("has no search launcher when expanded", () => {
+    mocks.open = true
+    renderWithProviders(<AppSidebar />)
+    expect(screen.queryByLabelText(/search/i)).toBeNull()
+  })
+
+  it("has no search launcher when collapsed", () => {
+    mocks.open = false
+    renderWithProviders(<AppSidebar />)
+    expect(screen.queryByLabelText(/search/i)).toBeNull()
+  })
+
+  it("does not repeat the workspace name", () => {
+    mocks.open = true
+    renderWithProviders(<AppSidebar />)
+    expect(screen.getByText("Evexía")).toBeInTheDocument()
+  })
+
+  it("offers no second expand control when collapsed", () => {
+    mocks.open = false
+    renderWithProviders(<AppSidebar />)
+    expect(screen.queryByLabelText(/expand sidebar/i)).toBeNull()
+  })
+
+  it("hides a clinical module without the scope", () => {
+    mocks.open = true
+    mocks.clinical = false
+    renderWithProviders(<AppSidebar />)
+    expect(screen.queryByText("Cases")).toBeNull()
+    mocks.clinical = true
   })
 })

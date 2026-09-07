@@ -4,6 +4,7 @@ import type {
   NonCompeteStatus,
   OrganisationApprovalStatus,
   PanelStatus,
+  ProviderGender,
   ProviderTier,
   UgandaRegion,
 } from "../enums"
@@ -31,6 +32,7 @@ export interface ProviderProfile {
    */
   specialties: string[]
   bio?: string | null
+  gender?: ProviderGender | null
 }
 
 /**

@@ -77,3 +77,9 @@ export type HoursLogCreate = Schemas["HoursLogCreate"]
 
 // ----- Care callbacks --------------------------------------------------------
 export type CareCallbackCampaignCreate = Schemas["CareCallbackCampaignCreate"]
+
+// ----- Global search ---------------------------------------------------------
+export type GlobalSearchRequest = Schemas["GlobalSearchRequest"]
+export type GlobalSearchResponse = Schemas["GlobalSearchResponse"]
+export type SearchCategoryResult = Schemas["SearchCategoryResult"]
+export type SearchResultItem = Schemas["SearchResultItem"]

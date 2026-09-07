@@ -6,6 +6,7 @@ import { ExternalLink, MoreHorizontal, Plus, Stethoscope } from "lucide-react"
 import { type ProviderListParams, providersApi } from "@/api/endpoints/providers"
 import { EmptyState } from "@/components/common/EmptyState"
 import { EntityListView, type ListColumn } from "@/components/common/EntityListView"
+import { EntityNameCell } from "@/components/common/EntityNameCell"
 import { FilterBar, FilterChip, FilterSearch, FilterTrigger } from "@/components/common/FilterBar"
 import { PageShell } from "@/components/common/PageShell"
 import { ProviderTierBadge } from "@/components/common/ProviderTierBadge"
@@ -14,6 +15,7 @@ import { ROW_BORDER } from "@/components/common/tableStyles"
 import { ProviderFormSheet } from "@/components/providers/ProviderFormSheet"
 import { ProviderSectionTabs } from "@/components/providers/ProviderSectionTabs"
 import { Button } from "@/components/ui/button"
+import { Checkbox } from "@/components/ui/checkbox"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -23,6 +25,8 @@ import {
 import { TableCell, TableRow } from "@/components/ui/table"
 import { useCanWrite } from "@/hooks/useCanWrite"
 import { useListPage } from "@/hooks/useListPage"
+import { useTableSelection } from "@/hooks/useTableSelection"
+import { nameInitials } from "@/lib/display"
 import { normalizeErrorMessage } from "@/lib/errors"
 import { useEntityList } from "@/lib/queries"
 import { enumOptions, enumParam, listSearchSchema } from "@/lib/search-params"
@@ -50,7 +54,8 @@ const COLUMNS: ListColumn[] = [
   { header: "Region", className: "text-fg/65" },
   { header: "Panel", className: "text-fg/65" },
   { header: "Accreditation", className: "text-fg/65" },
-  { header: "Contact", className: "text-fg/65" },
+  { header: "Email", className: "text-fg/65" },
+  { header: "Phone", className: "text-fg/65" },
   { header: "Account", className: "text-fg/65" },
 ]
 
@@ -86,6 +91,7 @@ function ProvidersListPage() {
   })
 
   const items = query.data?.items ?? []
+  const selection = useTableSelection(items)
   const hasFilters = Boolean(
     list.activeSearch ||
     searchParams.tier ||
@@ -184,9 +190,13 @@ function ProvidersListPage() {
         columns={COLUMNS}
         items={items}
         rowKey={(row) => row.id}
-        selectable={false}
         renderRow={(row) => (
-          <ProviderRow provider={row} onEdit={canWrite ? () => setEditing(row) : undefined} />
+          <ProviderRow
+            provider={row}
+            isSelected={selection.selectedIds.has(row.id)}
+            onToggle={() => selection.toggleSelect(row.id)}
+            onEdit={canWrite ? () => setEditing(row) : undefined}
+          />
         )}
         loading={query.isPending}
         error={
@@ -217,17 +227,45 @@ function ProvidersListPage() {
         total={query.data?.total ?? 0}
         limit={list.limit}
         onPageChange={list.setPage}
+        selectAllState={selection.selectAllState}
+        onToggleSelectAll={selection.toggleSelectAll}
       />
     </PageShell>
   )
 }
 
-function ProviderRow({ provider, onEdit }: { provider: Provider; onEdit?: () => void }) {
+function ProviderRow({
+  provider,
+  isSelected,
+  onToggle,
+  onEdit,
+}: {
+  provider: Provider
+  isSelected: boolean
+  onToggle: () => void
+  onEdit?: () => void
+}) {
   const profile = provider.provider_profile
   return (
     <TableRow className={`group h-9 ${ROW_BORDER}`}>
-      <TableCell className="max-w-[14rem] truncate py-1.5 text-sm font-medium text-fg">
-        {provider.display_name}
+      <TableCell className="px-3">
+        <Checkbox
+          aria-label={`Select ${provider.display_name}`}
+          checked={isSelected}
+          onCheckedChange={onToggle}
+        />
+      </TableCell>
+      <TableCell className="max-w-[14rem] truncate">
+        <Link
+          to="/providers/$providerId"
+          params={{ providerId: provider.id }}
+          className="flex items-center gap-2.5"
+        >
+          <EntityNameCell
+            initials={nameInitials(provider.display_name)}
+            name={provider.display_name}
+          />
+        </Link>
       </TableCell>
       <TableCell className="py-1.5">
         <ProviderTierBadge tier={profile.tier} />
@@ -240,7 +278,10 @@ function ProviderRow({ provider, onEdit }: { provider: Provider; onEdit?: () => 
         <StatusBadge status={profile.accreditation_status} size="sm" />
       </TableCell>
       <TableCell className="max-w-[14rem] truncate py-1.5 text-xs text-fg/70">
-        {provider.email ?? provider.phone ?? "-"}
+        {provider.email ?? <span className="text-fg-subtle">-</span>}
+      </TableCell>
+      <TableCell className="whitespace-nowrap py-1.5 text-xs text-fg/70">
+        {provider.phone ?? <span className="text-fg-subtle">-</span>}
       </TableCell>
       <TableCell className="py-1.5 text-xs text-fg/70">
         {provider.user_id ? "Linked" : "None"}

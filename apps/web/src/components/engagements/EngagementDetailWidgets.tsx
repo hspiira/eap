@@ -168,7 +168,7 @@ export function DeliverablesPanel({
             />
           </FormField>
           <div className="grid grid-cols-[1fr_auto] gap-2">
-            <FormField label="Due date" optional htmlFor="dl-due">
+            <FormField label="Due date" htmlFor="dl-due">
               <Input
                 id="dl-due"
                 type="date"
@@ -297,11 +297,7 @@ export function HoursPanel({
           value={hours}
           onChange={(e) => setHours(e.target.value)}
         />
-        <Input
-          placeholder="Note (optional)"
-          value={note}
-          onChange={(e) => setNote(e.target.value)}
-        />
+        <Input placeholder="Note" value={note} onChange={(e) => setNote(e.target.value)} />
         <Button
           type="button"
           size="sm"

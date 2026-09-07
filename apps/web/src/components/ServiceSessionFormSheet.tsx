@@ -297,7 +297,7 @@ export function ServiceSessionFormSheet({
         </FormField>
         <Input type="hidden" {...register("service_id")} />
         <div className="grid grid-cols-2 gap-3">
-          <FormField label="Category" optional error={errors.category?.message}>
+          <FormField label="Category" error={errors.category?.message}>
             <Controller
               control={control}
               name="category"
@@ -310,7 +310,7 @@ export function ServiceSessionFormSheet({
               )}
             />
           </FormField>
-          <FormField label="Delivery" optional error={errors.session_type?.message}>
+          <FormField label="Delivery" error={errors.session_type?.message}>
             <Controller
               control={control}
               name="session_type"
@@ -351,7 +351,7 @@ export function ServiceSessionFormSheet({
           )}
         </FormField>
         <Input type="hidden" {...register("member_id")} />
-        <FormField label="Client type" optional error={errors.client_type?.message}>
+        <FormField label="Client type" error={errors.client_type?.message}>
           <Controller
             control={control}
             name="client_type"
@@ -369,7 +369,6 @@ export function ServiceSessionFormSheet({
           <div className="grid grid-cols-2 gap-3">
             <FormField
               label="Partner name"
-              optional
               error={errors.partner_name?.message}
               htmlFor="ss-partner-name"
             >
@@ -377,7 +376,6 @@ export function ServiceSessionFormSheet({
             </FormField>
             <FormField
               label="Relationship"
-              optional
               error={errors.partner_relationship?.message}
               htmlFor="ss-partner-rel"
             >
@@ -430,12 +428,11 @@ export function ServiceSessionFormSheet({
           />
         )}
         <div className="grid grid-cols-2 gap-3">
-          <FormField label="Rate (UGX)" optional error={errors.rate_ugx?.message} htmlFor="ss-rate">
+          <FormField label="Rate (UGX)" error={errors.rate_ugx?.message} htmlFor="ss-rate">
             <Input id="ss-rate" type="number" min={0} {...register("rate_ugx")} />
           </FormField>
           <FormField
             label="Session number"
-            optional
             description="Position in the member's episode, e.g. 3 of 6."
             error={errors.session_number?.message}
             htmlFor="ss-session-no"
@@ -496,7 +493,6 @@ export function ServiceSessionFormSheet({
         ) : null}
         <FormField
           label="Location"
-          optional
           description="Physical address, video link, or 'Phone'."
           error={errors.location?.message}
           htmlFor="ss-location"
@@ -512,14 +508,13 @@ export function ServiceSessionFormSheet({
       <FormSection title="Clinical">
         <FormField
           label="Issue / topic"
-          optional
           description="Presenting issue, in the taxonomy's terms."
           error={errors.issue_topic?.message}
           htmlFor="ss-issue"
         >
           <Input id="ss-issue" {...register("issue_topic")} />
         </FormField>
-        <FormField label="Diagnosis" optional error={errors.diagnosis_id?.message}>
+        <FormField label="Diagnosis" error={errors.diagnosis_id?.message}>
           <Controller
             control={control}
             name="diagnosis_id"
@@ -539,7 +534,6 @@ export function ServiceSessionFormSheet({
         {isEdit ? (
           <FormField
             label="Notes"
-            optional
             description="Internal notes, not shared with the subject."
             error={errors.notes?.message}
             htmlFor="ss-notes"

@@ -196,7 +196,6 @@ export function CampaignFormSheet({
       <FormSection title="Notes">
         <FormField
           label="Sampling notes"
-          optional
           description="Internal notes on how the audience was selected, appears on the campaign detail."
           error={errors.sampling_notes?.message}
           htmlFor="cf-sampling-notes"

@@ -105,31 +105,17 @@ export function ProviderOrganisationFormSheet({
 
       <FormField
         label="Registration number"
-        optional
         error={errors.registration_number?.message}
-        hint="Leave empty to clear."
         htmlFor="org-registration"
       >
         <Input id="org-registration" {...register("registration_number")} />
       </FormField>
 
-      <FormField
-        label="Contact email"
-        optional
-        error={errors.contact_email?.message}
-        hint="Leave empty to clear."
-        htmlFor="org-email"
-      >
+      <FormField label="Contact email" error={errors.contact_email?.message} htmlFor="org-email">
         <Input id="org-email" type="email" {...register("contact_email")} />
       </FormField>
 
-      <FormField
-        label="Contact phone"
-        optional
-        error={errors.contact_phone?.message}
-        hint="Leave empty to clear."
-        htmlFor="org-phone"
-      >
+      <FormField label="Contact phone" error={errors.contact_phone?.message} htmlFor="org-phone">
         <Input id="org-phone" type="tel" {...register("contact_phone")} />
       </FormField>
     </SheetForm>

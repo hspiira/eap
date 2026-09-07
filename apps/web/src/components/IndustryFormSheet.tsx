@@ -89,7 +89,6 @@ export function IndustryFormSheet({
 
       <FormField
         label="Code"
-        optional
         description="Short identifier shown next to the name (e.g. ENR-REN)."
         error={errors.code?.message}
         htmlFor="ind-code"
@@ -105,7 +104,6 @@ export function IndustryFormSheet({
 
       <FormField
         label="Parent industry"
-        optional
         description="Paste the parent industry's ID. Leave empty for a top-level industry."
         error={errors.parent_industry_id?.message}
         htmlFor="ind-parent"

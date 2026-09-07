@@ -244,7 +244,7 @@ export function TerminateDialog({
             </div>
           </RadioGroup>
         </FormField>
-        <FormField label="Notes" optional htmlFor="terminate-notes">
+        <FormField label="Notes" htmlFor="terminate-notes">
           <Textarea
             id="terminate-notes"
             rows={3}

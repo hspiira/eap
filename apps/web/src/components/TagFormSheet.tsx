@@ -86,7 +86,6 @@ export function TagFormSheet({ open, onOpenChange, tag, onSaved }: TagFormSheetP
 
       <FormField
         label="Color"
-        optional
         description="Hex code shown as a swatch on the tag."
         error={errors.color?.message}
         htmlFor="tag-color"
@@ -120,12 +119,7 @@ export function TagFormSheet({ open, onOpenChange, tag, onSaved }: TagFormSheetP
         </div>
       </FormField>
 
-      <FormField
-        label="Description"
-        optional
-        error={errors.description?.message}
-        htmlFor="tag-description"
-      >
+      <FormField label="Description" error={errors.description?.message} htmlFor="tag-description">
         <Input
           id="tag-description"
           placeholder="What is this tag used for?"

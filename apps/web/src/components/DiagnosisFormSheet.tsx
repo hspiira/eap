@@ -103,14 +103,14 @@ export function DiagnosisFormSheet({
         <FormField label="Name" required htmlFor="dx-name">
           <Input id="dx-name" value={name} onChange={(e) => setName(e.target.value)} />
         </FormField>
-        <FormField label="Description" optional htmlFor="dx-desc">
+        <FormField label="Description" htmlFor="dx-desc">
           <Input
             id="dx-desc"
             value={description}
             onChange={(e) => setDescription(e.target.value)}
           />
         </FormField>
-        <FormField label="Sort order" optional htmlFor="dx-sort">
+        <FormField label="Sort order" htmlFor="dx-sort">
           <Input
             id="dx-sort"
             type="number"

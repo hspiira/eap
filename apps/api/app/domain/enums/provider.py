@@ -55,3 +55,10 @@ class ProviderIdentityProvenance(str, Enum):
 
     OWNED = "Owned"
     BACKFILLED_FROM_USER = "BackfilledFromUser"
+
+
+class ProviderGender(str, Enum):
+    """Practitioner gender. Restricted to Male/Female by product decision."""
+
+    FEMALE = "Female"
+    MALE = "Male"

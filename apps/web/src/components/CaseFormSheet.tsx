@@ -164,7 +164,6 @@ export function CaseFormSheet({ open, onOpenChange, onSaved }: CaseFormSheetProp
         </FormField>
         <FormField
           label="Referral notes"
-          optional
           description="Context for the counsellor picking this up, not shared with the member."
           error={errors.referral_notes?.message}
           htmlFor="case-referral-notes"

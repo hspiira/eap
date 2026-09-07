@@ -223,7 +223,7 @@ export function ProviderLifecyclePanel({
               value={accreditation}
               onChange={setAccreditation}
             />
-            <FormField label="Authority" optional htmlFor="lifecycle-authority">
+            <FormField label="Authority" htmlFor="lifecycle-authority">
               <Input
                 id="lifecycle-authority"
                 value={authority}
@@ -233,7 +233,6 @@ export function ProviderLifecyclePanel({
             </FormField>
             <FormField
               label="Expiry"
-              optional
               description="Leave empty when no expiry is on record. An expiry is valid through that date in Africa/Kampala."
               htmlFor="lifecycle-expiry"
             >

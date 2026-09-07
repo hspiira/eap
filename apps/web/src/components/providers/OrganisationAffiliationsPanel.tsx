@@ -163,7 +163,6 @@ export function OrganisationAffiliationsPanel({ organisationId }: { organisation
             </FormField>
             <FormField
               label="Ends before"
-              optional
               description="The last covered day is the day before this date. Leave empty for an open-ended affiliation."
               error={conflict?.field === "valid_until" ? conflict.message : undefined}
               htmlFor="affiliation-until"

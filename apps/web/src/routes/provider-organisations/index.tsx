@@ -9,6 +9,7 @@ import {
 } from "@/api/endpoints/provider-organisations"
 import { EmptyState } from "@/components/common/EmptyState"
 import { EntityListView, type ListColumn } from "@/components/common/EntityListView"
+import { EntityNameCell } from "@/components/common/EntityNameCell"
 import { FilterBar, FilterChip, FilterSearch, FilterTrigger } from "@/components/common/FilterBar"
 import { PageShell } from "@/components/common/PageShell"
 import { StatusBadge } from "@/components/common/StatusBadge"
@@ -16,6 +17,7 @@ import { ROW_BORDER } from "@/components/common/tableStyles"
 import { ProviderOrganisationFormSheet } from "@/components/providers/ProviderOrganisationFormSheet"
 import { ProviderSectionTabs } from "@/components/providers/ProviderSectionTabs"
 import { Button } from "@/components/ui/button"
+import { Checkbox } from "@/components/ui/checkbox"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -25,6 +27,8 @@ import {
 import { TableCell, TableRow } from "@/components/ui/table"
 import { useCanWrite } from "@/hooks/useCanWrite"
 import { useListPage } from "@/hooks/useListPage"
+import { useTableSelection } from "@/hooks/useTableSelection"
+import { nameInitials } from "@/lib/display"
 import { normalizeErrorMessage } from "@/lib/errors"
 import { useEntityList } from "@/lib/queries"
 import { boolParam, enumOptions, enumParam, listSearchSchema } from "@/lib/search-params"
@@ -70,6 +74,7 @@ function ProviderOrganisationsListPage() {
   })
 
   const items = query.data?.items ?? []
+  const selection = useTableSelection(items)
   const hasFilters = Boolean(
     list.activeSearch || searchParams.approval_status || searchParams.inactive,
   )
@@ -147,10 +152,11 @@ function ProviderOrganisationsListPage() {
         columns={COLUMNS}
         items={items}
         rowKey={(row) => row.id}
-        selectable={false}
         renderRow={(row) => (
           <OrganisationRow
             organisation={row}
+            isSelected={selection.selectedIds.has(row.id)}
+            onToggle={() => selection.toggleSelect(row.id)}
             onEdit={canWrite ? () => setEditing(row) : undefined}
           />
         )}
@@ -183,6 +189,8 @@ function ProviderOrganisationsListPage() {
         total={query.data?.total ?? 0}
         limit={list.limit}
         onPageChange={list.setPage}
+        selectAllState={selection.selectAllState}
+        onToggleSelectAll={selection.toggleSelectAll}
       />
     </PageShell>
   )
@@ -190,15 +198,32 @@ function ProviderOrganisationsListPage() {
 
 function OrganisationRow({
   organisation,
+  isSelected,
+  onToggle,
   onEdit,
 }: {
   organisation: ProviderOrganisation
+  isSelected: boolean
+  onToggle: () => void
   onEdit?: () => void
 }) {
   return (
     <TableRow className={`group h-9 ${ROW_BORDER}`}>
-      <TableCell className="max-w-[16rem] truncate py-1.5 text-sm font-medium text-fg">
-        {organisation.name}
+      <TableCell className="px-3">
+        <Checkbox
+          aria-label={`Select ${organisation.name}`}
+          checked={isSelected}
+          onCheckedChange={onToggle}
+        />
+      </TableCell>
+      <TableCell className="max-w-[16rem] truncate">
+        <Link
+          to="/provider-organisations/$organisationId"
+          params={{ organisationId: organisation.id }}
+          className="flex items-center gap-2.5"
+        >
+          <EntityNameCell initials={nameInitials(organisation.name)} name={organisation.name} />
+        </Link>
       </TableCell>
       <TableCell className="py-1.5 text-xs text-fg/70">
         {organisation.registration_number ?? "-"}

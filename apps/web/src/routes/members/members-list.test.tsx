@@ -104,7 +104,7 @@ describe("member roster", () => {
     )
   })
 
-  it("shows contact detail as plain copyable text, not inside a link", async () => {
+  it("links the member name to their detail page, keeping other contact detail plain", async () => {
     mocks.list.mockResolvedValue({
       items: [
         makeMember({
@@ -121,9 +121,8 @@ describe("member roster", () => {
     })
     renderWithProviders(<Page />)
 
-    // The name is no longer a link, so a click-drag selects rather than navigates.
     const name = await screen.findByText("Amina Namukasa")
-    expect(name.closest("a")).toBeNull()
+    expect(name.closest("a")).not.toBeNull()
 
     for (const value of [
       "Acme Ltd",
@@ -140,8 +139,7 @@ describe("member roster", () => {
 
   it("shows status as an icon with an accessible label rather than a badge column", async () => {
     renderWithProviders(<Page />)
-    // Visually an icon, but still announced, and the column header stays
-    // screen-reader-only so the icon column has a name without a visible label.
+    // Visually an icon with the label on hover, not badge text in the cell.
     expect(await screen.findByRole("img", { name: "Active" })).toBeInTheDocument()
     expect(screen.queryByText("Suspended")).not.toBeInTheDocument()
   })

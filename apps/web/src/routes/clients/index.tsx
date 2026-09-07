@@ -26,6 +26,7 @@ import { BulkAction } from "@/components/common/BulkAction"
 import { ConfirmDialog } from "@/components/common/ConfirmDialog"
 import { EmptyState } from "@/components/common/EmptyState"
 import { EntityListView, type ListColumn } from "@/components/common/EntityListView"
+import { EntityNameCell } from "@/components/common/EntityNameCell"
 import { FilterBar, FilterChip, FilterSearch, FilterTrigger } from "@/components/common/FilterBar"
 import { PageShell } from "@/components/common/PageShell"
 import { SelectionBar } from "@/components/common/SelectionBar"
@@ -98,7 +99,11 @@ const COLUMNS: ListColumn[] = [
   { header: "Client", sortField: "name" },
   { header: "Code", sortField: "code" },
   { header: "Tier", sortField: "tier" },
-  { header: "Status", sortField: "status", className: "text-center" },
+  {
+    header: <span className="sr-only">Status</span>,
+    sortField: "status",
+    className: "text-center",
+  },
   { header: "Email", className: "text-fg/65" },
   { header: "Phone", className: "text-fg/65" },
   { header: "Employees", className: "text-fg/65 text-center" },
@@ -737,13 +742,7 @@ function ClientRow({
           params={{ clientId: row.id }}
           className="flex items-center gap-2.5"
         >
-          <span
-            aria-hidden
-            className="grid size-6 shrink-0 place-items-center bg-primary/10 text-[10px] font-semibold text-primary"
-          >
-            {nameInitials(row.name)}
-          </span>
-          <span className="text-sm font-medium text-fg group-hover:text-primary">{row.name}</span>
+          <EntityNameCell initials={nameInitials(row.name)} name={row.name} />
         </Link>
       </TableCell>
       <TableCell className="text-xs text-fg/70">{row.code}</TableCell>

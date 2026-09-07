@@ -206,7 +206,7 @@ export function FeedbackPanel({
   return (
     <DetailCard title="Subject feedback" phiLabel="PHI · access logged">
       <div className="space-y-4">
-        <FormField label="Feedback" optional htmlFor="ss-feedback">
+        <FormField label="Feedback" htmlFor="ss-feedback">
           <Textarea
             id="ss-feedback"
             value={feedback}
@@ -330,7 +330,7 @@ export function CompleteDialog({
             <FormField
               label="Draw down against case"
               htmlFor="complete-case"
-              hint="Optional. Choosing a case spends one authorized session from it."
+              hint="Choosing a case spends one authorized session from it."
             >
               <Select value={caseId} onValueChange={setCaseId}>
                 <SelectTrigger id="complete-case" className="rounded-none">
@@ -508,7 +508,7 @@ export function RescheduleDialog({
               onChange={(e) => setScheduled(e.target.value)}
             />
           </FormField>
-          <FormField label="Reason / notes" optional htmlFor="reschedule-notes">
+          <FormField label="Reason / notes" htmlFor="reschedule-notes">
             <Input
               id="reschedule-notes"
               value={notes}

@@ -142,12 +142,7 @@ export function ServiceFormSheet({ open, onOpenChange, service, onSaved }: Servi
           <Input id="sv-name" placeholder="Individual counselling" {...register("name")} />
         </FormField>
         <div className="grid grid-cols-[1fr_8rem] gap-3">
-          <FormField
-            label="Category"
-            optional
-            error={errors.category?.message}
-            htmlFor="sv-category"
-          >
+          <FormField label="Category" error={errors.category?.message} htmlFor="sv-category">
             <Controller
               control={control}
               name="category"
@@ -169,7 +164,6 @@ export function ServiceFormSheet({ open, onOpenChange, service, onSaved }: Servi
           </FormField>
           <FormField
             label="Duration (min)"
-            optional
             error={errors.duration_minutes?.message}
             htmlFor="sv-duration"
           >
@@ -184,12 +178,7 @@ export function ServiceFormSheet({ open, onOpenChange, service, onSaved }: Servi
             />
           </FormField>
         </div>
-        <FormField
-          label="Description"
-          optional
-          error={errors.description?.message}
-          htmlFor="sv-description"
-        >
+        <FormField label="Description" error={errors.description?.message} htmlFor="sv-description">
           <Input id="sv-description" {...register("description")} />
         </FormField>
       </FormSection>
@@ -210,7 +199,6 @@ export function ServiceFormSheet({ open, onOpenChange, service, onSaved }: Servi
         {allowGroup ? (
           <FormField
             label="Max participants"
-            optional
             error={errors.max_participants?.message}
             htmlFor="sv-max"
           >

@@ -4239,6 +4239,32 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/search": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Search records the caller may already read
+         * @description Bounded, projected matches per category, scoped to the caller's tenant.
+         *
+         *     A POST that reads: the verb is what keeps the search term out of the URL.
+         *     Nothing here writes, and the route is wrapped read-only so nothing commits.
+         *
+         *     Tenant comes from the authenticated context, which `require_same_tenant`
+         *     compares against the requested tenant before any query runs.
+         */
+        post: operations["global_search_search_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/service-assignments/": {
         parameters: {
             query?: never;
@@ -8776,6 +8802,33 @@ export interface components {
              */
             old_value?: string | null;
         };
+        /**
+         * GlobalSearchRequest
+         * @description The query travels in the body, not the URL.
+         *
+         *     A search term is user-entered text that routinely names a person. As a
+         *     query parameter it would be written to the server access log and to every
+         *     proxy log in front of it, however carefully the handler avoids logging it.
+         */
+        GlobalSearchRequest: {
+            /**
+             * Limit
+             * @description Maximum results per category
+             * @default 5
+             */
+            limit: number;
+            /** Q */
+            q: string;
+        };
+        /**
+         * GlobalSearchResponse
+         * @description One authenticated, tenant-scoped response covering every record category.
+         */
+        GlobalSearchResponse: {
+            clients: components["schemas"]["SearchCategoryResult"];
+            practitioners: components["schemas"]["SearchCategoryResult"];
+            provider_organisations: components["schemas"]["SearchCategoryResult"];
+        };
         /** GrantConsentRequest */
         GrantConsentRequest: {
             scope: components["schemas"]["BenchmarkScope"];
@@ -9524,10 +9577,10 @@ export interface components {
         };
         /**
          * MemberGender
-         * @description Optional demographic value captured for member-facing wellness context.
+         * @description Optional demographic value. Restricted to Male/Female by product decision.
          * @enum {string}
          */
-        MemberGender: "Female" | "Male" | "NonBinary" | "PreferNotToSay" | "Unknown";
+        MemberGender: "Female" | "Male";
         /** MemberImportIssue */
         MemberImportIssue: {
             /** Field */
@@ -10149,6 +10202,7 @@ export interface components {
             display_name: string;
             /** Email */
             email?: string | null;
+            gender?: components["schemas"]["ProviderGender"] | null;
             /** License Info */
             license_info?: {
                 [key: string]: unknown;
@@ -10190,6 +10244,12 @@ export interface components {
              */
             scheduled_at: string;
         };
+        /**
+         * ProviderGender
+         * @description Practitioner gender. Restricted to Male/Female by product decision.
+         * @enum {string}
+         */
+        ProviderGender: "Female" | "Male";
         /**
          * ProviderIdentityProvenance
          * @description Where a practitioner's owned name and contact details came from.
@@ -10290,6 +10350,7 @@ export interface components {
             accreditation_status: components["schemas"]["AccreditationStatus"];
             /** Bio */
             bio?: string | null;
+            gender?: components["schemas"]["ProviderGender"] | null;
             /** @default Active */
             panel_status: components["schemas"]["PanelStatus"];
             region: components["schemas"]["UgandaRegion"];
@@ -10397,6 +10458,7 @@ export interface components {
             display_name?: string | null;
             /** Email */
             email?: string | null;
+            gender?: components["schemas"]["ProviderGender"] | null;
             /** License Info */
             license_info?: {
                 [key: string]: unknown;
@@ -10573,6 +10635,51 @@ export interface components {
             days: number;
             /** Rationale */
             rationale: string;
+        };
+        /**
+         * SearchCategoryResult
+         * @description One category's bounded page, with its own truncation and failure state.
+         */
+        SearchCategoryResult: {
+            /**
+             * Failed
+             * @description This category could not be searched. Distinct from an empty result: the client must not render it as no records found.
+             * @default false
+             */
+            failed: boolean;
+            /**
+             * Has More
+             * @description Further matches exist beyond this page. No count is returned, so nothing is disclosed about records the caller cannot read.
+             */
+            has_more: boolean;
+            /** Items */
+            items: components["schemas"]["SearchResultItem"][];
+        };
+        /**
+         * SearchResultItem
+         * @description One matched record, projected to its choosable fields.
+         */
+        SearchResultItem: {
+            /**
+             * Id
+             * @description Stable record id; the frontend maps type+id to a route
+             */
+            id: string;
+            /**
+             * Label
+             * @description Primary display label
+             */
+            label: string;
+            /**
+             * Secondary
+             * @description Approved disambiguating detail, e.g. a client code or a practitioner region
+             */
+            secondary?: string | null;
+            /**
+             * Type
+             * @enum {string}
+             */
+            type: "client" | "practitioner" | "provider_organisation";
         };
         /**
          * ServiceAssignmentCreate
@@ -21192,6 +21299,41 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ReportRunResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    global_search_search_post: {
+        parameters: {
+            query: {
+                tenant_id: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GlobalSearchRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GlobalSearchResponse"];
                 };
             };
             /** @description Validation Error */

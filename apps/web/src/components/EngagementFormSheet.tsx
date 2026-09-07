@@ -159,12 +159,7 @@ export function EngagementFormSheet({
             {...register("name")}
           />
         </FormField>
-        <FormField
-          label="Description"
-          optional
-          error={errors.description?.message}
-          htmlFor="ef-description"
-        >
+        <FormField label="Description" error={errors.description?.message} htmlFor="ef-description">
           <Input
             id="ef-description"
             placeholder="Internal notes: appears on the engagement detail."
@@ -205,7 +200,6 @@ export function EngagementFormSheet({
           </FormField>
           <FormField
             label="Due date"
-            optional
             description="Slips trigger an Overdue indicator in the list."
             error={errors.due_date?.message}
             htmlFor="ef-due"
@@ -217,15 +211,10 @@ export function EngagementFormSheet({
 
       <FormSection
         title="Commercials"
-        description="Optional. Snapshot of rate-card terms for this engagement."
+        description="Snapshot of rate-card terms for this engagement."
       >
         <div className="grid grid-cols-[1fr_6rem] gap-3">
-          <FormField
-            label="Hourly rate"
-            optional
-            error={errors.hourly_rate?.message}
-            htmlFor="ef-rate"
-          >
+          <FormField label="Hourly rate" error={errors.hourly_rate?.message} htmlFor="ef-rate">
             <Input
               id="ef-rate"
               type="number"
@@ -237,18 +226,12 @@ export function EngagementFormSheet({
               {...register("hourly_rate")}
             />
           </FormField>
-          <FormField
-            label="Currency"
-            optional
-            error={errors.currency?.message}
-            htmlFor="ef-currency"
-          >
+          <FormField label="Currency" error={errors.currency?.message} htmlFor="ef-currency">
             <Input id="ef-currency" maxLength={3} {...register("currency")} />
           </FormField>
         </div>
         <FormField
           label="Budget (hours)"
-          optional
           description="Leave blank for open-ended."
           error={errors.budget_hours?.message}
           htmlFor="ef-budget"
@@ -265,8 +248,8 @@ export function EngagementFormSheet({
         </FormField>
       </FormSection>
 
-      <FormSection title="Lead consultant" description="Optional. Owner accountable for delivery.">
-        <FormField label="Lead" optional error={errors.lead_user_id?.message}>
+      <FormSection title="Lead consultant" description="Owner accountable for delivery.">
+        <FormField label="Lead" error={errors.lead_user_id?.message}>
           <UserPicker
             value={watchedLead ?? ""}
             onChange={(id) =>

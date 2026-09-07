@@ -24,6 +24,7 @@ from app.domain.enums import (
     AccreditationStatus,
     BaseStatus,
     PanelStatus,
+    ProviderGender,
     ProviderIdentityProvenance,
     ProviderTier,
     UgandaRegion,
@@ -67,6 +68,7 @@ class ProviderCreate(BaseModel):
     tier: ProviderTier
     region: UgandaRegion
     bio: OptionalSanitizedStr = None
+    gender: ProviderGender | None = None
     license_info: dict | None = None
 
     model_config = ConfigDict(extra="forbid")
@@ -84,6 +86,7 @@ class ProviderUpdate(BaseModel):
     phone: OptionalSanitizedStr = Field(None, max_length=50)
     region: UgandaRegion | None = None
     bio: OptionalSanitizedStr = None
+    gender: ProviderGender | None = None
     license_info: dict | None = None
 
     model_config = ConfigDict(extra="forbid")

@@ -8,7 +8,6 @@ export interface FormFieldProps {
   description?: React.ReactNode
   error?: string
   required?: boolean
-  optional?: boolean
   htmlFor?: string
   hint?: React.ReactNode
   children: React.ReactNode
@@ -20,7 +19,6 @@ export function FormField({
   description,
   error,
   required,
-  optional,
   htmlFor,
   hint,
   children,
@@ -28,19 +26,14 @@ export function FormField({
 }: FormFieldProps) {
   return (
     <div className={cn("space-y-1.5", className)}>
-      <div className="flex items-baseline justify-between gap-2">
-        <Label htmlFor={htmlFor} className="text-xs font-medium text-fg/85">
-          {label}
-          {required ? (
-            <span className="ml-0.5 text-danger" aria-hidden>
-              *
-            </span>
-          ) : null}
-        </Label>
-        {optional ? (
-          <span className="text-[10px] font-medium tracking-wide text-fg-subtle">Optional</span>
+      <Label htmlFor={htmlFor} className="text-xs font-medium text-fg/85">
+        {label}
+        {required ? (
+          <span className="ml-0.5 text-danger" aria-hidden>
+            *
+          </span>
         ) : null}
-      </div>
+      </Label>
       {description ? <p className="text-xs leading-relaxed text-fg-muted">{description}</p> : null}
       {children}
       {error ? (

@@ -57,3 +57,37 @@ export function nameInitials(name: string): string {
 export function personInitials(person: Person, user?: User | null): string {
   return nameInitials(displayName(person, user))
 }
+
+/**
+ * Title-cases a stored name for display. Tenant names are stored as entered,
+ * which is often all upper or all lower case.
+ */
+export function toProperCase(value: string): string {
+  return value
+    .split(/\s+/)
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+    .join(" ")
+}
+
+/**
+ * A person-shaped label for an account.
+ *
+ * Prefers the account's own display name. When there isn't one, builds a label
+ * from the email's local part rather than showing the raw address: the nav menu
+ * shows who you are, not how you sign in. The label is derived, not asserted
+ * identity, so the full email stays visible inside the account menu.
+ */
+export function accountDisplayName(
+  displayName: string | null | undefined,
+  email: string | null | undefined,
+): string | null {
+  const owned = displayName?.trim()
+  if (owned) return owned
+  const local = email?.split("@")[0]?.trim()
+  if (!local) return null
+  const words = local
+    .split(/[._\-+]+/)
+    .filter((part) => part && !/^\d+$/.test(part))
+    .map(toProperCase)
+  return words.length > 0 ? words.join(" ") : null
+}

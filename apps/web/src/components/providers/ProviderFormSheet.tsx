@@ -20,11 +20,16 @@ import {
 import { Textarea } from "@/components/ui/textarea"
 import { useEntityFormSheet } from "@/hooks/useEntityFormSheet"
 import type { Provider } from "@/types/entities"
-import { ProviderTier, UgandaRegion } from "@/types/enums"
+import { ProviderGender, ProviderTier, UgandaRegion } from "@/types/enums"
 import { getStatusLabel } from "@/utils/statusColors"
 
 const TIERS = Object.values(ProviderTier)
 const REGIONS = Object.values(UgandaRegion)
+const GENDER_VALUES = Object.values(ProviderGender) as [ProviderGender, ...ProviderGender[]]
+const GENDERS: ReadonlyArray<{ value: ProviderGender; label: string }> = [
+  { value: ProviderGender.FEMALE, label: "Female" },
+  { value: ProviderGender.MALE, label: "Male" },
+]
 
 const providerSchema = z.object({
   display_name: z.string().trim().min(1, "A practitioner needs a name"),
@@ -32,6 +37,7 @@ const providerSchema = z.object({
   phone: z.string().trim(),
   tier: z.enum(ProviderTier),
   region: z.enum(UgandaRegion),
+  gender: z.enum(GENDER_VALUES).optional(),
   bio: z.string(),
 })
 
@@ -43,6 +49,7 @@ const DEFAULTS: ProviderFormValues = {
   phone: "",
   tier: ProviderTier.T2,
   region: UgandaRegion.CENTRAL,
+  gender: undefined,
   bio: "",
 }
 
@@ -63,6 +70,7 @@ function editPayload(values: ProviderFormValues): ProviderProfileInput {
     email: nullable(values.email),
     phone: nullable(values.phone),
     region: values.region,
+    gender: values.gender ?? null,
     bio: nullable(values.bio),
   }
 }
@@ -107,6 +115,7 @@ export function ProviderFormSheet({
       phone: p.phone ?? "",
       tier: p.provider_profile.tier,
       region: p.provider_profile.region,
+      gender: p.provider_profile.gender ?? undefined,
       bio: p.provider_profile.bio ?? "",
     }),
     parsePayload: (values) => values,
@@ -149,10 +158,8 @@ export function ProviderFormSheet({
 
         <FormField
           label="Contact email"
-          optional
           description="How to reach the practitioner. This is not a login, and linking an account does not change it."
           error={errors.email?.message}
-          hint="Leave empty to clear."
           htmlFor="prv-email"
         >
           <Input
@@ -163,13 +170,7 @@ export function ProviderFormSheet({
           />
         </FormField>
 
-        <FormField
-          label="Contact phone"
-          optional
-          error={errors.phone?.message}
-          hint="Leave empty to clear."
-          htmlFor="prv-phone"
-        >
+        <FormField label="Contact phone" error={errors.phone?.message} htmlFor="prv-phone">
           <Input id="prv-phone" type="tel" placeholder="+256…" {...register("phone")} />
         </FormField>
       </FormSection>
@@ -219,7 +220,32 @@ export function ProviderFormSheet({
           />
         </FormField>
 
-        <FormField label="Bio" optional error={errors.bio?.message} htmlFor="prv-bio">
+        <FormField label="Gender" error={errors.gender?.message} htmlFor="prv-gender">
+          <Controller
+            control={control}
+            name="gender"
+            render={({ field }) => (
+              <Select
+                value={field.value ?? "unset"}
+                onValueChange={(value) => field.onChange(value === "unset" ? undefined : value)}
+              >
+                <SelectTrigger id="prv-gender">
+                  <SelectValue placeholder="Select gender" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="unset">Not recorded</SelectItem>
+                  {GENDERS.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+          />
+        </FormField>
+
+        <FormField label="Bio" error={errors.bio?.message} htmlFor="prv-bio">
           <Textarea id="prv-bio" rows={4} {...register("bio")} />
         </FormField>
       </FormSection>
