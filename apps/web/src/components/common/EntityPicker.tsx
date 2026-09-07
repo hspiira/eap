@@ -51,6 +51,9 @@ export function EntityPicker<T extends { id: string }, P extends ListParams = Li
   filter?: (item: T) => boolean
 }) {
   const [query, setQuery] = useState("")
+  // A combobox, not a permanently open list: eight rows of every picker at
+  // once made a form three screens tall before anything was chosen.
+  const [open, setOpen] = useState(false)
   const debounced = useDebouncedValue(query.trim(), 250)
   const list = useEntityList<T, P>({
     resource,
@@ -64,13 +67,16 @@ export function EntityPicker<T extends { id: string }, P extends ListParams = Li
 
   if (selected) {
     return (
-      <div className="flex items-center gap-2.5 rounded-sm border border-fg/15 bg-surface px-3 py-2">
+      <div className="flex items-center gap-2.5 rounded-sm border border-fg/15 bg-surface px-3 py-1.5">
         {renderSelected(selected)}
         <Button
           type="button"
           variant="ghost"
           size="sm"
-          onClick={() => onChange("")}
+          onClick={() => {
+            onChange("")
+            setQuery("")
+          }}
           className="shrink-0 text-xs text-fg/65"
         >
           Change
@@ -80,32 +86,51 @@ export function EntityPicker<T extends { id: string }, P extends ListParams = Li
   }
 
   return (
-    <div className="space-y-1.5">
-      <Input placeholder={placeholder} value={query} onChange={(e) => setQuery(e.target.value)} />
-      <div className="max-h-48 overflow-y-auto rounded-sm border border-fg/15 bg-bg">
-        {list.isPending ? (
-          <p className="px-3 py-2 text-xs text-fg-muted">Loading…</p>
-        ) : items.length === 0 ? (
-          <p className="px-3 py-2 text-xs text-fg-muted">
-            {debounced ? emptyNoMatch : emptyPrompt}
-          </p>
-        ) : (
-          <ul className="divide-y divide-fg/8">
-            {items.map((item) => (
-              <li key={item.id}>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  onClick={() => onChange(item.id)}
-                  className="flex h-auto w-full items-center gap-2.5 px-3 py-2 text-left"
-                >
-                  {renderRow(item)}
-                </Button>
-              </li>
-            ))}
-          </ul>
-        )}
-      </div>
+    <div className="relative">
+      <Input
+        role="combobox"
+        aria-expanded={open}
+        placeholder={placeholder}
+        value={query}
+        onChange={(e) => setQuery(e.target.value)}
+        onFocus={() => setOpen(true)}
+        onBlur={() => setOpen(false)}
+        onKeyDown={(e) => {
+          if (e.key === "Escape") setOpen(false)
+        }}
+      />
+      {open ? (
+        <div className="absolute z-50 mt-1 max-h-56 w-full overflow-y-auto rounded-sm border border-fg/15 bg-bg shadow-md">
+          {list.isPending ? (
+            <p className="px-3 py-2 text-xs text-fg-muted">Loading…</p>
+          ) : items.length === 0 ? (
+            <p className="px-3 py-2 text-xs text-fg-muted">
+              {debounced ? emptyNoMatch : emptyPrompt}
+            </p>
+          ) : (
+            <ul className="divide-y divide-fg/8">
+              {items.map((item) => (
+                <li key={item.id}>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    // Mousedown, not click: the input blurs first otherwise,
+                    // the list unmounts, and the click lands on nothing.
+                    onMouseDown={(e) => {
+                      e.preventDefault()
+                      onChange(item.id)
+                      setOpen(false)
+                    }}
+                    className="flex h-auto w-full items-center gap-2.5 px-3 py-1.5 text-left"
+                  >
+                    {renderRow(item)}
+                  </Button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      ) : null}
     </div>
   )
 }

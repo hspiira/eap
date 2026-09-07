@@ -34,8 +34,8 @@ export function FormField({
           </span>
         ) : null}
       </Label>
-      {description ? <p className="text-xs leading-relaxed text-fg-muted">{description}</p> : null}
       {children}
+      {description && !error ? <p className="text-xs text-fg-muted">{description}</p> : null}
       {error ? (
         <p className="text-xs font-medium text-danger" role="alert">
           {error}

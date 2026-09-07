@@ -86,11 +86,14 @@ afterEach(() => {
 /** A practitioner is required, so every create-path test has to choose one. */
 async function choosePractitioner() {
   const search = screen.getByPlaceholderText(/search practitioners/i)
+  // The list is a dropdown now: it opens on focus, and rows select on
+  // mousedown so the choice lands before the input blurs.
+  fireEvent.focus(search)
   fireEvent.change(search, { target: { value: "Nakato" } })
   await new Promise((r) => setTimeout(r, 400))
 
   const option = await screen.findByText("Dr Alice Nakato")
-  fireEvent.click(option)
+  fireEvent.mouseDown(option)
 }
 
 /** Delivery context has no default, so a create-path test has to choose one. */

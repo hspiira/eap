@@ -334,7 +334,7 @@ export function ServiceSessionFormSheet({
     >
       {ineligible ? <EligibilityFailureNotice reasons={ineligible} /> : null}
 
-      <FormSection title="Service">
+      <FormSection title="Session">
         <FormField label="Service" required error={errors.service_id?.message}>
           {lockedServiceId ? (
             <LockedServiceSummary serviceId={lockedServiceId} service={service ?? null} />
@@ -355,6 +355,7 @@ export function ServiceSessionFormSheet({
               name="category"
               render={({ field }) => (
                 <EnumSelect
+                  placeholder="Individual, group…"
                   value={field.value}
                   onChange={field.onChange}
                   options={Object.values(SessionCategory)}
@@ -362,12 +363,13 @@ export function ServiceSessionFormSheet({
               )}
             />
           </FormField>
-          <FormField label="Delivery" error={errors.session_type?.message}>
+          <FormField label="Mode" error={errors.session_type?.message}>
             <Controller
               control={control}
               name="session_type"
               render={({ field }) => (
                 <EnumSelect
+                  placeholder="Physical or online"
                   value={field.value}
                   onChange={field.onChange}
                   options={Object.values(SessionType)}
@@ -442,6 +444,7 @@ export function ServiceSessionFormSheet({
             name="client_type"
             render={({ field }) => (
               <EnumSelect
+                placeholder="New or repeat"
                 value={field.value}
                 onChange={field.onChange}
                 options={Object.values(ClientType)}
@@ -473,7 +476,7 @@ export function ServiceSessionFormSheet({
         ) : null}
       </FormSection>
 
-      <FormSection title="Practitioner" description="Who delivered it, and under what arrangement.">
+      <FormSection title="Delivery" description="Who delivered it, and under what arrangement.">
         <FormField label="Practitioner" required error={errors.service_provider_id?.message}>
           <ProviderPicker
             value={watchedProvider ?? ""}
