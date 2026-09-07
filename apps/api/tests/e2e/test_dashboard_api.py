@@ -21,11 +21,13 @@ from app.domain.enums import (
     SessionCategory,
     SessionClinicalStatus,
     SessionStatus,
+    SessionType,
 )
 from app.domain.enums.provider_network import ImportBatchStatus, ImportRowOutcome
 from app.infrastructure.models.client_model import ClientModel
 from app.infrastructure.models.eligible_member_model import EligibleMemberModel
 from app.infrastructure.models.provider_model import ProviderModel
+from app.infrastructure.models.service_model import ServiceModel
 from app.infrastructure.models.service_session_model import ServiceSessionModel
 from app.infrastructure.models.session_import_model import (
     SessionImportBatchModel,
@@ -60,6 +62,8 @@ def _session(
     provider_id: str,
     *,
     days_ago: int,
+    service_id: str = "svc-talk",
+    session_type: SessionType | None = SessionType.PHYSICAL,
     status: SessionStatus = SessionStatus.COMPLETED,
     category: SessionCategory | None = SessionCategory.GROUP,
     clinical_outcome: SessionClinicalStatus | None = SessionClinicalStatus.COMPLETED,
@@ -70,11 +74,12 @@ def _session(
     return ServiceSessionModel(
         id=generate_cuid(),
         tenant_id=tenant_id,
-        service_id="svc-1",
+        service_id=service_id,
         provider_id=provider_id,
         client_id=client_id,
         scheduled_at=now - timedelta(days=days_ago),
         status=status,
+        session_type=session_type,
         attendance=SessionAttendance.COMPANY_WIDE,
         category=category,
         clinical_outcome=clinical_outcome,
@@ -152,18 +157,33 @@ async def _seed(db: AsyncSession) -> None:
             ),
         ]
     )
+    db.add_all(
+        [
+            ServiceModel(id="svc-talk", tenant_id=TENANT, name="Health Talk"),
+            ServiceModel(id="svc-couns", tenant_id=TENANT, name="Counselling"),
+        ]
+    )
     await db.flush()
 
     db.add_all(
         [
             # Recent window: three completed for Alpha, one for Beta.
             _session(TENANT, "cl-dash-a", provider, days_ago=5),
-            _session(TENANT, "cl-dash-a", provider, days_ago=10, category=SessionCategory.FAMILY),
+            _session(
+                TENANT,
+                "cl-dash-a",
+                provider,
+                days_ago=10,
+                category=SessionCategory.FAMILY,
+                session_type=SessionType.ONLINE,
+            ),
             _session(
                 TENANT,
                 "cl-dash-a",
                 provider,
                 days_ago=20,
+                service_id="svc-couns",
+                session_type=None,
                 clinical_outcome=None,
                 rate_ugx=None,
             ),
@@ -208,41 +228,98 @@ async def _seed(db: AsyncSession) -> None:
 async def test_dashboard_aggregates_one_tenant(client: AsyncClient, db_session: AsyncSession):
     await _seed(db_session)
 
-    response = await client.get("/dashboard", params={"tenant_id": TENANT})
+    response = await client.get("/dashboard", params={"tenant_id": TENANT, "range": "last_90d"})
     assert response.status_code == 200
     body = response.json()
 
+    assert body["range"]["preset"] == "last_90d"
+    assert body["range"]["granularity"] == "week"
+
     kpis = body["kpis"]
-    assert kpis["sessions_90d"] == 4
-    assert kpis["sessions_prior_90d"] == 1
-    assert kpis["clients_served_90d"] == 2
+    assert kpis["sessions"] == 4
+    assert kpis["sessions_prior"] == 1
+    assert kpis["clients_served"] == 2
     assert kpis["covered_members"] == 2
     assert kpis["clients_with_roster"] == 1
     assert kpis["clients_total"] == 2
     assert kpis["import_backlog"] == 3
 
-    months = body["sessions_monthly"]
-    assert len(months) == 12
-    assert sum(m["total"] for m in months) == 5
-    assert months[-1]["month"] == utc_now().strftime("%Y-%m")
+    series = body["sessions_series"]
+    assert sum(p["total"] for p in series) == 4
+    # The delivery split is carried per bucket, and an unrecorded type stays
+    # its own band rather than being folded into either.
+    assert sum(p["physical"] for p in series) == 2
+    assert sum(p["online"] for p in series) == 1
+    assert sum(p["unknown"] for p in series) == 1
 
     categories = {c["category"]: c["total"] for c in body["sessions_by_category"]}
-    assert categories == {"Group": 4, "Family": 1}
+    assert categories == {"Group": 3, "Family": 1}
 
     top = [(c["client_name"], c["total"]) for c in body["top_clients"]]
-    assert top == [("Alpha Bank", 4), ("Beta Ltd", 1)]
+    assert top == [("Alpha Bank", 3), ("Beta Ltd", 1)]
+
+    services = {
+        s["service_name"]: (s["total"], s["prior_total"], s["change_pct"])
+        for s in body["trending_services"]
+    }
+    assert services["Health Talk"] == (3, 1, 200.0)
+    # No prior sessions means no percentage can be stated, not a 100% rise.
+    assert services["Counselling"] == (1, 0, None)
 
     queues = [(q["outcome"], q["total"]) for q in body["import_queues"]]
     assert queues == [("UnresolvedMember", 2), ("MissingPractitioner", 1)]
-    assert body["import_batch"]["file_name"] == "sessions.csv"
-    assert body["import_batch"]["status"] == "Applied"
-    assert body["import_batch"]["accepted"] == 1
+    batch = body["import_batch"]
+    assert batch["file_name"] == "sessions.csv"
+    assert batch["status"] == "Applied"
+    assert (batch["accepted"], batch["duplicate"], batch["blocked"]) == (1, 1, 3)
 
     quality = body["data_quality"]
     assert quality["sessions_missing_outcome"] == 1
     assert quality["sessions_missing_rate"] == 1
     assert quality["clients_without_roster"] == 1
     assert quality["providers_pending"] == 1
+
+
+@pytest.mark.asyncio
+async def test_dashboard_range_presets_rebucket(client: AsyncClient, db_session: AsyncSession):
+    """A narrower window re-scopes every flow figure and re-buckets the series."""
+    await _seed(db_session)
+
+    response = await client.get("/dashboard", params={"tenant_id": TENANT, "range": "last_30d"})
+    body = response.json()
+    assert body["range"]["granularity"] == "day"
+    assert len(body["sessions_series"]) == 31
+    # days_ago 5, 10, 20 fall inside 30 days; 30 and 100 do not.
+    assert body["kpis"]["sessions"] == 3
+    assert sum(p["total"] for p in body["sessions_series"]) == 3
+
+    half = await client.get("/dashboard", params={"tenant_id": TENANT, "range": "last_180d"})
+    assert half.json()["range"]["granularity"] == "month"
+    assert half.json()["kpis"]["sessions"] == 5
+
+
+@pytest.mark.asyncio
+async def test_dashboard_custom_range(client: AsyncClient, db_session: AsyncSession):
+    await _seed(db_session)
+    start = (utc_now() - timedelta(days=15)).date().isoformat()
+
+    response = await client.get(
+        "/dashboard", params={"tenant_id": TENANT, "range": "custom", "start": start}
+    )
+    assert response.status_code == 200
+    body = response.json()
+    assert body["range"]["preset"] == "custom"
+    # Only days_ago 5 and 10 fall inside the last 15 days.
+    assert body["kpis"]["sessions"] == 2
+
+
+@pytest.mark.asyncio
+async def test_dashboard_custom_range_needs_a_start(client: AsyncClient, db_session: AsyncSession):
+    db_session.add(_tenant(TENANT))
+    await db_session.commit()
+
+    response = await client.get("/dashboard", params={"tenant_id": TENANT, "range": "custom"})
+    assert response.status_code == 422
 
 
 @pytest.mark.asyncio
@@ -257,5 +334,5 @@ async def test_dashboard_empty_tenant(client: AsyncClient, db_session: AsyncSess
     assert body["kpis"]["import_backlog"] == 0
     assert body["import_batch"] is None
     assert body["import_queues"] == []
-    assert len(body["sessions_monthly"]) == 12
-    assert all(m["total"] == 0 for m in body["sessions_monthly"])
+    assert body["trending_services"] == []
+    assert all(p["total"] == 0 for p in body["sessions_series"])

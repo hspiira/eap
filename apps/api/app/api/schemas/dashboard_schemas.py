@@ -5,22 +5,45 @@ count or a small grouped series; no record-level data leaves this endpoint,
 so it discloses nothing a list endpoint would not.
 
 Delivered work means completed sessions. Scheduled bookings are not delivery
-and are deliberately absent from the trend; a booking pipeline would be its
+and are deliberately absent from the series; a booking pipeline would be its
 own series with its own name.
+
+Flow figures (the series, the groupings, the trending services) are scoped to
+the requested range. Stock figures (covered members, the import backlog) count
+what stands today and carry no range.
 """
+
+from typing import Literal
 
 from pydantic import BaseModel, Field
 
+RangePreset = Literal["this_week", "this_month", "last_30d", "last_90d", "last_180d", "custom"]
+Granularity = Literal["day", "week", "month"]
+
+
+class RangeInfo(BaseModel):
+    """The resolved window the flow figures describe."""
+
+    preset: RangePreset
+    start: str = Field(..., description="Inclusive window start, ISO 8601")
+    end: str = Field(..., description="Exclusive window end, ISO 8601")
+    prior_start: str = Field(
+        ..., description="Start of the equal-length window before this one, ISO 8601"
+    )
+    granularity: Granularity = Field(
+        ..., description="Bucket size of sessions_series, chosen from the window length"
+    )
+
 
 class DashboardKpis(BaseModel):
-    """Headline counts for the KPI strip."""
+    """Headline counts. Session counts follow the range; the rest are stock."""
 
-    sessions_90d: int = Field(..., description="Completed sessions in the last 90 days")
-    sessions_prior_90d: int = Field(
-        ..., description="Completed sessions in the 90 days before that, for the delta"
+    sessions: int = Field(..., description="Completed sessions inside the range")
+    sessions_prior: int = Field(
+        ..., description="Completed sessions in the equal-length prior window, for the delta"
     )
-    clients_served_90d: int = Field(
-        ..., description="Distinct clients with a completed session in the last 90 days"
+    clients_served: int = Field(
+        ..., description="Distinct clients with a completed session inside the range"
     )
     covered_members: int = Field(..., description="Eligible members with Active status")
     clients_with_roster: int = Field(
@@ -33,26 +56,47 @@ class DashboardKpis(BaseModel):
     )
 
 
-class MonthlySessions(BaseModel):
-    """One month of completed sessions. The series is always 12 entries, zero-filled."""
+class SeriesPoint(BaseModel):
+    """One bucket of completed sessions, split by how it was delivered.
 
-    month: str = Field(..., description="Calendar month, YYYY-MM")
+    `unknown` carries sessions whose source recorded no delivery type. It is
+    kept as its own band rather than folded into either, so the chart never
+    asserts a delivery type the record does not carry.
+    """
+
+    bucket: str = Field(..., description="Bucket start: YYYY-MM-DD, or YYYY-MM when monthly")
+    label: str = Field(..., description="Display label for the bucket")
+    physical: int
+    online: int
+    unknown: int
     total: int
 
 
 class CategoryCount(BaseModel):
-    """Completed sessions per session category over the trend window."""
+    """Completed sessions per session category inside the range."""
 
     category: str
     total: int
 
 
 class ClientSessions(BaseModel):
-    """Completed sessions per client over the trend window."""
+    """Completed sessions per client inside the range."""
 
     client_id: str
     client_name: str
     total: int
+
+
+class ServiceTrend(BaseModel):
+    """One service's demand inside the range, against the prior window."""
+
+    service_id: str
+    service_name: str
+    total: int
+    prior_total: int
+    change_pct: float | None = Field(
+        None, description="Percentage change against the prior window; null when it had no sessions"
+    )
 
 
 class ImportQueueEntry(BaseModel):
@@ -63,12 +107,14 @@ class ImportQueueEntry(BaseModel):
 
 
 class ImportBatchSummary(BaseModel):
-    """The batch the backlog figures describe."""
+    """The batch the backlog figures describe, as a part-to-whole composition."""
 
     file_name: str
     status: str
     row_count: int
     accepted: int
+    duplicate: int
+    blocked: int = Field(..., description="Rows held on an unresolved identity")
     applied_at: str | None = None
 
 
@@ -86,10 +132,12 @@ class DataQuality(BaseModel):
 class DashboardResponse(BaseModel):
     """The whole dashboard in one authenticated, tenant-scoped read."""
 
+    range: RangeInfo
     kpis: DashboardKpis
-    sessions_monthly: list[MonthlySessions]
+    sessions_series: list[SeriesPoint]
     sessions_by_category: list[CategoryCount]
     top_clients: list[ClientSessions]
+    trending_services: list[ServiceTrend]
     import_queues: list[ImportQueueEntry]
     import_batch: ImportBatchSummary | None = Field(
         None, description="Absent when the tenant has never staged an import"
