@@ -94,7 +94,7 @@ from app.core.authorization import (
     require_tenant_role,
 )
 from app.core.database import AsyncSessionLocal, get_db
-from app.core.security import TokenData
+from app.core.security import TokenData, get_current_user
 from app.domain.entities.client import ClientEntity
 from app.domain.enums import (
     BaseStatus,
@@ -1092,7 +1092,9 @@ async def list_clients(
     "/import/template",
     summary="Download the client CSV import template",
 )
-async def client_import_template() -> StreamingResponse:
+async def client_import_template(
+    current_user: TokenData = Depends(get_current_user),
+) -> StreamingResponse:
     """Return the supported client import columns as an Excel-compatible CSV."""
     output = io.StringIO(newline="")
     writer = csv.writer(output)

@@ -150,19 +150,36 @@ def require_self_or_role(*allowed_roles: TenantRole):
     return _require
 
 
-async def require_same_tenant(
-    tenant_id: str,
-    current_user: TokenData = Depends(get_current_user),
-) -> TokenData:
-    """
-    Require that the current user belongs to the given tenant.
-    Use for routes that have tenant_id in path or query.
+def assert_same_tenant(current_user: TokenData, tenant_id: str) -> None:
+    """Refuse a resource that belongs to another tenant.
+
+    Use this where the owning tenant is known only after the entity is loaded,
+    so it cannot be expressed as a route dependency.
+
+    Synchronous on purpose. The async ``require_same_tenant`` below was called
+    directly in twelve route bodies without ``await``, which built a coroutine,
+    discarded it, and enforced nothing; the arguments were reversed as well, so
+    adding ``await`` alone would not have helped. A plain function cannot fail
+    that way, and ``test_use_case_call_sites`` fails the build if the async form
+    is called outside ``Depends`` again.
     """
     if current_user.tenant_id != tenant_id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Access denied to this tenant",
         )
+
+
+async def require_same_tenant(
+    tenant_id: str,
+    current_user: TokenData = Depends(get_current_user),
+) -> TokenData:
+    """
+    Require that the current user belongs to the given tenant.
+    Use as a route dependency for routes that have tenant_id in path or query.
+    Where the tenant is only known after a load, use ``assert_same_tenant``.
+    """
+    assert_same_tenant(current_user, tenant_id)
     return current_user
 
 

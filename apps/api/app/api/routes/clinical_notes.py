@@ -21,7 +21,7 @@ from app.application.use_cases.clinical_note_use_cases import (
     SignClinicalNoteUseCase,
     UpdateDraftNoteBodyUseCase,
 )
-from app.core.authorization import require_clinical_scope, require_same_tenant
+from app.core.authorization import assert_same_tenant, require_clinical_scope
 from app.core.database import get_db
 from app.core.security import TokenData
 from app.domain.entities.clinical_note import ClinicalNote
@@ -182,6 +182,6 @@ async def list_notes_for_case(
     case = await case_repo.get_by_id(CaseId(case_id))
     if case is None:
         raise HTTPException(status_code=404, detail="Case not found")
-    require_same_tenant(current_user, case.tenant_id.value)
+    assert_same_tenant(current_user, case.tenant_id.value)
     notes = await note_repo.list_for_case(case.tenant_id, case.id)
     return [_to_response(n) for n in notes]

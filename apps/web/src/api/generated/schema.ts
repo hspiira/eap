@@ -4183,7 +4183,14 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Get a single report run (with materialised output) */
+        /**
+         * Get a single report run (with materialised output)
+         * @description Read one run and its materialised output.
+         *
+         *     Materialising the numbers does not make them public: the parameters and
+         *     narrative sit inside the same tenant boundary as the figures, so the read is
+         *     authorised here as well as at run time.
+         */
         get: operations["get_run_reports_runs__run_id__get"];
         put?: never;
         post?: never;
@@ -4235,7 +4242,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Get a report template by ID */
+        /**
+         * Get a report template by ID
+         * @description Read one template. Authenticated, and only within the caller's tenant.
+         */
         get: operations["get_template_reports_templates__template_id__get"];
         put?: never;
         post?: never;

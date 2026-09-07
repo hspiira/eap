@@ -22,9 +22,9 @@ from app.application.use_cases.report_use_cases import (
     GetReportRunUseCase,
     RunReportTemplateUseCase,
 )
-from app.core.authorization import require_same_tenant
+from app.core.authorization import assert_same_tenant, require_same_tenant
 from app.core.database import get_db
-from app.core.security import TokenData
+from app.core.security import TokenData, get_current_user
 from app.domain.entities.report import (
     ReportRun,
     ReportTemplate,
@@ -174,12 +174,15 @@ async def list_templates(
 @readonly()
 async def get_template(
     template_id: str,
+    current_user: TokenData = Depends(get_current_user),
     repo: ReportTemplateRepository = Depends(get_report_template_repository),
     db: AsyncSession = Depends(get_db),
 ):
+    """Read one template. Authenticated, and only within the caller's tenant."""
     template = await repo.get_by_id(ReportTemplateId(template_id))
     if template is None:
         raise HTTPException(status_code=404, detail="Report template not found")
+    assert_same_tenant(current_user, template.tenant_id.value)
     return _to_template_response(template)
 
 
@@ -221,10 +224,18 @@ async def run_template(
 @readonly()
 async def get_run(
     run_id: str,
+    current_user: TokenData = Depends(get_current_user),
     repo: ReportRunRepository = Depends(get_report_run_repository),
     db: AsyncSession = Depends(get_db),
 ):
+    """Read one run and its materialised output.
+
+    Materialising the numbers does not make them public: the parameters and
+    narrative sit inside the same tenant boundary as the figures, so the read is
+    authorised here as well as at run time.
+    """
     run = await GetReportRunUseCase(repo).execute(ReportRunId(run_id))
     if run is None:
         raise HTTPException(status_code=404, detail="Report run not found")
+    assert_same_tenant(current_user, run.tenant_id.value)
     return _to_run_response(run)

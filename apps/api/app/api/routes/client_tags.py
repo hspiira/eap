@@ -24,7 +24,7 @@ from app.application.use_cases.transitions import (
     ClientTagTransition,
     TransitionUseCase,
 )
-from app.core.authorization import require_same_tenant
+from app.core.authorization import assert_same_tenant, require_same_tenant
 from app.core.database import get_db
 from app.core.security import TokenData, get_current_user
 from app.domain.entities.client_tag import ClientTagEntity
@@ -197,6 +197,7 @@ async def list_client_tags(
 @readonly()
 async def get_client_tag(
     tag_id: str,
+    current_user: TokenData = Depends(get_current_user),
     tag_repo: ClientTagRepository = Depends(get_client_tag_repository),
     db: AsyncSession = Depends(get_db),
 ):
@@ -204,6 +205,7 @@ async def get_client_tag(
     tag = await GetClientTagUseCase(tag_repo).execute(ClientTagId(tag_id))
     if not tag:
         raise NotFoundError("Tag not found")
+    assert_same_tenant(current_user, tag.tenant_id.value)
     return _to_client_tag_response(tag)
 
 

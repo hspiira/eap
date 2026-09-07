@@ -136,3 +136,51 @@ def test_transition_calls_bind_to_their_entity_method(route_file: Path):
                 f"({', '.join(keywords)}) -> {exc}"
             )
     assert not failures, "\n".join(failures)
+
+
+# --- Authorization guards must actually run -----------------------------------
+#
+# SEC-02: twelve routes called the async `require_same_tenant` directly in the
+# route body. Python builds the coroutine, nobody awaits it, and the tenant
+# check never runs; the arguments were reversed too, so `await` alone would not
+# have fixed it. A tenant-A Viewer received tenant-B engagements and surveys
+# with 200. The synchronous `assert_same_tenant` is the in-body guard now, and
+# these tests fail the build if the async form comes back outside `Depends`.
+
+ASYNC_AUTH_HELPERS = {"require_same_tenant"}
+
+
+def _bare_calls(path: Path, names: set[str]):
+    """Yield (lineno, name) for calls to `names` that are not inside Depends(...)."""
+    tree = ast.parse(path.read_text())
+    inside_depends = set()
+    for node in ast.walk(tree):
+        if (
+            isinstance(node, ast.Call)
+            and isinstance(node.func, ast.Name)
+            and node.func.id == "Depends"
+        ):
+            for arg in ast.walk(node):
+                inside_depends.add(id(arg))
+    for node in ast.walk(tree):
+        if not (isinstance(node, ast.Call) and isinstance(node.func, ast.Name)):
+            continue
+        if node.func.id in names and id(node) not in inside_depends:
+            yield node.lineno, node.func.id
+
+
+@pytest.mark.parametrize("route_file", ROUTE_FILES, ids=lambda p: p.name)
+def test_async_authorization_helpers_are_only_used_as_dependencies(route_file: Path):
+    offenders = [
+        f"{route_file.name}:{lineno} {name}() is a coroutine; it is only enforced as "
+        f"Depends({name}). Use assert_same_tenant(current_user, tenant_id) in a route body."
+        for lineno, name in _bare_calls(route_file, ASYNC_AUTH_HELPERS)
+    ]
+    assert not offenders, "\n".join(offenders)
+
+
+def test_the_in_body_tenant_guard_stays_synchronous():
+    """`assert_same_tenant` exists to be impossible to forget to await."""
+    from app.core.authorization import assert_same_tenant
+
+    assert not inspect.iscoroutinefunction(assert_same_tenant)

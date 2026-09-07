@@ -491,7 +491,9 @@ async def export_members(
     "/import/template",
     summary="Download the member CSV import template",
 )
-async def member_import_template() -> StreamingResponse:
+async def member_import_template(
+    current_user: TokenData = Depends(get_current_user),
+) -> StreamingResponse:
     """Return the supported member roster columns with one safe example row."""
     output = io.StringIO(newline="")
     writer = csv.writer(output)

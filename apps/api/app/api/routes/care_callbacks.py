@@ -39,7 +39,11 @@ from app.application.use_cases.transitions import (
     OutreachTransition,
     TransitionUseCase,
 )
-from app.core.authorization import require_not_viewer, require_same_tenant
+from app.core.authorization import (
+    assert_same_tenant,
+    require_not_viewer,
+    require_same_tenant,
+)
 from app.core.database import get_db
 from app.core.security import TokenData, get_current_user
 from app.domain.entities.care_callback_campaign import CareCallbackCampaign
@@ -249,12 +253,14 @@ async def update_counsellor_pool(
 @readonly()
 async def get_campaign(
     campaign_id: str,
+    current_user: TokenData = Depends(get_current_user),
     repo: CareCallbackCampaignRepository = Depends(get_care_callback_campaign_repository),
     db: AsyncSession = Depends(get_db),
 ):
     campaign = await repo.get_by_id(CareCallbackCampaignId(campaign_id))
     if campaign is None:
         raise HTTPException(status_code=404, detail="Care Callback campaign not found")
+    assert_same_tenant(current_user, campaign.tenant_id.value)
     return _to_campaign_response(campaign)
 
 
@@ -266,10 +272,15 @@ async def get_campaign(
 @readonly()
 async def campaign_summary(
     campaign_id: str,
+    current_user: TokenData = Depends(get_current_user),
     repo: CareCallbackCampaignRepository = Depends(get_care_callback_campaign_repository),
     outreach_repo: OutreachRecordRepository = Depends(get_outreach_record_repository),
     db: AsyncSession = Depends(get_db),
 ):
+    campaign = await repo.get_by_id(CareCallbackCampaignId(campaign_id))
+    if campaign is None:
+        raise HTTPException(status_code=404, detail="Care Callback campaign not found")
+    assert_same_tenant(current_user, campaign.tenant_id.value)
     summary = await GetCampaignSummaryUseCase(repo, outreach_repo).execute(
         CareCallbackCampaignId(campaign_id)
     )
@@ -316,6 +327,7 @@ async def enrol_members(
     campaign = await campaign_repo.get_by_id(CareCallbackCampaignId(campaign_id))
     if campaign is None:
         raise HTTPException(status_code=404, detail="Care Callback campaign not found")
+    assert_same_tenant(current_user, campaign.tenant_id.value)
     member_ids = [EligibleMemberId(p) for p in data.member_ids]
     for member_id in member_ids:
         member = await member_repo.get_by_id(member_id)
@@ -625,12 +637,14 @@ async def escalate_outreach(
 @readonly()
 async def get_outreach(
     outreach_id: str,
+    current_user: TokenData = Depends(get_current_user),
     repo: OutreachRecordRepository = Depends(get_outreach_record_repository),
     db: AsyncSession = Depends(get_db),
 ):
     record = await repo.get_by_id(OutreachRecordId(outreach_id))
     if record is None:
         raise HTTPException(status_code=404, detail="Outreach record not found")
+    assert_same_tenant(current_user, record.tenant_id.value)
     return _to_outreach_response(record)
 
 
@@ -643,6 +657,7 @@ async def get_outreach(
 async def list_campaign_outreach(
     campaign_id: str,
     pg: PageParams = Depends(pagination(default_limit=50, max_limit=200)),
+    current_user: TokenData = Depends(get_current_user),
     campaign_repo: CareCallbackCampaignRepository = Depends(get_care_callback_campaign_repository),
     outreach_repo: OutreachRecordRepository = Depends(get_outreach_record_repository),
     db: AsyncSession = Depends(get_db),
@@ -650,6 +665,7 @@ async def list_campaign_outreach(
     campaign = await campaign_repo.get_by_id(CareCallbackCampaignId(campaign_id))
     if campaign is None:
         raise HTTPException(status_code=404, detail="Care Callback campaign not found")
+    assert_same_tenant(current_user, campaign.tenant_id.value)
     records = await outreach_repo.list_for_campaign(
         campaign.tenant_id,
         campaign.id,

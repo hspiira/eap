@@ -22,7 +22,7 @@ from app.application.use_cases.activity_use_cases import (
     GetActivityUseCase,
     UpdateActivityUseCase,
 )
-from app.core.authorization import require_same_tenant
+from app.core.authorization import assert_same_tenant, require_same_tenant
 from app.core.database import get_db
 from app.core.security import TokenData, get_current_user
 from app.domain.entities.activity import ActivityEntity
@@ -180,6 +180,7 @@ async def list_activities(
 @readonly()
 async def get_activity(
     activity_id: str,
+    current_user: TokenData = Depends(get_current_user),
     activity_repo: ActivityRepository = Depends(get_activity_repository),
     db: AsyncSession = Depends(get_db),
 ):
@@ -187,6 +188,7 @@ async def get_activity(
     activity = await GetActivityUseCase(activity_repo).execute(ActivityId(activity_id))
     if not activity:
         raise NotFoundError("Activity not found")
+    assert_same_tenant(current_user, activity.tenant_id.value)
     return _to_activity_response(activity)
 
 

@@ -24,7 +24,7 @@ from app.application.use_cases.transitions import (
     ContactTransition,
     TransitionUseCase,
 )
-from app.core.authorization import require_same_tenant
+from app.core.authorization import assert_same_tenant, require_same_tenant
 from app.core.database import get_db
 from app.core.security import TokenData, get_current_user
 from app.domain.entities.contact import ContactEntity
@@ -261,6 +261,7 @@ async def get_primary_contact(
 @readonly()
 async def get_contact(
     contact_id: str,
+    current_user: TokenData = Depends(get_current_user),
     contact_repo: ContactRepository = Depends(get_contact_repository),
     db: AsyncSession = Depends(get_db),
 ):
@@ -268,4 +269,5 @@ async def get_contact(
     contact = await GetContactUseCase(contact_repo).execute(ContactId(contact_id))
     if not contact:
         raise NotFoundError("Contact not found")
+    assert_same_tenant(current_user, contact.tenant_id.value)
     return _to_contact_response(contact)

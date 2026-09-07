@@ -28,7 +28,7 @@ from app.application.use_cases.transitions import (
     EngagementTransition,
     TransitionUseCase,
 )
-from app.core.authorization import require_same_tenant
+from app.core.authorization import assert_same_tenant
 from app.core.database import get_db
 from app.core.security import TokenData, get_current_user
 from app.domain.entities.engagement import Deliverable, Engagement, HoursLogEntry
@@ -150,7 +150,7 @@ async def get_engagement(
     e = await repo.get_by_id(EngagementId(engagement_id))
     if e is None:
         raise HTTPException(status_code=404, detail="Engagement not found")
-    require_same_tenant(current_user, e.tenant_id.value)
+    assert_same_tenant(current_user, e.tenant_id.value)
     return _to_engagement_response(e)
 
 
@@ -169,7 +169,7 @@ async def get_engagement_summary(
     e = await repo.get_by_id(EngagementId(engagement_id))
     if e is None:
         raise HTTPException(status_code=404, detail="Engagement not found")
-    require_same_tenant(current_user, e.tenant_id.value)
+    assert_same_tenant(current_user, e.tenant_id.value)
     return EngagementSummaryResponse(
         **await GetEngagementSummaryUseCase(repo).execute(EngagementId(engagement_id))
     )

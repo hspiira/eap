@@ -15672,6 +15672,11 @@
             "description": "Validation Error"
           }
         },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
         "summary": "Get activity by ID",
         "tags": [
           "activities"
@@ -16972,6 +16977,11 @@
             "description": "Validation Error"
           }
         },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
         "summary": "Get a campaign",
         "tags": [
           "care-callbacks"
@@ -17304,6 +17314,11 @@
             "description": "Validation Error"
           }
         },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
         "summary": "List outreach records for a campaign",
         "tags": [
           "care-callbacks"
@@ -17346,6 +17361,11 @@
             "description": "Validation Error"
           }
         },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
         "summary": "Aggregated outreach status / triage / crisis stats for the campaign",
         "tags": [
           "care-callbacks"
@@ -18068,6 +18088,11 @@
             "description": "Validation Error"
           }
         },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
         "summary": "Get client tag by ID",
         "tags": [
           "client-tags"
@@ -19137,6 +19162,11 @@
             "description": "Successful Response"
           }
         },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
         "summary": "Download the client CSV import template",
         "tags": [
           "clients"
@@ -20979,6 +21009,11 @@
             "description": "Validation Error"
           }
         },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
         "summary": "Get contact by ID",
         "tags": [
           "contacts"
@@ -26229,6 +26264,11 @@
             "description": "Validation Error"
           }
         },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
         "summary": "Get KPI assignment by ID",
         "tags": [
           "kpis"
@@ -26650,6 +26690,11 @@
             "description": "Validation Error"
           }
         },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
         "summary": "Get KPI by ID",
         "tags": [
           "kpis"
@@ -27272,6 +27317,11 @@
             "description": "Successful Response"
           }
         },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
         "summary": "Download the member CSV import template",
         "tags": [
           "members"
@@ -28338,6 +28388,11 @@
             "description": "Validation Error"
           }
         },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
         "summary": "Get an outreach record",
         "tags": [
           "care-callbacks"
@@ -30883,6 +30938,7 @@
     },
     "/reports/runs/{run_id}": {
       "get": {
+        "description": "Read one run and its materialised output.\n\nMaterialising the numbers does not make them public: the parameters and\nnarrative sit inside the same tenant boundary as the figures, so the read is\nauthorised here as well as at run time.",
         "operationId": "get_run_reports_runs__run_id__get",
         "parameters": [
           {
@@ -30917,6 +30973,11 @@
             "description": "Validation Error"
           }
         },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
         "summary": "Get a single report run (with materialised output)",
         "tags": [
           "reports"
@@ -31106,6 +31167,7 @@
     },
     "/reports/templates/{template_id}": {
       "get": {
+        "description": "Read one template. Authenticated, and only within the caller's tenant.",
         "operationId": "get_template_reports_templates__template_id__get",
         "parameters": [
           {
@@ -31140,6 +31202,11 @@
             "description": "Validation Error"
           }
         },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
         "summary": "Get a report template by ID",
         "tags": [
           "reports"
@@ -31624,6 +31691,11 @@
             "description": "Validation Error"
           }
         },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
         "summary": "Get service assignment by ID",
         "tags": [
           "service-assignments"

@@ -25,7 +25,7 @@ from app.application.use_cases.case_use_cases import (
     OpenCaseUseCase,
     ReferOutCaseUseCase,
 )
-from app.core.authorization import require_clinical_scope, require_same_tenant
+from app.core.authorization import assert_same_tenant, require_clinical_scope
 from app.core.database import get_db
 from app.core.security import TokenData
 from app.domain.entities.case import Case
@@ -139,7 +139,7 @@ async def get_case(
     case = await case_repo.get_by_id(CaseId(case_id))
     if case is None:
         raise HTTPException(status_code=404, detail="Case not found")
-    require_same_tenant(current_user, case.tenant_id.value)
+    assert_same_tenant(current_user, case.tenant_id.value)
     return _to_response(case)
 
 

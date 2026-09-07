@@ -38,7 +38,7 @@ from app.application.use_cases.transitions import (
     KPITransition,
     TransitionUseCase,
 )
-from app.core.authorization import require_same_tenant
+from app.core.authorization import assert_same_tenant, require_same_tenant
 from app.core.database import get_db
 from app.core.security import TokenData, get_current_user
 from app.domain.entities.kpi import KPIAssignmentEntity, KPIEntity
@@ -274,6 +274,7 @@ async def check_kpi_name_availability(
 @readonly()
 async def get_kpi(
     kpi_id: str,
+    current_user: TokenData = Depends(get_current_user),
     kpi_repo: KPIRepository = Depends(get_kpi_repository),
     db: AsyncSession = Depends(get_db),
 ):
@@ -281,6 +282,7 @@ async def get_kpi(
     kpi = await GetKPIUseCase(kpi_repo).execute(KPIId(kpi_id))
     if not kpi:
         raise NotFoundError("KPI not found")
+    assert_same_tenant(current_user, kpi.tenant_id.value)
     return _to_kpi_response(kpi)
 
 
@@ -447,6 +449,7 @@ async def list_kpi_assignments(
 @readonly()
 async def get_kpi_assignment(
     assignment_id: str,
+    current_user: TokenData = Depends(get_current_user),
     assignment_repo: KPIAssignmentRepository = Depends(get_kpi_assignment_repository),
     db: AsyncSession = Depends(get_db),
 ):
@@ -456,6 +459,7 @@ async def get_kpi_assignment(
     )
     if not assignment:
         raise NotFoundError("KPI assignment not found")
+    assert_same_tenant(current_user, assignment.tenant_id.value)
     return _to_kpi_assignment_response(assignment)
 
 

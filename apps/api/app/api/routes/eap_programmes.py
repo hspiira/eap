@@ -24,7 +24,7 @@ from app.application.use_cases.eap_programme_use_cases import (
     GrantAuthorizationExtensionUseCase,
     RequestAuthorizationExtensionUseCase,
 )
-from app.core.authorization import require_clinical_scope, require_same_tenant
+from app.core.authorization import assert_same_tenant, require_clinical_scope
 from app.core.database import get_db
 from app.core.security import TokenData
 from app.domain.entities.authorization import Authorization
@@ -161,7 +161,7 @@ async def get_programme(
     p = await repo.get_by_id(EAPProgrammeId(programme_id))
     if p is None:
         raise HTTPException(status_code=404, detail="Programme not found")
-    require_same_tenant(current_user, p.tenant_id.value)
+    assert_same_tenant(current_user, p.tenant_id.value)
     return _to_programme(p)
 
 
