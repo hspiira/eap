@@ -134,7 +134,7 @@ class PractitionerImportRowEntity:
     outcome: PractitionerImportOutcome
     created_at: datetime
     reasons: tuple[str, ...] = ()
-    provenance: dict = field(default_factory=dict)
+    provenance: dict[str, str | None] = field(default_factory=dict[str, str | None])
     imported_provider_id: str | None = None
     imported_organisation_id: str | None = None
     imported_affiliation_id: str | None = None

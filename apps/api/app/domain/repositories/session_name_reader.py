@@ -17,10 +17,10 @@ from app.domain.value_objects.core import TenantId
 class SessionNames:
     """Display names keyed by id. Unresolved ids are absent, never None."""
 
-    clients: dict[str, str] = field(default_factory=dict)
-    members: dict[str, str] = field(default_factory=dict)
-    providers: dict[str, str] = field(default_factory=dict)
-    services: dict[str, str] = field(default_factory=dict)
+    clients: dict[str, str] = field(default_factory=dict[str, str])
+    members: dict[str, str] = field(default_factory=dict[str, str])
+    providers: dict[str, str] = field(default_factory=dict[str, str])
+    services: dict[str, str] = field(default_factory=dict[str, str])
 
 
 class SessionNameReader(ABC):
