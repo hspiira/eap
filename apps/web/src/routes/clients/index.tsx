@@ -15,6 +15,7 @@ import {
   MoreHorizontal,
   Plus,
   ScanSearch,
+  Tag,
 } from "lucide-react"
 
 import { clientTagsApi } from "@/api/endpoints/client-tags"
@@ -26,6 +27,7 @@ import {
 import { ClientFormSheet } from "@/components/clients/ClientFormSheet"
 import { ClientImportDialog } from "@/components/clients/ClientImportDialog"
 import { BulkAction } from "@/components/common/BulkAction"
+import { BulkActionButton } from "@/components/common/BulkActionButton"
 import { BulkActionWithReason } from "@/components/common/BulkActionWithReason"
 import { ConfirmDialog } from "@/components/common/ConfirmDialog"
 import { EmptyState } from "@/components/common/EmptyState"
@@ -579,11 +581,10 @@ function ClientsListPage() {
                     ))}
                   </SelectContent>
                 </Select>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  className="h-7 px-2.5"
+                <BulkActionButton
+                  label="Apply tag"
+                  icon={Tag}
+                  running={false}
                   disabled={!bulkTagId}
                   onClick={() => {
                     void clientsApi
@@ -597,24 +598,18 @@ function ClientsListPage() {
                         toast.showError(normalizeErrorMessage(err, "Could not apply tag")),
                       )
                   }}
-                >
-                  Apply tag
-                </Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  className="h-7 px-2.5"
+                />
+                <BulkActionButton
+                  label="Export selected"
+                  icon={Download}
+                  running={false}
                   onClick={() =>
                     void download(
                       clientsApi.exportSelected([...selection.selectedIds]),
                       "selected-clients.csv",
                     )
                   }
-                >
-                  <Download className="mr-1.5 size-3.5" />
-                  Export selected
-                </Button>
+                />
               </>
             ) : null}
             {canArchive ? (

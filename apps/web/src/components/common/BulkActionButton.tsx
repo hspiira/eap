@@ -9,6 +9,8 @@ interface BulkActionButtonProps {
   icon: LucideIcon
   destructive?: boolean
   running: boolean
+  /** Disabled for a reason other than an in-flight run, e.g. an incomplete input. */
+  disabled?: boolean
   onClick: () => void
 }
 
@@ -27,6 +29,7 @@ export function BulkActionButton({
   icon: Icon,
   destructive,
   running,
+  disabled,
   onClick,
 }: BulkActionButtonProps) {
   return (
@@ -42,7 +45,7 @@ export function BulkActionButton({
               "size-7 p-0 text-fg/70",
               destructive && "text-destructive/80 hover:bg-destructive/10 hover:text-destructive",
             )}
-            disabled={running}
+            disabled={running || disabled}
             onClick={onClick}
           >
             <Icon className="size-3.5" aria-hidden />

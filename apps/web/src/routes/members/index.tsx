@@ -10,6 +10,7 @@ import {
   ExternalLink,
   FileDown,
   FileUp,
+  Merge,
   MoreHorizontal,
   Plus,
   ScanSearch,
@@ -19,6 +20,7 @@ import {
 
 import { type MemberDuplicateCandidate, membersApi } from "@/api/endpoints/members"
 import { BulkAction } from "@/components/common/BulkAction"
+import { BulkActionButton } from "@/components/common/BulkActionButton"
 import { EmptyState } from "@/components/common/EmptyState"
 import { EntityListView, type ListColumn } from "@/components/common/EntityListView"
 import { FilterBar, FilterChip, FilterSearch, FilterTrigger } from "@/components/common/FilterBar"
@@ -352,15 +354,13 @@ function MembersListPage() {
         toolbar={
           <SelectionBar count={selection.selectedIds.size} onClear={selection.clearSelection}>
             {role === "Admin" && mergePair ? (
-              <Button
-                type="button"
-                variant="destructive"
-                size="sm"
-                className="h-7 rounded-none px-2.5"
+              <BulkActionButton
+                label="Merge selected"
+                icon={Merge}
+                destructive
+                running={false}
                 onClick={() => setMergeOpen(true)}
-              >
-                Merge selected
-              </Button>
+              />
             ) : null}
             <BulkAction
               ids={selection.selectedIds}
@@ -404,21 +404,17 @@ function MembersListPage() {
               labelFor={(id) => mergeMembers.find((m) => m.id === id)?.display_label ?? id}
               onDone={selection.clearSelection}
             />
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              className="h-7 rounded-none px-2.5"
+            <BulkActionButton
+              label="Export selected"
+              icon={Download}
+              running={false}
               onClick={() =>
                 void download(
                   membersApi.exportCsv({ member_ids: [...selection.selectedIds] }),
                   "selected-members.csv",
                 )
               }
-            >
-              <Download className="mr-1.5 size-3.5" />
-              Export selected
-            </Button>
+            />
           </SelectionBar>
         }
       />
