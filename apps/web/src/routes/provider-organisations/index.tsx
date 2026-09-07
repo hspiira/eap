@@ -14,6 +14,7 @@ import { PageShell } from "@/components/common/PageShell"
 import { StatusBadge } from "@/components/common/StatusBadge"
 import { ROW_BORDER } from "@/components/common/tableStyles"
 import { ProviderOrganisationFormSheet } from "@/components/providers/ProviderOrganisationFormSheet"
+import { ProviderSectionTabs } from "@/components/providers/ProviderSectionTabs"
 import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
@@ -76,7 +77,8 @@ function ProviderOrganisationsListPage() {
   return (
     <PageShell
       icon={Building}
-      breadcrumb="Provider organisations"
+      trail={[{ label: "Providers" }]}
+      title="Organisations"
       actions={
         canWrite ? (
           <Button
@@ -90,6 +92,8 @@ function ProviderOrganisationsListPage() {
         ) : null
       }
     >
+      <ProviderSectionTabs />
+
       <FilterBar>
         {searchParams.approval_status ? (
           <FilterChip

@@ -138,7 +138,7 @@ function ProviderOrganisationDetailPage() {
   return (
     <PageShell
       icon={Building}
-      trail={[{ label: "Provider organisations", to: "/provider-organisations" }]}
+      trail={[{ label: "Providers", to: "/provider-organisations" }]}
       title={organisation.name}
       actions={
         canWrite ? (

@@ -292,12 +292,28 @@ Grouping the related directories under Providers is a design judgment intended
 to improve discoverability and reduce sidebar clutter. No navigation usability
 study or usage-frequency measurement has been performed.
 
-Status: navigation policy adopted; frontend implementation and browser
-verification pending. This clarifies presentation without reopening entity or
-affiliation decisions. Frontend follow-up must preserve existing deep links,
-show Providers as active on both route families, and provide usable tab state
-and back navigation on list and detail pages. Do not add a third landing page
-that merely asks users to choose a directory.
+Status: navigation policy adopted; frontend implemented 2026-09-07, browser
+verification still pending. This clarifies presentation without reopening
+entity or affiliation decisions. Frontend follow-up must preserve existing deep
+links, show Providers as active on both route families, and provide usable tab
+state and back navigation on list and detail pages. Do not add a third landing
+page that merely asks users to choose a directory.
+
+Implemented: the sidebar now shows one `Providers` entry
+(`apps/web/src/components/AppSidebar.tsx:77`, `matchPrefixes: ["/providers",
+"/provider-organisations"]`) highlighted active on both route families. A new
+`ProviderSectionTabs` component (`apps/web/src/components/providers/ProviderSectionTabs.tsx`)
+renders Practitioners/Organisations tabs on both list pages
+(`apps/web/src/routes/providers/index.tsx`,
+`apps/web/src/routes/provider-organisations/index.tsx`); Practitioners remains
+the default landing route. Existing routes, list/detail pages, forms,
+permissions and API resources are unchanged; only navigation chrome and
+breadcrumb trail labels moved to say "Providers". `pnpm typecheck`, `pnpm lint`
+and the existing `AppSidebar.test.tsx` / `providers-list.test.tsx` suites pass
+against this change. Not done: an authenticated browser click-through of the
+new tabs (no live-tenant session was available to this agent; a static
+DOM/CSS reproduction was used to sand-check layout only, which is not a
+substitute for driving the real app).
 
 ### 2. Preserve the delivery context on each session
 

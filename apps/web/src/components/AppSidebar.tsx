@@ -3,7 +3,6 @@ import {
   Activity,
   BarChart3,
   Briefcase,
-  Building,
   Building2,
   Calendar,
   ClipboardCheck,
@@ -55,6 +54,12 @@ type NavItem = {
   platformAdmin?: boolean
   /** Requires the Clinical access scope, hidden entirely otherwise (privacy wall). */
   clinicalScope?: boolean
+  /**
+   * Extra path prefixes that also count as this item being active, for a
+   * module whose pages live under more than one route family. Defaults to
+   * `[to]`.
+   */
+  matchPrefixes?: readonly string[]
 }
 
 /** Quick-access items: always visible at the top, no label. */
@@ -65,8 +70,12 @@ const MAIN_ITEMS: ReadonlyArray<NavItem> = [
   { to: "/clients", label: "Clients", icon: Building2 },
   { to: "/members", label: "Members", icon: Users },
   { to: "/contacts", label: "Contacts", icon: Users, flag: "contacts" },
-  { to: "/providers", label: "Practitioners", icon: UserRound },
-  { to: "/provider-organisations", label: "Provider Orgs", icon: Building },
+  {
+    to: "/providers",
+    label: "Providers",
+    icon: UserRound,
+    matchPrefixes: ["/providers", "/provider-organisations"],
+  },
   { to: "/service-sessions", label: "Sessions", icon: Calendar },
   { to: "/cases", label: "Cases", icon: HeartPulse, clinicalScope: true },
   { to: "/care-callbacks", label: "Campaigns", icon: PhoneCall, comingSoon: "campaigns" },
@@ -124,11 +133,17 @@ function toProperCase(s: string): string {
  * Won't prefix-match when another nav item is an exact match for the current
  * path. Prevents /care-callbacks being active while on /care-callbacks/worklist.
  */
-function resolveActive(pathname: string, to: string, allTos: readonly string[]): boolean {
+function matchesPrefix(pathname: string, to: string, allTos: readonly string[]): boolean {
   if (to === "/") return pathname === "/"
   if (pathname === to) return true
   if (allTos.some((p) => p !== to && p === pathname)) return false
   return pathname.startsWith(to + "/")
+}
+
+/** An item is active if the path matches its own route or any extra prefix it owns. */
+function resolveActive(pathname: string, item: NavItem, allTos: readonly string[]): boolean {
+  const prefixes = item.matchPrefixes ?? [item.to]
+  return prefixes.some((to) => matchesPrefix(pathname, to, allTos))
 }
 
 function useTenantDisplayName(): string {
@@ -211,8 +226,8 @@ function ExpandedSidebar() {
   const settingsItems = SETTINGS_ITEMS.filter((i) =>
     isItemEnabled(i, isPlatformAdmin, hasClinicalScope),
   )
-  const allTos = [...TOP_ITEMS, ...mainItems, ...settingsItems].map((i) => i.to)
-  const active = (to: string) => resolveActive(pathname, to, allTos)
+  const allTos = [...TOP_ITEMS, ...mainItems, ...settingsItems].flatMap((i) => i.matchPrefixes ?? [i.to])
+  const active = (item: NavItem) => resolveActive(pathname, item, allTos)
 
   return (
     <>
@@ -222,7 +237,7 @@ function ExpandedSidebar() {
         <SidebarGroup className="gap-0">
           <SidebarMenu>
             {TOP_ITEMS.map((item) => (
-              <NavItem key={item.label} {...item} isActive={active(item.to)} />
+              <NavItem key={item.label} {...item} isActive={active(item)} />
             ))}
           </SidebarMenu>
         </SidebarGroup>
@@ -234,7 +249,7 @@ function ExpandedSidebar() {
             <SidebarGroup className="gap-0">
               <SidebarMenu>
                 {mainItems.map((item) => (
-                  <NavItem key={item.label} {...item} isActive={active(item.to)} />
+                  <NavItem key={item.label} {...item} isActive={active(item)} />
                 ))}
               </SidebarMenu>
             </SidebarGroup>
@@ -251,7 +266,7 @@ function ExpandedSidebar() {
               </p>
               <SidebarMenu>
                 {settingsItems.map((item) => (
-                  <NavItem key={item.label} {...item} isActive={active(item.to)} />
+                  <NavItem key={item.label} {...item} isActive={active(item)} />
                 ))}
               </SidebarMenu>
             </SidebarGroup>
@@ -367,8 +382,8 @@ function CollapsedSidebar() {
   const settingsItems = SETTINGS_ITEMS.filter((i) =>
     isItemEnabled(i, isPlatformAdmin, hasClinicalScope),
   )
-  const allTos = [...TOP_ITEMS, ...mainItems, ...settingsItems].map((i) => i.to)
-  const active = (to: string) => resolveActive(pathname, to, allTos)
+  const allTos = [...TOP_ITEMS, ...mainItems, ...settingsItems].flatMap((i) => i.matchPrefixes ?? [i.to])
+  const active = (item: NavItem) => resolveActive(pathname, item, allTos)
 
   return (
     <TooltipProvider delayDuration={150} skipDelayDuration={300}>
@@ -376,13 +391,13 @@ function CollapsedSidebar() {
       <SidebarContent className="items-stretch gap-0.5 px-1.5 py-1">
         <div className="flex flex-col">
           {TOP_ITEMS.map((item) => (
-            <CollapsedNavLink key={item.label} {...item} isActive={active(item.to)} />
+            <CollapsedNavLink key={item.label} {...item} isActive={active(item)} />
           ))}
         </div>
         <div className="mx-2 h-px bg-border" role="separator" />
         <div className="flex flex-col">
           {mainItems.map((item) => (
-            <CollapsedNavLink key={item.label} {...item} isActive={active(item.to)} />
+            <CollapsedNavLink key={item.label} {...item} isActive={active(item)} />
           ))}
         </div>
         {settingsItems.length > 0 && (
@@ -390,7 +405,7 @@ function CollapsedSidebar() {
             <div className="mx-2 h-px bg-border" role="separator" />
             <div className="flex flex-col">
               {settingsItems.map((item) => (
-                <CollapsedNavLink key={item.label} {...item} isActive={active(item.to)} />
+                <CollapsedNavLink key={item.label} {...item} isActive={active(item)} />
               ))}
             </div>
           </>
