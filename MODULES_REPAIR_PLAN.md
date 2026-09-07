@@ -666,6 +666,33 @@ Keep unchecked items open until their stated acceptance checks pass.
   - [ ] Mark implemented, tested and deployed separately. A hidden navigation item
         or a passing mock test is not evidence of endpoint safety or deployment.
 
+## Scope rule: paused modules are out of scope until they are reopened
+
+Set 2026-09-07 by the user. `apps/web/src/lib/featureFlags.ts` flags these off
+by default: **contacts, audit, activities, kpis, documents, surveys, campaigns,
+worklist, engagements**. Do not repair their workflows, contracts or UI under
+this plan. Wait until the product owner reopens a module, then take its
+findings as one backend-and-frontend slice, which is what decision 9 already
+asks for.
+
+This retires the following from the active work list for now: API-01, SUR-01,
+ENG-01 and AUD-01 (surveys and engagements), and the survey half of PRIV-01 and
+DATA-01. `6765d1f` implemented API-01 and AUD-01 and was reverted by `f7e07c1`;
+cherry-pick it when those modules reopen, and finish its verification then, as
+it was stopped part-way through its own test run.
+
+**Security findings are the exception and stay in scope.** A flag hides a nav
+entry; it does not unmount the API. Every route of a paused module is still
+reachable by anyone who knows its path, which is precisely how SEC-01 found
+care-callback campaigns, outreach records, contacts, KPIs and activities
+readable with no credentials. SEC-01 through SEC-04 therefore apply to paused
+modules and are not reverted.
+
+Still in scope: REP-01 and REP-02 (reports is not flagged), and VERIFY-01.
+CASE-01 (cases), INC-01 (critical incidents) and BILL-01 (contracts/pricing)
+are not flagged either; confirm with the product owner before starting them,
+since this plan's phases assumed a different order.
+
 ## Active ownership (read before editing any file named here)
 
 Claimed 2026-09-07. Update this block when a stream is picked up or released;
