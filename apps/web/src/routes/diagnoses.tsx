@@ -328,6 +328,9 @@ function TypeRow({
           label={type.name}
         />
       </div>
+      {/* Outside the toggle button: a paragraph inside a control is read out
+          on every focus and makes the row's accessible name unusable. */}
+      {type.description ? <RowDescription text={type.description} indent="pl-10" /> : null}
       {expanded && (
         <div className="bg-surface">{type.diagnoses.map((d, i) => renderChild(d, i))}</div>
       )}
@@ -359,29 +362,36 @@ function DiagnosisRow({
   isLast: boolean
 }) {
   return (
-    <div
-      className={`flex items-center gap-2 border-t border-safe/10 py-2 pl-12 pr-4 ${
-        hidden ? "opacity-50" : ""
-      }`}
-    >
-      <span className="flex-1">
-        {localLabel ?? diagnosis.name}
-        {localLabel && <RelabelBadge original={diagnosis.name} />}
-      </span>
-      <span className="text-sm text-safe">{diagnosis.code}</span>
-      <RowActions
-        hidden={hidden}
-        canManage={canManage}
-        canOverlay={canOverlay}
-        onEdit={onEdit}
-        onSetVisible={onSetVisible}
-        onMove={onMove}
-        isFirst={isFirst}
-        isLast={isLast}
-        label={diagnosis.name}
-      />
+    <div className={`border-t border-safe/10 ${hidden ? "opacity-50" : ""}`}>
+      <div className="flex items-center gap-2 py-2 pl-12 pr-4">
+        <span className="flex-1">
+          {localLabel ?? diagnosis.name}
+          {localLabel && <RelabelBadge original={diagnosis.name} />}
+        </span>
+        <span className="text-sm text-safe">{diagnosis.code}</span>
+        <RowActions
+          hidden={hidden}
+          canManage={canManage}
+          canOverlay={canOverlay}
+          onEdit={onEdit}
+          onSetVisible={onSetVisible}
+          onMove={onMove}
+          isFirst={isFirst}
+          isLast={isLast}
+          label={diagnosis.name}
+        />
+      </div>
+      {diagnosis.description ? (
+        <RowDescription text={diagnosis.description} indent="pl-12" />
+      ) : null}
     </div>
   )
+}
+
+/** The clinical definition of a row, shown so the tree is readable and not
+ *  only editable. */
+function RowDescription({ text, indent }: { text: string; indent: string }) {
+  return <p className={`${indent} pb-2.5 pr-4 text-sm text-safe`}>{text}</p>
 }
 
 function RelabelBadge({ original }: { original: string }) {

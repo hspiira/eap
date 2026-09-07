@@ -7,7 +7,7 @@ catalogue and diagnosis taxonomy in `TAXONOMY_CATALOGUE.md`. Opened
 Each item carries the evidence that established it. Strike an item through when
 it lands and record the commit. Do not remove one without being asked.
 
-Status: 2 of 11 done, 9 open.
+Status: 3 of 11 done, 8 open.
 
 ## Priority order
 
@@ -18,7 +18,7 @@ cited elsewhere.
 | --- | --- | --- | --- |
 | 1 | ~~The taxonomy's versioning contract is not implemented~~ | Correctness | Done |
 | 2 | ~~A diagnosis cannot be moved between types through the API~~ | Missing capability | Done |
-| 3 | Diagnosis descriptions are writable but never displayed | Product gap | Open |
+| 3 | ~~Diagnosis descriptions are writable but never displayed~~ | Product gap | Done |
 | 4 | `ServiceCategory` cannot classify 13 of 20 services | Schema, needs product decision | Open |
 | 5 | `data/seed_data.json` cannot load against the current schema | Broken dev path | Open |
 | 6 | Three visit services duplicate `service_sessions.location` | Redundancy | Open |
@@ -124,7 +124,7 @@ practitioner work regenerates `apps/api/schema/openapi.json` and
 `apps/web/src/api/generated/schema.ts`, which will then also carry
 `DiagnosisUpdate.type_id`.
 
-## 3. Diagnosis descriptions are writable but never displayed
+## 3. ~~Diagnosis descriptions are writable but never displayed~~
 
 `apps/web/src/components/DiagnosisFormSheet.tsx:29-41` and `:109` create and
 edit `description`, and the API returns it on `DiagnosisResponse`
@@ -134,8 +134,32 @@ edit `description`, and the API returns it on `DiagnosisResponse`
 
 The catalogue supplies a description for all 124 rows. They land in the
 database and are invisible at the point a counsellor selects a diagnosis, which
-is the only place they change recording quality. Cheapest useful fix in this
-list: surface it in the selector and on the tree row.
+is the only place they change recording quality.
+
+**Landed.** Two surfaces, and the description was already on the web types
+(`delivery.ts:111`, `:120`), so no contract change was needed.
+
+- `DiagnosisSelector`: a new `DiagnosisOptionLabel` renders code, name and the
+  description clamped to two lines. It replaces markup that was duplicated
+  between the flat search list and the grouped list, so the description was
+  added in one place rather than two. The full text sits under the trigger once
+  a diagnosis is selected: clamped is for picking, full is for confirming.
+- `/diagnoses`: the definition renders under each type and diagnosis row,
+  outside the toggle button. A paragraph inside a control is read out on every
+  focus and makes the row's accessible name unusable.
+
+Verified by 3 tests in `src/routes/diagnoses.test.tsx` and 3 in
+`src/components/common/DiagnosisSelector.test.tsx`, each pair covering the type
+row, the child row, and a row with no description rendering no placeholder. One
+fixture diagnosis gained a description, since `diagnoses-fixture.ts` gave them
+to types only and the selector tests read the fixture.
+
+Search still matches code and name only. Matching inside a paragraph-length
+description would return leaves whose label has nothing to do with the query;
+that is a behaviour change, not a display fix, and is not part of this item.
+
+Two stale claims corrected while in the file: the selector's docstring
+described the type groups as ICD-10 categories, which the taxonomy is not.
 
 ## 4. `ServiceCategory` cannot classify 13 of 20 services
 

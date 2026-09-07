@@ -1,9 +1,14 @@
 /**
  * Two-level diagnosis combobox.
  *
- * Default view: collapsible type groups (ICD-10 categories) with diagnoses nested
- * within. Search mode (≥2 chars): flat list filtered by code or name across all
- * types. Recently-used codes pinned at the top (up to 5, persisted in localStorage).
+ * Default view: collapsible type groups with diagnoses nested within. Search
+ * mode (≥2 chars): flat list filtered by code or name across all types.
+ * Recently-used codes pinned at the top (up to 5, persisted in localStorage).
+ *
+ * Each option carries its description, clamped in the list and in full under
+ * the trigger once selected. Search matches code and name only: descriptions
+ * run to a paragraph and matching inside them would return leaves whose label
+ * has nothing to do with the query.
  *
  * Props are a controlled input: `value` is the selected diagnosis id; `onChange`
  * fires with (id, diagnosis). Pass null to clear.
@@ -131,6 +136,12 @@ export function DiagnosisSelector({
         <ChevronDown className="h-4 w-4 shrink-0 text-fg/60" />
       </Button>
 
+      {/* Full text once chosen: the clamped hint in the list is for picking,
+          this is for confirming the choice was right. */}
+      {!open && selectedDiagnosis?.description ? (
+        <p className="mt-1.5 text-xs text-fg/60">{selectedDiagnosis.description}</p>
+      ) : null}
+
       {open && (
         <div
           className="absolute z-20 mt-1 max-h-80 w-full overflow-auto rounded-sm border border-fg/15 bg-bg shadow-lg"
@@ -194,6 +205,30 @@ export function DiagnosisSelector({
   )
 }
 
+/**
+ * One option's label: code, name, and the first lines of its description.
+ *
+ * The description is what distinguishes leaves that read alike, so it belongs
+ * in the list rather than only in the admin form. Clamped to two lines because
+ * the definitions run to a paragraph and the list has to stay scannable; the
+ * full text appears under the trigger once a diagnosis is chosen.
+ */
+function DiagnosisOptionLabel({ diagnosis }: { diagnosis: Diagnosis }) {
+  return (
+    <span className="min-w-0 flex-1">
+      <span className="block">
+        <span className="font-medium">{diagnosis.code}</span>
+        <span className="ml-1 text-fg/80">- {diagnosis.name}</span>
+      </span>
+      {diagnosis.description ? (
+        <span className="mt-0.5 block text-xs text-fg/60 line-clamp-2">
+          {diagnosis.description}
+        </span>
+      ) : null}
+    </span>
+  )
+}
+
 function DiagnosisList({
   diagnoses,
   selectedId,
@@ -223,10 +258,7 @@ function DiagnosisList({
             <span className="mt-0.5 inline-flex h-4 w-4 shrink-0 items-center justify-center">
               {d.id === selectedId ? <Check className="h-4 w-4 text-primary" /> : null}
             </span>
-            <span className="min-w-0 flex-1">
-              <span className="font-medium">{d.code}</span>
-              <span className="ml-1 text-fg/80">- {d.name}</span>
-            </span>
+            <DiagnosisOptionLabel diagnosis={d} />
           </Button>
         </li>
       ))}
@@ -288,10 +320,7 @@ function TypeGroupList({
                       <span className="mt-0.5 inline-flex h-4 w-4 shrink-0 items-center justify-center">
                         {d.id === selectedId ? <Check className="h-4 w-4 text-primary" /> : null}
                       </span>
-                      <span className="min-w-0 flex-1">
-                        <span className="font-medium">{d.code}</span>
-                        <span className="ml-1 text-fg/80">- {d.name}</span>
-                      </span>
+                      <DiagnosisOptionLabel diagnosis={d} />
                     </Button>
                   </li>
                 ))}

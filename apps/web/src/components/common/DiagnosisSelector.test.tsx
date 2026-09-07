@@ -146,3 +146,52 @@ describe("DiagnosisSelector", () => {
     getTree.mockRestore()
   })
 })
+
+describe("DiagnosisSelector descriptions", () => {
+  /**
+   * The description is what separates leaves that read alike, so it has to be
+   * visible while choosing. It used to reach the client and render nowhere.
+   */
+  const DESCRIPTION = "Depressed mood or loss of interest for at least two weeks, most of the day."
+
+  it("shows an option's description in the list", async () => {
+    const user = userEvent.setup()
+    renderWithProviders(<ControlledHarness onChangeSpy={() => {}} />)
+    await user.click(screen.getByRole("button", { name: /select diagnosis/i }))
+    await screen.findByText(/Mood \(affective\) disorders/i)
+
+    await user.click(screen.getByRole("button", { name: /Mood \(affective\) disorders/i }))
+
+    expect(await screen.findByText(DESCRIPTION)).toBeInTheDocument()
+  })
+
+  it("keeps the full description under the trigger after selecting", async () => {
+    const user = userEvent.setup()
+    renderWithProviders(<ControlledHarness onChangeSpy={() => {}} />)
+    await user.click(screen.getByRole("button", { name: /select diagnosis/i }))
+    await screen.findByText(/Mood \(affective\) disorders/i)
+    await user.click(screen.getByRole("button", { name: /Mood \(affective\) disorders/i }))
+    await screen.findByText(DESCRIPTION)
+
+    // The name renders as "- <name>" beside the code, so match on that span.
+    const option = screen.getAllByText(/^- Depressive episode$/i)[0].closest("button")
+    if (!option) throw new Error("no option button for Depressive episode")
+    fireEvent.click(option)
+
+    await waitFor(() => expect(screen.getByText(/F32, Depressive episode/)).toBeInTheDocument())
+    expect(screen.getByText(DESCRIPTION)).toBeInTheDocument()
+  })
+
+  it("renders no description node for an option that has none", async () => {
+    const user = userEvent.setup()
+    renderWithProviders(<ControlledHarness onChangeSpy={() => {}} />)
+    await user.click(screen.getByRole("button", { name: /select diagnosis/i }))
+    await screen.findByText(/Mood \(affective\) disorders/i)
+
+    await user.click(screen.getByRole("button", { name: /Mood \(affective\) disorders/i }))
+
+    const manic = await screen.findByText(/^- Manic episode$/i)
+    expect(manic.closest("button")).toBeInTheDocument()
+    expect(screen.queryByText(/undefined|^null$/)).not.toBeInTheDocument()
+  })
+})
