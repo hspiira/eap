@@ -30,7 +30,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import { useListPage } from "@/hooks/useListPage"
+import { NEWEST_FIRST, useListPage } from "@/hooks/useListPage"
 import { normalizeErrorMessage } from "@/lib/errors"
 import { formatDateTime } from "@/lib/format"
 import { useEntityList } from "@/lib/queries"
@@ -74,7 +74,11 @@ function TenantsListBody() {
     setPage,
     limit,
     setFilter,
-  } = useListPage({ searchParams, navigate })
+  } = useListPage({
+    searchParams,
+    navigate,
+    initialSort: NEWEST_FIRST,
+  })
   const [credentials, setCredentials] = useState<TenantCreateResponse | null>(null)
   const activeStatus = searchParams.status
 

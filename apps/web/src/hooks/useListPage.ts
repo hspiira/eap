@@ -4,6 +4,20 @@ import type { SortState } from "@/components/common/SortHeader"
 import { useDebouncedValue } from "@/hooks/useDebouncedValue"
 import { type NavigateFn, type SortSearch, useUrlSort } from "@/hooks/useUrlSort"
 
+/**
+ * Newest first, which is what a list of records should open on.
+ *
+ * Declared on the page rather than left to the API's own default. Every list
+ * endpoint already defaults to `created_at` descending, but an undeclared
+ * default is not a guarantee: nothing stops the API's default changing, and
+ * the page has no sort state to return to once the user has clicked a column.
+ *
+ * Pages whose domain has a better notion of recency keep their own: cases open
+ * on `opened_at`, sessions on `scheduled_at`, campaigns and surveys on
+ * `period_start`. Directories browsed by name keep alphabetical.
+ */
+export const NEWEST_FIRST: SortState = { field: "created_at", desc: true }
+
 interface ListSearch extends SortSearch {
   search?: string
   new?: boolean

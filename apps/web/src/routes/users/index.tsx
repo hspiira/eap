@@ -13,6 +13,7 @@ import {
 
 import { type UserListParams, usersApi } from "@/api/endpoints/users"
 import { BulkAction } from "@/components/common/BulkAction"
+import { BulkActionWithReason } from "@/components/common/BulkActionWithReason"
 import { EmptyState } from "@/components/common/EmptyState"
 import { ErrorState } from "@/components/common/ErrorState"
 import { FilterBar, FilterChip, FilterSearch, FilterTrigger } from "@/components/common/FilterBar"
@@ -43,7 +44,7 @@ import {
 } from "@/components/ui/table"
 import { UserFormSheet } from "@/components/UserFormSheet"
 import { useCanWrite } from "@/hooks/useCanWrite"
-import { useListPage } from "@/hooks/useListPage"
+import { NEWEST_FIRST, useListPage } from "@/hooks/useListPage"
 import { useTableSelection } from "@/hooks/useTableSelection"
 import { normalizeErrorMessage } from "@/lib/errors"
 import { formatDate } from "@/lib/format"
@@ -100,7 +101,11 @@ function UsersListPage() {
     toggleSort,
     setFilter,
     sortParams,
-  } = useListPage({ searchParams, navigate })
+  } = useListPage({
+    searchParams,
+    navigate,
+    initialSort: NEWEST_FIRST,
+  })
   const canWrite = useCanWrite()
 
   const activeStatus = searchParams.status
@@ -206,6 +211,21 @@ function UsersListPage() {
         ) : (
           <>
             <SelectionBar count={selection.selectedIds.size} onClear={selection.clearSelection}>
+              <BulkActionWithReason
+                ids={selection.selectedIds}
+                label="Suspend"
+                confirmTitle="Suspend users"
+                confirmDescription={(n) =>
+                  `${n} ${n === 1 ? "user" : "users"} will lose access until reinstated.`
+                }
+                destructive
+                labelFor={(id) => items.find((i) => i.id === id)?.email ?? id}
+                action={usersApi.suspend}
+                invalidateKey={["users"]}
+                verb="suspended"
+                noun="user"
+                onDone={selection.clearSelection}
+              />
               <BulkAction
                 ids={selection.selectedIds}
                 label="Deactivate"
@@ -218,6 +238,36 @@ function UsersListPage() {
                 action={usersApi.deactivate}
                 invalidateKey={["users"]}
                 verb="deactivated"
+                noun="user"
+                onDone={selection.clearSelection}
+              />
+              <BulkActionWithReason
+                ids={selection.selectedIds}
+                label="Ban"
+                confirmTitle="Ban users"
+                confirmDescription={(n) =>
+                  `${n} ${n === 1 ? "user" : "users"} will be permanently banned.`
+                }
+                destructive
+                labelFor={(id) => items.find((i) => i.id === id)?.email ?? id}
+                action={usersApi.ban}
+                invalidateKey={["users"]}
+                verb="banned"
+                noun="user"
+                onDone={selection.clearSelection}
+              />
+              <BulkActionWithReason
+                ids={selection.selectedIds}
+                label="Terminate"
+                confirmTitle="Terminate users"
+                confirmDescription={(n) =>
+                  `${n} ${n === 1 ? "user" : "users"} will be permanently terminated.`
+                }
+                destructive
+                labelFor={(id) => items.find((i) => i.id === id)?.email ?? id}
+                action={usersApi.terminate}
+                invalidateKey={["users"]}
+                verb="terminated"
                 noun="user"
                 onDone={selection.clearSelection}
               />
