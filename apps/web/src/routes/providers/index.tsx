@@ -6,6 +6,7 @@ import { ExternalLink, MoreHorizontal, Plus, Stethoscope } from "lucide-react"
 import { type ProviderListParams, providersApi } from "@/api/endpoints/providers"
 import { EmptyState } from "@/components/common/EmptyState"
 import { EntityListView, type ListColumn } from "@/components/common/EntityListView"
+import { EntityNameCell } from "@/components/common/EntityNameCell"
 import { FilterBar, FilterChip, FilterSearch, FilterTrigger } from "@/components/common/FilterBar"
 import { PageShell } from "@/components/common/PageShell"
 import { ProviderTierBadge } from "@/components/common/ProviderTierBadge"
@@ -25,6 +26,7 @@ import { TableCell, TableRow } from "@/components/ui/table"
 import { useCanWrite } from "@/hooks/useCanWrite"
 import { useListPage } from "@/hooks/useListPage"
 import { useTableSelection } from "@/hooks/useTableSelection"
+import { nameInitials } from "@/lib/display"
 import { normalizeErrorMessage } from "@/lib/errors"
 import { useEntityList } from "@/lib/queries"
 import { enumOptions, enumParam, listSearchSchema } from "@/lib/search-params"
@@ -253,8 +255,17 @@ function ProviderRow({
           onCheckedChange={onToggle}
         />
       </TableCell>
-      <TableCell className="max-w-[14rem] truncate py-1.5 text-sm font-medium text-fg">
-        {provider.display_name}
+      <TableCell className="max-w-[14rem] truncate">
+        <Link
+          to="/providers/$providerId"
+          params={{ providerId: provider.id }}
+          className="flex items-center gap-2.5"
+        >
+          <EntityNameCell
+            initials={nameInitials(provider.display_name)}
+            name={provider.display_name}
+          />
+        </Link>
       </TableCell>
       <TableCell className="py-1.5">
         <ProviderTierBadge tier={profile.tier} />

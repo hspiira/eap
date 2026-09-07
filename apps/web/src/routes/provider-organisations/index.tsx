@@ -9,6 +9,7 @@ import {
 } from "@/api/endpoints/provider-organisations"
 import { EmptyState } from "@/components/common/EmptyState"
 import { EntityListView, type ListColumn } from "@/components/common/EntityListView"
+import { EntityNameCell } from "@/components/common/EntityNameCell"
 import { FilterBar, FilterChip, FilterSearch, FilterTrigger } from "@/components/common/FilterBar"
 import { PageShell } from "@/components/common/PageShell"
 import { StatusBadge } from "@/components/common/StatusBadge"
@@ -27,6 +28,7 @@ import { TableCell, TableRow } from "@/components/ui/table"
 import { useCanWrite } from "@/hooks/useCanWrite"
 import { useListPage } from "@/hooks/useListPage"
 import { useTableSelection } from "@/hooks/useTableSelection"
+import { nameInitials } from "@/lib/display"
 import { normalizeErrorMessage } from "@/lib/errors"
 import { useEntityList } from "@/lib/queries"
 import { boolParam, enumOptions, enumParam, listSearchSchema } from "@/lib/search-params"
@@ -214,8 +216,14 @@ function OrganisationRow({
           onCheckedChange={onToggle}
         />
       </TableCell>
-      <TableCell className="max-w-[16rem] truncate py-1.5 text-sm font-medium text-fg">
-        {organisation.name}
+      <TableCell className="max-w-[16rem] truncate">
+        <Link
+          to="/provider-organisations/$organisationId"
+          params={{ organisationId: organisation.id }}
+          className="flex items-center gap-2.5"
+        >
+          <EntityNameCell initials={nameInitials(organisation.name)} name={organisation.name} />
+        </Link>
       </TableCell>
       <TableCell className="py-1.5 text-xs text-fg/70">
         {organisation.registration_number ?? "-"}
