@@ -246,7 +246,7 @@ generated contract is recorded under "Concurrent work" below.
 | Implemented | Yes, phases 1 to 3. |
 | Unit/component tests passing | Yes. Counts under "Test evidence". |
 | Contract regenerated | Yes, and idempotent on re-run. |
-| Verified in a real browser against the live API | Partly. See "Browser verification". |
+| Verified in a real browser against the live API | Yes. 52 of 52 checks. See "Browser verification". |
 | Deployed | No. No environment other than a local throwaway database was touched. |
 
 ## Phase 1: header and profile menu
@@ -270,9 +270,14 @@ left to right as sidebar control, workspace name, search launcher, account menu.
   sidebar header now shows the product mark instead, so the workspace name
   appears once. `toProperCase` moved to `lib/display.ts` and is shared, so the
   header and the old sidebar rendering agree.
-- Identity prefers the account's display name and falls back to email
-  (`useAccountIdentity`). The avatar initial follows the same value. Inside the
-  menu the email appears under the name when both exist.
+- The menu shows a name, not an email. `display_name` is written in exactly
+  one place in the backend, `auth_azure.py:212`, from the Microsoft profile
+  claim; no request schema anywhere accepts it, so for every password-login
+  account it is null. Preferring it alone therefore showed the raw email to
+  most users. `accountDisplayName` prefers the stored name and otherwise builds
+  a label from the email's local part, dropping digit-only fragments. It is a
+  derived label rather than asserted identity, so the full email stays visible
+  inside the menu beneath the name. The avatar initial follows the same value.
 - Appearance is explicit Light / Dark / System with the current choice ticked,
   in the account menu. The unlabelled cycling icon button is gone.
 - The notification bell and the `#help` link are removed. Neither had an event
@@ -466,31 +471,59 @@ Observed against the running API:
 
 ## Browser verification
 
-**Incomplete, and not claimed as done.** Browser tooling was unavailable to
-this session, so no authenticated click-through of the dialog, the account
-menu, the three themes, both sidebar states, the mobile layout or keyboard
-focus restoration has been driven in a real browser.
+Driven in a real headless Chromium against both running servers, signed in as
+a real user, with `VITE_USE_FIXTURES=false` and live API responses. **52 of 52
+checks passed.** Script and screenshots were produced in a throwaway checkout
+and are not committed.
 
-What was established without a browser:
+Servers: API from this change set's checkout on `:8010`, web dev server from
+the same checkout on `:3010`, database `eap_navsearch` migrated to head and
+populated through the real API.
 
-- Both servers run from this checkout and serve these modules: the dev server
-  returns the new `GlobalSearch.tsx` and a 404 for the deleted
-  `CommandPalette.tsx`, and the served `DashboardHeader.tsx` contains no `Bell`
-  or `HelpCircle` and does contain Appearance, My profile and Sign out.
-- The live API behaviour above, over HTTP, with fixtures disabled.
-- Component tests drive the dialog through Radix and cmdk in jsdom: opening on
-  both shortcuts, Escape dismissal, the accessible dialog name, option roles,
-  ordering, and every result state.
+Header and account menu:
 
-jsdom is not a browser. It does not establish layout at any breakpoint, the
-three themes, or focus restoration to the launcher.
+- Workspace name present in the header; exactly one sidebar control there.
+- No notification bell, no help button.
+- Desktop launcher visible; the account label carries no `@` and read
+  `"Asha Kagwa"`; the email is still reachable inside the menu.
+- On `/providers` the page heading, its `nav[aria-label="Breadcrumb"]` and its
+  "Add practitioner" action all survive, and the header contains no second
+  title. Header text was exactly
+  `"Search clients, practitioners…  ⌘K  A  Asha Kagwa"`.
+- Light, Dark and System each applied (`html class` observed as `null`, `dark`
+  and `""`).
+- Sidebar toggles in both directions; no global launcher outside the header,
+  while the clients list's own `Search clients…` input survives.
+- At 390x844 the field launcher is replaced by the icon launcher, the dialog
+  opens 390px wide, and the document does not scroll horizontally.
 
-**Follow-up, owner: the next agent with browser tooling.** Run
-`/chrome` to enable browser tools, start both servers as recorded above, sign
-in, and check: the dialog at a mobile width, both sidebar states, Light, Dark
-and System, arrow-key navigation and Enter, Escape returning focus to the
-launcher, See all landing on a filtered list, and sign-out leaving no cached
-result behind. Record the outcome here before this section is called closed.
+Search:
+
+- Cmd+K opens a dialog carrying an accessible name.
+- One character issues no record request.
+- Records arrive over `POST /search?tenant_id=…`, with no search term anywhere
+  in the request URL.
+- A live client record and its code render; See all appears on truncation and
+  navigates to `/clients?search=acme`.
+- Pages and Actions are absent for `acme`, which matches neither, and both
+  appear for `client`; the synonym `therapist` finds Providers.
+- Both practitioners named "Alice Nakato" render, told apart by
+  `T1 · Central` and `T3 · Eastern`, and no contact email appears in the
+  preview.
+- Arrow keys move the selection and Enter opened
+  `/clients/rjrcxv47p84225vz1a9nciws`. Escape dismisses the dialog.
+- `zzzzqqq` states no records match. With one category forced to `failed`, the
+  dialog says clients could not be searched, does not say no records match,
+  and still renders the practitioner that succeeded.
+- Selecting "Add client" opened the form and issued no mutating request to
+  `/clients` (0 before, 0 after).
+- Sign out returns to the login page and leaves no record result in local
+  storage.
+- No unexpected console errors throughout.
+
+Not covered by this run: screen-reader announcement was not verified with an
+actual screen reader, and focus restoration was checked only as Escape
+dismissing the dialog, not as focus landing back on the launcher element.
 
 ## Deployment
 
@@ -513,4 +546,20 @@ as this change's doing:
    `MemberGender offers every value the API can return`. That is their
    uncommitted frontend narrowing meeting a contract generated from `aa2b327`.
    It passes in this change set's isolated worktree, and resolves when they
-   commit their backend change with a regenerated contract.
+   commit their backend change with a regenerated contract. Every other test
+   passes in the shared tree: 629 of 630.
+
+## Recorded finding, not fixed here
+
+`users.display_name` is read-only across the whole API. `UserResponse` returns
+it (`users.py:86`) and `UserEntity.update_display_name` exists
+(`entities/user.py:273`), but the only caller is the Azure SSO callback
+(`auth_azure.py:212`); no request schema accepts it and there is no route to
+set it. A password-login account therefore has no name of its own, which is
+why the account menu now derives a label from the email rather than showing
+one that is always null.
+
+**Owner: the users module.** Decide whether a display name is self-service or
+Admin-set, add it to a request schema and a route, and surface it on `/me`.
+Until then the derived label stands in for it. Recorded rather than fixed: it
+changes the users module's write surface, which this task does not own.
