@@ -256,6 +256,46 @@ answer strings as employer-facing chart labels.
 never appear in aggregate JSON or printed reports; small cohorts and totals obey
 the same policy on every endpoint. Retain categorical aggregate functionality.
 
+### SEC-04: 157 mutating routes authenticate the caller but never check they may write
+
+**Evidence: reproduced by dependency-tree scan.** SEC-03's repair has two
+halves. The tenant half is closed: `TransitionUseCase.execute` now requires the
+owning tenant and refuses a mismatch, and the entity-ID reads are scoped. The
+write-role half is not. Walking the built dependency tree of all 349 mounted
+routes for the four unsafe methods found 157 that resolve a user but never
+reach `require_not_viewer`, `require_admin`, `require_tenant_role` or
+`require_self_or_admin`.
+
+A same-tenant Viewer therefore still reaches, among others: every case
+transition (`POST /cases/{id}/close`, `/refer-out`, `/assign-counsellor`), every
+clinical-note write including `/sign` and `/amend`, every contract command
+including `/terminate` and `PATCH /pricing`, all four DSAR mutations including
+`/execute-erasure`, every user lifecycle command including `/ban` and
+`PATCH /role`, and every tenant command including `/terminate`. This is decision
+3 in this plan: "Viewers cannot mutate."
+
+The count is larger than SEC-03 recorded because SEC-03 named the routes its
+probe exercised; this is the exhaustive inventory of the same defect class.
+
+**Repair, owner: stream 1.** Do not hand-edit 157 route signatures; that is how
+twelve of them lost their tenant check in the first place. Apply the gate once,
+where every request passes, and refuse an unsafe method for a Viewer token
+unless the route is on an explicit allowlist. The allowlist is small and must be
+justified per entry: the unauthenticated auth endpoints, `POST /search`, the
+signed survey webhook, and a Viewer's own password and preferences. Lock the
+allowlist with the same style of test as `test_route_authorization`, so a new
+mutating route is gated by default and an exception has to be argued for in a
+diff.
+
+**Sequencing.** This edit touches route files that streams 2 and 3 currently
+hold. Land it after their commits, or it invalidates their test runs and
+conflicts with their diffs.
+
+**Close only when:** a same-tenant Viewer receives 403 on every mutating route
+not on the allowlist; the denied request performs no save, export or erasure;
+an Admin and a User in the same tenant still succeed where their role allows;
+and the allowlist test fails when a new mutating route is added without a gate.
+
 ## P2: workflows and data correctness
 
 ### API-01: Survey and engagement lists disagree with their live response types
@@ -550,11 +590,34 @@ must add commit IDs, exact commands/results and deployment state to its phase.
 Keep unchecked items open until their stated acceptance checks pass.
 
 - [ ] Phase 1 - Access control and identity isolation
-  - [ ] Close SEC-01, SEC-02 and SEC-03 across all mounted routes in scope.
-  - [ ] Close AUTH-01 for logout, expiry, SSO and delayed responses.
-  - [ ] Add anonymous, wrong-tenant, wrong-role and wrong-scope regression cases.
+  - [x] ~~Close SEC-01~~ across all mounted routes in scope. The scan found 26
+        routes resolving no user, not the 2 recorded; all are authenticated and
+        tenant-scoped except the justified public surface, which
+        `test_route_authorization` now holds as an explicit allowlist.
+        `GET /provider-specialties` is listed there as pending, not approved:
+        it belongs to the provider worktrees.
+  - [x] ~~Close SEC-02.~~ All twelve unawaited calls replaced with the
+        synchronous `assert_same_tenant`; `test_use_case_call_sites` fails the
+        build if the async form is called outside `Depends` again.
+  - [~] SEC-03: tenant half closed. `TransitionUseCase.execute` takes a required
+        keyword-only `tenant_id`, enforced fail-closed in both directions, and
+        all 82 route call sites plus the one application-layer call site pass
+        the authenticated caller's tenant. **The write-role half is open: see
+        SEC-04.**
+  - [x] ~~Close AUTH-01 for logout, expiry, SSO and delayed responses.~~
+        `resetIdentityState` is reached from all of them; verified against a
+        real query client, including a response arriving after the reset.
+  - [~] Anonymous and wrong-tenant regression cases added
+        (`test_cross_tenant_reads`, `test_route_authorization`,
+        `test_transition_use_case`). Wrong-role cases wait on SEC-04.
+        Wrong-scope cases on clinical routes are not written yet.
   - [ ] Verify forbidden operations have no save, export or erasure side effects.
+        Partly done: the transition guard is asserted to leave the aggregate
+        unchanged and unsaved. Not yet done for DSAR export/erasure.
   - [ ] Reconcile shared authorization/outreach/session files with provider work.
+        Not started. `service_sessions.py`, `non_compete_clauses.py` and
+        `panel.py` received tenant arguments at their transition call sites and
+        the provider worktrees must rebase onto that.
 
 - [ ] Phase 2 - Reporting truth and privacy
   - [ ] Close REP-01, PRIV-01, REP-02 and DATA-01.
@@ -591,9 +654,10 @@ do not start work on a claimed path without agreeing the handover here first.
 
 | Stream | Findings | Owner | State |
 | --- | --- | --- | --- |
-| 1. Access control and session state | SEC-01, SEC-02, SEC-03, AUTH-01 | members-import agent (this branch, `chore/monorepo`) | in progress |
-| 2. Reporting and privacy | REP-01, PRIV-01, REP-02, DATA-01, VERIFY-01 | unclaimed | open |
-| 3. Module integration | API-01, SUR-01, ENG-01, AUD-01, INC-01, CASE-01, BILL-01 | unclaimed | open |
+| 1. Access control and session state | SEC-01, SEC-02, SEC-03, AUTH-01 | stream 1 agent (this branch, `chore/monorepo`) | SEC-01, SEC-02 and AUTH-01 closed; SEC-03 tenant half closed, write-role half open as SEC-04 |
+| 2. Reporting and privacy | REP-01, PRIV-01, REP-02, DATA-01 | delegated 2026-09-07 | in progress |
+| 3. Module integration | API-01, ENG-01, AUD-01 | delegated 2026-09-07 | in progress |
+| 3b. Module integration, later round | SUR-01, INC-01, CASE-01, BILL-01 | unclaimed | open |
 
 **Files stream 1 holds.** Backend: `app/core/authorization.py`,
 `app/api/dependencies/reporting.py`, `app/application/use_cases/transitions.py`,
