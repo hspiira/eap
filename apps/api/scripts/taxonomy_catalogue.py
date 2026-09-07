@@ -40,9 +40,26 @@ UNCAPPED: dict[str, str] = {
     "Change Management Talk": "Company-wide psychoeducation with no individual entitlement.",
     "Empowerment Talk": "Company-wide psychoeducation with no individual entitlement.",
     "Training": "Commissioned by the employer. The employer is the client.",
-    "Site Visit": "Delivery location, not an intervention. See TAXONOMY_FINDINGS.md item 6.",
-    "Hospital Visit": "Delivery location, not an intervention. See TAXONOMY_FINDINGS.md item 6.",
-    "Home Visit": "Delivery location, not an intervention. See TAXONOMY_FINDINGS.md item 6.",
+}
+
+# Vocabulary that arrives looking like a service and is not one. Kept as a
+# table rather than as a comment so the reasoning survives, and asserted
+# against SERVICES so a removed row cannot quietly return.
+NOT_A_SERVICE: dict[str, str] = {
+    "Site Visit": (
+        "Where a session happened, not what was delivered. service_sessions "
+        "already carries location and session_type, both of them exposed on the "
+        "create and update schemas and on the session form. Record the "
+        "counselling service and put the site in location."
+    ),
+    "Hospital Visit": (
+        "A location. Record the counselling service delivered, with the hospital in location."
+    ),
+    "Home Visit": (
+        "A location. Record the counselling service delivered, with the home in location."
+    ),
+    "No show": "A scheduling outcome. SessionStatus.NO_SHOW already models it.",
+    "Others": "A dropdown catch-all. It names nothing, so nothing can be reported on it.",
 }
 
 # (name, ServiceCategory or None, is_group_service, description)
@@ -61,7 +78,10 @@ SERVICES: list[tuple[str, str | None, bool, str]] = [
         "one to six sessions set by programme philosophy and funding, so the entitlement "
         "belongs in the client contract, not in this catalogue. Each session records the "
         "presenting problem, the diagnosis type and diagnosis where one is established, "
-        "and the disposition: to be continued, referred, or completed.",
+        "and the disposition: to be continued, referred, or completed. Where the "
+        "session happened off site, at a hospital, a home or an employer's "
+        "premises, that belongs in the session's location field and not in a "
+        "separate service.",
     ),
     (
         "Couple Counselling",
@@ -287,47 +307,6 @@ SERVICES: list[tuple[str, str | None, bool, str]] = [
         "in the taxonomy and should not carry a clinical diagnosis. Participation is the "
         "unit recorded; the activity itself belongs in the session's topic field, not in the "
         "diagnosis.",
-    ),
-    (
-        "Site Visit",
-        None,
-        False,
-        "A programme visit to an employer's premises to deliver services on site, whether "
-        "counselling, a talk, or a check-in with a work unit after an incident. Recorded as "
-        "its own service because the visit is what the employer commissions and is billed "
-        "for, and because presence on site changes what the practitioner can offer: less "
-        "privacy, more informal contact, and higher chance of unplanned disclosure. Where a "
-        "visit produces individual clinical contact, that contact should also be recorded "
-        "as the counselling service it was, so clinical volume is not hidden inside a "
-        "logistics line. This is a delivery arrangement rather than a clinical "
-        "intervention, and it carries no programme category.",
-    ),
-    (
-        "Hospital Visit",
-        None,
-        False,
-        "A visit to a member who is admitted to hospital, or attendance at a clinical "
-        "case conference about them. Serves the case monitoring and follow-up duty in EAPA "
-        "Core Technology item 5, which is what keeps a referred member from disappearing "
-        "into the health system with the programme unaware of the outcome. Also used to "
-        "coordinate with treating clinicians and to support the family at the bedside. "
-        "Consent to be visited and to liaise with the treating team is obtained before the "
-        "visit, and what is shared back to the employer is limited to fitness and "
-        "availability, never diagnosis.",
-    ),
-    (
-        "Home Visit",
-        None,
-        False,
-        "A visit to a member's home, used when the member cannot travel, has withdrawn from "
-        "contact, or is being supported through bereavement, serious illness, or "
-        "post-crisis recovery. The highest-risk delivery arrangement in the catalogue: it "
-        "removes the clinical setting, brings the practitioner into a family system, and "
-        "raises real safety questions where the presenting problem is domestic abuse. It "
-        "should be authorised case by case rather than offered as a standing option, with a "
-        "lone-working precaution recorded. As with the other visit services, this describes "
-        "where the session happened; the clinical work itself is recorded under the "
-        "counselling service delivered.",
     ),
 ]
 
@@ -1876,6 +1855,14 @@ def _check_categories(services: list[dict]) -> None:
     ``ServiceCategory`` would be refused by the column's CHECK constraint, and a
     null nobody declared is indistinguishable from an oversight.
     """
+    names = {s["name"] for s in services}
+    for name in UNCAPPED:
+        if name not in names:
+            raise ValueError(f"UNCAPPED names {name!r}, which is not in the catalogue")
+    for name in NOT_A_SERVICE:
+        if name in names:
+            raise ValueError(f"{name!r} is in NOT_A_SERVICE but shipped as a service")
+
     valid = {e.value for e in ServiceCategory}
     for service in services:
         name, category = service["name"], service["category"]

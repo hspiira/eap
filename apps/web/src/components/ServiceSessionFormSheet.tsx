@@ -575,7 +575,11 @@ export function ServiceSessionFormSheet({
           </FormField>
         ) : null}
         <FormField label="Location" error={errors.location?.message} htmlFor="ss-location">
-          <Input id="ss-location" placeholder="Room 4, Zoom, or Phone" {...register("location")} />
+          <Input
+            id="ss-location"
+            placeholder="Room 4, Zoom, or an off-site place: hospital, home, client premises"
+            {...register("location")}
+          />
         </FormField>
       </FormSection>
 

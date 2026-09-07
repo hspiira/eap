@@ -7,7 +7,7 @@ catalogue and diagnosis taxonomy in `TAXONOMY_CATALOGUE.md`. Opened
 Each item carries the evidence that established it. Strike an item through when
 it lands and record the commit. Do not remove one without being asked.
 
-Status: 5 of 11 done, 6 open.
+Status: 6 of 11 done, 5 open.
 
 ## Priority order
 
@@ -21,7 +21,7 @@ cited elsewhere.
 | 3 | ~~Diagnosis descriptions are writable but never displayed~~ | Product gap | Done |
 | 4 | ~~`ServiceCategory` cannot classify 13 of 20 services~~ | Decided: do not extend the enum | Done |
 | 5 | ~~`data/seed_data.json` cannot load against the current schema~~ | Broken dev path | Done |
-| 6 | Three visit services duplicate `service_sessions.location` | Redundancy | Open |
+| 6 | ~~Three visit services duplicate `service_sessions.location`~~ | Redundancy | Done |
 | 7 | `services.is_group_service` duplicates `service_sessions.category` | Redundancy | Open |
 | 8 | `services` has no `code` and is matched on `name` | Design, needs product decision | Open |
 | 9 | No ICD-11 field on `diagnoses` | Missing field | Open |
@@ -261,7 +261,7 @@ made the seed invalid, and phase 1 of `SERVICES_MIGRATION.md` audited the
 *database* for unmappable values and found none, because the tables were empty.
 Nothing audited the seed file.
 
-## 6. Three visit services duplicate `service_sessions.location`
+## 6. ~~Three visit services duplicate `service_sessions.location`~~
 
 `Site Visit`, `Hospital Visit` and `Home Visit` are catalogue rows describing
 where a session happened. `service_sessions.location` is already
@@ -269,9 +269,38 @@ where a session happened. `service_sessions.location` is already
 `session_type` is the Physical/Online enum (`:182`).
 
 This corrects an earlier finding of mine that claimed there was nowhere to
-record location. There is. The three rows should be retired once the sessions
-that use them are re-recorded against the counselling service actually
-delivered, with the location in its own column.
+record location. There is.
+
+**Checked before removing anything.** `location` is not a dead column like
+`effective_until` was. It is on the create, update and response schemas
+(`app/api/schemas/service_session_schemas.py:53`, `:148`, `:221`) and has a
+real input on the session form
+(`apps/web/src/components/ServiceSessionFormSheet.tsx:577`). `session_type`,
+Physical or Online, is exposed the same way. So a session can already record
+Individual Counselling at a named hospital, and removing the three rows loses
+nothing.
+
+**Landed.** The three are out of the catalogue, which goes from 20 services to
+17. They are recorded in a `NOT_A_SERVICE` table in
+`scripts/taxonomy_catalogue.py` with the reason each is not one, alongside
+`No show` and `Others`, and `_check_categories` refuses to build a catalogue
+that ships any of them. A removed row cannot quietly return.
+
+`Individual Counselling`'s description now says where an off-site session
+belongs, because removing the row is only safe if the counsellor knows the
+location field is the replacement. The session form's location placeholder was
+"Room 4, Zoom, or Phone", which suggested only on-site and remote; it now names
+an off-site place too.
+
+Two related guards were added while in the file: an `UNCAPPED` entry naming a
+service that is not in the catalogue now fails the build, so a stale
+declaration cannot outlive the row it described. All five guard branches
+verified against the real catalogue.
+
+Nothing had to be retired in a database. The catalogue has not been imported,
+so no session references these rows. Had it been, the order matters: re-record
+affected sessions against the counselling service with the location filled,
+then deactivate the row.
 
 ## 7. `services.is_group_service` duplicates `service_sessions.category`
 
