@@ -3,6 +3,9 @@
 Date: 2026-09-08. Scope: the home dashboard (`DashboardMain`) and the
 aggregate endpoint behind it (`GET /dashboard`).
 
+What to build next, with evidence and per-item gates, is in
+`DASHBOARD_ROADMAP.md` — start there when extending this page.
+
 ## The choice
 
 The dashboard leads with decisions, then delivery analytics:
