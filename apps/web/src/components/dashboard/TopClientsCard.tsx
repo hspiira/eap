@@ -20,11 +20,11 @@ export function TopClientsCard({ clients, loading }: TopClientsCardProps) {
   const max = Math.max(...clients.map((c) => c.total), 1)
   const total = clients.reduce((sum, c) => sum + c.total, 0)
   return (
-    <Card className="rounded-md">
+    <Card className="flex h-full flex-col rounded-md">
       <CardBar title="Top clients">
         {clients.length > 0 ? <CardStat value={total.toLocaleString()} label="sessions" /> : null}
       </CardBar>
-      <CardContent className="p-3">
+      <CardContent className="flex-1 p-3">
         {loading ? (
           <Skeleton className="h-32 w-full" />
         ) : clients.length === 0 ? (
@@ -43,25 +43,31 @@ export function TopClientsCard({ clients, loading }: TopClientsCardProps) {
   )
 }
 
+/**
+ * Bars are scaled to the longest one but stop short of the full row, so the
+ * value that follows always has somewhere to sit without clipping.
+ */
+const BAR_MAX_WIDTH = 88
+
 function ClientRow({ client, max }: { client: ClientSessions; max: number }) {
   return (
     <Link
       to="/clients/$clientId"
       params={{ clientId: client.client_id }}
-      className="group grid grid-cols-[8rem_1fr_2.5rem] items-center gap-3 rounded-md py-0.5 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring sm:grid-cols-[10rem_1fr_2.5rem]"
+      className="group grid grid-cols-[7rem_1fr] items-center gap-3 rounded-md py-0.5 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring sm:grid-cols-[9rem_1fr]"
       aria-label={`${client.client_name}: ${client.total} sessions`}
     >
       <span className="truncate text-sm text-fg group-hover:text-primary">
         {client.client_name}
       </span>
-      <span className="h-5 rounded-sm bg-chart-1/10">
+      <span className="flex items-center gap-2">
         <span
-          className="block h-full rounded-sm bg-chart-1 transition-[width]"
-          style={{ width: `${Math.max((client.total / max) * 100, 2)}%` }}
+          className="h-5 rounded-sm bg-chart-1 transition-[width]"
+          style={{ width: `${Math.max((client.total / max) * BAR_MAX_WIDTH, 1)}%` }}
         />
-      </span>
-      <span className="text-right text-sm font-medium tabular-nums text-fg">
-        {client.total.toLocaleString()}
+        <span className="text-sm font-medium tabular-nums text-fg">
+          {client.total.toLocaleString()}
+        </span>
       </span>
     </Link>
   )

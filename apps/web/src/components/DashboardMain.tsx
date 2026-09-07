@@ -48,31 +48,37 @@ export function DashboardMain() {
       <div className="grid w-full gap-4 p-4 md:p-6">
         <DashboardHeader />
         <StatStrip stats={stats} />
-        <AttentionCard items={attention} loading={loading} />
 
-        <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
-          <h2 className="text-sm font-semibold text-fg">Delivery</h2>
-          <RangeFilter value={range} onChange={setRange} />
+        <div className="grid gap-4 lg:grid-cols-12">
+          <div className="lg:col-span-8">
+            <SessionsAreaCard
+              series={data?.sessions_series ?? []}
+              total={data?.kpis.sessions ?? 0}
+              delta={<SessionsDelta data={data} />}
+              loading={loading}
+              error={error}
+              refreshing={refreshing}
+              control={<RangeFilter value={range} onChange={setRange} />}
+            />
+          </div>
+          <div className="lg:col-span-4">
+            <AttentionCard items={attention} loading={loading} />
+          </div>
         </div>
 
-        <SessionsAreaCard
-          series={data?.sessions_series ?? []}
-          total={data?.kpis.sessions ?? 0}
-          delta={<SessionsDelta data={data} />}
-          loading={loading}
-          error={error}
-          refreshing={refreshing}
-        />
-
-        <div className="grid gap-4 lg:grid-cols-3">
-          <div className="lg:col-span-2">
+        <div className="grid gap-4 lg:grid-cols-12">
+          <div className="lg:col-span-5">
             <TopClientsCard clients={data?.top_clients ?? []} loading={loading} />
           </div>
-          <CategoryDonutCard categories={data?.sessions_by_category ?? []} loading={loading} />
+          <div className="lg:col-span-3">
+            <TrendingServicesCard services={data?.trending_services ?? []} loading={loading} />
+          </div>
+          <div className="lg:col-span-4">
+            <CategoryDonutCard categories={data?.sessions_by_category ?? []} loading={loading} />
+          </div>
         </div>
 
         <div className="grid gap-4 lg:grid-cols-2">
-          <TrendingServicesCard services={data?.trending_services ?? []} loading={loading} />
           <ImportHealthCard
             batch={data?.import_batch}
             queues={data?.import_queues ?? []}

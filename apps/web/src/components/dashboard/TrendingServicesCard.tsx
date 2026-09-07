@@ -23,11 +23,11 @@ interface TrendingServicesCardProps {
 export function TrendingServicesCard({ services, loading }: TrendingServicesCardProps) {
   const rising = services.filter((s) => (s.change_pct ?? 0) > 0).length
   return (
-    <Card className="rounded-md">
+    <Card className="flex h-full flex-col rounded-md">
       <CardBar title="Services in demand">
         {services.length > 0 ? <CardStat value={`${rising}`} label="rising" /> : null}
       </CardBar>
-      <CardContent className="p-0">
+      <CardContent className="flex-1 p-0">
         {loading ? (
           <div className="p-3">
             <Skeleton className="h-32 w-full" />
@@ -41,7 +41,7 @@ export function TrendingServicesCard({ services, loading }: TrendingServicesCard
                 key={service.service_id}
                 className={i > 0 ? "border-t border-border-subtle" : undefined}
               >
-                <ServiceRow service={service} max={services[0].total} />
+                <ServiceRow service={service} />
               </li>
             ))}
           </ul>
@@ -51,19 +51,13 @@ export function TrendingServicesCard({ services, loading }: TrendingServicesCard
   )
 }
 
-function ServiceRow({ service, max }: { service: ServiceTrend; max: number }) {
+function ServiceRow({ service }: { service: ServiceTrend }) {
   return (
-    <div className="grid grid-cols-[1fr_2.5rem_4rem] items-center gap-3 px-3 py-2">
-      <div className="grid min-w-0 gap-1">
-        <span className="truncate text-sm text-fg">{service.service_name}</span>
-        <span className="h-1 rounded-full bg-chart-3/10">
-          <span
-            className="block h-full rounded-full bg-chart-3"
-            style={{ width: `${Math.max((service.total / Math.max(max, 1)) * 100, 2)}%` }}
-          />
-        </span>
-      </div>
-      <span className="text-right text-sm font-medium tabular-nums text-fg">
+    <div className="flex items-center gap-2 px-3 py-2.5">
+      <span className="min-w-0 flex-1 truncate text-sm text-fg" title={service.service_name}>
+        {service.service_name}
+      </span>
+      <span className="text-sm font-medium tabular-nums text-fg">
         {service.total.toLocaleString()}
       </span>
       <ChangeChip service={service} />
@@ -74,7 +68,7 @@ function ServiceRow({ service, max }: { service: ServiceTrend; max: number }) {
 function ChangeChip({ service }: { service: ServiceTrend }) {
   if (service.change_pct === null || service.change_pct === undefined) {
     return (
-      <span className="justify-self-end rounded-sm bg-muted px-1.5 text-xs font-medium text-fg-muted">
+      <span className="w-14 shrink-0 rounded-sm bg-muted px-1.5 py-0.5 text-right text-xs font-medium text-fg-muted">
         new
       </span>
     )
@@ -85,7 +79,7 @@ function ChangeChip({ service }: { service: ServiceTrend }) {
   return (
     <span
       className={cn(
-        "inline-flex items-center justify-self-end gap-0.5 rounded-sm px-1.5 text-xs font-medium tabular-nums",
+        "inline-flex w-14 shrink-0 items-center justify-end gap-0.5 rounded-sm px-1.5 py-0.5 text-xs font-medium tabular-nums",
         flat
           ? "bg-muted text-fg-muted"
           : rising

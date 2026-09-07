@@ -13,9 +13,10 @@ The dashboard leads with decisions, then delivery analytics:
 2. **Needs attention** — the decision panel. Each row is an action, its
    consequence, and a link to where it is done, ranked by severity then size.
    Derived from figures already on the page, so it cannot disagree with them.
-3. **Delivery** — one window control scoping every chart below it: sessions
-   over time (stacked area by delivery type), top 5 clients, category donut,
-   services in demand, import health.
+3. **Delivery** — sessions over time (stacked area by delivery type) beside
+   the decision panel, then top 5 clients, services in demand and the
+   category donut, then import health. One window control in the sessions
+   card header scopes every flow figure on the page.
 
 One aggregate endpoint (`apps/api/app/api/routes/dashboard.py`) replaces the
 previous fan-out of six `limit=1` list calls.
@@ -62,6 +63,30 @@ Evidence from the development database (evexia_db, profiled 2026-09-07):
 - **Card headers are a single line.** Title, then the figures that would
   otherwise be a subtitle, then the control. No prose restating what the
   marks already show.
+- **Top-client bars carry their value at the bar end**, with no empty track
+  behind them. A track plus a right-aligned column made every row the same
+  length and moved the comparison into the numbers; ending the bar where the
+  data ends puts it back in the mark. Bars are scaled to the longest and stop
+  at 88% of the row so the value always has room.
+- **Services in demand carries no bars.** It sits in a narrow column beside
+  two other cards, where a third bar scale would compete with the client bars
+  for the same reading. Count and change are the whole story there.
+- **Cards in a row share a height.** Each fills its grid cell, so a row reads
+  as one band rather than a ragged edge.
+
+## Signals: what the analysis says to do
+
+The decision panel carries derived signals below the blocked work, so the
+analytics produce a recommendation rather than only a shape to interpret.
+Three rules run against the selected window, each guarded so a small sample
+never becomes advice:
+
+- **Concentration** — the leading client is at least 25% of delivery.
+- **Riser** and **faller** — the service that moved most, up or down, by at
+  least 20%, counted only where the prior window held at least 3 sessions.
+
+Nothing fires below 10 sessions in the window. A service with no prior
+sessions is reported as "new" and never as a percentage.
 
 ## Colour
 
@@ -90,6 +115,13 @@ the survivors.
   question than the one the card asks.
 - **Bucket size is derived, never requested.** Day up to 31 days, week up to
   120, month beyond, so a long window cannot ask for a bucket per day.
+- **"Month" is month-to-date, not the last 30 days.** They are different
+  questions and both are offered; the preset runs from the first of the
+  current month.
+- **The dashboard has no fixture path.** Every figure it shows is a count the
+  API computed. A local sample would put invented numbers behind real-looking
+  charts, and sample data that drifts from the API's shape teaches invariants
+  the API never produces. Test data lives in `src/test/dashboard.ts`.
 - **A service with no prior sessions shows "new", not a percentage.** A rise
   from zero has no percentage to state; printing 100% would be invented.
 - **Import backlog is scoped to the latest non-abandoned batch.** The same
@@ -132,7 +164,9 @@ the survivors.
 - Driven in headless Chromium against the dev server: light and dark renders,
   the area tooltip showing the per-type split, the window control re-scoping
   every card, and the donut's active slice writing into the ring.
-- The DEV fixture apportions its groupings from the window total, and a test
-  asserts no subset outruns the whole. The earlier fixture scaled each
-  grouping independently and showed 99 top-client sessions against a window
-  total of 80, an invariant the API never produces.
+- Rendered against the running API and the development database, not a
+  fixture: 41 sessions over 90 days, Stanbic Bank 10, categories summing to
+  41, and the signals reading "Group Counselling demand up 117%" and
+  "Family Therapy demand down 75%" from the real service counts.
+- Window presets checked against the live endpoint: month-to-date returns 7
+  daily buckets where the last 30 days returns 31.

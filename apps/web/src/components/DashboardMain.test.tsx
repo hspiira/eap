@@ -9,7 +9,12 @@ import { screen, waitFor, within } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { describe, expect, it, vi } from "vitest"
 
+import { makeDashboard } from "@/test/dashboard"
 import { renderWithProviders } from "@/test/utils"
+
+vi.mock("@/api/endpoints/dashboard", () => ({
+  dashboardApi: { get: vi.fn(async () => makeDashboard()) },
+}))
 
 vi.mock("@tanstack/react-router", () => ({
   Link: ({ children, to }: { children?: React.ReactNode; to?: string }) => (
@@ -39,7 +44,7 @@ describe("DashboardMain", () => {
   it("renders the analytics cards from the aggregate", async () => {
     renderWithProviders(<DashboardMain />)
 
-    expect(await screen.findByText("Vivo Energy")).toBeInTheDocument()
+    expect(await screen.findByText("Stanbic Bank")).toBeInTheDocument()
     expect(screen.getByRole("heading", { name: "Sessions delivered" })).toBeInTheDocument()
     expect(screen.getByRole("heading", { name: "Top clients" })).toBeInTheDocument()
     expect(screen.getByRole("heading", { name: "By category" })).toBeInTheDocument()
@@ -73,7 +78,7 @@ describe("DashboardMain", () => {
 
   it("keeps the onboarding checklist off for a working tenant", async () => {
     renderWithProviders(<DashboardMain />)
-    await screen.findByText("Vivo Energy")
+    await screen.findByText("Stanbic Bank")
     expect(screen.queryByText("Add first client")).not.toBeInTheDocument()
   })
 })

@@ -36,9 +36,9 @@ export function CategoryDonutCard({ categories, loading }: CategoryDonutCardProp
   ) satisfies ChartConfig
 
   return (
-    <Card className="rounded-md">
+    <Card className="flex h-full flex-col rounded-md">
       <CardBar title="By category" />
-      <CardContent className="grid gap-3 p-3 sm:grid-cols-[9rem_1fr] sm:items-center">
+      <CardContent className="grid flex-1 content-center gap-3 p-3 sm:grid-cols-[9rem_1fr] sm:items-center">
         {loading ? (
           <Skeleton className="h-36 w-full sm:col-span-2" />
         ) : total === 0 ? (

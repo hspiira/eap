@@ -189,7 +189,10 @@ const ChartTooltipContent = React.forwardRef<
             .map((item, index) => {
               const key = `${nameKey || item.name || item.dataKey || "value"}`
               const itemConfig = getPayloadConfigFromPayload(config, item, key)
-              const indicatorColor = color || item.payload.fill || item.color
+              // Diverges from upstream by preferring the config colour: a
+              // series painted with a gradient reports its fill as a url(),
+              // which is not a colour, and the key renders transparent.
+              const indicatorColor = color || itemConfig?.color || item.payload.fill || item.color
 
               return (
                 <div
@@ -208,22 +211,21 @@ const ChartTooltipContent = React.forwardRef<
                       ) : (
                         !hideIndicator && (
                           <div
-                            className={cn(
-                              "shrink-0 rounded-[2px] border-[--color-border] bg-[--color-bg]",
-                              {
-                                "h-2.5 w-2.5": indicator === "dot",
-                                "w-1": indicator === "line",
-                                "w-0 border-[1.5px] border-dashed bg-transparent":
-                                  indicator === "dashed",
-                                "my-0.5": nestLabel && indicator === "dashed",
-                              }
-                            )}
-                            style={
-                              {
-                                "--color-bg": indicatorColor,
-                                "--color-border": indicatorColor,
-                              } as React.CSSProperties
-                            }
+                            className={cn("shrink-0 rounded-[2px]", {
+                              "h-2.5 w-2.5": indicator === "dot",
+                              "w-1": indicator === "line",
+                              "w-0 border-[1.5px] border-dashed bg-transparent":
+                                indicator === "dashed",
+                              "my-0.5": nestLabel && indicator === "dashed",
+                            })}
+                            // Upstream sets these through `bg-[--color-bg]`, which is
+                            // Tailwind v3 arbitrary-variable syntax and does not compile
+                            // under v4, leaving every key transparent.
+                            style={{
+                              backgroundColor:
+                                indicator === "dashed" ? "transparent" : indicatorColor,
+                              borderColor: indicatorColor,
+                            }}
                           />
                         )
                       )}

@@ -57,7 +57,7 @@ const SEGMENTS = [
 
 export function ImportHealthCard({ batch, queues, loading }: ImportHealthCardProps) {
   return (
-    <Card className="rounded-md">
+    <Card className="flex h-full flex-col rounded-md">
       <CardBar
         title="Import health"
         control={
@@ -75,7 +75,7 @@ export function ImportHealthCard({ batch, queues, loading }: ImportHealthCardPro
           </>
         ) : null}
       </CardBar>
-      <CardContent className="grid gap-3 p-3">
+      <CardContent className="grid flex-1 content-start gap-3 p-3">
         <ImportBody batch={batch} queues={queues} loading={loading} />
       </CardContent>
     </Card>

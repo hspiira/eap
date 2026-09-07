@@ -55,7 +55,7 @@ export function SessionsAreaCard({
 }: SessionsAreaCardProps) {
   const split = totals(series)
   return (
-    <Card className="rounded-md">
+    <Card className="flex h-full flex-col rounded-md">
       <CardBar title="Sessions delivered" control={control}>
         <CardStat value={total.toLocaleString()} label="delivered" />
         {delta}
@@ -66,7 +66,7 @@ export function SessionsAreaCard({
           />
         ) : null}
       </CardBar>
-      <CardContent className="p-3 pt-4">
+      <CardContent className="flex flex-1 flex-col justify-center p-3 pt-4">
         <AreaBody series={series} loading={loading} error={error} refreshing={refreshing} />
       </CardContent>
     </Card>
