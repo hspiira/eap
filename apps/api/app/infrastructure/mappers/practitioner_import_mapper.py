@@ -74,10 +74,7 @@ class PractitionerImportMapper:
             mapped_profession=model.mapped_profession,
             contact_email=model.contact_email,
             outcome=PractitionerImportOutcome(model.outcome),
-            reasons=tuple(
-                ImportReviewReason(ImportReasonCode(item["code"]), item["message"])
-                for item in (model.reasons or ())
-            ),
+            reasons=tuple(_reason(item) for item in (model.reasons or ())),
             provenance=dict(model.provenance or {}),
             created_at=ensure_utc(model.created_at),
             imported_provider_id=model.imported_provider_id,
@@ -110,3 +107,14 @@ class PractitionerImportMapper:
             imported_affiliation_id=entity.imported_affiliation_id,
             created_at=entity.created_at,
         )
+
+
+def _reason(item: object) -> ImportReviewReason:
+    """Read a stored reason, tolerating the pre-code format.
+
+    Rows staged before reasons carried codes persisted bare strings; a listing
+    that raised on them would make every old batch unreadable.
+    """
+    if isinstance(item, dict):
+        return ImportReviewReason(ImportReasonCode(item["code"]), item["message"])
+    return ImportReviewReason(ImportReasonCode.LEGACY, str(item))

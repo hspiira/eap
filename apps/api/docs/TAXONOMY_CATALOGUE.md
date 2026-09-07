@@ -14,7 +14,7 @@ uv run python scripts/taxonomy_catalogue.py
 | --- | --- | --- |
 | `data/taxonomy/diagnosis_types.json` | 16 | `code`, `name`, `description`, `sort_order`, `is_active` |
 | `data/taxonomy/diagnoses.json` | 88 | `type_code`, `code`, `name`, `description`, `sort_order`, `is_active` |
-| `data/taxonomy/services.json` | 20 | `name`, `description`, `category`, `duration_minutes`, `is_group_service`, `max_participants` |
+| `data/taxonomy/services.json` | 17 | `name`, `description`, `category`, `duration_minutes`, `is_group_service`, `max_participants` |
 
 Verified against the API contract: the service rows validate as `ServiceCreate`,
 the type rows as `DiagnosisTypeCreate`, and the diagnosis rows as

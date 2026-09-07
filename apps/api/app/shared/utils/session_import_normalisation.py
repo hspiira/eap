@@ -160,21 +160,23 @@ def map_classification(raw: str | None) -> str | Unmapped | None:
 #: variants only; resolution against the tenant's catalogue happens at staging,
 #: so a canonical name with no catalogue entry stages UnresolvedService rather
 #: than creating a service. "No show" is a status bleed, not a service, and
-#: stays unmapped on purpose.
+#: stays unmapped on purpose. The three visit spellings are unmapped too: the
+#: catalogue refuses to ship Site/Hospital/Home Visit rows (a visit is where a
+#: session happened, recorded in service_sessions.location), so mapping them
+#: to those names would dead-end 135 historical rows behind a reason that
+#: invites recreating a banned service. What service a visit row delivered is
+#: a review decision, not a spelling.
 _INTERVENTIONS: dict[str, str] = {
     "individual counselling": "Individual Counselling",
     "health talk": "Health Talk",
     "family therapy": "Family Therapy",
     "coaching/mentorship": "Coaching/Mentorship",
-    "site visit": "Site Visit",
     "physical wellness": "Physical Wellness",
     "couple counselling": "Couple Counselling",
     "group counselling": "Group Counselling",
     "mental health talk": "Mental Health Talk",
     "psychiatric assessment": "Psychiatric Assessment",
-    "hospital visit": "Hospital Visit",
     "psychotherapy": "Psychotherapy",
-    "home visit": "Home Visit",
     "empowerment talks": "Empowerment Talk",
 }
 

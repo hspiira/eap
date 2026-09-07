@@ -476,3 +476,17 @@ class TestNormalisedValues:
         assert staged.outcome is ImportRowOutcome.ACCEPTED
         assert staged.normalised.category is None
         assert any("'Depression'" in reason for reason in staged.reasons)
+
+
+class TestVisitInterventions:
+    """The catalogue refuses Site/Hospital/Home Visit rows, so the mapper
+    must not canonicalise onto them: the reason would invite recreating a
+    banned service. What a visit row delivered is a review decision.
+    """
+
+    @pytest.mark.parametrize("spelling", ["site visit", "Hospital Visit", "Home Visit"])
+    async def test_a_visit_row_is_held_as_unmapped_not_dead_ended(self, spelling):
+        service, _ = _service()
+        staged = await _stage(service, _row(raw_intervention=spelling))
+        assert staged.outcome is ImportRowOutcome.UNRESOLVED_SERVICE
+        assert "does not map" in staged.reasons[0]

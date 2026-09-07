@@ -96,3 +96,6 @@ class ImportReasonCode(str, Enum):
     MULTI_EMAIL_CELL = "MultiEmailCell"
     EMPLOYEE_CONTRACT_MEMO = "EmployeeContractMemo"
     APPLY_FAILED = "ApplyFailed"
+    # Rows staged before reasons carried codes hold bare strings; they read
+    # back under this code rather than failing the whole listing.
+    LEGACY = "Legacy"
