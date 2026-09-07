@@ -359,6 +359,39 @@ required, and each is recorded in `SESSIONS_REVIEW.md` with its evidence.
 
 ---
 
+## Status (2026-09-07, end of day)
+
+| Task | State | Commit |
+| --- | --- | --- |
+| A1-A4 backend | done, verified on PostgreSQL | `dcca8de` |
+| A5 frontend | done | `157f8cf` |
+| B1 replay-key preflight | done, refuses the real file | `dff355d` |
+| B2+B3 normalisation | done; diagnosis tables empty pending a clinician | `ad17f3c` |
+| C1+C2 hydrated list + sort allowlist | done | `40a29d2` |
+| C4 backend filters | done | `3aa4594` |
+| C3+C4 frontend | done | `8b30ccd` |
+| D | open, needs the counselling team | - |
+
+## Next: staging resolution and the apply wiring
+
+The one remaining engineering slice before a historical import can land rows.
+`HistoricalSessionWriterAdapter.record` deliberately refuses every row today,
+because staging resolves neither members nor services. Closing that means:
+
+1. Extend the staging parser to carry the activity-log columns and apply the
+   B2/B3 mappers at staging, so a staged row stores its normalised values and
+   `Unmapped` outcomes alongside practitioner resolution.
+2. Resolve the member (Staff_ID against `eligible_members`, quarantining the
+   1,113 no-id rows: `UnresolvedMember` for Staff/Dependant rows, company-wide
+   attendance for the 642 Group/Event rows once the client resolves).
+3. Map `INTERVENTION` (26 distinct) to service catalogue identifiers, the piece
+   B2 recorded as open because it targets catalogue ids, not a domain enum.
+4. Convert an Accepted row in the writer adapter: client, attendance, member,
+   normalised category/type/status, preserved provenance.
+
+Blocked inputs, unchanged: the diagnosis vocabulary (clinician) and Phase D
+collection changes (counselling team).
+
 ## Sequencing summary
 
 ```
