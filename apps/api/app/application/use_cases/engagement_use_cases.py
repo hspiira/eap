@@ -3,10 +3,6 @@
 Bespoke create + structural-mutation paths (deliverables, hours). FSM transitions
 (``activate`` / ``deliver`` / ``invoice`` / ``close``) flow through the existing
 ``TransitionUseCase`` + ``EngagementTransition`` enum.
-
-Each structural mutation returns the mutated aggregate alongside the child it
-produced. The aggregate carries the domain events the route hands to the audit
-trail; returning only the child left the events unreachable and unaudited.
 """
 
 from __future__ import annotations
@@ -84,7 +80,7 @@ class AddDeliverableUseCase:
         title: str,
         description: str | None = None,
         due_date: date | None = None,
-    ) -> tuple[Engagement, Deliverable]:
+    ) -> Deliverable:
         engagement = _load_or_404(await self._repo.get_by_id(engagement_id), engagement_id)
         deliverable = engagement.add_deliverable(
             deliverable_id=DeliverableId(generate_cuid()),
@@ -93,7 +89,7 @@ class AddDeliverableUseCase:
             due_date=due_date,
         )
         await self._repo.save(engagement)
-        return engagement, deliverable
+        return deliverable
 
 
 class UpdateDeliverableStatusUseCase:
@@ -106,11 +102,11 @@ class UpdateDeliverableStatusUseCase:
         engagement_id: EngagementId,
         deliverable_id: DeliverableId,
         status: DeliverableStatus,
-    ) -> tuple[Engagement, Deliverable]:
+    ) -> Deliverable:
         engagement = _load_or_404(await self._repo.get_by_id(engagement_id), engagement_id)
         d = engagement.update_deliverable_status(deliverable_id=deliverable_id, status=status)
         await self._repo.save(engagement)
-        return engagement, d
+        return d
 
 
 class LogHoursUseCase:
@@ -125,7 +121,7 @@ class LogHoursUseCase:
         logged_on: date,
         hours: float,
         note: str | None = None,
-    ) -> tuple[Engagement, HoursLogEntry]:
+    ) -> HoursLogEntry:
         engagement = _load_or_404(await self._repo.get_by_id(engagement_id), engagement_id)
         entry = engagement.log_hours(
             entry_id=HoursLogEntryId(generate_cuid()),
@@ -135,7 +131,7 @@ class LogHoursUseCase:
             note=note,
         )
         await self._repo.save(engagement)
-        return engagement, entry
+        return entry
 
 
 class GetEngagementSummaryUseCase:

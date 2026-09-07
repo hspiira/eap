@@ -13,8 +13,6 @@ from datetime import date, datetime
 
 from app.domain.enums import DeliverableStatus, EngagementStatus
 from app.domain.events import (
-    DeliverableAdded,
-    DeliverableStatusChanged,
     DomainEvent,
     EngagementActivated,
     EngagementClosed,
@@ -150,14 +148,6 @@ class Engagement:
         )
         self.deliverables.append(d)
         self.updated_at = utc_now()
-        self.events.append(
-            DeliverableAdded(
-                occurred_at=self.updated_at,
-                engagement_id=self.id,
-                deliverable_id=d.id,
-                title=d.title,
-            )
-        )
         return d
 
     def remove_deliverable(self, deliverable_id: DeliverableId) -> None:
@@ -188,7 +178,6 @@ class Engagement:
                 f"Cannot update deliverables on a {self.status.value} engagement"
             )
         d = self._find_deliverable(deliverable_id)
-        previous = d.status
         if status == DeliverableStatus.IN_PROGRESS:
             d.start()
         elif status == DeliverableStatus.DELIVERED:
@@ -198,15 +187,6 @@ class Engagement:
         else:
             raise DomainError(f"Use add_deliverable to set initial status; got {status.value}")
         self.updated_at = utc_now()
-        self.events.append(
-            DeliverableStatusChanged(
-                occurred_at=self.updated_at,
-                engagement_id=self.id,
-                deliverable_id=d.id,
-                from_status=previous.value,
-                to_status=d.status.value,
-            )
-        )
         return d
 
     def log_hours(

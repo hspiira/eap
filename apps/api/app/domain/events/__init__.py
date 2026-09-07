@@ -24,8 +24,6 @@ from app.domain.events.clinical import (
     EAPProgrammeCreated,
 )
 from app.domain.events.consultancy import (
-    DeliverableAdded,
-    DeliverableStatusChanged,
     EngagementActivated,
     EngagementClosed,
     EngagementCreated,
@@ -147,8 +145,6 @@ __all__ = [
     "DocumentVersionCreated",
     "EAPProgrammeCreated",
     "EngagementActivated",
-    "DeliverableAdded",
-    "DeliverableStatusChanged",
     "EngagementClosed",
     "EngagementCreated",
     "EngagementDelivered",

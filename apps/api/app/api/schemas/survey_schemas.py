@@ -41,16 +41,6 @@ class SurveyCampaignResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
-class SurveyCampaignListResponse(BaseModel):
-    """The canonical list envelope: server-side filters, totals and paging."""
-
-    items: list[SurveyCampaignResponse]
-    total: int
-    page: int
-    limit: int
-    has_more: bool
-
-
 class SurveyResponseAcceptedResponse(BaseModel):
     """Returned by the webhook endpoint."""
 

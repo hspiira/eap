@@ -1,42 +1,13 @@
 """SQLAlchemy implementation of the Engagement repository (Phase 4 #D-Engagement)."""
 
-from sqlalchemy import Select, func, select
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.domain.entities.engagement import Engagement
-from app.domain.enums import EngagementStatus
 from app.domain.repositories.engagement_repository import EngagementRepository
 from app.domain.value_objects.core import ClientId, EngagementId, TenantId
 from app.infrastructure.mappers.engagement_mapper import EngagementMapper
 from app.infrastructure.models.engagement_model import EngagementModel
-
-_SORTABLE = {
-    "created_at": EngagementModel.created_at,
-    "updated_at": EngagementModel.updated_at,
-    "name": EngagementModel.name,
-    "status": EngagementModel.status,
-    "period_start": EngagementModel.period_start,
-    "period_end": EngagementModel.period_end,
-}
-
-
-def _filtered(
-    stmt: Select,
-    tenant_id: TenantId,
-    *,
-    status: EngagementStatus | None,
-    client_id: ClientId | None,
-    search: str | None,
-) -> Select:
-    """Apply the tenant scope and the list filters shared by list and count."""
-    stmt = stmt.where(EngagementModel.tenant_id == tenant_id.value)
-    if status is not None:
-        stmt = stmt.where(EngagementModel.status == status)
-    if client_id is not None:
-        stmt = stmt.where(EngagementModel.client_id == client_id.value)
-    if search:
-        stmt = stmt.where(EngagementModel.name.ilike(f"%{search}%"))
-    return stmt
 
 
 class EngagementRepositoryImpl(EngagementRepository):
@@ -79,43 +50,17 @@ class EngagementRepositoryImpl(EngagementRepository):
         return existing is not None
 
     async def list_for_tenant(
-        self,
-        tenant_id: TenantId,
-        *,
-        status: EngagementStatus | None = None,
-        client_id: ClientId | None = None,
-        search: str | None = None,
-        limit: int = 50,
-        offset: int = 0,
-        sort_by: str = "created_at",
-        sort_desc: bool = True,
+        self, tenant_id: TenantId, *, limit: int = 50, offset: int = 0
     ) -> list[Engagement]:
-        column = _SORTABLE.get(sort_by, EngagementModel.created_at)
-        stmt = _filtered(
-            select(EngagementModel), tenant_id, status=status, client_id=client_id, search=search
-        )
         stmt = (
-            stmt.order_by(column.desc() if sort_desc else column.asc()).limit(limit).offset(offset)
+            select(EngagementModel)
+            .where(EngagementModel.tenant_id == tenant_id.value)
+            .order_by(EngagementModel.created_at.desc())
+            .limit(limit)
+            .offset(offset)
         )
         rows = (await self._session.execute(stmt)).scalars().all()
         return [EngagementMapper.to_entity(r) for r in rows]
-
-    async def count_for_tenant(
-        self,
-        tenant_id: TenantId,
-        *,
-        status: EngagementStatus | None = None,
-        client_id: ClientId | None = None,
-        search: str | None = None,
-    ) -> int:
-        stmt = _filtered(
-            select(func.count()).select_from(EngagementModel),
-            tenant_id,
-            status=status,
-            client_id=client_id,
-            search=search,
-        )
-        return int((await self._session.execute(stmt)).scalar_one())
 
     async def list_for_client(
         self,
