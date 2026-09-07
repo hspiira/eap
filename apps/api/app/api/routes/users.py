@@ -131,6 +131,7 @@ async def create_user(
             UserTransition.UPDATE_PREFERENCES,
             preferred_language=data.preferred_language,
             timezone=data.timezone,
+            tenant_id=current_user.tenant_id,
         )
 
     await audit_change(user, audit_handler, current_user, request, tenant_id=tenant_id)
@@ -154,7 +155,9 @@ async def verify_user_email(
 ):
     """Verify user email address."""
     use_case = TransitionUseCase(user_repo, "User")
-    updated_user = await use_case.execute(user.id, UserTransition.VERIFY_EMAIL)
+    updated_user = await use_case.execute(
+        user.id, UserTransition.VERIFY_EMAIL, tenant_id=current_user.tenant_id
+    )
     await audit_change(updated_user, audit_handler, current_user, request)
     return _to_user_response(updated_user)
 
@@ -251,7 +254,9 @@ async def activate_user(
 ):
     """Activate a user."""
     use_case = TransitionUseCase(user_repo, "User")
-    updated_user = await use_case.execute(user.id, UserTransition.ACTIVATE)
+    updated_user = await use_case.execute(
+        user.id, UserTransition.ACTIVATE, tenant_id=current_user.tenant_id
+    )
     await audit_change(updated_user, audit_handler, current_user, request)
     return _to_user_response(updated_user)
 
@@ -274,7 +279,9 @@ async def suspend_user(
 ):
     """Suspend a user."""
     use_case = TransitionUseCase(user_repo, "User")
-    updated_user = await use_case.execute(user.id, UserTransition.SUSPEND, reason=body.reason)
+    updated_user = await use_case.execute(
+        user.id, UserTransition.SUSPEND, reason=body.reason, tenant_id=current_user.tenant_id
+    )
     await audit_change(updated_user, audit_handler, current_user, request)
     return _to_user_response(updated_user)
 
@@ -297,7 +304,9 @@ async def ban_user(
 ):
     """Ban a user."""
     use_case = TransitionUseCase(user_repo, "User")
-    updated_user = await use_case.execute(user.id, UserTransition.BAN, reason=body.reason)
+    updated_user = await use_case.execute(
+        user.id, UserTransition.BAN, reason=body.reason, tenant_id=current_user.tenant_id
+    )
     await audit_change(updated_user, audit_handler, current_user, request)
     return _to_user_response(updated_user)
 
@@ -320,7 +329,9 @@ async def deactivate_user(
 ):
     """Deactivate a user."""
     use_case = TransitionUseCase(user_repo, "User")
-    updated_user = await use_case.execute(user.id, UserTransition.DEACTIVATE, reason=body.reason)
+    updated_user = await use_case.execute(
+        user.id, UserTransition.DEACTIVATE, reason=body.reason, tenant_id=current_user.tenant_id
+    )
     await audit_change(updated_user, audit_handler, current_user, request)
     return _to_user_response(updated_user)
 
@@ -343,7 +354,9 @@ async def terminate_user(
 ):
     """Terminate a user."""
     use_case = TransitionUseCase(user_repo, "User")
-    updated_user = await use_case.execute(user.id, UserTransition.TERMINATE, reason=body.reason)
+    updated_user = await use_case.execute(
+        user.id, UserTransition.TERMINATE, reason=body.reason, tenant_id=current_user.tenant_id
+    )
     await audit_change(updated_user, audit_handler, current_user, request)
     return _to_user_response(updated_user)
 
@@ -387,7 +400,10 @@ async def update_user_password(
     password_hash = _hash_password(body.password)
     use_case = TransitionUseCase(user_repo, "User")
     updated_user = await use_case.execute(
-        user.id, UserTransition.UPDATE_PASSWORD, password_hash=password_hash
+        user.id,
+        UserTransition.UPDATE_PASSWORD,
+        password_hash=password_hash,
+        tenant_id=current_user.tenant_id,
     )
     await audit_change(updated_user, audit_handler, current_user, request)
     return _to_user_response(updated_user)
@@ -416,6 +432,7 @@ async def update_user_preferences(
         UserTransition.UPDATE_PREFERENCES,
         preferred_language=body.preferred_language,
         timezone=body.timezone,
+        tenant_id=current_user.tenant_id,
     )
     await audit_change(updated_user, audit_handler, current_user, request)
     return _to_user_response(updated_user)
@@ -438,7 +455,9 @@ async def enable_two_factor(
 ):
     """Enable two-factor authentication. Self-service or ADMIN-only override."""
     use_case = TransitionUseCase(user_repo, "User")
-    updated_user = await use_case.execute(user.id, UserTransition.ENABLE_TWO_FACTOR)
+    updated_user = await use_case.execute(
+        user.id, UserTransition.ENABLE_TWO_FACTOR, tenant_id=current_user.tenant_id
+    )
     await audit_change(updated_user, audit_handler, current_user, request)
     return _to_user_response(updated_user)
 
@@ -460,7 +479,9 @@ async def disable_two_factor(
 ):
     """Disable two-factor authentication. Self-service or ADMIN-only override."""
     use_case = TransitionUseCase(user_repo, "User")
-    updated_user = await use_case.execute(user.id, UserTransition.DISABLE_TWO_FACTOR)
+    updated_user = await use_case.execute(
+        user.id, UserTransition.DISABLE_TWO_FACTOR, tenant_id=current_user.tenant_id
+    )
     await audit_change(updated_user, audit_handler, current_user, request)
     return _to_user_response(updated_user)
 

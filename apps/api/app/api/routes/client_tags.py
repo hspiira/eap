@@ -123,7 +123,9 @@ async def activate_client_tag(
 ):
     """Activate a client tag."""
     use_case = TransitionUseCase(tag_repo, "Tag")
-    tag = await use_case.execute(ClientTagId(tag_id), ClientTagTransition.ACTIVATE)
+    tag = await use_case.execute(
+        ClientTagId(tag_id), ClientTagTransition.ACTIVATE, tenant_id=current_user.tenant_id
+    )
     await audit_change(tag, audit_handler, current_user, request)
     return _to_client_tag_response(tag)
 
@@ -144,7 +146,9 @@ async def deactivate_client_tag(
 ):
     """Deactivate a client tag."""
     use_case = TransitionUseCase(tag_repo, "Tag")
-    tag = await use_case.execute(ClientTagId(tag_id), ClientTagTransition.DEACTIVATE)
+    tag = await use_case.execute(
+        ClientTagId(tag_id), ClientTagTransition.DEACTIVATE, tenant_id=current_user.tenant_id
+    )
     await audit_change(tag, audit_handler, current_user, request)
     return _to_client_tag_response(tag)
 

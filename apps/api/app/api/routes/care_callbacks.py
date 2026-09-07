@@ -169,6 +169,7 @@ async def activate_campaign(
     campaign = await use_case.execute(
         CareCallbackCampaignId(campaign_id),
         CareCallbackCampaignTransition.ACTIVATE,
+        tenant_id=current_user.tenant_id,
     )
     await audit_change(campaign, audit_handler, current_user, request)
     return _to_campaign_response(campaign)
@@ -192,6 +193,7 @@ async def complete_campaign(
     campaign = await use_case.execute(
         CareCallbackCampaignId(campaign_id),
         CareCallbackCampaignTransition.COMPLETE,
+        tenant_id=current_user.tenant_id,
     )
     await audit_change(campaign, audit_handler, current_user, request)
     return _to_campaign_response(campaign)
@@ -215,6 +217,7 @@ async def archive_campaign(
     campaign = await use_case.execute(
         CareCallbackCampaignId(campaign_id),
         CareCallbackCampaignTransition.ARCHIVE,
+        tenant_id=current_user.tenant_id,
     )
     await audit_change(campaign, audit_handler, current_user, request)
     return _to_campaign_response(campaign)
@@ -240,6 +243,7 @@ async def update_counsellor_pool(
         CareCallbackCampaignId(campaign_id),
         CareCallbackCampaignTransition.UPDATE_COUNSELLOR_POOL,
         pool=tuple(ProviderId(p) for p in data.counsellor_pool),
+        tenant_id=current_user.tenant_id,
     )
     await audit_change(campaign, audit_handler, current_user, request)
     return _to_campaign_response(campaign)
@@ -377,6 +381,7 @@ async def assign_outreach(
         OutreachRecordId(outreach_id),
         OutreachTransition.ASSIGN,
         counsellor_id=counsellor_id,
+        tenant_id=current_user.tenant_id,
     )
     await audit_change(record, audit_handler, current_user, request)
     return _to_outreach_response(record)
@@ -398,7 +403,9 @@ async def record_attempt(
 ):
     use_case = TransitionUseCase(repo, "OutreachRecord")
     record = await use_case.execute(
-        OutreachRecordId(outreach_id), OutreachTransition.RECORD_ATTEMPT
+        OutreachRecordId(outreach_id),
+        OutreachTransition.RECORD_ATTEMPT,
+        tenant_id=current_user.tenant_id,
     )
     await audit_change(record, audit_handler, current_user, request)
     return _to_outreach_response(record)
@@ -429,6 +436,7 @@ async def record_triage(
         risk_level=data.risk_level,
         crisis_flag=data.crisis_flag,
         crisis_reason=data.crisis_reason,
+        tenant_id=current_user.tenant_id,
     )
     await audit_change(record, audit_handler, current_user, request)
     return _to_outreach_response(record)
@@ -549,6 +557,7 @@ async def complete_outreach(
         OutreachRecordId(outreach_id),
         OutreachTransition.COMPLETE,
         notes=data.notes,
+        tenant_id=current_user.tenant_id,
     )
     await audit_change(record, audit_handler, current_user, request)
     return _to_outreach_response(record)
@@ -574,6 +583,7 @@ async def mark_unreachable(
         OutreachRecordId(outreach_id),
         OutreachTransition.MARK_UNREACHABLE,
         notes=data.notes,
+        tenant_id=current_user.tenant_id,
     )
     await audit_change(record, audit_handler, current_user, request)
     return _to_outreach_response(record)
@@ -599,6 +609,7 @@ async def mark_declined(
         OutreachRecordId(outreach_id),
         OutreachTransition.MARK_DECLINED,
         notes=data.notes,
+        tenant_id=current_user.tenant_id,
     )
     await audit_change(record, audit_handler, current_user, request)
     return _to_outreach_response(record)
@@ -624,6 +635,7 @@ async def escalate_outreach(
         OutreachRecordId(outreach_id),
         OutreachTransition.ESCALATE,
         notes=data.notes,
+        tenant_id=current_user.tenant_id,
     )
     await audit_change(record, audit_handler, current_user, request)
     return _to_outreach_response(record)

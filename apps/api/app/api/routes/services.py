@@ -114,7 +114,9 @@ async def activate_service(
 ):
     """Activate a service."""
     use_case = TransitionUseCase(service_repo, "Service")
-    service = await use_case.execute(service.id, ServiceTransition.ACTIVATE)
+    service = await use_case.execute(
+        service.id, ServiceTransition.ACTIVATE, tenant_id=current_user.tenant_id
+    )
     await audit_change(service, audit_handler, current_user, request)
     return _to_service_response(service)
 
@@ -136,7 +138,9 @@ async def deactivate_service(
 ):
     """Deactivate a service."""
     use_case = TransitionUseCase(service_repo, "Service")
-    service = await use_case.execute(service.id, ServiceTransition.DEACTIVATE, reason=reason)
+    service = await use_case.execute(
+        service.id, ServiceTransition.DEACTIVATE, reason=reason, tenant_id=current_user.tenant_id
+    )
     await audit_change(service, audit_handler, current_user, request)
     return _to_service_response(service)
 
@@ -157,7 +161,9 @@ async def archive_service(
 ):
     """Archive a service."""
     use_case = TransitionUseCase(service_repo, "Service")
-    service = await use_case.execute(service.id, ServiceTransition.ARCHIVE)
+    service = await use_case.execute(
+        service.id, ServiceTransition.ARCHIVE, tenant_id=current_user.tenant_id
+    )
     await audit_change(service, audit_handler, current_user, request)
     return _to_service_response(service)
 
@@ -178,7 +184,9 @@ async def restore_service(
 ):
     """Restore an archived or soft-deleted service."""
     use_case = TransitionUseCase(service_repo, "Service")
-    service = await use_case.execute(service.id, ServiceTransition.RESTORE)
+    service = await use_case.execute(
+        service.id, ServiceTransition.RESTORE, tenant_id=current_user.tenant_id
+    )
     await audit_change(service, audit_handler, current_user, request)
     return _to_service_response(service)
 

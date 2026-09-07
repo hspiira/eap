@@ -173,7 +173,9 @@ async def activate_kpi(
 ):
     """Activate a KPI."""
     use_case = TransitionUseCase(kpi_repo, "KPI")
-    kpi = await use_case.execute(KPIId(kpi_id), KPITransition.ACTIVATE)
+    kpi = await use_case.execute(
+        KPIId(kpi_id), KPITransition.ACTIVATE, tenant_id=current_user.tenant_id
+    )
     await audit_change(kpi, audit_handler, current_user, request)
     return _to_kpi_response(kpi)
 
@@ -194,7 +196,9 @@ async def deactivate_kpi(
 ):
     """Deactivate a KPI."""
     use_case = TransitionUseCase(kpi_repo, "KPI")
-    kpi = await use_case.execute(KPIId(kpi_id), KPITransition.DEACTIVATE)
+    kpi = await use_case.execute(
+        KPIId(kpi_id), KPITransition.DEACTIVATE, tenant_id=current_user.tenant_id
+    )
     await audit_change(kpi, audit_handler, current_user, request)
     return _to_kpi_response(kpi)
 
@@ -359,7 +363,9 @@ async def activate_kpi_assignment(
     """Activate a KPI assignment."""
     use_case = TransitionUseCase(assignment_repo, "Assignment")
     assignment = await use_case.execute(
-        KPIAssignmentId(assignment_id), KPIAssignmentTransition.ACTIVATE
+        KPIAssignmentId(assignment_id),
+        KPIAssignmentTransition.ACTIVATE,
+        tenant_id=current_user.tenant_id,
     )
     await audit_change(assignment, audit_handler, current_user, request)
     return _to_kpi_assignment_response(assignment)
@@ -382,7 +388,9 @@ async def deactivate_kpi_assignment(
     """Deactivate a KPI assignment."""
     use_case = TransitionUseCase(assignment_repo, "Assignment")
     assignment = await use_case.execute(
-        KPIAssignmentId(assignment_id), KPIAssignmentTransition.DEACTIVATE
+        KPIAssignmentId(assignment_id),
+        KPIAssignmentTransition.DEACTIVATE,
+        tenant_id=current_user.tenant_id,
     )
     await audit_change(assignment, audit_handler, current_user, request)
     return _to_kpi_assignment_response(assignment)

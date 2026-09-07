@@ -151,7 +151,9 @@ async def activate_survey_campaign(
 ):
     use_case = TransitionUseCase(repo, "SurveyCampaign")
     campaign = await use_case.execute(
-        SurveyCampaignId(campaign_id), SurveyCampaignTransition.ACTIVATE
+        SurveyCampaignId(campaign_id),
+        SurveyCampaignTransition.ACTIVATE,
+        tenant_id=current_user.tenant_id,
     )
     await audit_change(campaign, audit_handler, current_user, request)
     return _to_campaign_response(campaign)
@@ -172,7 +174,11 @@ async def close_survey_campaign(
     db: AsyncSession = Depends(get_db),
 ):
     use_case = TransitionUseCase(repo, "SurveyCampaign")
-    campaign = await use_case.execute(SurveyCampaignId(campaign_id), SurveyCampaignTransition.CLOSE)
+    campaign = await use_case.execute(
+        SurveyCampaignId(campaign_id),
+        SurveyCampaignTransition.CLOSE,
+        tenant_id=current_user.tenant_id,
+    )
     await audit_change(campaign, audit_handler, current_user, request)
     return _to_campaign_response(campaign)
 

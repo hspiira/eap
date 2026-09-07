@@ -117,6 +117,7 @@ async def record_phase(
         CriticalIncidentTransition.RECORD_PHASE,
         phase=body.phase,
         notes=body.notes,
+        tenant_id=current_user.tenant_id,
     )
     await audit_change(incident, audit_handler, current_user, request)
     return _to_response(incident)
@@ -142,6 +143,7 @@ async def close_incident(
         CriticalIncidentId(incident_id),
         CriticalIncidentTransition.CLOSE,
         after_action_summary=body.after_action_summary,
+        tenant_id=current_user.tenant_id,
     )
     await audit_change(incident, audit_handler, current_user, request)
     return _to_response(incident)

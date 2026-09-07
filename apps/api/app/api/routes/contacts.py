@@ -136,7 +136,9 @@ async def activate_contact(
 ):
     """Activate a contact."""
     use_case = TransitionUseCase(contact_repo, "Contact")
-    contact = await use_case.execute(ContactId(contact_id), ContactTransition.ACTIVATE)
+    contact = await use_case.execute(
+        ContactId(contact_id), ContactTransition.ACTIVATE, tenant_id=current_user.tenant_id
+    )
     await audit_change(contact, audit_handler, current_user, request)
     return _to_contact_response(contact)
 
@@ -157,7 +159,9 @@ async def deactivate_contact(
 ):
     """Deactivate a contact."""
     use_case = TransitionUseCase(contact_repo, "Contact")
-    contact = await use_case.execute(ContactId(contact_id), ContactTransition.DEACTIVATE)
+    contact = await use_case.execute(
+        ContactId(contact_id), ContactTransition.DEACTIVATE, tenant_id=current_user.tenant_id
+    )
     await audit_change(contact, audit_handler, current_user, request)
     return _to_contact_response(contact)
 

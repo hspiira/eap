@@ -357,6 +357,7 @@ async def complete_service_session(
         ServiceSessionTransition.COMPLETE,
         duration=body.duration,
         notes=body.notes,
+        tenant_id=current_user.tenant_id,
     )
     await audit_change(session, audit_handler, current_user, request)
     drawdown = await _draw_down(
@@ -434,7 +435,10 @@ async def cancel_service_session(
     """Cancel a service session."""
     use_case = TransitionUseCase(session_repo, "Session")
     session = await use_case.execute(
-        session.id, ServiceSessionTransition.CANCEL, reason=body.reason
+        session.id,
+        ServiceSessionTransition.CANCEL,
+        reason=body.reason,
+        tenant_id=current_user.tenant_id,
     )
     await audit_change(session, audit_handler, current_user, request)
     return await _one(session, attribution_reader)
@@ -484,6 +488,7 @@ async def reschedule_service_session(
         session.id,
         ServiceSessionTransition.RESCHEDULE,
         new_scheduled_at=new_scheduled_at,
+        tenant_id=current_user.tenant_id,
     )
     await audit_change(session, audit_handler, current_user, request)
     return await _one(session, attribution_reader)
@@ -506,7 +511,9 @@ async def mark_no_show_service_session(
 ):
     """Mark a service session as no-show."""
     use_case = TransitionUseCase(session_repo, "Session")
-    session = await use_case.execute(session.id, ServiceSessionTransition.MARK_NO_SHOW)
+    session = await use_case.execute(
+        session.id, ServiceSessionTransition.MARK_NO_SHOW, tenant_id=current_user.tenant_id
+    )
     await audit_change(session, audit_handler, current_user, request)
     return await _one(session, attribution_reader)
 
@@ -571,6 +578,7 @@ async def update_service_session_feedback(
         session.id,
         ServiceSessionTransition.UPDATE_FEEDBACK,
         feedback=body.feedback,
+        tenant_id=current_user.tenant_id,
     )
     await audit_change(session, audit_handler, current_user, request)
     return await _one(session, attribution_reader)
@@ -593,7 +601,9 @@ async def archive_service_session(
 ):
     """Archive a service session."""
     use_case = TransitionUseCase(session_repo, "Session")
-    session = await use_case.execute(session.id, ServiceSessionTransition.ARCHIVE)
+    session = await use_case.execute(
+        session.id, ServiceSessionTransition.ARCHIVE, tenant_id=current_user.tenant_id
+    )
     await audit_change(session, audit_handler, current_user, request)
     return await _one(session, attribution_reader)
 
@@ -615,7 +625,9 @@ async def restore_service_session(
 ):
     """Restore an archived service session."""
     use_case = TransitionUseCase(session_repo, "Session")
-    session = await use_case.execute(session.id, ServiceSessionTransition.RESTORE)
+    session = await use_case.execute(
+        session.id, ServiceSessionTransition.RESTORE, tenant_id=current_user.tenant_id
+    )
     await audit_change(session, audit_handler, current_user, request)
     return await _one(session, attribution_reader)
 

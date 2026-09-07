@@ -147,7 +147,9 @@ async def activate_contract(
 ):
     """Activate a contract."""
     use_case = TransitionUseCase(contract_repo, "Contract")
-    contract = await use_case.execute(contract.id, ContractTransition.ACTIVATE)
+    contract = await use_case.execute(
+        contract.id, ContractTransition.ACTIVATE, tenant_id=current_user.tenant_id
+    )
     await audit_change(contract, audit_handler, current_user, request)
     return _to_contract_response(contract)
 
@@ -170,7 +172,10 @@ async def sign_contract(
     """Sign a contract."""
     use_case = TransitionUseCase(contract_repo, "Contract")
     contract = await use_case.execute(
-        contract.id, ContractTransition.SIGN, signed_by=body.signed_by
+        contract.id,
+        ContractTransition.SIGN,
+        signed_by=body.signed_by,
+        tenant_id=current_user.tenant_id,
     )
     await audit_change(contract, audit_handler, current_user, request)
     return _to_contract_response(contract)
@@ -205,6 +210,7 @@ async def renew_contract(
         ContractTransition.RENEW,
         new_end_date=body.new_end_date,
         new_rate=new_rate,
+        tenant_id=current_user.tenant_id,
     )
     await audit_change(contract, audit_handler, current_user, request)
     return _to_contract_response(contract)
@@ -227,7 +233,12 @@ async def terminate_contract(
 ):
     """Terminate a contract."""
     use_case = TransitionUseCase(contract_repo, "Contract")
-    contract = await use_case.execute(contract.id, ContractTransition.TERMINATE, reason=body.reason)
+    contract = await use_case.execute(
+        contract.id,
+        ContractTransition.TERMINATE,
+        reason=body.reason,
+        tenant_id=current_user.tenant_id,
+    )
     await audit_change(contract, audit_handler, current_user, request)
     return _to_contract_response(contract)
 
@@ -248,7 +259,9 @@ async def archive_contract(
 ):
     """Archive a contract."""
     use_case = TransitionUseCase(contract_repo, "Contract")
-    contract = await use_case.execute(contract.id, ContractTransition.ARCHIVE)
+    contract = await use_case.execute(
+        contract.id, ContractTransition.ARCHIVE, tenant_id=current_user.tenant_id
+    )
     await audit_change(contract, audit_handler, current_user, request)
     return _to_contract_response(contract)
 
@@ -269,7 +282,9 @@ async def restore_contract(
 ):
     """Restore a terminated or expired contract."""
     use_case = TransitionUseCase(contract_repo, "Contract")
-    contract = await use_case.execute(contract.id, ContractTransition.RESTORE)
+    contract = await use_case.execute(
+        contract.id, ContractTransition.RESTORE, tenant_id=current_user.tenant_id
+    )
     await audit_change(contract, audit_handler, current_user, request)
     return _to_contract_response(contract)
 
@@ -328,6 +343,7 @@ async def update_contract_payment_status(
         contract.id,
         ContractTransition.UPDATE_PAYMENT_STATUS,
         payment_status=body.payment_status,
+        tenant_id=current_user.tenant_id,
     )
     await audit_change(contract, audit_handler, current_user, request)
     return _to_contract_response(contract)

@@ -122,6 +122,7 @@ async def sign_non_compete(
         NonCompeteClauseId(clause_id),
         NonCompeteTransition.SIGN,
         signed_by=UserId(body.signed_by),
+        tenant_id=current_user.tenant_id,
     )
     await audit_change(clause, audit_handler, current_user, request)
     return _to_response(clause)
@@ -150,6 +151,7 @@ async def revoke_non_compete(
         NonCompeteClauseId(clause_id),
         NonCompeteTransition.REVOKE,
         reason=body.reason,
+        tenant_id=current_user.tenant_id,
     )
     await audit_change(clause, audit_handler, current_user, request)
     return _to_response(clause)

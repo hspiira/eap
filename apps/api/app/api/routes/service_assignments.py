@@ -128,7 +128,9 @@ async def activate_service_assignment(
     """Activate a service assignment."""
     use_case = TransitionUseCase(assignment_repo, "Assignment")
     assignment = await use_case.execute(
-        ServiceAssignmentId(assignment_id), ServiceAssignmentTransition.ACTIVATE
+        ServiceAssignmentId(assignment_id),
+        ServiceAssignmentTransition.ACTIVATE,
+        tenant_id=current_user.tenant_id,
     )
     await audit_change(assignment, audit_handler, current_user, request)
     return _to_service_assignment_response(assignment)
@@ -151,7 +153,9 @@ async def deactivate_service_assignment(
     """Deactivate a service assignment."""
     use_case = TransitionUseCase(assignment_repo, "Assignment")
     assignment = await use_case.execute(
-        ServiceAssignmentId(assignment_id), ServiceAssignmentTransition.DEACTIVATE
+        ServiceAssignmentId(assignment_id),
+        ServiceAssignmentTransition.DEACTIVATE,
+        tenant_id=current_user.tenant_id,
     )
     await audit_change(assignment, audit_handler, current_user, request)
     return _to_service_assignment_response(assignment)

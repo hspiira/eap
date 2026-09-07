@@ -52,6 +52,11 @@ def _execute_call_sites(path: Path):
 
 ROUTE_FILES = sorted(ROUTES_DIR.glob("*.py"))
 
+#: The dispatcher is also driven from the application layer (tenant bootstrap
+#: activates its own admin user), so the tenant guard has to be scanned there.
+USE_CASES_DIR = Path(__file__).resolve().parents[3] / "app" / "application" / "use_cases"
+TRANSITION_CALLER_FILES = ROUTE_FILES + sorted(USE_CASES_DIR.glob("*.py"))
+
 
 def test_route_files_are_discovered():
     assert len(ROUTE_FILES) > 10
@@ -102,7 +107,9 @@ def _transition_call_sites(path: Path):
         keywords = [kw.arg for kw in node.keywords]
         if any(kw is None for kw in keywords):
             continue
-        yield node.lineno, second.value.id, second.attr, keywords
+        # `tenant_id` is the dispatcher's own ownership argument; it is consumed
+        # by TransitionUseCase.execute and never forwarded to the entity method.
+        yield node.lineno, second.value.id, second.attr, [k for k in keywords if k != "tenant_id"]
 
 
 @pytest.mark.parametrize("route_file", ROUTE_FILES, ids=lambda p: p.name)
@@ -184,3 +191,56 @@ def test_the_in_body_tenant_guard_stays_synchronous():
     from app.core.authorization import assert_same_tenant
 
     assert not inspect.iscoroutinefunction(assert_same_tenant)
+
+
+# --- Every transition must name the tenant it is allowed to touch --------------
+
+
+def _transition_execute_calls(path: Path):
+    """Yield (lineno, function_name, keyword_names) per TransitionUseCase call.
+
+    Resolved inside one function body: routes reuse the name `use_case` for
+    different classes, so a file-wide map attributes calls to the wrong class.
+    """
+    tree = ast.parse(path.read_text())
+    for fn in ast.walk(tree):
+        if not isinstance(fn, (ast.FunctionDef, ast.AsyncFunctionDef)):
+            continue
+        names = {
+            node.targets[0].id
+            for node in ast.walk(fn)
+            if isinstance(node, ast.Assign)
+            and len(node.targets) == 1
+            and isinstance(node.targets[0], ast.Name)
+            and isinstance(node.value, ast.Call)
+            and isinstance(node.value.func, ast.Name)
+            and node.value.func.id == "TransitionUseCase"
+        }
+        if not names:
+            continue
+        for node in ast.walk(fn):
+            if not isinstance(node, ast.Call):
+                continue
+            func = node.func
+            if not (isinstance(func, ast.Attribute) and func.attr == "execute"):
+                continue
+            if not (isinstance(func.value, ast.Name) and func.value.id in names):
+                continue
+            yield node.lineno, fn.name, [kw.arg for kw in node.keywords]
+
+
+@pytest.mark.parametrize("route_file", TRANSITION_CALLER_FILES, ids=lambda p: p.name)
+def test_every_transition_passes_the_tenant_it_may_act_on(route_file: Path):
+    """SEC-03: the dispatcher loaded by id and mutated without an owner check.
+
+    A tenant-A Viewer activated tenant-B's survey and added a deliverable to
+    tenant-B's engagement. `tenant_id` is keyword-only and has no default, so
+    Python already rejects a call that omits it; this test names the offender
+    at its line instead of at the first request that reaches it.
+    """
+    missing = [
+        f"{route_file.name}:{lineno} {name}() calls TransitionUseCase.execute without tenant_id"
+        for lineno, name, keywords in _transition_execute_calls(route_file)
+        if "tenant_id" not in keywords
+    ]
+    assert not missing, "\n".join(missing)

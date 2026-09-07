@@ -141,7 +141,9 @@ async def activate_industry(
 ):
     """Activate an industry. ADMIN-only, same-tenant."""
     use_case = TransitionUseCase(industry_repo, "Industry")
-    industry = await use_case.execute(industry.id, IndustryTransition.ACTIVATE)
+    industry = await use_case.execute(
+        industry.id, IndustryTransition.ACTIVATE, tenant_id=current_user.tenant_id
+    )
     await audit_change(industry, audit_handler, current_user, request)
     return _to_industry_response(industry)
 
@@ -163,7 +165,9 @@ async def deactivate_industry(
 ):
     """Deactivate an industry. ADMIN-only, same-tenant."""
     use_case = TransitionUseCase(industry_repo, "Industry")
-    industry = await use_case.execute(industry.id, IndustryTransition.DEACTIVATE)
+    industry = await use_case.execute(
+        industry.id, IndustryTransition.DEACTIVATE, tenant_id=current_user.tenant_id
+    )
     await audit_change(industry, audit_handler, current_user, request)
     return _to_industry_response(industry)
 
