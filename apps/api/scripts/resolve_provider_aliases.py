@@ -10,8 +10,16 @@ Decision 5 stands: a normalised name is not identity. An alias whose spelling
 merely looks like a practitioner's, with no batch row and no sheet entry behind
 it, is left unmapped for a person to decide.
 
+`--source-system` with `--names` queues every name a source file uses before
+resolving, because staging reads decisions and never opens one: a source system
+whose names nobody has queued has nothing for a reviewer to act on.
+
     uv run python scripts/resolve_provider_aliases.py --tenant-id <id> \
         --batch-id <id> [--mapping <xlsx> --sheet Counselors] [--apply]
+
+    uv run python scripts/resolve_provider_aliases.py --tenant-id <id> \
+        --batch-id <id> --source-system activity-log-workbook \
+        --names data/taxonomy/sessions.csv --mapping <xlsx> [--apply]
 """
 
 from __future__ import annotations
@@ -33,6 +41,9 @@ if str(API_ROOT) not in sys.path:
 from import_support import Plan, report, send  # noqa: E402
 
 PAGE = 100
+#: Columns a source extract may hold the practitioner's name in, most
+#: deliberately cleaned first. Matches what the staging parser looks for.
+NAME_COLUMNS = ("COUNSELOR (CLEAN)", "COUNSELOR", "COUNSELLOR")
 
 
 def _mapping(workbook: Path | None, sheet: str) -> dict[str, str]:
@@ -54,6 +65,46 @@ def _mapping(workbook: Path | None, sheet: str) -> dict[str, str]:
         if key:
             pairs[key] = str(canonical).strip()
     return pairs
+
+
+def _source_names(path: Path | None) -> list[str]:
+    """Every distinct practitioner name the extract uses, in first-seen order."""
+    if path is None:
+        return []
+    import csv
+
+    from app.domain.services.provider_alias_normalisation import normalise_practitioner_name
+
+    with path.open(newline="", encoding="utf-8-sig") as handle:
+        reader = csv.DictReader(handle)
+        columns = [c for c in NAME_COLUMNS if c in (reader.fieldnames or [])]
+        if not columns:
+            sys.exit(f"{path} has none of {NAME_COLUMNS}")
+        seen: dict[str, str] = {}
+        for row in reader:
+            for column in columns:
+                raw = (row.get(column) or "").strip()
+                key = normalise_practitioner_name(raw)
+                if key and key not in seen:
+                    seen[key] = raw
+                if raw:
+                    break
+    return list(seen.values())
+
+
+async def _queue(http, tenant_id: str, source_system: str, names: list[str], plan: Plan) -> None:
+    """Open a review queue entry for each name. Asking twice changes nothing."""
+    for name in names:
+        response = await send(
+            http,
+            "POST",
+            f"/provider-aliases?tenant_id={tenant_id}",
+            json={"source_system": source_system, "source_value": name},
+        )
+        if response.status_code == 201:
+            plan.created.append(name)
+        else:
+            plan.failed.append(f"{name}: {response.status_code} {response.text[:120]}")
 
 
 async def _pages(http, url: str) -> list[dict]:
@@ -117,7 +168,15 @@ def _decide(
     return None, f"the mapping gives {canonical!r}, which is not a practitioner here"
 
 
-async def run(tenant_id: str, batch_id: str, workbook: Path | None, sheet: str, apply: bool) -> int:
+async def run(
+    tenant_id: str,
+    batch_id: str,
+    workbook: Path | None,
+    sheet: str,
+    source_system: str | None,
+    names_file: Path | None,
+    apply: bool,
+) -> int:
     from httpx import ASGITransport, AsyncClient
 
     from app.core.security import TokenData, get_current_user, get_current_user_optional
@@ -128,10 +187,16 @@ async def run(tenant_id: str, batch_id: str, workbook: Path | None, sheet: str, 
     app.dependency_overrides[get_current_user_optional] = lambda: actor
 
     reviewed = _mapping(workbook, sheet)
+    names = _source_names(names_file)
     plan = Plan()
     async with AsyncClient(
         transport=ASGITransport(app=app), base_url="http://import", timeout=300
     ) as http:
+        if source_system and names:
+            if apply:
+                await _queue(http, tenant_id, source_system, names, plan)
+            else:
+                print(f"would queue {len(names)} names under {source_system!r}")
         applied = await _applied_ids(http, tenant_id, batch_id)
         providers = await _provider_ids(http, tenant_id)
         aliases = await _pages(http, f"/provider-aliases?tenant_id={tenant_id}&state=Unmapped")
@@ -169,12 +234,26 @@ def main() -> int:
     parser.add_argument("--batch-id", required=True, help="Applied practitioner import batch")
     parser.add_argument("--mapping", type=Path, help="Workbook holding the reviewed name sheet")
     parser.add_argument("--sheet", default="Counselors")
+    parser.add_argument("--source-system", help="Queue --names under this source system first")
+    parser.add_argument("--names", type=Path, help="Extract whose practitioner names to queue")
     parser.add_argument("--apply", action="store_true", help="Write. Without it, plan only.")
     args = parser.parse_args()
     if not os.environ.get("IMPORT_ACTOR_ID"):
         sys.exit("IMPORT_ACTOR_ID must name the admin the resolutions are recorded against.")
     os.environ.setdefault("PYTHONWARNINGS", "ignore")
-    return asyncio.run(run(args.tenant_id, args.batch_id, args.mapping, args.sheet, args.apply))
+    if bool(args.source_system) != bool(args.names):
+        sys.exit("--source-system and --names are used together or not at all.")
+    return asyncio.run(
+        run(
+            args.tenant_id,
+            args.batch_id,
+            args.mapping,
+            args.sheet,
+            args.source_system,
+            args.names,
+            args.apply,
+        )
+    )
 
 
 if __name__ == "__main__":

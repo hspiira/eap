@@ -24,6 +24,7 @@ from app.api.dependencies.provider_network import (
     get_session_import_repository,
 )
 from app.api.schemas.provider_network_schemas import (
+    SessionImportAbandonRequest,
     SessionImportApplyResponse,
     SessionImportBatchResponse,
     SessionImportRowListResponse,
@@ -44,7 +45,7 @@ from app.domain.entities.session_import import (
     SessionImportBatchEntity,
     SessionImportRowEntity,
 )
-from app.domain.enums.provider_network import ImportRowOutcome
+from app.domain.enums.provider_network import ImportBatchStatus, ImportRowOutcome
 from app.domain.enums.tenancy import TenantRole
 from app.domain.exceptions import DomainError, NotFoundError
 from app.domain.repositories.client_repository import ClientRepository
@@ -89,6 +90,17 @@ def _batch_response(
     )
 
 
+async def _require_batch(
+    imports: SessionImportRepository, tenant_id: str, batch_id: str
+) -> SessionImportBatchEntity:
+    batch = await imports.get_batch(TenantId(tenant_id), SessionImportBatchId(batch_id))
+    if batch is None:
+        raise NotFoundError(
+            "Import batch not found", resource_type="SessionImportBatch", resource_id=batch_id
+        )
+    return batch
+
+
 @router.post(
     "",
     response_model=SessionImportBatchResponse,
@@ -125,6 +137,12 @@ async def stage_import(
     tenant = TenantId(tenant_id)
 
     existing = await imports.find_batch_by_hash(tenant, file_hash)
+    if existing is not None and existing.status is ImportBatchStatus.ABANDONED:
+        # An abandoned batch is one somebody superseded on purpose. Holding its
+        # hash against the file would make abandoning it pointless: the same
+        # extract could never be staged again once the review data it needed
+        # had finally arrived.
+        existing = None
     if existing is not None:
         message = f"This file was already staged as batch {existing.id.value}"
         raise DomainError(
@@ -203,13 +221,8 @@ async def get_batch(
     current_user: TokenData = Depends(require_same_tenant),
     imports: SessionImportRepository = Depends(get_session_import_repository),
 ):
-    tenant = TenantId(tenant_id)
-    batch = await imports.get_batch(tenant, SessionImportBatchId(batch_id))
-    if batch is None:
-        raise NotFoundError(
-            "Import batch not found", resource_type="SessionImportBatch", resource_id=batch_id
-        )
-    return _batch_response(batch, await imports.outcome_counts(tenant, batch.id))
+    batch = await _require_batch(imports, tenant_id, batch_id)
+    return _batch_response(batch, await imports.outcome_counts(TenantId(tenant_id), batch.id))
 
 
 @router.get("/{batch_id}/rows", response_model=SessionImportRowListResponse)
@@ -253,6 +266,39 @@ async def list_rows(
 
 
 @router.post(
+    "/{batch_id}/abandon",
+    response_model=SessionImportBatchResponse,
+    dependencies=[Depends(require_tenant_role(TenantRole.ADMIN))],
+)
+@transactional()
+async def abandon_batch(
+    batch_id: str,
+    data: SessionImportAbandonRequest,
+    request: Request,
+    tenant_id: str = Query(...),
+    current_user: TokenData = Depends(require_same_tenant),
+    imports: SessionImportRepository = Depends(get_session_import_repository),
+    audit_handler=Depends(get_audit_event_handler),
+    db: AsyncSession = Depends(get_db),
+):
+    """Close a batch nobody will apply, with the reason on the record.
+
+    A batch stages what the review data said at the time. One staged before
+    the practitioner aliases or the member roster were loaded holds outcomes
+    that are now wrong, and a staged row keeps no copy of the source values it
+    was judged from, so its rows cannot be re-judged in place. Abandoning the
+    batch says so and frees the extract to be staged again: neither the file's
+    hash nor its rows' replay keys go on claiming a source nobody will import.
+    """
+    batch = await _require_batch(imports, tenant_id, batch_id)
+    batch.abandon(UserId(current_user.user_id), data.reason, at=utc_now())
+    await imports.save_batch(batch)
+    await imports.release_replay_keys(TenantId(tenant_id), batch.id)
+    await audit_change(batch, audit_handler, current_user, request)
+    return _batch_response(batch, await imports.outcome_counts(TenantId(tenant_id), batch.id))
+
+
+@router.post(
     "/{batch_id}/apply",
     response_model=SessionImportApplyResponse,
     dependencies=[Depends(require_tenant_role(TenantRole.ADMIN))],
@@ -269,9 +315,9 @@ async def apply_batch(
     """Write every importable row through the historical path, then close the batch.
 
     Applying a second time is refused, so a replayed request cannot write
-    twice. `imported` is zero today for every batch: no staged row can reach
-    Accepted while member and service resolution does not exist, which the
-    row outcomes state per row rather than leaving to be discovered here.
+    twice. Only Accepted rows are written; every other row states per row why
+    it was passed over, so an unimportable batch is legible without reading
+    this code.
     """
     result, _ = await ApplyImportBatchUseCase(imports, writer).execute(
         TenantId(tenant_id),

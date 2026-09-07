@@ -3934,7 +3934,17 @@ export interface paths {
         /** List Aliases */
         get: operations["list_aliases_provider_aliases_get"];
         put?: never;
-        post?: never;
+        /**
+         * Create Alias
+         * @description Put a source name into the review queue, unmapped.
+         *
+         *     Staging reads decisions; it does not open them, so a source system whose
+         *     names nobody has queued has nothing for a reviewer to act on. This is how
+         *     those names arrive. Asking twice returns the entry that is already there
+         *     rather than a second one, so a re-run of a seeding script cannot split one
+         *     name across two queue entries or reopen a decision somebody made.
+         */
+        post: operations["create_alias_provider_aliases_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -5017,6 +5027,33 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/session-imports/{batch_id}/abandon": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Abandon Batch
+         * @description Close a batch nobody will apply, with the reason on the record.
+         *
+         *     A batch stages what the review data said at the time. One staged before
+         *     the practitioner aliases or the member roster were loaded holds outcomes
+         *     that are now wrong, and a staged row keeps no copy of the source values it
+         *     was judged from, so its rows cannot be re-judged in place. Abandoning the
+         *     batch says so and frees the extract to be staged again: neither the file's
+         *     hash nor its rows' replay keys go on claiming a source nobody will import.
+         */
+        post: operations["abandon_batch_session_imports__batch_id__abandon_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/session-imports/{batch_id}/apply": {
         parameters: {
             query?: never;
@@ -5031,9 +5068,9 @@ export interface paths {
          * @description Write every importable row through the historical path, then close the batch.
          *
          *     Applying a second time is refused, so a replayed request cannot write
-         *     twice. `imported` is zero today for every batch: no staged row can reach
-         *     Accepted while member and service resolution does not exist, which the
-         *     row outcomes state per row rather than leaving to be discovered here.
+         *     twice. Only Accepted rows are written; every other row states per row why
+         *     it was passed over, so an unimportable batch is legible without reading
+         *     this code.
          */
         post: operations["apply_batch_session_imports__batch_id__apply_post"];
         delete?: never;
@@ -10568,6 +10605,19 @@ export interface components {
             /** Valid Until */
             valid_until: string | null;
         };
+        /**
+         * ProviderAliasCreateRequest
+         * @description Open a review queue entry for a name a source system uses.
+         *
+         *     Creating one attributes nothing: the alias starts unmapped, and naming the
+         *     practitioner is still the separate, audited resolve step.
+         */
+        ProviderAliasCreateRequest: {
+            /** Source System */
+            source_system: string;
+            /** Source Value */
+            source_value: string;
+        };
         /** ProviderAliasListResponse */
         ProviderAliasListResponse: {
             /** Has More */
@@ -11893,6 +11943,14 @@ export interface components {
              * @description Remaining after the drawdown
              */
             sessions_remaining?: number | null;
+        };
+        /**
+         * SessionImportAbandonRequest
+         * @description Why nobody will apply this batch. It goes on the record, so it is required.
+         */
+        SessionImportAbandonRequest: {
+            /** Reason */
+            reason: string;
         };
         /**
          * SessionImportApplyResponse
@@ -20965,6 +21023,41 @@ export interface operations {
             };
         };
     };
+    create_alias_provider_aliases_post: {
+        parameters: {
+            query: {
+                tenant_id: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ProviderAliasCreateRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProviderAliasResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     reject_alias_provider_aliases__alias_id__reject_post: {
         parameters: {
             query: {
@@ -23259,6 +23352,43 @@ export interface operations {
             cookie?: never;
         };
         requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SessionImportBatchResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    abandon_batch_session_imports__batch_id__abandon_post: {
+        parameters: {
+            query: {
+                tenant_id: string;
+            };
+            header?: never;
+            path: {
+                batch_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SessionImportAbandonRequest"];
+            };
+        };
         responses: {
             /** @description Successful Response */
             200: {

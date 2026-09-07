@@ -64,6 +64,11 @@ async def _count(session: AsyncSession, statement: Select) -> int:
     return int(await session.scalar(select(func.count()).select_from(subquery)) or 0)
 
 
+#: Marks a replay key that no longer claims its source row. The original key
+#: follows the batch id, so what the row staged stays readable.
+RELEASED_PREFIX = "abandoned:"
+
+
 class ProviderOrganisationRepositoryImpl(ProviderOrganisationRepository):
     def __init__(self, session: AsyncSession):
         self.session = session
@@ -418,6 +423,21 @@ class SessionImportRepositoryImpl(SessionImportRepository):
     async def save_batch(self, batch: SessionImportBatchEntity) -> None:
         await self.session.merge(SessionImportMapper.batch_to_model(batch))
         await self.session.flush()
+
+    async def release_replay_keys(self, tenant_id: TenantId, batch_id: SessionImportBatchId) -> int:
+        result = await self.session.execute(
+            update(SessionImportRowModel)
+            .where(
+                SessionImportRowModel.tenant_id == tenant_id.value,
+                SessionImportRowModel.batch_id == batch_id.value,
+                SessionImportRowModel.replay_key.not_like(f"{RELEASED_PREFIX}%"),
+            )
+            .values(
+                replay_key=RELEASED_PREFIX + batch_id.value + ":" + SessionImportRowModel.replay_key
+            )
+        )
+        await self.session.flush()
+        return result.rowcount or 0
 
     async def add_rows(self, rows: Sequence[SessionImportRowEntity], *, file_hash: str) -> None:
         for row in rows:

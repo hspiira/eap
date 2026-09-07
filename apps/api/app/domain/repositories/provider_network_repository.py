@@ -224,6 +224,16 @@ class SessionImportRepository(ABC):
         """
 
     @abstractmethod
+    async def release_replay_keys(self, tenant_id: TenantId, batch_id: SessionImportBatchId) -> int:
+        """Stop an abandoned batch's rows claiming their source rows.
+
+        A replay key says "this source row is already accounted for". Rows of a
+        batch nobody will apply account for nothing, and while they hold their
+        keys the same extract cannot be staged again. The original key stays
+        legible inside the released one, so what was staged is still readable.
+        """
+
+    @abstractmethod
     async def find_row_by_replay_key(
         self, tenant_id: TenantId, replay_key: str
     ) -> SessionImportRowEntity | None: ...

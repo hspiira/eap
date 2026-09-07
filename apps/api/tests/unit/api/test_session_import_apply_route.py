@@ -131,3 +131,64 @@ class TestHonestResult:
         api.imports.get_batch.return_value = None
         response = await api.http.post(f"/session-imports/b-1/apply?tenant_id={TENANT}")
         assert response.status_code == 404
+
+
+class TestAbandon:
+    """A batch staged before its review data existed has to be closable."""
+
+    async def test_an_admin_may_abandon_a_staged_batch(self, api):
+        response = await api.http.post(
+            f"/session-imports/b-1/abandon?tenant_id={TENANT}",
+            json={"reason": "staged before the practitioner aliases were loaded"},
+        )
+        assert response.status_code == 200, response.text
+        assert response.json()["status"] == "Abandoned"
+        saved = api.imports.save_batch.await_args.args[0]
+        assert saved.notes == "staged before the practitioner aliases were loaded"
+        assert saved.applied_by == UserId("u-1")
+
+    async def test_abandoning_frees_the_rows_to_be_staged_again(self, api):
+        """A row nobody will import must stop claiming its source row."""
+        await api.http.post(
+            f"/session-imports/b-1/abandon?tenant_id={TENANT}",
+            json={"reason": "superseded"},
+        )
+        api.imports.release_replay_keys.assert_awaited_once()
+
+    async def test_a_refused_abandon_frees_nothing(self, api):
+        api.imports.get_batch.return_value = _batch(ImportBatchStatus.APPLIED)
+        await api.http.post(
+            f"/session-imports/b-1/abandon?tenant_id={TENANT}", json={"reason": "superseded"}
+        )
+        api.imports.release_replay_keys.assert_not_awaited()
+
+    async def test_a_reason_is_required(self, api):
+        response = await api.http.post(
+            f"/session-imports/b-1/abandon?tenant_id={TENANT}", json={"reason": "   "}
+        )
+        assert response.status_code == 422
+        api.imports.save_batch.assert_not_awaited()
+
+    async def test_an_applied_batch_cannot_be_abandoned(self, api):
+        api.imports.get_batch.return_value = _batch(ImportBatchStatus.APPLIED)
+        response = await api.http.post(
+            f"/session-imports/b-1/abandon?tenant_id={TENANT}", json={"reason": "wrong file"}
+        )
+        assert response.status_code == 400
+        api.imports.save_batch.assert_not_awaited()
+
+    @pytest.mark.parametrize("role", ["User", "Viewer"])
+    async def test_a_non_admin_may_not_abandon(self, api, role):
+        api.role = role
+        response = await api.http.post(
+            f"/session-imports/b-1/abandon?tenant_id={TENANT}", json={"reason": "wrong file"}
+        )
+        assert response.status_code == 403
+        api.imports.save_batch.assert_not_awaited()
+
+    async def test_an_unknown_batch_is_a_404(self, api):
+        api.imports.get_batch.return_value = None
+        response = await api.http.post(
+            f"/session-imports/b-1/abandon?tenant_id={TENANT}", json={"reason": "wrong file"}
+        )
+        assert response.status_code == 404

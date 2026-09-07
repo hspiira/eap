@@ -21,8 +21,9 @@ from app.core.exception_handlers import register_exception_handlers
 from app.core.security import TokenData, get_current_user
 from app.domain.entities.provider_alias import ProviderAliasEntity
 from app.domain.entities.provider_specialty import ProviderSpecialtyEntity
+from app.domain.enums.provider_network import AliasResolutionState
 from app.domain.enums.tenancy import TenantRole
-from app.domain.value_objects.core import TenantId
+from app.domain.value_objects.core import ProviderId, TenantId, UserId
 from app.domain.value_objects.provider_network import ProviderAliasId, ProviderSpecialtyId
 from app.shared.utils.datetime import utc_now
 
@@ -196,6 +197,72 @@ class TestAliasReconciliation:
         )
         assert response.status_code == 422
         api.aliases.save_alias.assert_not_awaited()
+
+    async def test_an_admin_may_queue_a_source_name(self, api):
+        """Staging reads decisions and never opens one, so names arrive here."""
+        api.aliases.find_alias.return_value = None
+        response = await api.http.post(
+            f"/provider-aliases?tenant_id={TENANT}",
+            json={"source_system": "activity-log", "source_value": "Dr Alice Nakato"},
+        )
+        assert response.status_code == 201, response.text
+        body = response.json()
+        assert body["state"] == "Unmapped"
+        assert body["provider_id"] is None
+        assert body["normalized_value"] == "alice nakato"
+
+    async def test_queueing_a_name_twice_returns_the_entry_already_there(self, api):
+        """A re-run must not split one name across two queue entries."""
+        api.aliases.find_alias.return_value = _alias()
+        response = await api.http.post(
+            f"/provider-aliases?tenant_id={TENANT}",
+            json={"source_system": "sessions-csv", "source_value": "dr. alice nakato"},
+        )
+        assert response.status_code == 201, response.text
+        assert response.json()["id"] == "al-1"
+        api.aliases.save_alias.assert_not_awaited()
+
+    async def test_queueing_never_reopens_a_decision(self, api):
+        resolved = _alias()
+        resolved.resolve(ProviderId("prov-1"), UserId("u-1"), at=utc_now())
+        api.aliases.find_alias.return_value = resolved
+        response = await api.http.post(
+            f"/provider-aliases?tenant_id={TENANT}",
+            json={"source_system": "sessions-csv", "source_value": "Alice Nakato"},
+        )
+        assert response.json()["state"] == "Resolved"
+        api.aliases.save_alias.assert_not_awaited()
+
+    async def test_a_name_that_normalises_to_nothing_is_refused(self, api):
+        api.aliases.find_alias.return_value = None
+        response = await api.http.post(
+            f"/provider-aliases?tenant_id={TENANT}",
+            json={"source_system": "activity-log", "source_value": "Dr."},
+        )
+        assert response.status_code == 422
+        api.aliases.save_alias.assert_not_awaited()
+
+    @pytest.mark.parametrize("role", ["User", "Viewer"])
+    async def test_a_non_admin_may_not_queue_a_source_name(self, api, role):
+        api.role = role
+        api.aliases.find_alias.return_value = None
+        response = await api.http.post(
+            f"/provider-aliases?tenant_id={TENANT}",
+            json={"source_system": "activity-log", "source_value": "Dr Alice Nakato"},
+        )
+        assert response.status_code == 403
+        api.aliases.save_alias.assert_not_awaited()
+
+    async def test_queueing_attributes_nothing(self, api):
+        """The entry names no practitioner; resolving is still its own step."""
+        api.aliases.find_alias.return_value = None
+        await api.http.post(
+            f"/provider-aliases?tenant_id={TENANT}",
+            json={"source_system": "activity-log", "source_value": "Dr Alice Nakato"},
+        )
+        saved = api.aliases.save_alias.await_args.args[0]
+        assert saved.provider_id is None
+        assert saved.state is AliasResolutionState.UNMAPPED
 
     async def test_there_is_no_automatic_resolution_endpoint(self, api):
         """Identity is never inferred; every resolution names an actor."""
