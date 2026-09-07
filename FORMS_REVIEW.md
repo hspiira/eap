@@ -34,9 +34,8 @@ suggested, and names the owner where a form is not this stream's to change.
 
 ### Live forms, this stream could take them
 
-- **IndustryFormSheet**: "Paste the parent industry's ID" is the only field in
-  the app that asks a user to paste an internal ID. It should be a picker like
-  every other reference. Small, worth doing with its own test.
+- ~~**IndustryFormSheet**: "Paste the parent industry's ID"~~ — done: the field
+  is an IndustryPicker, and an industry cannot be chosen as its own parent.
 - **PersonFormSheet** (734 lines): the largest sheet, no section descriptions at
   all, and `WorkStatus.TERMINATED` in a flat select. Worth the same
   section-and-copy pass the session form got, but it spans several personas
