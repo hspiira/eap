@@ -211,6 +211,9 @@ async def list_rows(
                 contact_email=row.contact_email,
                 reasons=[ImportReasonSchema(code=r.code, message=r.message) for r in row.reasons],
                 provenance=row.provenance,
+                imported_provider_id=row.imported_provider_id,
+                imported_organisation_id=row.imported_organisation_id,
+                imported_affiliation_id=row.imported_affiliation_id,
             )
             for row in items
         ],

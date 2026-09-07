@@ -46,6 +46,11 @@ class PractitionerImportRowPreview(BaseModel):
     contact_email: str | None
     reasons: list[ImportReasonSchema]
     provenance: dict
+    #: What applying the batch created from this row. Null until it is applied,
+    #: and null for a row the apply passed over.
+    imported_provider_id: str | None = None
+    imported_organisation_id: str | None = None
+    imported_affiliation_id: str | None = None
 
 
 class PractitionerImportRowListResponse(BaseModel):

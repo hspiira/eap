@@ -10458,6 +10458,39 @@
             ],
             "title": "Contact Email"
           },
+          "imported_affiliation_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Imported Affiliation Id"
+          },
+          "imported_organisation_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Imported Organisation Id"
+          },
+          "imported_provider_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Imported Provider Id"
+          },
           "mapped_profession": {
             "anyOf": [
               {

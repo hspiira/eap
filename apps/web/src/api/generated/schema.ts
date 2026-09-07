@@ -10436,6 +10436,12 @@ export interface components {
         PractitionerImportRowPreview: {
             /** Contact Email */
             contact_email: string | null;
+            /** Imported Affiliation Id */
+            imported_affiliation_id?: string | null;
+            /** Imported Organisation Id */
+            imported_organisation_id?: string | null;
+            /** Imported Provider Id */
+            imported_provider_id?: string | null;
             /** Mapped Profession */
             mapped_profession: string | null;
             /** Normalized Name */
