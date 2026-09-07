@@ -7,7 +7,7 @@ catalogue and diagnosis taxonomy in `TAXONOMY_CATALOGUE.md`. Opened
 Each item carries the evidence that established it. Strike an item through when
 it lands and record the commit. Do not remove one without being asked.
 
-Status: 6 of 11 done, 5 open.
+Status: 6 of 12 done, 5 open, 1 withdrawn.
 
 ## Priority order
 
@@ -22,7 +22,7 @@ cited elsewhere.
 | 4 | ~~`ServiceCategory` cannot classify 13 of 20 services~~ | Decided: do not extend the enum | Done |
 | 5 | ~~`data/seed_data.json` cannot load against the current schema~~ | Broken dev path | Done |
 | 6 | ~~Three visit services duplicate `service_sessions.location`~~ | Redundancy | Done |
-| 7 | `services.is_group_service` duplicates `service_sessions.category` | Redundancy | Open |
+| 7 | ~~`services.is_group_service` duplicates `service_sessions.category`~~ | Withdrawn: not a duplication | Closed |
 | 8 | `services` has no `code` and is matched on `name` | Design, needs product decision | Open |
 | 9 | No ICD-11 field on `diagnoses` | Missing field | Open |
 | 10 | No treatment or modality field on `service_sessions` | Missing field | Open |
@@ -302,17 +302,54 @@ so no session references these rows. Had it been, the order matters: re-record
 affected sessions against the counselling service with the location filled,
 then deactivate the row.
 
-## 7. `services.is_group_service` duplicates `service_sessions.category`
+## 7. ~~`services.is_group_service` duplicates `service_sessions.category`~~
 
-`service_sessions.category` is `SessionCategory`: Individual, Group, Family,
-Couples (`app/domain/enums/session.py:25-29`), which is exactly the four-way
-vocabulary the source data uses. `services.is_group_service` is a boolean
-(`app/infrastructure/models/service_model.py:57`) that cannot express couple or
-family.
+**Withdrawn. I was wrong, and no code changed for it.**
 
-Also corrects an earlier finding of mine. The delivery shape belongs on the
-session, where it already is, and not on the catalogue row. Candidate for
-removal rather than for widening into an enum.
+I claimed the boolean duplicates the session enum and was a candidate for
+removal. Tracing every consumer before touching it shows the two answer
+different questions.
+
+`services.is_group_service` is a definitional constraint on the catalogue row,
+and it has live consumers: it gates `max_participants` in
+`ServiceEntity.update_group_settings`
+(`app/domain/entities/service.py:112-122`), it has its own write path in
+`ServiceUpdateGroupSettings` and `PATCH /services/{id}/group-settings` and is
+deliberately absent from `ServiceUpdate`
+(`app/api/schemas/service_schemas.py:33-54`), it powers the list filter
+`?is_group_service=` (`app/api/routes/services.py:257`), and it gates the
+`max_participants` input on the web form
+(`apps/web/src/components/ServiceFormSheet.tsx:119`).
+
+`service_sessions.category` records what one sitting actually was.
+
+They cannot be collapsed, and the source data proves it. `Family Therapy` is
+one group-capable service whose sessions were Family, Couples and Individual.
+A single service-level value cannot express that; the session-level enum
+already does. My objection that the boolean "cannot express couple or family"
+was true and irrelevant, because it is not trying to.
+
+**One correction did follow from getting the meaning right.** `Physical
+Wellness` was flagged `is_group_service: false` while the source shows it
+delivered to groups in 49 of 206 rows. Read as a capability rather than as a
+record, the flag was simply wrong, and it is now true. `max_participants` stays
+null: 28 observed headcounts between 5 and 12 describe past delivery, not a
+policy anyone set.
+
+## 12. A session's category and headcount are never checked against its service
+
+Found while tracing item 7. `CreateServiceSessionUseCase` takes only the
+session repository and never loads the service
+(`app/application/use_cases/service_session_use_cases.py:38-39`), so nothing
+stops a session recorded as `Group` against a service with
+`is_group_service: false`, or a `headcount` above the service's
+`max_participants`. The definitional constraint exists and is never enforced.
+
+This is a contradiction rather than a duplication, which is why it is its own
+item and not folded into 7. It needs a design decision before code: whether the
+check belongs at booking or at completion, whether it should refuse or report
+like the drawdown does, and whether the session use case should depend on the
+service repository at all given it currently depends on nothing else.
 
 ## 8. `services` has no `code` and is matched on `name`
 

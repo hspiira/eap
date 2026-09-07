@@ -297,7 +297,7 @@ SERVICES: list[tuple[str, str | None, bool, str]] = [
     (
         "Physical Wellness",
         "WellnessCoaching",
-        False,
+        True,
         "Structured physical activity and fitness support offered as a mental health "
         "intervention, individually or in a group: exercise sessions, activity challenges, "
         "and fitness guidance. WHO conditionally recommends that opportunities for "
