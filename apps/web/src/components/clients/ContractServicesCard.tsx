@@ -1,11 +1,12 @@
 import { useQuery } from "@tanstack/react-query"
 import { Link } from "@tanstack/react-router"
-import { ExternalLink, FileCheck, RotateCw } from "lucide-react"
+import { ExternalLink, FileCheck, type LucideIcon, Paperclip, RotateCw } from "lucide-react"
+import type { ReactNode } from "react"
 
+import { documentsApi } from "@/api/endpoints/documents"
 import { serviceAssignmentsApi } from "@/api/endpoints/service-assignments"
 import { servicesApi } from "@/api/endpoints/services"
 import { StatusBadge } from "@/components/common/StatusBadge"
-import { ContractAttachments } from "@/components/contracts/ContractAttachments"
 import { Button } from "@/components/ui/button"
 import { contractLabel } from "@/lib/display"
 import { normalizeErrorMessage } from "@/lib/errors"
@@ -14,6 +15,15 @@ import type { Contract } from "@/types/entities"
 
 /** The list endpoint caps limit at 100, which is far above any real contract. */
 const ASSIGNMENT_PAGE = 100
+
+/** How many files hang off the contract. The total comes back on a one-row page. */
+function useAttachmentCount(contractId: string) {
+  const { data } = useQuery({
+    queryKey: entityListKey("documents", { contract_id: contractId, limit: 1 }),
+    queryFn: () => documentsApi.list({ contract_id: contractId, limit: 1 }),
+  })
+  return data?.total
+}
 
 function useContractServices(contractId: string) {
   return useQuery({
@@ -43,6 +53,7 @@ function useContractServices(contractId: string) {
 
 export function ContractServicesCard({ contract }: { contract: Contract }) {
   const query = useContractServices(contract.id)
+  const attachments = useAttachmentCount(contract.id)
   return (
     <div className="flex min-h-0 flex-col overflow-hidden border border-fg/10 bg-surface">
       <header className="flex items-start gap-2.5 border-b border-fg/10 px-3 py-2.5">
@@ -65,18 +76,40 @@ export function ContractServicesCard({ contract }: { contract: Contract }) {
 
       <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto overscroll-contain p-3">
         <ContractServicesList query={query} />
-        <Link
-          to="/contracts/$contractId"
-          params={{ contractId: contract.id }}
-          search={{ tab: "services" }}
-          className="inline-flex items-center gap-1.5 text-xs font-medium text-primary hover:underline"
-        >
-          Manage services
-          <ExternalLink className="size-3.5" />
-        </Link>
-        <ContractAttachments contractId={contract.id} />
+        <div className="mt-auto flex items-center justify-between gap-3 border-t border-fg/10 pt-2.5">
+          <CardLink contractId={contract.id} tab="services" icon={ExternalLink}>
+            Manage services
+          </CardLink>
+          <CardLink contractId={contract.id} tab="attachments" icon={Paperclip}>
+            {attachments == null ? "Attachments" : `Attachments (${attachments})`}
+          </CardLink>
+        </div>
       </div>
     </div>
+  )
+}
+
+function CardLink({
+  contractId,
+  tab,
+  icon: Icon,
+  children,
+}: {
+  contractId: string
+  tab: "services" | "attachments"
+  icon: LucideIcon
+  children: ReactNode
+}) {
+  return (
+    <Link
+      to="/contracts/$contractId"
+      params={{ contractId }}
+      search={{ tab }}
+      className="inline-flex items-center gap-1.5 text-xs font-medium text-primary hover:underline"
+    >
+      <Icon className="size-3" />
+      {children}
+    </Link>
   )
 }
 
