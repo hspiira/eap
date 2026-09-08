@@ -108,12 +108,27 @@ reinstate and terminate now emit `EligibleMemberStatusChanged` with `from_status
 and `to_status`, rather than three separately named events, which matches how
 contracts, sessions and assignments already record a lifecycle move.
 
-**Next of kin is redacted; the member is not.** A member's roster row is their
-own record and the point of auditing an edit is seeing that a coverage date or
-a member code moved, so it keeps its values. A next of kin never consented to
-being on the system, so `MemberNextOfKin` joins the redaction set. A test in
-`test_members_routes.py` already asserted the contact's name never reaches the
-payload, which is how the rule was found rather than assumed.
+**Both the member and their next of kin are redacted.** A next of kin never
+consented to being on the system, so `MemberNextOfKin` was in the redaction set
+from the start. The member's own row was not, on the reasoning that seeing a
+coverage date or member code move is the point of auditing a roster edit.
+
+That was reversed on 2026-09-09, after a review pointed out what the row
+actually holds: `national_id`, `passport_number`, `date_of_birth` and contact
+details. The audit store is append-only, so a value copied into it survives any
+later correction or erasure of the record it came from, and stays readable to
+every authenticated user in the tenant. The current values are already visible
+on the live member record to the same audience, so this was a retention and
+data-minimisation problem rather than a disclosure one, which is why it was
+rated low. `EligibleMember` now joins the redaction set: which field moved,
+when, and by whom is still recorded, and only the before and after values are
+dropped.
+
+Field-level redaction was considered and not built. Keeping coverage dates and
+member codes readable while dropping the identifiers would preserve more signal,
+but it needs a per-resource field allowlist that nothing else in the audit path
+has, and a field added to the member later would default to being retained. The
+blunt rule fails closed; a follow-up can refine it if the lost detail is missed.
 
 **The special-category flag is preserved, not re-decided.** Whether a roster
 row belongs in the DPO's special-category report is that office's call. The

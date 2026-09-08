@@ -5,6 +5,7 @@ from app.shared.utils.clinical_data_classification import (
     is_clinical_event,
     is_clinical_resource,
     is_special_category,
+    redacts_content,
 )
 
 
@@ -52,3 +53,32 @@ class TestIsSpecialCategory:
     def test_registry_complete_for_listed_aggregates(self):
         for required in {"Case", "ClinicalSubject", "OutreachRecord"}:
             assert required in CLINICAL_RESOURCE_TYPES
+
+
+class TestRedactsContent:
+    """The audit store is append-only, so a value written to it cannot later be
+    corrected or erased on the data subject's behalf. Anything holding personal
+    data therefore records which field moved, not what it moved between."""
+
+    def test_a_member_row_drops_its_values(self):
+        # national_id, passport_number, date_of_birth and contact details all
+        # live on this row; a permanent copy of any of them outlives the
+        # subject's ability to rectify it.
+        assert redacts_content("EligibleMember")
+
+    def test_a_next_of_kin_drops_its_values(self):
+        # Named by somebody else, and never asked.
+        assert redacts_content("MemberNextOfKin")
+
+    def test_clinical_resources_drop_their_values(self):
+        for resource_type in CLINICAL_RESOURCE_TYPES:
+            assert redacts_content(resource_type), resource_type
+
+    def test_a_commercial_record_keeps_its_values(self):
+        # A contract rename is the kind of change a reader needs to see in full.
+        assert not redacts_content("Contract")
+        assert not redacts_content("Client")
+
+    def test_no_resource_type_is_not_redacted_by_accident(self):
+        assert not redacts_content(None)
+        assert not redacts_content("")

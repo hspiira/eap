@@ -351,8 +351,8 @@ class TestAuditChain:
             assert updates[0].resource_type == "EligibleMember"
             assert updates[0].ip_address == "203.0.113.9"
             assert updates[0].user_agent == "chain-test"
-            # A roster row is reported to the DPO and still records what moved:
-            # redaction follows clinical content, not the reporting flag.
+            # A roster row is reported to the DPO, and reporting is a separate
+            # axis from redaction: it is flagged and its values are still dropped.
             assert updates[0].is_special_category is True
 
             changes = (await session.execute(select(EntityChangeModel))).scalars().all()
@@ -361,4 +361,7 @@ class TestAuditChain:
                 for change in changes
                 for field in change.field_changes
             }
-            assert edited["display_label"] == ("Test Member", "Renamed Member")
+            # The field that moved is recorded; its values are not. The audit
+            # store is append-only, so a member's name, identifiers or date of
+            # birth written here would outlive any correction to the record.
+            assert edited["display_label"] == ("[redacted]", "[redacted]")

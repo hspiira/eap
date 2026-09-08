@@ -53,16 +53,25 @@ SPECIAL_CATEGORY_RESOURCE_TYPES: frozenset[str] = CLINICAL_RESOURCE_TYPES | froz
 
 
 # A next of kin never consented to being on the system: they are named by
-# somebody else. The roster row is the member's own record and keeps its diff.
-REDACTED_RESOURCE_TYPES: frozenset[str] = CLINICAL_RESOURCE_TYPES | frozenset({"MemberNextOfKin"})
+# somebody else. A member's row carries government identifiers, a date of birth
+# and contact details, which are no less sensitive, so neither records field
+# values in the diff. The audit store is append-only and outside the reach of a
+# rectification or erasure request, so a value written here is a permanent copy
+# that the data subject cannot correct or remove. The field name and the fact of
+# the change are the auditable facts; the values live on the record itself,
+# where they can still be changed.
+REDACTED_RESOURCE_TYPES: frozenset[str] = CLINICAL_RESOURCE_TYPES | frozenset(
+    {"EligibleMember", "MemberNextOfKin"}
+)
 
 
 def redacts_content(resource_type: str | None) -> bool:
     """Whether a field diff on this resource must drop its values.
 
-    Redaction follows content, not the reporting flag. A roster row is reported
-    to the DPO and still records what changed: a member's own name and coverage
-    dates are the point of auditing a roster edit.
+    Redaction follows content, not the reporting flag. What changed and who
+    changed it is still recorded for every resource; only the before and after
+    values are dropped, and only where the record holds data a permanent copy
+    would outlive the subject's right to correct it.
     """
     return bool(resource_type) and resource_type in REDACTED_RESOURCE_TYPES
 
