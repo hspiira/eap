@@ -183,9 +183,9 @@ export function ContractsPanel({
                     Contract term
                   </SortHeader>
                 </TableHead>
-                <TableHead>
+                <TableHead className="text-center">
                   <SortHeader field="status" sort={sort} onToggle={toggleSort}>
-                    Status
+                    <span className="sr-only">Status</span>
                   </SortHeader>
                 </TableHead>
                 <TableHead>
@@ -241,25 +241,33 @@ function ContractRow({
   return (
     <TableRow
       onClick={onSelect}
-      className={cn("cursor-pointer", ROW_BORDER, selected && "bg-primary/5 hover:bg-primary/5")}
+      className={cn(
+        "group h-9 cursor-pointer",
+        ROW_BORDER,
+        selected && "bg-primary/5 hover:bg-primary/5",
+      )}
     >
       <TableCell>
-        <span className={cn("font-medium", selected ? "text-primary" : "text-fg")}>
+        <span className={cn("text-sm font-medium", selected ? "text-primary" : "text-fg")}>
           {contractLabel(contract)}
         </span>
       </TableCell>
-      <TableCell>
-        <StatusBadge status={contract.status} />
+      <TableCell className="text-center">
+        <StatusBadge status={contract.status} iconOnly />
       </TableCell>
-      <TableCell className="text-sm text-fg/75">{formatDay(contract.period.start_date)}</TableCell>
-      <TableCell className="text-sm text-fg/75">{formatDay(contract.period.end_date)}</TableCell>
+      <TableCell className="whitespace-nowrap text-xs text-fg/70">
+        {formatDay(contract.period.start_date)}
+      </TableCell>
+      <TableCell className="whitespace-nowrap text-xs text-fg/70">
+        {formatDay(contract.period.end_date)}
+      </TableCell>
       <TableCell className="text-right">
         <Link
           to="/contracts/$contractId"
           params={{ contractId: contract.id }}
-          aria-label="Open contract"
+          aria-label={`Open the contract running ${contractLabel(contract)}`}
           onClick={(event) => event.stopPropagation()}
-          className="inline-grid size-7 place-items-center rounded-sm text-fg-muted hover:bg-surface-hover hover:text-fg"
+          className="inline-grid size-7 place-items-center rounded-sm text-fg/65 opacity-0 transition-opacity hover:bg-surface-hover hover:text-fg group-hover:opacity-100 focus:opacity-100"
         >
           <ChevronRight className="size-3.5" />
         </Link>

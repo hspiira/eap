@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query"
 import { Link } from "@tanstack/react-router"
-import { ExternalLink, Layers, RotateCw } from "lucide-react"
+import { ExternalLink, FileCheck, RotateCw } from "lucide-react"
 
 import { serviceAssignmentsApi } from "@/api/endpoints/service-assignments"
 import { servicesApi } from "@/api/endpoints/services"
@@ -50,7 +50,7 @@ export function ContractServicesCard({ contract }: { contract: Contract }) {
           aria-hidden
           className="grid size-8 shrink-0 place-items-center bg-primary/10 text-primary"
         >
-          <Layers className="size-4" />
+          <FileCheck className="size-4" />
         </span>
         <div className="min-w-0 flex-1">
           <h3 className="truncate text-sm font-semibold leading-tight text-fg">
