@@ -40,7 +40,7 @@ beforeEach(() => {
 describe("member detail", () => {
   it("transitions from loading into details without changing hook order", async () => {
     renderWithProviders(<Page />)
-    expect(screen.getByText("Loading member…")).toBeInTheDocument()
+    expect(screen.getByRole("status", { name: "Loading" })).toBeInTheDocument()
     expect(await screen.findByRole("heading", { name: "Amina Namukasa" })).toBeInTheDocument()
     expect(await screen.findByText("No beneficiaries linked.")).toBeInTheDocument()
     expect(await screen.findByText("No next-of-kin contacts recorded.")).toBeInTheDocument()

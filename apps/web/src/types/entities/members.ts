@@ -43,4 +43,18 @@ export interface Member {
   created_at: string
   updated_at: string
   user_id?: string | null
+  coverage_start?: string | null
+  coverage_end?: string | null
+  /** Active status within the coverage window, computed by the API. */
+  is_currently_eligible?: boolean
+}
+
+/** Roster counts for the current filter context. */
+export interface MemberStats {
+  total: number
+  active: number
+  suspended: number
+  pending: number
+  terminated: number
+  with_account: number
 }

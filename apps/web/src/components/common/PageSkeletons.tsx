@@ -109,7 +109,7 @@ export function DetailSkeleton({
   className,
 }: DetailSkeletonProps) {
   return (
-    <div className={cn("space-y-5", className)}>
+    <div role="status" aria-label="Loading" className={cn("space-y-5", className)}>
       {withHero ? (
         <div className="border border-fg/10 bg-surface">
           <div className="flex items-center gap-3 border-b border-fg/10 px-5 py-3">

@@ -15,6 +15,7 @@ import { EmptyState } from "@/components/common/EmptyState"
 import { LifecycleActions } from "@/components/common/LifecycleActions"
 import { MemberLink } from "@/components/common/MemberLink"
 import { PageShell } from "@/components/common/PageShell"
+import { DetailSkeleton } from "@/components/common/PageSkeletons"
 import { SessionHistory } from "@/components/common/SessionHistory"
 import { StatusBadge } from "@/components/common/StatusBadge"
 import { Tab, TabPanel, Tabs, TabsList } from "@/components/common/Tabs"
@@ -26,9 +27,11 @@ import { useToast } from "@/contexts/ToastContext"
 import { useCanWrite, useHasClinicalScope } from "@/hooks/useCanWrite"
 import { nameInitials } from "@/lib/display"
 import { normalizeErrorMessage } from "@/lib/errors"
+import { formatDate } from "@/lib/format"
 import { entityDetailKey } from "@/lib/queries"
 import type { Member } from "@/types/entities"
 import type { LifecycleAction } from "@/utils/lifecycleConfig"
+import { getStatusLabel } from "@/utils/statusColors"
 
 export const Route = createFileRoute("/members/$memberId")({ component: MemberDetailPage })
 
@@ -40,8 +43,7 @@ function MemberDetailPage() {
     queryFn: () => membersApi.getById(memberId),
   })
 
-  if (query.isPending)
-    return <div className="flex-1 p-6 text-sm text-fg-muted">Loading member…</div>
+  if (query.isPending) return <DetailSkeleton />
   if (query.isError || !query.data) {
     return (
       <EmptyState
@@ -160,7 +162,7 @@ function MemberDetail({ member }: { member: Member }) {
                 <div className="grid gap-4 lg:grid-cols-2">
                   <DetailCard title="Membership">
                     <DetailGrid>
-                      <DetailRow label="Relationship" value={member.relation} />
+                      <DetailRow label="Relationship" value={getStatusLabel(member.relation)} />
                       <DetailRow
                         label="Client"
                         value={
@@ -188,6 +190,13 @@ function MemberDetail({ member }: { member: Member }) {
                       <DetailRow label="Personal email" value={member.personal_email} />
                     </DetailGrid>
                   </DetailCard>
+                  <DetailCard title="Identification">
+                    <DetailGrid>
+                      <DetailRow label="Staff number" value={member.staff_number} />
+                      <DetailRow label="National ID" value={member.national_id} />
+                      <DetailRow label="Passport" value={member.passport_number} />
+                    </DetailGrid>
+                  </DetailCard>
                   <MemberNextOfKinCard member={member} />
                 </div>
               </TabPanel>
@@ -204,7 +213,8 @@ function MemberDetail({ member }: { member: Member }) {
               </TabPanel>
             </Tabs>
           </div>
-          <aside className="col-span-12 min-w-0 lg:col-span-4 lg:pt-14">
+          <aside className="col-span-12 min-w-0 space-y-5 lg:col-span-4 lg:pt-14">
+            <MemberGlanceSection member={member} />
             <RailSection title="Beneficiary relationship">
               {member.relation === "Employee" ? (
                 <p className="text-xs text-fg-muted">This is a primary employee member.</p>
@@ -215,6 +225,7 @@ function MemberDetail({ member }: { member: Member }) {
               )}
             </RailSection>
             {member.relation === "Employee" && <MemberBeneficiaries member={member} />}
+            <MemberStatusHistory member={member} />
             <RailSection title="Lifecycle">
               <LifecycleActions
                 entityId={member.id}
@@ -228,5 +239,79 @@ function MemberDetail({ member }: { member: Member }) {
         </div>
       </div>
     </PageShell>
+  )
+}
+
+function GlanceStat({ label, value }: { label: string; value: React.ReactNode }) {
+  return (
+    <div className="border border-fg/10 bg-surface px-3 py-2">
+      <p className="text-[11px] text-fg-muted">{label}</p>
+      <div className="mt-0.5 truncate text-sm font-medium text-fg">{value}</div>
+    </div>
+  )
+}
+
+/**
+ * Roster facts the record already carries and the page used to drop: when the
+ * member joined, when the roster last confirmed them, and whether cover is
+ * live today.
+ */
+function MemberGlanceSection({ member }: { member: Member }) {
+  const eligible = member.is_currently_eligible
+  return (
+    <RailSection title="At a glance">
+      <div className="grid grid-cols-2 gap-2">
+        <GlanceStat label="Member since" value={formatDate(member.created_at)} />
+        <GlanceStat
+          label="Roster confirmed"
+          value={member.last_imported_at ? formatDate(member.last_imported_at) : "Not imported"}
+        />
+        <GlanceStat label="Portal account" value={member.user_id ? "Linked" : "None"} />
+        <GlanceStat
+          label="Cover today"
+          value={
+            eligible === undefined ? (
+              "-"
+            ) : (
+              <span className={eligible ? "text-success-fg" : "text-fg-muted"}>
+                {eligible ? "Eligible" : "Not eligible"}
+              </span>
+            )
+          }
+        />
+      </div>
+      {member.coverage_start || member.coverage_end ? (
+        <p className="text-xs text-fg-muted">
+          Cover {member.coverage_start ? formatDate(member.coverage_start) : "open"} to{" "}
+          {member.coverage_end ? formatDate(member.coverage_end) : "open ended"}
+        </p>
+      ) : (
+        <p className="text-xs text-fg-muted">
+          No coverage window recorded. Cover is set at the client or programme level.
+        </p>
+      )}
+    </RailSection>
+  )
+}
+
+/** Only the transitions that actually happened, newest first. */
+function MemberStatusHistory({ member }: { member: Member }) {
+  const events = [
+    { label: "Terminated", at: member.terminated_at },
+    { label: "Suspended", at: member.suspended_at },
+    { label: "Added to roster", at: member.created_at },
+  ].filter((event): event is { label: string; at: string } => Boolean(event.at))
+
+  return (
+    <RailSection title="Status history">
+      <ul className="space-y-1.5">
+        {events.map((event) => (
+          <li key={event.label} className="flex items-baseline justify-between gap-2 text-xs">
+            <span className="text-fg">{event.label}</span>
+            <span className="text-fg-muted">{formatDate(event.at)}</span>
+          </li>
+        ))}
+      </ul>
+    </RailSection>
   )
 }
