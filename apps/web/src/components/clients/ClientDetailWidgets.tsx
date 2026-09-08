@@ -28,8 +28,9 @@ const ROW_BORDER = "border-fg/8"
 import { useState } from "react"
 
 import { Link } from "@tanstack/react-router"
-import { ArrowLeft, BadgeCheck, ChevronRight, Plus } from "lucide-react"
+import { ArrowLeft, BadgeCheck, ChevronRight, Layers, Plus } from "lucide-react"
 
+import { ContractServicesCard } from "@/components/clients/ContractServicesCard"
 import { DetailGrid, DetailRow, RailSection, Stat } from "@/components/common/DetailPrimitives"
 import { EmptyState } from "@/components/common/EmptyState"
 import { LifecycleActions } from "@/components/common/LifecycleActions"
@@ -43,7 +44,6 @@ import {
 import { StatusBadge } from "@/components/common/StatusBadge"
 import { TABLE_HEAD } from "@/components/common/tableStyles"
 import { TierBadge } from "@/components/common/TierBadge"
-import { ContractAttachments } from "@/components/contracts/ContractAttachments"
 import { Button } from "@/components/ui/button"
 import {
   Select,
@@ -62,6 +62,7 @@ import {
 } from "@/components/ui/table"
 import { contractLabel, nameInitials } from "@/lib/display"
 import { formatDay } from "@/lib/format"
+import { cn } from "@/lib/utils"
 import type { Client, ClientTag, Contract } from "@/types/entities"
 import { ClientTier } from "@/types/enums"
 import type { LifecycleAction } from "@/utils/lifecycleConfig"
@@ -109,7 +110,7 @@ export function ContractsPanel({
   clientId: string
 }) {
   const [sort, setSort] = useState<SortState>({ field: undefined, desc: false })
-  const [attachmentContract, setAttachmentContract] = useState<Contract | null>(null)
+  const [selectedId, setSelectedId] = useState<string | null>(null)
   const toggleSort = (field: string) => setSort((prev) => nextSort(prev, field))
   const sorted = compareSort(contracts, sort, (row, field) => {
     if (field === "number") return row.period.start_date
@@ -118,6 +119,7 @@ export function ContractsPanel({
     if (field === "end_date") return row.period.end_date
     return fieldValue(row, field)
   })
+  const selected = contracts.find((c) => c.id === selectedId) ?? null
 
   if (error)
     return (
@@ -145,112 +147,134 @@ export function ContractsPanel({
     )
   }
   return (
-    <div className="space-y-3">
-      <div className="flex items-center justify-between">
-        <p className="text-xs text-fg-muted">
-          {total != null && total > contracts.length
-            ? `Showing ${contracts.length} of ${total} contracts`
-            : `${contracts.length} contract${contracts.length === 1 ? "" : "s"}`}
-        </p>
-        <div className="flex items-center gap-2">
-          {total != null && total > contracts.length ? (
-            <Link
-              to="/contracts"
-              search={{ client_id: clientId }}
-              className="inline-flex items-center gap-0.5 text-xs text-fg-muted hover:text-fg"
-            >
-              View all
-              <ChevronRight className="size-3" />
-            </Link>
-          ) : null}
-          {onAdd && (
-            <Button size="sm" variant="outline" className="h-7 gap-1.5 px-2.5" onClick={onAdd}>
-              <Plus className="size-3.5" />
-              Add contract
-            </Button>
-          )}
-        </div>
-      </div>
-      <div className="overflow-hidden border border-fg/10 bg-surface">
-        <Table className="w-full caption-bottom text-sm">
-          <TableHeader className={TABLE_HEAD}>
-            <TableRow className={`hover:bg-transparent ${ROW_BORDER}`}>
-              <TableHead>
-                <SortHeader field="number" sort={sort} onToggle={toggleSort}>
-                  Contract term
-                </SortHeader>
-              </TableHead>
-              <TableHead>
-                <SortHeader field="status" sort={sort} onToggle={toggleSort}>
-                  Status
-                </SortHeader>
-              </TableHead>
-              <TableHead>
-                <SortHeader field="start_date" sort={sort} onToggle={toggleSort}>
-                  Start
-                </SortHeader>
-              </TableHead>
-              <TableHead>
-                <SortHeader field="end_date" sort={sort} onToggle={toggleSort}>
-                  End
-                </SortHeader>
-              </TableHead>
-              <TableHead>Documents</TableHead>
-              <TableHead className="w-10 text-right text-fg/65">
-                <span className="sr-only">Open</span>
-              </TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {sorted.map((c) => (
-              <TableRow key={c.id} className={`group ${ROW_BORDER}`}>
-                <TableCell>
-                  <Link
-                    to="/contracts/$contractId"
-                    params={{ contractId: c.id }}
-                    className="font-medium text-fg group-hover:text-primary"
-                  >
-                    {contractLabel(c)}
-                  </Link>
-                </TableCell>
-                <TableCell>
-                  <StatusBadge status={c.status} />
-                </TableCell>
-                <TableCell className="text-sm text-fg/75">
-                  {formatDay(c.period.start_date)}
-                </TableCell>
-                <TableCell className="text-sm text-fg/75">{formatDay(c.period.end_date)}</TableCell>
-                <TableCell>
-                  <Button size="sm" variant="outline" onClick={() => setAttachmentContract(c)}>
-                    Attachments
-                  </Button>
-                </TableCell>
-                <TableCell className="text-right">
-                  <Link
-                    to="/contracts/$contractId"
-                    params={{ contractId: c.id }}
-                    aria-label="Open contract"
-                    className="inline-grid size-7 place-items-center rounded-sm text-fg-muted hover:bg-surface-hover hover:text-fg"
-                  >
-                    <ChevronRight className="size-3.5" />
-                  </Link>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </div>
-      {attachmentContract && (
-        <div className="space-y-3">
-          <div className="flex items-center justify-between gap-3">
-            <h3 className="text-sm font-medium">{contractLabel(attachmentContract)}</h3>
-            <Button variant="ghost" size="sm" onClick={() => setAttachmentContract(null)}>
-              Close attachments
-            </Button>
+    <div className="grid grid-cols-12 gap-3">
+      <div className="col-span-12 min-w-0 space-y-3 lg:col-span-8">
+        <div className="flex items-center justify-between">
+          <p className="text-xs text-fg-muted">
+            {total != null && total > contracts.length
+              ? `Showing ${contracts.length} of ${total} contracts`
+              : `${contracts.length} contract${contracts.length === 1 ? "" : "s"}`}
+          </p>
+          <div className="flex items-center gap-2">
+            {total != null && total > contracts.length ? (
+              <Link
+                to="/contracts"
+                search={{ client_id: clientId }}
+                className="inline-flex items-center gap-0.5 text-xs text-fg-muted hover:text-fg"
+              >
+                View all
+                <ChevronRight className="size-3" />
+              </Link>
+            ) : null}
+            {onAdd && (
+              <Button size="sm" variant="outline" className="h-7 gap-1.5 px-2.5" onClick={onAdd}>
+                <Plus className="size-3.5" />
+                Add contract
+              </Button>
+            )}
           </div>
-          <ContractAttachments key={attachmentContract.id} contractId={attachmentContract.id} />
         </div>
-      )}
+        <div className="overflow-hidden border border-fg/10 bg-surface">
+          <Table className="w-full caption-bottom text-sm">
+            <TableHeader className={TABLE_HEAD}>
+              <TableRow className={`hover:bg-transparent ${ROW_BORDER}`}>
+                <TableHead>
+                  <SortHeader field="number" sort={sort} onToggle={toggleSort}>
+                    Contract term
+                  </SortHeader>
+                </TableHead>
+                <TableHead>
+                  <SortHeader field="status" sort={sort} onToggle={toggleSort}>
+                    Status
+                  </SortHeader>
+                </TableHead>
+                <TableHead>
+                  <SortHeader field="start_date" sort={sort} onToggle={toggleSort}>
+                    Start
+                  </SortHeader>
+                </TableHead>
+                <TableHead>
+                  <SortHeader field="end_date" sort={sort} onToggle={toggleSort}>
+                    End
+                  </SortHeader>
+                </TableHead>
+                <TableHead className="w-10 text-right text-fg/65">
+                  <span className="sr-only">Open</span>
+                </TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {sorted.map((c) => (
+                <ContractRow
+                  key={c.id}
+                  contract={c}
+                  selected={selectedId === c.id}
+                  onSelect={() => setSelectedId(c.id)}
+                />
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+      </div>
+
+      <div className="col-span-12 flex min-w-0 flex-col lg:sticky lg:top-3 lg:col-span-4 lg:self-start">
+        {selected ? (
+          <ContractServicesCard contract={selected} onClose={() => setSelectedId(null)} />
+        ) : (
+          <ContractDetailsPlaceholder />
+        )}
+      </div>
+    </div>
+  )
+}
+
+function ContractRow({
+  contract,
+  selected,
+  onSelect,
+}: {
+  contract: Contract
+  selected: boolean
+  onSelect: () => void
+}) {
+  return (
+    <TableRow
+      onClick={onSelect}
+      className={cn("cursor-pointer", ROW_BORDER, selected && "bg-primary/5 hover:bg-primary/5")}
+    >
+      <TableCell>
+        <span className={cn("font-medium", selected ? "text-primary" : "text-fg")}>
+          {contractLabel(contract)}
+        </span>
+      </TableCell>
+      <TableCell>
+        <StatusBadge status={contract.status} />
+      </TableCell>
+      <TableCell className="text-sm text-fg/75">{formatDay(contract.period.start_date)}</TableCell>
+      <TableCell className="text-sm text-fg/75">{formatDay(contract.period.end_date)}</TableCell>
+      <TableCell className="text-right">
+        <Link
+          to="/contracts/$contractId"
+          params={{ contractId: contract.id }}
+          aria-label="Open contract"
+          onClick={(event) => event.stopPropagation()}
+          className="inline-grid size-7 place-items-center rounded-sm text-fg-muted hover:bg-surface-hover hover:text-fg"
+        >
+          <ChevronRight className="size-3.5" />
+        </Link>
+      </TableCell>
+    </TableRow>
+  )
+}
+
+function ContractDetailsPlaceholder() {
+  return (
+    <div className="flex flex-1 flex-col items-center justify-center gap-1 border border-dashed border-fg/15 p-8 text-center">
+      <div className="mb-2 grid size-9 place-items-center bg-primary/10">
+        <Layers className="size-4 text-primary" />
+      </div>
+      <h3 className="text-sm font-semibold text-fg">Pick a contract</h3>
+      <p className="max-w-[24ch] text-xs text-fg/60">Select a row to see the services it covers.</p>
     </div>
   )
 }

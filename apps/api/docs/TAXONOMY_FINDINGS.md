@@ -440,3 +440,30 @@ grew from 79 files to 83 during this session while that work landed. Recorded
 so the next person to see a red web job does not spend the time I did proving
 it was pre-existing. Reproduce with `pnpm test:web` twice and compare the
 failure list.
+
+## Discovered: the roster rework leaves `client-members.test.tsx` red
+
+The uncommitted `ClientRosterPanel` rewrite in
+`apps/web/src/components/clients/ClientManagementPanels.tsx` turned the member
+name into a row-click selection rather than a `Link`, replaced the
+`Loading members…` paragraph with `TableSkeleton` and the `No members yet.`
+paragraph with `EmptyState`. `src/routes/clients/client-members.test.tsx` still
+asserts on all three, so seven of its eight tests fail on their own, not only
+in a full run. This is not the flake recorded above: it reproduces every time.
+
+Verify with `pnpm --filter @evexia/web vitest run src/routes/clients/client-members.test.tsx`.
+The failures name `role="link"` for `Amina Namukasa`, `No members yet.` and
+`Loading members…`.
+
+Not mine to fix: the panel rewrite is another session's in-flight work and the
+test has to be updated to match whatever that session settles on. Recorded so
+whoever commits the roster panel updates the test in the same change.
+
+## Uncommitted: `ClientServicesPanel` is deleted in the working tree
+
+Removing the client Services tab left `ClientServicesPanel` in
+`ClientManagementPanels.tsx` with no caller. The deletion is applied in the
+working tree but not committed, because that file also carries the roster
+rewrite above and staging it would drag another session's unfinished work in.
+Nothing depends on the deletion: the committed tree still compiles with the
+panel present, just unused. It will land with whoever commits that file.

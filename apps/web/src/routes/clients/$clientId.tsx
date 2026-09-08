@@ -17,7 +17,6 @@ import {
   ClientContactsPanel,
   ClientDocumentsPanel,
   ClientRosterPanel,
-  ClientServicesPanel,
   ClientUtilisationPanel,
 } from "@/components/clients/ClientManagementPanels"
 import type { ClientOnboardingStep } from "@/components/clients/ClientOnboardingCard"
@@ -54,7 +53,6 @@ type TabValue =
   | "activity"
   | "contracts"
   | "staff"
-  | "services"
   | "documents"
   | "utilisation"
   | "setup"
@@ -64,7 +62,6 @@ const TAB_VALUES: ReadonlyArray<TabValue> = [
   "activity",
   "contracts",
   "staff",
-  "services",
   "documents",
   "utilisation",
   "setup",
@@ -420,7 +417,6 @@ function ClientDetailPage() {
                   <Tab value="staff" count={rosterCount}>
                     Members
                   </Tab>
-                  <Tab value="services">Services</Tab>
                   <Tab value="documents">Documents</Tab>
                   <Tab value="utilisation">Sessions</Tab>
                   <Tab value="contacts">Contacts</Tab>
@@ -541,10 +537,6 @@ function ClientDetailPage() {
                   query={rosterQuery}
                   onAdd={canWrite ? () => setAddMemberOpen(true) : undefined}
                 />
-              </TabPanel>
-
-              <TabPanel value="services">
-                <ClientServicesPanel clientId={clientId} />
               </TabPanel>
 
               <TabPanel value="documents">

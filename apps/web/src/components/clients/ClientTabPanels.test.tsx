@@ -3,12 +3,10 @@ import userEvent from "@testing-library/user-event"
 import { beforeEach, describe, expect, it, vi } from "vitest"
 
 import { renderWithProviders } from "@/test/utils"
+import type { Contract } from "@/types/entities"
 
-import {
-  ClientDocumentsPanel,
-  ClientServicesPanel,
-  ClientUtilisationPanel,
-} from "./ClientManagementPanels"
+import { ClientDocumentsPanel, ClientUtilisationPanel } from "./ClientManagementPanels"
+import { ContractServicesCard } from "./ContractServicesCard"
 
 const mocks = vi.hoisted(() => ({
   contracts: vi.fn(),
@@ -40,7 +38,7 @@ const contract = {
   id: "private-contract-id",
   status: "Active",
   period: { start_date: "2026-01-01", end_date: "2026-12-31" },
-}
+} as Contract
 beforeEach(() => {
   vi.clearAllMocks()
   mocks.contracts.mockResolvedValue({ items: [contract], total: 1 })
@@ -48,6 +46,7 @@ beforeEach(() => {
     items: [{ id: "assignment-1", service_id: "private-service-id", status: "Active" }],
     total: 1,
   })
+  mocks.documents.mockResolvedValue({ items: [], total: 0 })
   mocks.service.mockResolvedValue({
     id: "private-service-id",
     name: "Counselling",
@@ -57,25 +56,25 @@ beforeEach(() => {
 })
 
 describe("client detail tab records", () => {
-  it("resolves service names and loads contract pages beyond the preview", async () => {
-    mocks.contracts.mockImplementation(async ({ page }) => ({
-      items: [{ ...contract, id: `contract-${page}` }],
+  it("lists a contract's services by name, resolving each service once", async () => {
+    mocks.assignments.mockResolvedValue({
+      items: [
+        { id: "assignment-1", service_id: "private-service-id", status: "Active" },
+        { id: "assignment-2", service_id: "private-service-id", status: "Inactive" },
+      ],
       total: 2,
-    }))
-    renderWithProviders(<ClientServicesPanel clientId="client-1" />)
+    })
+    renderWithProviders(<ContractServicesCard contract={contract} onClose={() => {}} />)
     expect((await screen.findAllByRole("link", { name: "Counselling" }))[0]).toHaveAttribute(
       "href",
       "/services/private-service-id",
     )
-    expect(mocks.contracts).toHaveBeenCalledTimes(2)
-    expect(screen.getAllByRole("article")).toHaveLength(2)
     expect(mocks.service).toHaveBeenCalledTimes(1)
     expect(screen.queryByText("private-service-id")).not.toBeInTheDocument()
-    expect(
-      screen
-        .getAllByRole("link")
-        .filter((el) => el.getAttribute("href")?.startsWith("/contracts/")),
-    ).toHaveLength(2)
+    expect(screen.getByRole("link", { name: /Manage services/ })).toHaveAttribute(
+      "href",
+      "/contracts/private-contract-id",
+    )
   })
 
   it("shows failed document requests as errors and retries them", async () => {
