@@ -20,6 +20,7 @@ export type ServiceSessionUpdateFeedback = Schemas["ServiceSessionUpdateFeedback
 
 /** Mirrors the query params on `GET /service-sessions/` in the BE OpenAPI schema. */
 export interface ServiceSessionListParams extends ListParams {
+  client_id?: string
   member_id?: string
   provider_id?: string
   service_id?: string

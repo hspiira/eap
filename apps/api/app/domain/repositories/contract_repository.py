@@ -7,12 +7,24 @@ Implementation lives in infrastructure layer.
 
 from abc import abstractmethod
 from collections.abc import Sequence
+from dataclasses import dataclass
 from datetime import date
 
 from app.domain.entities.contract import ContractEntity
 from app.domain.enums import ContractStatus, PaymentStatus
 from app.domain.repositories.base_repository import BaseRepository
 from app.domain.value_objects.core import ClientId, ContractId, TenantId
+
+
+@dataclass(frozen=True)
+class ContractMetricsRow:
+    """One contract term's covered-service count and completed-session spend."""
+
+    contract_id: str
+    services: int
+    sessions: int
+    sessions_priced: int
+    spent: int
 
 
 class ContractRepository(BaseRepository[ContractEntity, ContractId]):
@@ -113,4 +125,15 @@ class ContractRepository(BaseRepository[ContractEntity, ContractId]):
 
         Returns:
             Total count
+        """
+
+    @abstractmethod
+    async def get_metrics_for_client(
+        self, tenant_id: TenantId, client_id: ClientId
+    ) -> list[ContractMetricsRow]:
+        """Count each contract's covered services and sum its completed sessions' cost.
+
+        A session carries no contract, only a client and a date, so it is
+        attributed to the term its date falls inside; overlapping terms both
+        count the same session.
         """

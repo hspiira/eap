@@ -35,9 +35,11 @@ from app.api.dependencies import (
     get_client_repository,
     get_contact_repository,
     get_contract_repository,
+    get_eligible_member_repository,
     get_industry_repository,
     get_tenant_repository,
     get_user_repository,
+    get_utilisation_event_repository,
     pagination,
 )
 from app.api.schemas.client_schemas import (
@@ -74,6 +76,10 @@ from app.api.schemas.client_schemas import (
     ClientUpdateTier,
     ContactInfoSchema,
 )
+from app.api.schemas.pricing_schemas import (
+    UtilisationEventListResponse,
+    UtilisationEventResponse,
+)
 from app.application.services import client_import
 from app.application.services.client_import import CreatedClient, ImportRepositories
 from app.application.services.client_import_job import run_import_job
@@ -108,9 +114,13 @@ from app.domain.repositories.client_alias_repository import ClientAliasRepositor
 from app.domain.repositories.client_repository import ClientRepository
 from app.domain.repositories.contact_repository import ContactRepository
 from app.domain.repositories.contract_repository import ContractRepository
+from app.domain.repositories.eligible_member_repository import EligibleMemberRepository
 from app.domain.repositories.industry_repository import IndustryRepository
 from app.domain.repositories.tenant_repository import TenantRepository
 from app.domain.repositories.user_repository import UserRepository
+from app.domain.repositories.utilisation_event_repository import (
+    UtilisationEventRepository,
+)
 from app.domain.value_objects.core import (
     Address,
     ClientId,
@@ -1836,9 +1846,10 @@ async def get_client_stats(
     client: ClientEntity = Depends(get_client_for_current_tenant),
     client_repo: ClientRepository = Depends(get_client_repository),
     contract_repo: ContractRepository = Depends(get_contract_repository),
+    member_repo: EligibleMemberRepository = Depends(get_eligible_member_repository),
     db: AsyncSession = Depends(get_db),
 ):
-    """Get client statistics including child clients and contracts."""
+    """Get client statistics including child clients, contracts and roster mix."""
     tenant_id = client.tenant_id.value
     client_id = client.id.value
 
@@ -1865,13 +1876,75 @@ async def get_client_stats(
         status=ContractStatus.RENEWED,
     )
 
+    employee_members_count = await member_repo.count(
+        client.tenant_id, client_id=client.id, relation=MemberRelation.EMPLOYEE
+    )
+    spouse_members_count = await member_repo.count(
+        client.tenant_id, client_id=client.id, relation=MemberRelation.SPOUSE
+    )
+    child_members_count = await member_repo.count(
+        client.tenant_id, client_id=client.id, relation=MemberRelation.CHILD
+    )
+    other_members_count = await member_repo.count(
+        client.tenant_id, client_id=client.id, relation=MemberRelation.DOMESTIC_PARTNER
+    ) + await member_repo.count(
+        client.tenant_id, client_id=client.id, relation=MemberRelation.DEPENDENT_OTHER
+    )
+
     return ClientStatsResponse(
         client_id=client_id,
         child_clients_count=child_clients_count,
         total_contracts_count=total_contracts_count,
         active_contracts_count=active_contracts_count,
+        employee_members_count=employee_members_count,
+        spouse_members_count=spouse_members_count,
+        child_members_count=child_members_count,
+        other_members_count=other_members_count,
         is_verified=client.is_verified,
         status=client.status,
+    )
+
+
+@router.get(
+    "/{client_id}/utilisation-events",
+    response_model=UtilisationEventListResponse,
+    summary="List utilisation events recorded across a client's contracts",
+)
+@readonly()
+async def list_client_utilisation_events(
+    client: ClientEntity = Depends(get_client_for_current_tenant),
+    pg: PageParams = Depends(pagination()),
+    utilisation_repo: UtilisationEventRepository = Depends(get_utilisation_event_repository),
+    db: AsyncSession = Depends(get_db),
+):
+    """Page through utilisation events for every contract owned by this client."""
+    events = await utilisation_repo.list_for_client(
+        client.tenant_id,
+        client.id.value,
+        limit=pg.limit,
+        offset=pg.offset,
+    )
+    total = await utilisation_repo.count_for_client(client.tenant_id, client.id.value)
+
+    return UtilisationEventListResponse(
+        items=[
+            UtilisationEventResponse(
+                id=event.id.value,
+                tenant_id=event.tenant_id.value,
+                contract_id=event.contract_id.value,
+                event_type=event.event_type,
+                occurred_on=event.occurred_on,
+                units=event.units,
+                service_code=event.service_code,
+                source_id=event.source_id,
+                notes=event.notes,
+            )
+            for event in events
+        ],
+        total=total,
+        page=pg.page,
+        limit=pg.limit,
+        has_more=(pg.offset + pg.limit) < total,
     )
 
 

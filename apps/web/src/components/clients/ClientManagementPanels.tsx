@@ -2,27 +2,23 @@ import { useEffect, useState } from "react"
 
 import { useQuery, type UseQueryResult } from "@tanstack/react-query"
 import { Link } from "@tanstack/react-router"
+import { ExternalLink, Plus, RotateCw, User, Users, X } from "lucide-react"
 import type { ReactNode } from "react"
 
 import { contactsApi } from "@/api/endpoints/contacts"
-import { contractsApi } from "@/api/endpoints/contracts"
 import { documentsApi } from "@/api/endpoints/documents"
 import { membersApi } from "@/api/endpoints/members"
-import { serviceAssignmentsApi } from "@/api/endpoints/service-assignments"
-import { servicesApi } from "@/api/endpoints/services"
-import { utilisationApi } from "@/api/endpoints/utilisation"
 import type { PaginatedResponse } from "@/api/types"
+import { DetailGrid, DetailRow, RailSection } from "@/components/common/DetailPrimitives"
 import { DocumentFileLink } from "@/components/common/DocumentFileLink"
+import { EmptyState } from "@/components/common/EmptyState"
+import { FilterBar, FilterSearch, FilterTrigger } from "@/components/common/FilterBar"
+import { TableSkeleton } from "@/components/common/PageSkeletons"
 import { StatusBadge } from "@/components/common/StatusBadge"
+import { ROW_BORDER, STICKY_TABLE_HEAD } from "@/components/common/tableStyles"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
+import { Pagination } from "@/components/ui/pagination"
 import {
   Table,
   TableBody,
@@ -33,10 +29,10 @@ import {
 } from "@/components/ui/table"
 import { useToast } from "@/contexts/ToastContext"
 import { useDebouncedValue } from "@/hooks/useDebouncedValue"
-import { contractLabel, memberLabel } from "@/lib/display"
+import { memberLabel, nameInitials } from "@/lib/display"
 import { normalizeErrorMessage } from "@/lib/errors"
-import { formatDay } from "@/lib/format"
 import { entityListKey } from "@/lib/queries"
+import { cn } from "@/lib/utils"
 import type { Client, Contact, Document, Member } from "@/types/entities"
 import { EligibilityStatus, MemberRelation } from "@/types/enums"
 import { getStatusLabel } from "@/utils/statusColors"
@@ -228,6 +224,7 @@ export function ClientRosterPanel({
   const [relation, setRelation] = useState<MemberRelation | "all">("all")
   const [status, setStatus] = useState<EligibilityStatus | "all">("all")
   const [page, setPage] = useState(1)
+  const [selectedId, setSelectedId] = useState<string | null>(null)
   const debouncedSearch = useDebouncedValue(search.trim())
   const params = {
     client_id: clientId,
@@ -244,138 +241,137 @@ export function ClientRosterPanel({
     enabled: filtered,
   })
   const roster = filtered ? filteredQuery : query
+  const items = roster.data?.items ?? []
+  const selectedMember = items.find((member) => member.id === selectedId) ?? null
+  const hasFilters = Boolean(search || relation !== "all" || status !== "all")
+  const clearFilters = () => {
+    setSearch("")
+    setRelation("all")
+    setStatus("all")
+    setPage(1)
+  }
+
   return (
-    <Panel
-      title="Members"
-      action={
-        onAdd ? (
-          <Button
-            type="button"
-            size="sm"
-            variant="outline"
-            className="h-7 rounded-none"
-            onClick={onAdd}
-          >
-            Add member
-          </Button>
-        ) : null
-      }
-    >
-      <p className="text-sm text-fg-muted">
-        Employees and beneficiaries covered by this client. Open a member to manage their details
-        and dependants.
-      </p>
-      <div className="flex flex-col gap-3 border-y border-fg/10 py-4 sm:flex-row">
-        <Input
-          aria-label="Search members"
-          placeholder="Search name, employee number or email"
-          value={search}
-          onChange={(event) => {
-            setSearch(event.target.value)
-            setPage(1)
-          }}
-          className="sm:flex-1"
-        />
-        <Select
-          value={relation}
-          onValueChange={(value) => {
-            setRelation(value as MemberRelation | "all")
-            setPage(1)
-          }}
-        >
-          <SelectTrigger aria-label="Relationship" className="sm:w-44">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All relationships</SelectItem>
-            {Object.values(MemberRelation).map((value) => (
-              <SelectItem key={value} value={value}>
-                {getStatusLabel(value)}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <Select
-          value={status}
-          onValueChange={(value) => {
-            setStatus(value as EligibilityStatus | "all")
-            setPage(1)
-          }}
-        >
-          <SelectTrigger aria-label="Eligibility status" className="sm:w-40">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All statuses</SelectItem>
-            {Object.values(EligibilityStatus).map((value) => (
-              <SelectItem key={value} value={value}>
-                {getStatusLabel(value)}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        {(search || relation !== "all" || status !== "all") && (
-          <Button
-            variant="ghost"
-            onClick={() => {
-              setSearch("")
-              setRelation("all")
-              setStatus("all")
+    <div className="grid grid-cols-12 gap-3 lg:h-[70vh]">
+      <div className="col-span-12 flex min-h-0 min-w-0 flex-col border border-fg/10 bg-surface lg:col-span-8 lg:h-full">
+        <FilterBar>
+          <FilterTrigger
+            label="All relationships"
+            value={relation}
+            options={RELATION_FILTER_OPTIONS}
+            onChange={(value) => {
+              setRelation(value)
               setPage(1)
             }}
-          >
-            Clear filters
-          </Button>
+          />
+          <FilterTrigger
+            label="All statuses"
+            value={status}
+            options={STATUS_FILTER_OPTIONS}
+            onChange={(value) => {
+              setStatus(value)
+              setPage(1)
+            }}
+          />
+          {hasFilters && (
+            <Button variant="ghost" size="sm" className="h-8 shrink-0" onClick={clearFilters}>
+              Clear filters
+            </Button>
+          )}
+          <div className="ml-auto" />
+          <FilterSearch
+            value={search}
+            onChange={(value) => {
+              setSearch(value)
+              setPage(1)
+            }}
+            placeholder="Search name, employee number or email"
+          />
+          {onAdd && (
+            <Button type="button" size="sm" className="h-8 shrink-0 gap-1.5 px-2.5" onClick={onAdd}>
+              <Plus className="size-3.5" />
+              Add member
+            </Button>
+          )}
+        </FilterBar>
+        <div className="min-h-0 flex-1 overflow-y-auto">
+          <ClientRosterTable
+            query={roster}
+            filtered={filtered}
+            selectedId={selectedId}
+            onSelect={setSelectedId}
+          />
+        </div>
+        {roster.data && roster.data.total > 20 && (
+          <div className="shrink-0 border-t border-fg/10 px-3 py-2">
+            <Pagination page={page} total={roster.data.total} limit={20} onPageChange={setPage} />
+          </div>
         )}
       </div>
-      <ClientRosterContent query={roster} filtered={filtered} />
-      {roster.data && roster.data.total > 20 && (
-        <div className="flex items-center justify-between border-t border-fg/10 pt-3 text-sm">
-          <span>
-            Page {page} of {Math.ceil(roster.data.total / 20)}
-          </span>
-          <div className="flex gap-2">
-            <Button
-              variant="outline"
-              disabled={page === 1 || roster.isFetching}
-              onClick={() => setPage(page - 1)}
-            >
-              Previous
-            </Button>
-            <Button
-              variant="outline"
-              disabled={page * 20 >= roster.data.total || roster.isFetching}
-              onClick={() => setPage(page + 1)}
-            >
-              Next
-            </Button>
-          </div>
-        </div>
-      )}
-    </Panel>
+
+      <div className="col-span-12 flex min-h-0 min-w-0 flex-col lg:col-span-4 lg:h-full">
+        {selectedMember ? (
+          <MemberSummaryCard member={selectedMember} onClose={() => setSelectedId(null)} />
+        ) : (
+          <RosterDetailsPlaceholder />
+        )}
+      </div>
+    </div>
   )
 }
 
-function ClientRosterContent({
+const RELATION_FILTER_OPTIONS = [
+  { value: "all", label: "All relationships" },
+  ...Object.values(MemberRelation).map((value) => ({ value, label: getStatusLabel(value) })),
+] as const
+
+const STATUS_FILTER_OPTIONS = [
+  { value: "all", label: "All statuses" },
+  ...Object.values(EligibilityStatus).map((value) => ({ value, label: getStatusLabel(value) })),
+] as const
+
+function ClientRosterTable({
   query,
   filtered,
+  selectedId,
+  onSelect,
 }: {
   query: UseQueryResult<PaginatedResponse<Member>>
   filtered: boolean
+  selectedId: string | null
+  onSelect: (id: string) => void
 }) {
-  if (query.isPending) return <p className="text-xs text-fg-muted">Loading members…</p>
+  if (query.isPending)
+    return (
+      <TableSkeleton
+        cols={7}
+        rows={6}
+        headers={[
+          "Member",
+          "Status",
+          "Member code",
+          "Relationship",
+          "Work email",
+          "Personal email",
+          "Phone",
+        ]}
+      />
+    )
   if (query.isError) {
     return (
-      <div role="alert" className="space-y-2 text-xs text-danger-fg">
-        <p>{normalizeErrorMessage(query.error, "Could not load members")}</p>
+      <div role="alert" className="flex flex-col items-center gap-2 p-8 text-center text-sm">
+        <p className="text-danger-fg">
+          {normalizeErrorMessage(query.error, "Could not load members")}
+        </p>
         <Button
           type="button"
           size="sm"
           variant="outline"
-          className="rounded-none"
+          className="gap-1.5"
           onClick={() => void query.refetch()}
         >
-          Retry
+          <RotateCw className="size-3.5" />
+          Try again
         </Button>
       </div>
     )
@@ -383,68 +379,165 @@ function ClientRosterContent({
   const { items, total } = query.data
   if (total === 0)
     return (
-      <p className="border border-dashed border-fg/15 p-8 text-center text-sm text-fg-muted">
-        {filtered ? "No members match these filters." : "No members yet."}
-      </p>
+      <EmptyState
+        icon={Users}
+        title={filtered ? "No members match these filters" : "No members yet"}
+        description={
+          filtered
+            ? "Try a different search or clear a filter."
+            : "Add or import the people covered by this client."
+        }
+      />
     )
   return (
-    <>
-      <p className="text-xs text-fg-muted">
-        Showing {items.length} of {total} members · employees and beneficiaries
-      </p>
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Member</TableHead>
-            <TableHead>Relationship</TableHead>
-            <TableHead>Contact</TableHead>
-            <TableHead>Status</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {items.map((member) => (
-            <RosterRow key={member.id} member={member} />
-          ))}
-        </TableBody>
-      </Table>
-    </>
+    <Table className="w-full text-sm" scrollable={false}>
+      <TableHeader className={STICKY_TABLE_HEAD}>
+        <TableRow className={`hover:bg-transparent ${ROW_BORDER}`}>
+          <TableHead>Member</TableHead>
+          <TableHead className="text-center">
+            <span className="sr-only">Status</span>
+          </TableHead>
+          <TableHead className="text-fg/65">Member code</TableHead>
+          <TableHead className="text-fg/65">Relationship</TableHead>
+          <TableHead className="text-fg/65">Work email</TableHead>
+          <TableHead className="text-fg/65">Personal email</TableHead>
+          <TableHead className="text-fg/65">Phone</TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {items.map((member) => (
+          <RosterRow
+            key={member.id}
+            member={member}
+            selected={selectedId === member.id}
+            onSelect={() => onSelect(member.id)}
+          />
+        ))}
+      </TableBody>
+    </Table>
   )
 }
 
-function RosterRow({ member }: { member: Member }) {
+function RosterRow({
+  member,
+  selected,
+  onSelect,
+}: {
+  member: Member
+  selected: boolean
+  onSelect: () => void
+}) {
   return (
-    <TableRow>
+    <TableRow
+      onClick={onSelect}
+      className={cn("cursor-pointer", ROW_BORDER, selected && "bg-primary/5 hover:bg-primary/5")}
+    >
       <TableCell>
-        <Link
-          to="/members/$memberId"
-          params={{ memberId: member.id }}
-          className="font-medium text-primary hover:underline"
-        >
-          {memberLabel(member)}
-        </Link>
-        <p className="mt-1 text-xs text-fg-muted">{member.employer_member_id}</p>
+        <span className="flex items-center gap-2.5">
+          <span
+            aria-hidden
+            className="grid size-6 shrink-0 place-items-center bg-primary/10 text-primary"
+          >
+            <User className="size-3.5" />
+          </span>
+          <span className={cn("truncate font-medium", selected ? "text-primary" : "text-fg")}>
+            {memberLabel(member)}
+          </span>
+        </span>
       </TableCell>
-      <TableCell>{getStatusLabel(member.relation)}</TableCell>
-      <TableCell>
-        <p>{member.work_email || member.personal_email || "No email"}</p>
-        <p className="mt-1 text-xs text-fg-muted">{member.phone || "No phone"}</p>
+      <TableCell className="text-center">
+        <StatusBadge status={member.status} iconOnly />
       </TableCell>
-      <TableCell>
-        <StatusBadge status={member.status} />
+      <TableCell className="text-xs text-fg/65">{member.employer_member_id}</TableCell>
+      <TableCell className="text-xs text-fg/65">{getStatusLabel(member.relation)}</TableCell>
+      <TableCell className="max-w-[14rem] truncate text-xs text-fg/65">
+        {member.work_email ?? <span className="text-fg-subtle">-</span>}
+      </TableCell>
+      <TableCell className="max-w-[14rem] truncate text-xs text-fg/65">
+        {member.personal_email ?? <span className="text-fg-subtle">-</span>}
+      </TableCell>
+      <TableCell className="whitespace-nowrap text-xs text-fg/65">
+        {member.phone ?? <span className="text-fg-subtle">-</span>}
       </TableCell>
     </TableRow>
   )
 }
 
-async function allPages<T>(
-  fetchPage: (page: number) => Promise<PaginatedResponse<T>>,
-): Promise<T[]> {
-  const items: T[] = []
-  for (let page = 1; ; page++) {
-    const result = await fetchPage(page)
-    items.push(...result.items)
-    if (items.length >= result.total || !result.items.length) return items
-  }
+function MemberSummaryCard({ member, onClose }: { member: Member; onClose: () => void }) {
+  const label = memberLabel(member)
+  const summary = [
+    getStatusLabel(member.relation),
+    getStatusLabel(member.status),
+    member.employer_member_id,
+  ]
+    .filter(Boolean)
+    .join(" · ")
+
+  return (
+    <div className="flex min-h-0 flex-1 flex-col border border-fg/10 bg-surface">
+      <header className="flex items-start gap-3 border-b border-fg/10 px-4 py-3">
+        <span
+          aria-hidden
+          className="grid size-9 shrink-0 place-items-center bg-primary/10 text-xs font-semibold text-primary"
+        >
+          {nameInitials(label)}
+        </span>
+        <div className="min-w-0 flex-1">
+          <h3 className="truncate text-sm font-semibold leading-tight text-fg">{label}</h3>
+          <p className="mt-1 truncate text-xs text-fg-muted">{summary}</p>
+        </div>
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          onClick={onClose}
+          aria-label="Close details"
+          className="size-7 shrink-0 p-0 text-fg-muted"
+        >
+          <X className="size-4" />
+        </Button>
+      </header>
+
+      <div className="flex min-h-0 flex-1 flex-col gap-5 overflow-y-auto p-4">
+        <RailSection title="Personal">
+          <DetailGrid>
+            <DetailRow label="Date of birth" value={member.date_of_birth} />
+            <DetailRow
+              label="Gender"
+              value={member.gender ? getStatusLabel(member.gender) : null}
+            />
+          </DetailGrid>
+        </RailSection>
+        <RailSection title="Contact" className="border-t border-fg/10 pt-4">
+          <DetailGrid>
+            <DetailRow label="Phone" value={member.phone} />
+            <DetailRow label="Work email" value={member.work_email} />
+            <DetailRow label="Personal email" value={member.personal_email} fullWidth />
+          </DetailGrid>
+        </RailSection>
+        <Link
+          to="/members/$memberId"
+          params={{ memberId: member.id }}
+          className="mt-auto inline-flex items-center gap-1.5 border-t border-fg/10 pt-4 text-sm font-medium text-primary hover:underline"
+        >
+          Open full profile
+          <ExternalLink className="size-3.5" />
+        </Link>
+      </div>
+    </div>
+  )
+}
+
+function RosterDetailsPlaceholder() {
+  return (
+    <div className="flex flex-1 flex-col items-center justify-center gap-1 border border-dashed border-fg/15 p-8 text-center">
+      <div className="mb-2 grid size-9 place-items-center bg-primary/10">
+        <Users className="size-4 text-primary" />
+      </div>
+      <h3 className="text-sm font-semibold text-fg">Pick a member</h3>
+      <p className="max-w-[24ch] text-xs text-fg/60">Select a row to view their summary.</p>
+    </div>
+  )
 }
 
 function ClientQueryPanel<T>({
@@ -481,110 +574,6 @@ function ClientQueryPanel<T>({
         children(query.data)
       )}
     </Panel>
-  )
-}
-
-const clientContracts = (clientId: string) =>
-  allPages((page) => contractsApi.list({ client_id: clientId, page, limit: 100 }))
-
-export function ClientServicesPanel({ clientId }: { clientId: string }) {
-  const query = useQuery({
-    queryKey: ["clients", "services", clientId],
-    queryFn: async () => {
-      const contracts = await clientContracts(clientId)
-      const groups = await Promise.all(
-        contracts.map(async (contract) => ({
-          contract,
-          assignments: await allPages((page) =>
-            serviceAssignmentsApi.list({ contract_id: contract.id, page, limit: 100 }),
-          ),
-        })),
-      )
-      const serviceIds = [
-        ...new Set(groups.flatMap(({ assignments }) => assignments.map((a) => a.service_id))),
-      ]
-      const services = new Map(
-        await Promise.all(
-          serviceIds.map(async (id) => [id, await servicesApi.getById(id)] as const),
-        ),
-      )
-      return groups.map(({ contract, assignments }) => ({
-        contract,
-        assignments: assignments.map((assignment) => ({
-          assignment,
-          service: services.get(assignment.service_id)!,
-        })),
-      }))
-    },
-  })
-  return (
-    <ClientQueryPanel
-      title="Services by contract"
-      description="Each contract has its own service assignments and coverage. Open a contract to manage its services."
-      query={query}
-    >
-      {(rows) =>
-        !rows.length ? (
-          <p className="border border-dashed border-fg/15 p-8 text-center text-sm text-fg-muted">
-            Add a contract before assigning services.
-          </p>
-        ) : (
-          <div className="space-y-4">
-            {rows.map(({ contract, assignments }) => (
-              <article key={contract.id} className="border border-fg/10">
-                <header className="flex items-center justify-between gap-3 border-b border-fg/10 bg-fg/3 p-4">
-                  <div>
-                    <p className="mb-1 text-xs text-fg-muted">
-                      Contract term · {assignments.length} services
-                    </p>
-                    <Link
-                      to="/contracts/$contractId"
-                      params={{ contractId: contract.id }}
-                      search={{ tab: "services" }}
-                      className="font-medium text-primary hover:underline"
-                    >
-                      {contractLabel(contract)}
-                    </Link>
-                  </div>
-                  <StatusBadge status={contract.status} />
-                </header>
-                {assignments.length ? (
-                  <div className="divide-y divide-fg/10">
-                    {assignments.map(({ assignment, service }) => (
-                      <div
-                        key={assignment.id ?? service.id}
-                        className="flex items-center justify-between gap-4 p-4"
-                      >
-                        <div>
-                          <Link
-                            to="/services/$serviceId"
-                            params={{ serviceId: service.id }}
-                            className="text-sm font-medium text-primary hover:underline"
-                          >
-                            {service.name}
-                          </Link>
-                          <p className="mt-1 text-xs text-fg-muted">
-                            {getStatusLabel(service.category ?? "Service")}
-                          </p>
-                          {assignment.notes && (
-                            <p className="mt-2 text-sm text-fg-muted">{assignment.notes}</p>
-                          )}
-                        </div>
-                        <StatusBadge status={assignment.status} />
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="p-6 text-sm text-fg-muted">
-                    No services assigned to this contract yet.
-                  </p>
-                )}
-              </article>
-            ))}
-          </div>
-        )
-      }
-    </ClientQueryPanel>
   )
 }
 
@@ -649,87 +638,5 @@ function DocumentRow({ document }: { document: Document }) {
       </div>
       <DocumentFileLink document={document} />
     </div>
-  )
-}
-
-export function ClientUtilisationPanel({ clientId }: { clientId: string }) {
-  const query = useQuery({
-    queryKey: ["clients", "utilisation", clientId],
-    queryFn: async () => {
-      const contracts = await clientContracts(clientId)
-      const groups = await Promise.all(
-        contracts.map(async (contract) => ({
-          contract,
-          events: await utilisationApi.byContract(contract.id),
-        })),
-      )
-      return groups
-        .flatMap(({ contract, events }) => events.map((event) => ({ contract, event })))
-        .sort((a, b) => b.event.occurred_on.localeCompare(a.event.occurred_on))
-    },
-  })
-  return (
-    <ClientQueryPanel
-      title="Sessions"
-      description="Recorded service usage across all contract terms."
-      query={query}
-    >
-      {(rows) =>
-        !rows.length ? (
-          <p className="border border-dashed border-fg/15 p-8 text-center text-sm text-fg-muted">
-            No service delivery recorded yet.
-          </p>
-        ) : (
-          <>
-            <div className="grid grid-cols-2 gap-4 border-y border-fg/10 py-4">
-              <div>
-                <p className="text-2xl font-semibold tabular-nums">
-                  {rows.reduce((sum, { event }) => sum + event.units, 0).toLocaleString()}
-                </p>
-                <p className="text-xs text-fg-muted">Recorded units</p>
-              </div>
-              <div>
-                <p className="text-2xl font-semibold tabular-nums">
-                  {rows.length.toLocaleString()}
-                </p>
-                <p className="text-xs text-fg-muted">Recorded events</p>
-              </div>
-            </div>
-            <div className="overflow-x-auto">
-              <Table className="w-full text-left text-sm">
-                <TableHeader className="border-b border-fg/10 text-xs text-fg-muted">
-                  <TableRow>
-                    <TableHead className="py-3">Date</TableHead>
-                    <TableHead>Service event</TableHead>
-                    <TableHead>Contract term</TableHead>
-                    <TableHead className="text-right">Units</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody className="divide-y divide-fg/10">
-                  {rows.map(({ event, contract }) => (
-                    <TableRow key={event.id}>
-                      <TableCell className="whitespace-nowrap py-3 pr-4">
-                        {formatDay(event.occurred_on)}
-                      </TableCell>
-                      <TableCell className="pr-4">{getStatusLabel(event.event_type)}</TableCell>
-                      <TableCell>
-                        <Link
-                          to="/contracts/$contractId"
-                          params={{ contractId: contract.id }}
-                          className="text-primary hover:underline"
-                        >
-                          {contractLabel(contract)}
-                        </Link>
-                      </TableCell>
-                      <TableCell className="text-right tabular-nums">{event.units}</TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-          </>
-        )
-      }
-    </ClientQueryPanel>
   )
 }

@@ -72,29 +72,29 @@ export function AliasReviewPanel({ tree }: { tree: DiagnosisTree | null }) {
   if (aliases.length === 0) return null
 
   return (
-    <section className="border-t border-safe/20" aria-labelledby="alias-review-heading">
-      <div className="flex items-center gap-2 bg-nurturing/10 px-4 py-2.5">
-        <AlertTriangle className="size-4 text-nurturing" aria-hidden />
-        <h2 id="alias-review-heading" className="text-sm font-medium">
+    <section className="border-b border-fg/10" aria-labelledby="alias-review-heading">
+      <div className="flex items-center gap-2 bg-warning/10 px-3 py-2">
+        <AlertTriangle className="size-3.5 text-warning-fg" aria-hidden />
+        <h2 id="alias-review-heading" className="text-sm font-medium text-fg">
           {aliases.length} legacy {aliases.length === 1 ? "spelling" : "spellings"} awaiting review
         </h2>
-        <p className="text-sm text-safe">
+        <p className="text-xs text-fg-muted">
           Imported under an inferred mapping. Confirm each one, or correct it first.
         </p>
       </div>
       <ul>
         {aliases.map((alias) => (
-          <li key={alias.id} className="flex items-center gap-3 border-t border-safe/10 px-4 py-2">
-            <span className="min-w-0 flex-1 truncate" title={alias.raw_value}>
+          <li key={alias.id} className="flex items-center gap-3 border-t border-fg/10 px-3 py-2">
+            <span className="min-w-0 flex-1 truncate text-sm text-fg" title={alias.raw_value}>
               {alias.raw_value}
             </span>
-            <span className="text-sm text-safe">
+            <span className="text-xs text-fg-muted">
               {labels.get(alias.diagnosis_id ?? alias.diagnosis_type_id) ?? alias.diagnosis_type_id}
             </span>
             <Button
               size="sm"
               variant="outline"
-              className="gap-1.5 rounded-none"
+              className="h-7 gap-1.5 px-2.5"
               disabled={busy === alias.id}
               onClick={() => void confirm(alias)}
             >

@@ -9,14 +9,14 @@
  */
 
 import { Link } from "@tanstack/react-router"
-import { ArrowUpRight } from "lucide-react"
+import { ArrowUpRight, Inbox } from "lucide-react"
 
 import type { ImportBatchSummary, ImportQueueEntry } from "@/api/generated"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
 
-import { CardBar, CardStat } from "./CardBar"
+import { CardBar, CardEmptyState, CardStat } from "./CardBar"
 
 interface ImportHealthCardProps {
   batch: ImportBatchSummary | null | undefined
@@ -86,16 +86,19 @@ function ImportBody({ batch, queues, loading }: ImportHealthCardProps) {
   if (loading) return <Skeleton className="h-28 w-full" />
   if (!batch) {
     return (
-      <div className="grid gap-1 py-4 text-center">
-        <p className="text-sm text-fg-muted">No session imports staged yet.</p>
-        <Link
-          to="/service-sessions"
-          className="inline-flex items-center justify-center gap-1 text-sm font-medium text-primary hover:underline"
-        >
-          Import sessions
-          <ArrowUpRight className="size-3.5" />
-        </Link>
-      </div>
+      <CardEmptyState
+        icon={Inbox}
+        title="No session imports staged yet"
+        action={
+          <Link
+            to="/service-sessions"
+            className="inline-flex items-center justify-center gap-1 text-sm font-medium text-primary hover:underline"
+          >
+            Import sessions
+            <ArrowUpRight className="size-3.5" />
+          </Link>
+        }
+      />
     )
   }
   return (

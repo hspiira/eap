@@ -1367,7 +1367,7 @@ export interface paths {
         };
         /**
          * Get client statistics
-         * @description Get client statistics including child clients and contracts.
+         * @description Get client statistics including child clients, contracts and roster mix.
          */
         get: operations["get_client_stats_clients__client_id__stats_get"];
         put?: never;
@@ -1460,6 +1460,26 @@ export interface paths {
          * @description Set the client's engagement tier.
          */
         patch: operations["update_client_tier_clients__client_id__tier_patch"];
+        trace?: never;
+    };
+    "/clients/{client_id}/utilisation-events": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List utilisation events recorded across a client's contracts
+         * @description Page through utilisation events for every contract owned by this client.
+         */
+        get: operations["list_client_utilisation_events_clients__client_id__utilisation_events_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/clients/{client_id}/verify": {
@@ -1739,6 +1759,33 @@ export interface paths {
          * @description Get active contract for a client.
          */
         get: operations["get_active_contract_by_client_contracts_client__client_id__active_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/contracts/client/{client_id}/metrics": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Coverage and session spend for each of a client's contract terms
+         * @description Count the services a term covers and sum what its sessions have cost.
+         *
+         *     Only completed sessions count, and a session with no rate adds nothing,
+         *     which is why the priced count is reported alongside the total: 208 of the
+         *     369 sessions loaded into dev carry one, so a bare total would read as the
+         *     whole cost when it is not. See
+         *     `ContractRepository.get_metrics_for_client` for the attribution rule and
+         *     the UTC date handling.
+         */
+        get: operations["get_contract_metrics_contracts_client__client_id__metrics_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -7145,15 +7192,35 @@ export interface components {
              */
             child_clients_count: number;
             /**
+             * Child Members Count
+             * @description Members with the Child relation
+             */
+            child_members_count: number;
+            /**
              * Client Id
              * @description Client identifier
              */
             client_id: string;
             /**
+             * Employee Members Count
+             * @description Members with the Employee relation
+             */
+            employee_members_count: number;
+            /**
              * Is Verified
              * @description Whether client is verified
              */
             is_verified: boolean;
+            /**
+             * Other Members Count
+             * @description Members with any other relation (domestic partner, other dependent)
+             */
+            other_members_count: number;
+            /**
+             * Spouse Members Count
+             * @description Members with the Spouse relation
+             */
+            spouse_members_count: number;
             /** @description Client status */
             status: components["schemas"]["BaseStatus"];
             /**
@@ -7745,6 +7812,50 @@ export interface components {
              * @description Total number of contracts matching filters
              */
             total: number;
+        };
+        /**
+         * ContractMetricsItem
+         * @description What one contract term covers, and what it has cost so far.
+         */
+        ContractMetricsItem: {
+            /**
+             * Contract Id
+             * @description Contract identifier
+             */
+            contract_id: string;
+            /**
+             * Services
+             * @description Services assigned to the contract
+             */
+            services: number;
+            /**
+             * Sessions
+             * @description Completed sessions inside the term
+             */
+            sessions: number;
+            /**
+             * Sessions Priced
+             * @description How many of those carry a rate
+             */
+            sessions_priced: number;
+            /** @description Sum of the rates on those sessions */
+            spent: components["schemas"]["app__api__schemas__contract_schemas__MoneySchema"];
+        };
+        /**
+         * ContractMetricsResponse
+         * @description Per-term coverage and spend for every contract a client holds.
+         */
+        ContractMetricsResponse: {
+            /**
+             * Client Id
+             * @description Client identifier
+             */
+            client_id: string;
+            /**
+             * Items
+             * @description One entry per contract
+             */
+            items: components["schemas"]["ContractMetricsItem"][];
         };
         /** ContractPricingSchema */
         ContractPricingSchema: {
@@ -13139,6 +13250,19 @@ export interface components {
              */
             units: number;
         };
+        /** UtilisationEventListResponse */
+        UtilisationEventListResponse: {
+            /** Has More */
+            has_more: boolean;
+            /** Items */
+            items: components["schemas"]["UtilisationEventResponse"][];
+            /** Limit */
+            limit: number;
+            /** Page */
+            page: number;
+            /** Total */
+            total: number;
+        };
         /** UtilisationEventResponse */
         UtilisationEventResponse: {
             /** Contract Id */
@@ -16037,6 +16161,42 @@ export interface operations {
             };
         };
     };
+    list_client_utilisation_events_clients__client_id__utilisation_events_get: {
+        parameters: {
+            query?: {
+                /** @description Page number */
+                page?: number;
+                /** @description Items per page */
+                limit?: number;
+            };
+            header?: never;
+            path: {
+                client_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UtilisationEventListResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     verify_client_clients__client_id__verify_post: {
         parameters: {
             query: {
@@ -16616,6 +16776,39 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ContractResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_contract_metrics_contracts_client__client_id__metrics_get: {
+        parameters: {
+            query: {
+                tenant_id: string;
+            };
+            header?: never;
+            path: {
+                client_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ContractMetricsResponse"];
                 };
             };
             /** @description Validation Error */
@@ -22721,6 +22914,8 @@ export interface operations {
         parameters: {
             query: {
                 tenant_id: string;
+                /** @description Filter by client identifier */
+                client_id?: string | null;
                 /** @description Filter by member identifier */
                 member_id?: string | null;
                 /** @description Filter by provider identifier */

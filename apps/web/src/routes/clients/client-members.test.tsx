@@ -7,6 +7,8 @@ import { makeMember } from "@/test/members"
 import { makeTestQueryClient, renderWithProviders } from "@/test/utils"
 import { MemberRelation } from "@/types/enums"
 
+const SEARCH_LABEL = "Search name, employee number or email"
+
 const mocks = vi.hoisted(() => ({
   getClient: vi.fn(),
   listMembers: vi.fn(),
@@ -105,20 +107,20 @@ describe("client members integration", () => {
     }))
     const user = userEvent.setup()
     renderWithProviders(<Page />)
-    await screen.findByRole("link", { name: "Amina Namukasa" })
-    await user.click(screen.getByRole("button", { name: "Next" }))
+    await screen.findByText("Amina Namukasa")
+    await user.click(screen.getByRole("button", { name: "Next page" }))
     await waitFor(() =>
       expect(mocks.listMembers).toHaveBeenCalledWith(
         expect.objectContaining({ client_id: "client-1", page: 2, limit: 20 }),
       ),
     )
-    await user.type(screen.getByRole("textbox", { name: "Search members" }), "Grace")
-    await screen.findByRole("link", { name: "Grace" })
+    await user.type(screen.getByRole("searchbox", { name: SEARCH_LABEL }), "Grace")
+    await screen.findByText("Grace")
     expect(mocks.listMembers).toHaveBeenLastCalledWith(
       expect.objectContaining({ client_id: "client-1", search: "Grace", page: 1 }),
     )
-    await user.click(screen.getByRole("combobox", { name: "Relationship" }))
-    await user.click(screen.getByRole("option", { name: "Child" }))
+    await user.click(screen.getByRole("button", { name: "All relationships" }))
+    await user.click(screen.getByRole("menuitem", { name: "Child" }))
     await waitFor(() =>
       expect(mocks.listMembers).toHaveBeenLastCalledWith(
         expect.objectContaining({
@@ -130,8 +132,8 @@ describe("client members integration", () => {
       ),
     )
     await user.click(screen.getByRole("button", { name: "Clear filters" }))
-    await screen.findByRole("link", { name: "Amina Namukasa" })
-    expect(screen.getByRole("textbox", { name: "Search members" })).toHaveValue("")
+    await screen.findByText("Amina Namukasa")
+    expect(screen.getByRole("searchbox", { name: SEARCH_LABEL })).toHaveValue("")
   })
 
   it("hides completed setup from overview and retains it in the setup tab after reload", async () => {
@@ -149,12 +151,12 @@ describe("client members integration", () => {
     )
     const user = userEvent.setup()
     const first = renderWithProviders(<Page />)
-    await screen.findByRole("link", { name: /Amina/ })
+    await screen.findByText(/Amina/)
     await user.click(screen.getByRole("tab", { name: "Overview" }))
     expect(screen.queryByRole("progressbar")).not.toBeInTheDocument()
     first.unmount()
     renderWithProviders(<Page />)
-    await screen.findByRole("link", { name: /Amina/ })
+    await screen.findByText(/Amina/)
     await user.click(screen.getByRole("tab", { name: "Setup" }))
     expect(await screen.findByRole("progressbar")).toHaveAttribute("aria-valuenow", "100")
     expect(screen.getByText("Roster started")).toHaveClass("line-through")
@@ -163,14 +165,14 @@ describe("client members integration", () => {
   it("shows incomplete setup with a working next action", async () => {
     const user = userEvent.setup()
     renderWithProviders(<Page />)
-    await screen.findByText("No members yet.")
+    await screen.findByText("No members yet")
     await user.click(screen.getByRole("tab", { name: "Overview" }))
     expect(await screen.findByRole("progressbar")).toHaveAttribute("aria-valuenow", "0")
-    await user.click(screen.getAllByRole("button", { name: "Continue" })[1])
+    await user.click(screen.getByRole("button", { name: "Continue: At least one contract" }))
     expect(screen.getByRole("tab", { name: /^Contracts/ })).toHaveAttribute("aria-selected", "true")
   })
 
-  it("shows the canonical roster, total and member links with the legacy staff tab", async () => {
+  it("shows the canonical roster, total and opens a member's summary on row select", async () => {
     mocks.listMembers.mockResolvedValue({
       ...emptyRoster,
       items: [
@@ -185,23 +187,33 @@ describe("client members integration", () => {
       total: 125,
       has_more: true,
     })
+    const user = userEvent.setup()
     renderWithProviders(<Page />)
-    const employee = await screen.findByRole("link", { name: /Amina Namukasa/ })
-    expect(employee).toHaveAttribute("href", "/members/member-1")
-    expect(screen.getByRole("link", { name: /Grace Namukasa/ })).toHaveAttribute(
-      "href",
-      "/members/child-1",
-    )
+    await screen.findByText(/Amina Namukasa/)
+    expect(screen.getByText(/Grace Namukasa/)).toBeInTheDocument()
     expect(screen.getByRole("tab", { name: /^Members\s*125$/ })).toHaveAttribute(
       "aria-selected",
       "true",
     )
-    expect(screen.getByText(/Showing 2 of 125 members/)).toBeInTheDocument()
-    expect(screen.getByRole("button", { name: "Next" })).toBeEnabled()
-    expect(screen.getByRole("textbox", { name: "Search members" })).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: "Next page" })).toBeEnabled()
+    expect(screen.getByRole("searchbox", { name: SEARCH_LABEL })).toBeInTheDocument()
     expect(screen.getByRole("tab", { name: "Activity" })).toBeInTheDocument()
     expect(screen.getByRole("tab", { name: "Sessions" })).toBeInTheDocument()
     expect(mocks.listMembers).toHaveBeenCalledExactlyOnceWith({ client_id: "client-1", limit: 20 })
+
+    expect(screen.queryByRole("link", { name: /Open full profile/ })).not.toBeInTheDocument()
+
+    await user.click(screen.getByText(/Amina Namukasa/))
+    expect(await screen.findByRole("link", { name: /Open full profile/ })).toHaveAttribute(
+      "href",
+      "/members/member-1",
+    )
+
+    await user.click(screen.getByText(/Grace Namukasa/))
+    expect(await screen.findByRole("link", { name: /Open full profile/ })).toHaveAttribute(
+      "href",
+      "/members/child-1",
+    )
   })
 
   it("creates through the member form with the client selected and refreshes roster and count", async () => {
@@ -210,14 +222,14 @@ describe("client members integration", () => {
     queryClient.setQueryDefaults(["clients", "list"], { gcTime: Infinity })
     queryClient.setQueryData(["clients", "list"], { items: [], total: 0 })
     renderWithProviders(<Page />, { queryClient })
-    await screen.findByText("No members yet.")
+    await screen.findByText("No members yet")
     await user.click(screen.getByRole("button", { name: "Add member" }))
     const form = within(screen.getByRole("dialog"))
     expect(form.getByRole("textbox", { name: "Client" })).toHaveValue("client-1")
     await user.type(form.getByRole("textbox", { name: "Name" }), "Amina Namukasa")
     mocks.listMembers.mockResolvedValue({ ...emptyRoster, items: [makeMember()], total: 1 })
     await user.click(form.getByRole("button", { name: "Add member" }))
-    expect(await screen.findByRole("link", { name: /Amina Namukasa/ })).toBeInTheDocument()
+    expect(await screen.findByText(/Amina Namukasa/)).toBeInTheDocument()
     expect(screen.getByRole("tab", { name: /^Members\s*1$/ })).toBeInTheDocument()
     expect(mocks.createMember).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -241,21 +253,21 @@ describe("client members integration", () => {
     )
     const user = userEvent.setup()
     renderWithProviders(<Page />)
-    expect(await screen.findByText("Loading members…")).toBeInTheDocument()
-    expect(screen.queryByText("No members yet.")).not.toBeInTheDocument()
+    expect(await screen.findByRole("columnheader", { name: "Member" })).toBeInTheDocument()
+    expect(screen.queryByText("No members yet")).not.toBeInTheDocument()
     rejectRoster(new Error("Roster unavailable"))
     expect(await screen.findByRole("alert")).toHaveTextContent("Roster unavailable")
-    expect(screen.queryByText("No members yet.")).not.toBeInTheDocument()
+    expect(screen.queryByText("No members yet")).not.toBeInTheDocument()
     mocks.listMembers.mockResolvedValue(emptyRoster)
-    await user.click(screen.getByRole("button", { name: "Retry" }))
-    expect(await screen.findByText("No members yet.")).toBeInTheDocument()
+    await user.click(screen.getByRole("button", { name: "Try again" }))
+    expect(await screen.findByText("No members yet")).toBeInTheDocument()
   })
 
   it("keeps the roster readable for viewers without a create action", async () => {
     mocks.canWrite = false
     mocks.listMembers.mockResolvedValue({ ...emptyRoster, items: [makeMember()], total: 1 })
     renderWithProviders(<Page />)
-    expect(await screen.findByRole("link", { name: /Amina Namukasa/ })).toBeInTheDocument()
+    expect(await screen.findByText(/Amina Namukasa/)).toBeInTheDocument()
     expect(screen.queryByRole("button", { name: "Add member" })).not.toBeInTheDocument()
   })
 

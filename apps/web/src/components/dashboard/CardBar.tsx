@@ -4,6 +4,8 @@
  * rather than repeating it in prose above them.
  */
 
+import type { ElementType, ReactNode } from "react"
+
 import { cn } from "@/lib/utils"
 
 export function CardBar({
@@ -39,6 +41,39 @@ export function CardStat({
       <span className="text-sm font-semibold tabular-nums text-fg">{value}</span>
       <span className="text-xs text-fg-muted">{label}</span>
     </span>
+  )
+}
+
+/** A dashed-box placeholder for a card with nothing to show yet. */
+export function CardEmptyState({
+  icon: Icon,
+  title,
+  description,
+  action,
+  className,
+}: {
+  icon?: ElementType
+  title: string
+  description?: string
+  action?: ReactNode
+  className?: string
+}) {
+  return (
+    <div
+      className={cn(
+        "flex flex-col items-center justify-center gap-1 border border-dashed border-fg/15 p-6 text-center",
+        className,
+      )}
+    >
+      {Icon ? (
+        <span className="mb-1 grid size-9 place-items-center rounded-full bg-fg/5 text-fg-subtle">
+          <Icon className="size-4" />
+        </span>
+      ) : null}
+      <p className="text-sm font-medium text-fg">{title}</p>
+      {description ? <p className="max-w-[28ch] text-xs text-fg-muted">{description}</p> : null}
+      {action ? <div className="mt-1">{action}</div> : null}
+    </div>
   )
 }
 

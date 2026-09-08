@@ -19,6 +19,12 @@
  * begun), and `BaseStatus.PENDING` is the default a row is created with, so it
  * is the latter. Blue is reserved for work that is genuinely under way.
  *
+ * `expired` is danger, not neutral. A term that has run out is an ending, and
+ * cover has stopped: the same red `terminated` carries, which is what
+ * `termTone` in `lib/contract-term` has always shown for a contract past its
+ * end date. Grey is for a row that has not begun or is inert, not for one that
+ * has stopped.
+ *
  * Both themes fill with the solid role colour and put white on it. The dark
  * roles are their own values rather than the light ones reused: a fill deep
  * enough to carry white text has to stay clear of a near-black page, so each
@@ -180,6 +186,7 @@ const TONE_BY_STATUS: Record<StatusTone, readonly string[]> = {
     "banned",
     "declined",
     "error",
+    "expired",
     "escalated",
     "failed",
     "overdue",
@@ -196,7 +203,6 @@ const TONE_BY_STATUS: Record<StatusTone, readonly string[]> = {
     "closed",
     "deleted",
     "draft",
-    "expired",
     "inactive",
     "referredout",
     "refunded",
@@ -236,7 +242,6 @@ const STATUS_ICON: Readonly<Record<string, LucideIcon>> = {
   deleted: Trash2,
   cancelled: Ban,
   closed: CircleSlash,
-  expired: CalendarX,
   inactive: PauseCircle,
   unknown: HelpCircle,
   // info: under way
@@ -257,6 +262,7 @@ const STATUS_ICON: Readonly<Record<string, LucideIcon>> = {
   noshow: UserX,
   lapsed: CalendarX,
   // danger
+  expired: CalendarX,
   declined: ThumbsDown,
   rejected: ThumbsDown,
   failed: XCircle,

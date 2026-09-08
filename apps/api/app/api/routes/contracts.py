@@ -20,6 +20,8 @@ from app.api.dependencies import (
 from app.api.schemas.contract_schemas import (
     ContractCreate,
     ContractListResponse,
+    ContractMetricsItem,
+    ContractMetricsResponse,
     ContractRenewRequest,
     ContractResponse,
     ContractSignRequest,
@@ -58,6 +60,8 @@ from app.shared.utils.generators import generate_cuid
 from app.shared.utils.route_audit_helper import audit_change
 
 router = APIRouter(prefix="/contracts", tags=["contracts"])
+
+SESSION_RATE_CURRENCY = "UGX"
 
 
 def _to_contract_response(contract: ContractEntity) -> ContractResponse:
@@ -455,6 +459,44 @@ async def get_contracts_by_client(
         TenantId(tenant_id), ClientId(client_id)
     )
     return [_to_contract_response(contract) for contract in contracts]
+
+
+@router.get(
+    "/client/{client_id}/metrics",
+    response_model=ContractMetricsResponse,
+    summary="Coverage and session spend for each of a client's contract terms",
+)
+@readonly()
+async def get_contract_metrics(
+    client_id: str,
+    tenant_id: str = Query(..., description="Tenant identifier"),
+    current_user: TokenData = Depends(require_same_tenant),
+    contract_repo: ContractRepository = Depends(get_contract_repository),
+    db: AsyncSession = Depends(get_db),
+):
+    """Count the services a term covers and sum what its sessions have cost.
+
+    Only completed sessions count, and a session with no rate adds nothing,
+    which is why the priced count is reported alongside the total: 208 of the
+    369 sessions loaded into dev carry one, so a bare total would read as the
+    whole cost when it is not. See
+    `ContractRepository.get_metrics_for_client` for the attribution rule and
+    the UTC date handling.
+    """
+    rows = await contract_repo.get_metrics_for_client(TenantId(tenant_id), ClientId(client_id))
+    return ContractMetricsResponse(
+        client_id=client_id,
+        items=[
+            ContractMetricsItem(
+                contract_id=row.contract_id,
+                services=row.services,
+                sessions=row.sessions,
+                sessions_priced=row.sessions_priced,
+                spent=MoneySchema(amount=str(row.spent), currency=SESSION_RATE_CURRENCY),
+            )
+            for row in rows
+        ],
+    )
 
 
 @router.get(

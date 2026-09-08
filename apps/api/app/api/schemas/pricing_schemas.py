@@ -79,3 +79,11 @@ class UtilisationEventResponse(BaseModel):
     notes: str | None
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class UtilisationEventListResponse(BaseModel):
+    items: list[UtilisationEventResponse]
+    total: int
+    page: int
+    limit: int
+    has_more: bool

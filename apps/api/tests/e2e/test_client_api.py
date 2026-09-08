@@ -744,6 +744,45 @@ class TestGetClientStats:
         data = response.json()
         assert data["child_clients_count"] >= 1
 
+    async def test_get_client_stats_reports_member_relation_breakdown(
+        self, client: AsyncClient, client_test_tenant: dict, test_client: dict
+    ):
+        """Members are counted per relation; domestic partners and other dependents fold into "other"."""
+        tenant_id = client_test_tenant["id"]
+        client_id = test_client["id"]
+
+        employee = await client.post(
+            "/members",
+            json={
+                "client_id": client_id,
+                "relation": "Employee",
+                "display_label": "Employee One",
+            },
+        )
+        assert employee.status_code == 201, employee.text
+        employee_id = employee.json()["id"]
+
+        for relation in ("Spouse", "Child", "DomesticPartner", "DependentOther"):
+            dependent = await client.post(
+                "/members",
+                json={
+                    "client_id": client_id,
+                    "relation": relation,
+                    "display_label": f"{relation} dependent",
+                    "primary_employee_member_id": employee_id,
+                },
+            )
+            assert dependent.status_code == 201, dependent.text
+
+        response = await client.get(f"/clients/{client_id}/stats?tenant_id={tenant_id}")
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["employee_members_count"] == 1
+        assert data["spouse_members_count"] == 1
+        assert data["child_members_count"] == 1
+        assert data["other_members_count"] == 2
+
     async def test_get_client_stats_not_found(self, client: AsyncClient, client_test_tenant: dict):
         """Test getting stats for non-existent client."""
         tenant_id = client_test_tenant["id"]
@@ -796,6 +835,97 @@ class TestGetChildClients:
         tenant_id = client_test_tenant["id"]
 
         response = await client.get(f"/clients/nonexistent-id/children?tenant_id={tenant_id}")
+
+        assert response.status_code == 404
+
+
+class TestGetClientUtilisationEvents:
+    """Tests for GET /clients/{client_id}/utilisation-events endpoint."""
+
+    async def _create_contract(self, client: AsyncClient, tenant_id: str, client_id: str) -> str:
+        response = await client.post(
+            f"/contracts/?tenant_id={tenant_id}",
+            json={
+                "client_id": client_id,
+                "start_date": "2026-01-01",
+                "end_date": "2026-12-31",
+                "billing_rate": {"amount": "5000.00", "currency": "USD"},
+                "payment_frequency": "Monthly",
+                "is_auto_renew": False,
+            },
+        )
+        assert response.status_code == 201
+        return response.json()["id"]
+
+    async def _record_event(
+        self, client: AsyncClient, tenant_id: str, contract_id: str, occurred_on: str
+    ) -> None:
+        response = await client.post(
+            f"/utilisation-events?tenant_id={tenant_id}",
+            json={
+                "contract_id": contract_id,
+                "event_type": "SessionDelivered",
+                "occurred_on": occurred_on,
+                "units": 2,
+            },
+        )
+        assert response.status_code == 201
+
+    async def test_pages_events_newest_first_across_contracts(
+        self, client: AsyncClient, client_test_tenant: dict, test_client: dict
+    ):
+        """Events from every contract owned by the client are paged together, newest first."""
+        tenant_id = client_test_tenant["id"]
+        client_id = test_client["id"]
+        contract_id = await self._create_contract(client, tenant_id, client_id)
+        for day in ("2026-03-01", "2026-03-05", "2026-03-10"):
+            await self._record_event(client, tenant_id, contract_id, day)
+
+        first_page = await client.get(
+            f"/clients/{client_id}/utilisation-events?tenant_id={tenant_id}&limit=2"
+        )
+        assert first_page.status_code == 200
+        first_data = first_page.json()
+        assert first_data["total"] == 3
+        assert first_data["has_more"] is True
+        assert [item["occurred_on"] for item in first_data["items"]] == [
+            "2026-03-10",
+            "2026-03-05",
+        ]
+
+        second_page = await client.get(
+            f"/clients/{client_id}/utilisation-events?tenant_id={tenant_id}&limit=2&page=2"
+        )
+        assert second_page.status_code == 200
+        second_data = second_page.json()
+        assert [item["occurred_on"] for item in second_data["items"]] == ["2026-03-01"]
+        assert second_data["has_more"] is False
+
+    async def test_empty_when_no_events_recorded(
+        self, client: AsyncClient, client_test_tenant: dict, test_client: dict
+    ):
+        """A client with no recorded usage returns an empty page, not an error."""
+        tenant_id = client_test_tenant["id"]
+        client_id = test_client["id"]
+
+        response = await client.get(
+            f"/clients/{client_id}/utilisation-events?tenant_id={tenant_id}"
+        )
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["total"] == 0
+        assert data["items"] == []
+
+    async def test_not_found_for_unknown_client(
+        self, client: AsyncClient, client_test_tenant: dict
+    ):
+        """Test getting utilisation events for a non-existent client."""
+        tenant_id = client_test_tenant["id"]
+
+        response = await client.get(
+            f"/clients/nonexistent-id/utilisation-events?tenant_id={tenant_id}"
+        )
 
         assert response.status_code == 404
 

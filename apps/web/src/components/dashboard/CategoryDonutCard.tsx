@@ -6,6 +6,7 @@
 
 import { useState } from "react"
 
+import { PieChart as PieChartIcon } from "lucide-react"
 import { Cell, Label, Pie, PieChart, Sector } from "recharts"
 import type { PieSectorDataItem } from "recharts/types/polar/Pie"
 
@@ -14,7 +15,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { type ChartConfig, ChartContainer, ChartTooltip } from "@/components/ui/chart"
 import { Skeleton } from "@/components/ui/skeleton"
 
-import { CardBar } from "./CardBar"
+import { CardBar, CardEmptyState } from "./CardBar"
 
 const SLOTS = [
   "var(--color-chart-1)",
@@ -42,9 +43,12 @@ export function CategoryDonutCard({ categories, loading }: CategoryDonutCardProp
         {loading ? (
           <Skeleton className="h-36 w-full sm:col-span-2" />
         ) : total === 0 ? (
-          <p className="py-6 text-center text-sm text-fg-muted sm:col-span-2">
-            No categorised sessions in this window.
-          </p>
+          <CardEmptyState
+            icon={PieChartIcon}
+            title="No categorised sessions"
+            description="A breakdown will appear here once sessions are logged in this window."
+            className="sm:col-span-2"
+          />
         ) : (
           <>
             <Donut

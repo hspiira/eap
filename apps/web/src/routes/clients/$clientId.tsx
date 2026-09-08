@@ -17,11 +17,10 @@ import {
   ClientContactsPanel,
   ClientDocumentsPanel,
   ClientRosterPanel,
-  ClientServicesPanel,
-  ClientUtilisationPanel,
 } from "@/components/clients/ClientManagementPanels"
 import type { ClientOnboardingStep } from "@/components/clients/ClientOnboardingCard"
 import { ClientOnboardingCard } from "@/components/clients/ClientOnboardingCard"
+import { ClientSessionsPanel } from "@/components/clients/ClientSessionsPanel"
 import type { ClientTodaysTodoItem } from "@/components/clients/ClientTodaysTodoCard"
 import { ClientTodaysTodoCard } from "@/components/clients/ClientTodaysTodoCard"
 import type { ClientUpcomingItem } from "@/components/clients/ClientUpcomingCard"
@@ -35,6 +34,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { useToast } from "@/contexts/ToastContext"
 import { useCanWrite } from "@/hooks/useCanWrite"
+import { useDocumentTitle } from "@/hooks/useDocumentTitle"
 import { useTabSearchParam } from "@/hooks/useTabSearchParam"
 import { contractLabel } from "@/lib/display"
 import { normalizeErrorMessage } from "@/lib/errors"
@@ -54,7 +54,6 @@ type TabValue =
   | "activity"
   | "contracts"
   | "staff"
-  | "services"
   | "documents"
   | "utilisation"
   | "setup"
@@ -64,12 +63,22 @@ const TAB_VALUES: ReadonlyArray<TabValue> = [
   "activity",
   "contracts",
   "staff",
-  "services",
   "documents",
   "utilisation",
   "setup",
   "contacts",
 ]
+
+const TAB_LABELS: Record<TabValue, string> = {
+  overview: "Overview",
+  activity: "Activity",
+  contracts: "Contracts",
+  staff: "Members",
+  documents: "Documents",
+  utilisation: "Sessions",
+  setup: "Setup",
+  contacts: "Contacts",
+}
 
 const CLIENTS_LIST_SEARCH = {
   page: undefined,
@@ -99,6 +108,7 @@ function ClientDetailPage() {
   const [editOpen, setEditOpen] = useState(false)
   const [addContractOpen, setAddContractOpen] = useState(false)
   const [addMemberOpen, setAddMemberOpen] = useState(false)
+  const [activityPage, setActivityPage] = useState(1)
 
   const clientQuery = useEntityDetail<Client>({
     resource: "clients",
@@ -106,6 +116,12 @@ function ClientDetailPage() {
     detailFn: clientsApi.getById,
   })
   const client = clientQuery.data ?? null
+
+  useDocumentTitle(
+    client
+      ? `${tab === "overview" ? "" : `${TAB_LABELS[tab]} · `}${client.name} · Clients · Evexía`
+      : undefined,
+  )
 
   // The related panels only make sense once the client itself resolves; gating
   // on it also stops them firing for an id that turns out not to exist.
@@ -420,7 +436,6 @@ function ClientDetailPage() {
                   <Tab value="staff" count={rosterCount}>
                     Members
                   </Tab>
-                  <Tab value="services">Services</Tab>
                   <Tab value="documents">Documents</Tab>
                   <Tab value="utilisation">Sessions</Tab>
                   <Tab value="contacts">Contacts</Tab>
@@ -447,41 +462,17 @@ function ClientDetailPage() {
                   <div className="space-y-4">
                     <ClientUpcomingCard items={upcomingItems} />
                     {todaysTodoItems.length > 0 && <ClientTodaysTodoCard items={todaysTodoItems} />}
-                    <section className="border border-fg/10 bg-surface p-4">
-                      <h2 className="text-sm font-semibold">Manage this client</h2>
-                      <p className="mt-1 text-sm text-fg-muted">
-                        People, coverage and records in one place.
-                      </p>
-                      <div className="mt-3 flex flex-wrap gap-2">
-                        <Button
-                          variant="outline"
-                          className="rounded-none"
-                          onClick={() => setTab("staff")}
-                        >
-                          Members
-                        </Button>
-                        <Button
-                          variant="outline"
-                          className="rounded-none"
-                          onClick={() => setTab("contracts")}
-                        >
-                          Contracts
-                        </Button>
-                        <Button
-                          variant="outline"
-                          className="rounded-none"
-                          onClick={() => setTab("contacts")}
-                        >
-                          Contacts
-                        </Button>
-                      </div>
-                    </section>
                   </div>
                 </div>
               </TabPanel>
 
               <TabPanel value="activity">
-                <ClientActivityCard clientId={clientId} limit={20} />
+                <ClientActivityCard
+                  clientId={clientId}
+                  limit={20}
+                  page={activityPage}
+                  onPageChange={setActivityPage}
+                />
               </TabPanel>
 
               <TabPanel value="contacts">
@@ -543,27 +534,22 @@ function ClientDetailPage() {
                 />
               </TabPanel>
 
-              <TabPanel value="services">
-                <ClientServicesPanel clientId={clientId} />
-              </TabPanel>
-
               <TabPanel value="documents">
                 <ClientDocumentsPanel clientId={clientId} />
               </TabPanel>
 
               <TabPanel value="utilisation">
-                <ClientUtilisationPanel clientId={clientId} />
+                <ClientSessionsPanel clientId={clientId} />
               </TabPanel>
             </Tabs>
           </div>
 
           {(tab === "overview" || tab === "setup") && (
-            <aside className="col-span-12 min-w-0 lg:col-span-4 lg:pt-14">
+            <aside className="col-span-12 min-w-0 lg:sticky lg:top-3 lg:col-span-4 lg:max-h-[80vh] lg:overflow-y-auto lg:pt-14">
               <DetailRail
                 client={client}
                 stats={stats}
                 statsLoading={statsQuery.isPending}
-                memberCount={rosterCount}
                 nextRenewal={upcomingItems[0]?.date}
                 milestonesState={
                   endingQuery.isPending ? "loading" : endingQuery.isError ? "error" : "ready"

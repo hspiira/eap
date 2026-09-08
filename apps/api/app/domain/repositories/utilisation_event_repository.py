@@ -20,3 +20,14 @@ class UtilisationEventRepository(BaseRepository[UtilisationEventEntity, Utilisat
         from_date: date | None = None,
         to_date: date | None = None,
     ) -> list[UtilisationEventEntity]: ...
+
+    async def list_for_client(
+        self,
+        tenant_id: TenantId,
+        client_id: str,
+        *,
+        limit: int,
+        offset: int,
+    ) -> list[UtilisationEventEntity]: ...
+
+    async def count_for_client(self, tenant_id: TenantId, client_id: str) -> int: ...

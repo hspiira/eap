@@ -272,6 +272,32 @@ class TestListServiceSessions:
         assert response.status_code == 200
         assert all(s["member_id"] == member_id for s in data["items"])
 
+    async def test_list_sessions_filter_by_client(
+        self,
+        client: AsyncClient,
+        session_test_tenant: dict,
+        test_service_session: dict,
+    ):
+        """A client's own sessions, which is what a client page asks for."""
+        tenant_id = session_test_tenant["id"]
+        client_id = test_service_session["client_id"]
+
+        response = await client.get(
+            f"/service-sessions/?tenant_id={tenant_id}&client_id={client_id}"
+        )
+        assert response.status_code == 200
+        data = response.json()
+        assert data["total"] >= 1
+        assert all(s["client_id"] == client_id for s in data["items"])
+        assert test_service_session["id"] in [s["id"] for s in data["items"]]
+
+        # The count has to move with the filter, not just the page.
+        other = await client.get(
+            f"/service-sessions/?tenant_id={tenant_id}&client_id=nobody-owns-this"
+        )
+        assert other.status_code == 200
+        assert other.json()["total"] == 0
+
 
 # =============================================================================
 # LIFECYCLE TESTS (Complete, Cancel, Reschedule, No-Show, Archive, Restore)

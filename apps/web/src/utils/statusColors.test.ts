@@ -49,7 +49,6 @@ const INERT = new Set([
   "Cancelled",
   "Closed",
   "Draft",
-  "Expired",
   "Inactive",
   "Pending",
   "Pending Verification",
@@ -151,6 +150,12 @@ describe("tones follow the published standard", () => {
     for (const status of ["Suspended", "OnLeave", "Lapsed"]) {
       expect(getStatusColors(status).tone, status).toBe("warning")
     }
+  })
+
+  it("reds a term that has stopped, and keeps grey for one that has not begun", () => {
+    expect(getStatusColors(ContractStatus.EXPIRED).tone).toBe("danger")
+    expect(getStatusColors(ContractStatus.TERMINATED).tone).toBe("danger")
+    expect(getStatusColors(ContractStatus.DRAFT).tone).toBe("neutral")
   })
 })
 

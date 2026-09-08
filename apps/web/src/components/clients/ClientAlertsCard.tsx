@@ -74,62 +74,91 @@ export function ClientAlertsCard({ alerts, className }: ClientAlertsCardProps) {
         <PanelEmpty>No alerts for this client.</PanelEmpty>
       ) : (
         <PanelList className="max-h-72 overflow-y-auto">
-          {alerts.map((a) => {
-            const severity = a.severity ?? "medium"
-            const isExpanded = expandedId === a.id
-            const expandable = Boolean(a.description || a.link)
-            const tone = SEVERITY_TONE[severity]
-            return (
-              <li key={a.id} className="px-3 py-2.5">
-                <div className="flex items-start gap-2">
-                  <AlertCircle className={cn("mt-0.5 size-4 shrink-0", tone.icon)} aria-hidden />
-                  <div className="min-w-0 flex-1">
-                    <div className="flex flex-wrap items-start justify-between gap-2">
-                      <span className="text-sm font-medium text-fg">{a.title}</span>
-                      {expandable ? (
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          aria-label={isExpanded ? "Collapse alert" : "Expand alert"}
-                          aria-expanded={isExpanded}
-                          onClick={() => setExpandedId(isExpanded ? null : a.id)}
-                          className="size-6 p-0 text-fg-muted"
-                        >
-                          {isExpanded ? (
-                            <ChevronUp className="size-3.5" />
-                          ) : (
-                            <ChevronDown className="size-3.5" />
-                          )}
-                        </Button>
-                      ) : null}
-                    </div>
-                    <span
-                      className={cn(
-                        "mt-1 inline-flex items-center rounded-sm px-1.5 py-0.5 text-[11px] font-medium",
-                        tone.pill,
-                      )}
-                    >
-                      {SEVERITY_LABEL[severity]}
-                    </span>
-                    {isExpanded && a.description ? (
-                      <p className="mt-2 text-xs leading-relaxed text-fg/65">{a.description}</p>
-                    ) : null}
-                    {isExpanded && a.link ? (
-                      <a
-                        href={a.link}
-                        className="mt-2 inline-block text-xs font-medium text-primary hover:underline"
-                      >
-                        {a.linkLabel ?? "View"}
-                      </a>
-                    ) : null}
-                  </div>
-                </div>
-              </li>
-            )
-          })}
+          {alerts.map((a) => (
+            <AlertRow
+              key={a.id}
+              alert={a}
+              isExpanded={expandedId === a.id}
+              onToggle={() => setExpandedId(expandedId === a.id ? null : a.id)}
+            />
+          ))}
         </PanelList>
       )}
     </Panel>
+  )
+}
+
+function AlertRow({
+  alert,
+  isExpanded,
+  onToggle,
+}: {
+  alert: ClientAlert
+  isExpanded: boolean
+  onToggle: () => void
+}) {
+  const severity = alert.severity ?? "medium"
+  const tone = SEVERITY_TONE[severity]
+  const expandable = Boolean(alert.description || alert.link)
+
+  return (
+    <li>
+      {expandable ? (
+        <Button
+          type="button"
+          variant="ghost"
+          onClick={onToggle}
+          aria-expanded={isExpanded}
+          aria-label={isExpanded ? `Collapse ${alert.title}` : `Expand ${alert.title}`}
+          className="h-auto w-full justify-start gap-2.5 rounded-none px-3 py-2.5 text-left font-normal hover:bg-surface-hover"
+        >
+          <AlertRowHeader alert={alert} tone={tone} severity={severity} />
+          {isExpanded ? (
+            <ChevronUp className="size-3.5 shrink-0 text-fg-muted" aria-hidden />
+          ) : (
+            <ChevronDown className="size-3.5 shrink-0 text-fg-muted" aria-hidden />
+          )}
+        </Button>
+      ) : (
+        <div className="flex items-center gap-2.5 px-3 py-2.5">
+          <AlertRowHeader alert={alert} tone={tone} severity={severity} />
+        </div>
+      )}
+      {isExpanded && expandable ? (
+        <div className="space-y-1.5 py-2.5 pl-[2.375rem] pr-3">
+          {alert.description ? (
+            <p className="text-xs leading-relaxed text-fg/65">{alert.description}</p>
+          ) : null}
+          {alert.link ? (
+            <a
+              href={alert.link}
+              className="inline-block text-xs font-medium text-primary hover:underline"
+            >
+              {alert.linkLabel ?? "View"}
+            </a>
+          ) : null}
+        </div>
+      ) : null}
+    </li>
+  )
+}
+
+function AlertRowHeader({
+  alert,
+  tone,
+  severity,
+}: {
+  alert: ClientAlert
+  tone: { icon: string; pill: string }
+  severity: ClientAlertSeverity
+}) {
+  return (
+    <>
+      <AlertCircle className={cn("size-4 shrink-0", tone.icon)} aria-hidden />
+      <span className="min-w-0 flex-1 truncate text-sm font-medium text-fg">{alert.title}</span>
+      <span className={cn("shrink-0 rounded-sm px-1.5 py-0.5 text-[11px] font-medium", tone.pill)}>
+        {SEVERITY_LABEL[severity]}
+      </span>
+    </>
   )
 }

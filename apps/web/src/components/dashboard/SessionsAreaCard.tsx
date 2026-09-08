@@ -12,6 +12,7 @@
  * tooltip label, which is the only place it was ever readable anyway.
  */
 
+import { CalendarX2 } from "lucide-react"
 import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from "recharts"
 
 import type { SeriesPoint } from "@/api/generated"
@@ -26,7 +27,7 @@ import {
 } from "@/components/ui/chart"
 import { Skeleton } from "@/components/ui/skeleton"
 
-import { CardBar, CardStat } from "./CardBar"
+import { CardBar, CardEmptyState, CardStat } from "./CardBar"
 
 const CHART_CONFIG = {
   physical: { label: "Physical", color: "var(--color-chart-1)" },
@@ -91,7 +92,15 @@ function AreaBody({ series, loading, error, refreshing }: AreaBodyProps) {
     return <Message text="Sessions could not be loaded." />
   }
   if (series.every((p) => p.total === 0)) {
-    return <Message text="No completed sessions in this window." />
+    return (
+      <div className="flex h-[220px] items-center justify-center">
+        <CardEmptyState
+          icon={CalendarX2}
+          title="No completed sessions"
+          description="Sessions delivered in this window will chart here once logged."
+        />
+      </div>
+    )
   }
   // A band with nothing in it still draws its stroke along the top of the
   // stack, which reads as a flat series rather than an absent one.

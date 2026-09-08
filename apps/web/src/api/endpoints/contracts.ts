@@ -13,6 +13,8 @@
 
 import type {
   ContractCreate,
+  ContractMetricsItem,
+  ContractMetricsResponse,
   ContractRenewRequest,
   ContractTerminateRequest,
   ContractUpdate,
@@ -21,7 +23,13 @@ import type {
 import apiClient from "../client"
 import type { Contract, ListParams, PaginatedResponse } from "../types"
 
-export type { ContractCreate, ContractRenewRequest, ContractTerminateRequest, ContractUpdate }
+export type {
+  ContractCreate,
+  ContractMetricsItem,
+  ContractRenewRequest,
+  ContractTerminateRequest,
+  ContractUpdate,
+}
 
 /** Mirrors the query params on `GET /contracts/` in the BE OpenAPI schema. */
 export interface ContractListParams extends ListParams {
@@ -62,5 +70,14 @@ export const contractsApi = {
 
   async terminate(contractId: string, data: ContractTerminateRequest): Promise<Contract> {
     return apiClient.post<Contract>(`/contracts/${contractId}/terminate`, data)
+  },
+
+  /**
+   * Services covered and session spend for each of a client's terms, in one
+   * request. A session carries no contract, so the server attributes it by
+   * date; see the endpoint's own note on what that misses.
+   */
+  async metricsByClient(clientId: string): Promise<ContractMetricsResponse> {
+    return apiClient.get<ContractMetricsResponse>(`/contracts/client/${clientId}/metrics`)
   },
 }

@@ -2729,15 +2729,35 @@
             "title": "Child Clients Count",
             "type": "integer"
           },
+          "child_members_count": {
+            "description": "Members with the Child relation",
+            "title": "Child Members Count",
+            "type": "integer"
+          },
           "client_id": {
             "description": "Client identifier",
             "title": "Client Id",
             "type": "string"
           },
+          "employee_members_count": {
+            "description": "Members with the Employee relation",
+            "title": "Employee Members Count",
+            "type": "integer"
+          },
           "is_verified": {
             "description": "Whether client is verified",
             "title": "Is Verified",
             "type": "boolean"
+          },
+          "other_members_count": {
+            "description": "Members with any other relation (domestic partner, other dependent)",
+            "title": "Other Members Count",
+            "type": "integer"
+          },
+          "spouse_members_count": {
+            "description": "Members with the Spouse relation",
+            "title": "Spouse Members Count",
+            "type": "integer"
           },
           "status": {
             "$ref": "#/components/schemas/BaseStatus",
@@ -2754,6 +2774,10 @@
           "child_clients_count",
           "total_contracts_count",
           "active_contracts_count",
+          "employee_members_count",
+          "spouse_members_count",
+          "child_members_count",
+          "other_members_count",
           "is_verified",
           "status"
         ],
@@ -3877,6 +3901,68 @@
           "has_more"
         ],
         "title": "ContractListResponse",
+        "type": "object"
+      },
+      "ContractMetricsItem": {
+        "description": "What one contract term covers, and what it has cost so far.",
+        "properties": {
+          "contract_id": {
+            "description": "Contract identifier",
+            "title": "Contract Id",
+            "type": "string"
+          },
+          "services": {
+            "description": "Services assigned to the contract",
+            "title": "Services",
+            "type": "integer"
+          },
+          "sessions": {
+            "description": "Completed sessions inside the term",
+            "title": "Sessions",
+            "type": "integer"
+          },
+          "sessions_priced": {
+            "description": "How many of those carry a rate",
+            "title": "Sessions Priced",
+            "type": "integer"
+          },
+          "spent": {
+            "$ref": "#/components/schemas/app__api__schemas__contract_schemas__MoneySchema",
+            "description": "Sum of the rates on those sessions"
+          }
+        },
+        "required": [
+          "contract_id",
+          "services",
+          "sessions",
+          "sessions_priced",
+          "spent"
+        ],
+        "title": "ContractMetricsItem",
+        "type": "object"
+      },
+      "ContractMetricsResponse": {
+        "description": "Per-term coverage and spend for every contract a client holds.",
+        "properties": {
+          "client_id": {
+            "description": "Client identifier",
+            "title": "Client Id",
+            "type": "string"
+          },
+          "items": {
+            "description": "One entry per contract",
+            "items": {
+              "$ref": "#/components/schemas/ContractMetricsItem"
+            },
+            "title": "Items",
+            "type": "array"
+          }
+        },
+        "required": [
+          "client_id",
+          "items"
+        ],
+        "title": "ContractMetricsResponse",
         "type": "object"
       },
       "ContractPricingSchema": {
@@ -16139,6 +16225,42 @@
         "title": "UtilisationEventCreate",
         "type": "object"
       },
+      "UtilisationEventListResponse": {
+        "properties": {
+          "has_more": {
+            "title": "Has More",
+            "type": "boolean"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/UtilisationEventResponse"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "limit": {
+            "title": "Limit",
+            "type": "integer"
+          },
+          "page": {
+            "title": "Page",
+            "type": "integer"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "items",
+          "total",
+          "page",
+          "limit",
+          "has_more"
+        ],
+        "title": "UtilisationEventListResponse",
+        "type": "object"
+      },
       "UtilisationEventResponse": {
         "properties": {
           "contract_id": {
@@ -21186,7 +21308,7 @@
     },
     "/clients/{client_id}/stats": {
       "get": {
-        "description": "Get client statistics including child clients and contracts.",
+        "description": "Get client statistics including child clients, contracts and roster mix.",
         "operationId": "get_client_stats_clients__client_id__stats_get",
         "parameters": [
           {
@@ -21515,6 +21637,81 @@
           }
         ],
         "summary": "Set client engagement tier (A/B/C)",
+        "tags": [
+          "clients"
+        ]
+      }
+    },
+    "/clients/{client_id}/utilisation-events": {
+      "get": {
+        "description": "Page through utilisation events for every contract owned by this client.",
+        "operationId": "list_client_utilisation_events_clients__client_id__utilisation_events_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "client_id",
+            "required": true,
+            "schema": {
+              "title": "Client Id",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Page number",
+            "in": "query",
+            "name": "page",
+            "required": false,
+            "schema": {
+              "default": 1,
+              "description": "Page number",
+              "minimum": 1,
+              "title": "Page",
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Items per page",
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 20,
+              "description": "Items per page",
+              "maximum": 100,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UtilisationEventListResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "List utilisation events recorded across a client's contracts",
         "tags": [
           "clients"
         ]
@@ -22681,6 +22878,63 @@
           }
         ],
         "summary": "Get active contract for a client",
+        "tags": [
+          "contracts"
+        ]
+      }
+    },
+    "/contracts/client/{client_id}/metrics": {
+      "get": {
+        "description": "Count the services a term covers and sum what its sessions have cost.\n\nOnly completed sessions count, and a session with no rate adds nothing,\nwhich is why the priced count is reported alongside the total: 208 of the\n369 sessions loaded into dev carry one, so a bare total would read as the\nwhole cost when it is not. See\n`ContractRepository.get_metrics_for_client` for the attribution rule and\nthe UTC date handling.",
+        "operationId": "get_contract_metrics_contracts_client__client_id__metrics_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "client_id",
+            "required": true,
+            "schema": {
+              "title": "Client Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "tenant_id",
+            "required": true,
+            "schema": {
+              "title": "Tenant Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ContractMetricsResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Coverage and session spend for each of a client's contract terms",
         "tags": [
           "contracts"
         ]
@@ -33555,6 +33809,24 @@
             "schema": {
               "title": "Tenant Id",
               "type": "string"
+            }
+          },
+          {
+            "description": "Filter by client identifier",
+            "in": "query",
+            "name": "client_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter by client identifier",
+              "title": "Client Id"
             }
           },
           {

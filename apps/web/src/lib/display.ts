@@ -11,6 +11,19 @@ export function contractLabel(contract: Contract): string {
   return `${formatDay(contract.period.start_date)} to ${formatDay(contract.period.end_date)}`
 }
 
+/** The contract's own rate, e.g. "UGX 172,000,000". */
+export function contractValue(contract: Contract): string {
+  const parsed = Number(contract.billing_rate.amount)
+  const amount = Number.isFinite(parsed) ? parsed.toLocaleString() : contract.billing_rate.amount
+  return `${contract.billing_rate.currency} ${amount}`
+}
+
+/** A money amount on the wire, e.g. "UGX 7,200,000". Decimal strings stay exact. */
+export function moneyLabel(money: { amount: string; currency: string }): string {
+  const parsed = Number(money.amount)
+  return `${money.currency} ${Number.isFinite(parsed) ? parsed.toLocaleString() : money.amount}`
+}
+
 export function memberLabel(member: Member): string {
   return member.display_label?.trim() || member.employer_member_id
 }

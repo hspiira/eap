@@ -40,15 +40,12 @@ export function ContractAttachments({ contractId }: { contractId: string }) {
     }
   }
   return (
-    <section className="space-y-4 border border-fg/10 bg-surface p-4">
-      <div>
-        <h2 className="text-sm font-semibold text-fg">Contract attachments</h2>
-        <p className="mt-1 text-sm text-fg-muted">
-          Keep signed agreements and supporting documents with this contract.
-        </p>
-      </div>
+    <section className="space-y-3">
+      <p className="text-xs text-fg-muted">
+        Signed agreements and supporting documents kept with this contract.
+      </p>
       {canWrite && (
-        <div className="space-y-2 border-y border-fg/10 py-4">
+        <div className="space-y-2">
           <label className="block text-sm font-medium" htmlFor={`attachment-${contractId}`}>
             {uploading ? "Uploading…" : "Attach a file"}
           </label>
@@ -83,14 +80,14 @@ export function ContractAttachments({ contractId }: { contractId: string }) {
           </Button>
         </div>
       ) : query.data.total === 0 ? (
-        <p className="py-6 text-center text-sm text-fg-muted">No attachments yet.</p>
+        <p className="text-sm text-fg-muted">No attachments yet.</p>
       ) : (
-        <div className="divide-y divide-fg/10">
+        <div className="divide-y divide-fg/10 border border-fg/10 bg-surface">
           {query.data.items.map((document) => (
-            <div key={document.id} className="flex items-center justify-between gap-4 py-3">
+            <div key={document.id} className="flex items-center justify-between gap-4 px-3 py-2.5">
               <div className="min-w-0">
                 <p className="break-words text-sm font-medium">{document.name}</p>
-                <p className="mt-1 text-xs text-fg-muted">
+                <p className="mt-0.5 text-xs text-fg-muted">
                   {formatDay(document.created_at)}
                   {document.file_size != null &&
                     ` · ${Math.max(1, Math.round(document.file_size / 1024))} KB`}

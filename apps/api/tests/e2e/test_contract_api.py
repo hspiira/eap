@@ -8,7 +8,7 @@ Comprehensive tests for all contract endpoints covering:
 - Client-specific queries
 """
 
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, date, datetime, timedelta
 
 import pytest
 from httpx import AsyncClient
@@ -805,3 +805,143 @@ class TestContractLifecycleFlow:
             json={"reason": "End of test"},
         )
         assert terminate_response.json()["status"] == "Terminated"
+
+
+# =============================================================================
+# CONTRACT METRICS TESTS
+# =============================================================================
+
+
+class TestContractMetrics:
+    """Tests for GET /contracts/client/{client_id}/metrics."""
+
+    async def _session(
+        self,
+        db_session,
+        tenant_id: str,
+        client_id: str,
+        service_id: str,
+        provider_id: str,
+        day: str,
+        status,
+        rate: int | None,
+    ) -> None:
+        from datetime import time
+
+        from app.domain.enums import SessionAttendance
+        from app.infrastructure.models.service_session_model import ServiceSessionModel
+        from app.shared.utils.generators import generate_cuid
+
+        db_session.add(
+            ServiceSessionModel(
+                id=generate_cuid(),
+                tenant_id=tenant_id,
+                client_id=client_id,
+                service_id=service_id,
+                provider_id=provider_id,
+                # No member, so the row has to be company-wide: the attendance
+                # check constraint ties the two together.
+                member_id=None,
+                attendance=SessionAttendance.COMPANY_WIDE,
+                scheduled_at=datetime.combine(date.fromisoformat(day), time(9, 0), tzinfo=UTC),
+                status=status,
+                delivery_context="Direct",
+                rate_ugx=rate,
+            )
+        )
+
+    async def test_counts_services_and_sums_the_rates_inside_the_term(
+        self,
+        client: AsyncClient,
+        db_session,
+        session_test_tenant: dict,
+        session_test_service: dict,
+        session_test_provider: dict,
+    ):
+        """Only completed sessions dated inside the term count towards spend."""
+        from app.domain.enums import SessionStatus
+
+        tenant_id = session_test_tenant["id"]
+        created = await client.post(
+            f"/clients/?tenant_id={tenant_id}",
+            json={
+                "name": "Metrics Client",
+                "code": "MTRC",
+                "contact_info": {"phone": "+1-555-METRICS", "email": "metrics@testclient.com"},
+            },
+        )
+        assert created.status_code == 201
+        client_id = created.json()["id"]
+
+        contract = await client.post(
+            f"/contracts/?tenant_id={tenant_id}",
+            json={
+                "client_id": client_id,
+                "start_date": "2024-01-01",
+                "end_date": "2024-12-31",
+                "billing_rate": {"amount": "1000000", "currency": "UGX"},
+                "payment_frequency": "Quarterly",
+                "is_auto_renew": False,
+            },
+        )
+        assert contract.status_code == 201
+        contract_id = contract.json()["id"]
+
+        assigned = await client.post(
+            f"/service-assignments/?tenant_id={tenant_id}",
+            json={"service_id": session_test_service["id"], "contract_id": contract_id},
+        )
+        assert assigned.status_code == 201
+
+        rows = [
+            ("2024-03-01", SessionStatus.COMPLETED, 50000),  # counts, priced
+            ("2024-06-01", SessionStatus.COMPLETED, None),  # counts, no rate
+            ("2024-07-01", SessionStatus.CANCELLED, 70000),  # not delivered
+            ("2025-03-01", SessionStatus.COMPLETED, 90000),  # outside the term
+        ]
+        for day, status, rate in rows:
+            await self._session(
+                db_session,
+                tenant_id,
+                client_id,
+                session_test_service["id"],
+                session_test_provider["id"],
+                day,
+                status,
+                rate,
+            )
+        await db_session.commit()
+
+        response = await client.get(f"/contracts/client/{client_id}/metrics?tenant_id={tenant_id}")
+        assert response.status_code == 200
+        body = response.json()
+        assert body["client_id"] == client_id
+        assert len(body["items"]) == 1
+        item = body["items"][0]
+        assert item["contract_id"] == contract_id
+        assert item["services"] == 1
+        assert item["sessions"] == 2
+        assert item["sessions_priced"] == 1
+        assert item["spent"] == {"amount": "50000", "currency": "UGX"}
+
+    async def test_reports_a_term_with_nothing_on_it_as_zero(
+        self,
+        client: AsyncClient,
+        contract_test_tenant: dict,
+        contract_test_client: dict,
+        sample_contract_data: dict,
+    ):
+        """A contract with no services and no sessions is present, not missing."""
+        tenant_id = contract_test_tenant["id"]
+        created = await client.post(f"/contracts/?tenant_id={tenant_id}", json=sample_contract_data)
+        assert created.status_code == 201
+
+        response = await client.get(
+            f"/contracts/client/{contract_test_client['id']}/metrics?tenant_id={tenant_id}"
+        )
+        assert response.status_code == 200
+        items = response.json()["items"]
+        assert [i["contract_id"] for i in items] == [created.json()["id"]]
+        assert items[0]["services"] == 0
+        assert items[0]["sessions"] == 0
+        assert items[0]["spent"]["amount"] == "0"
