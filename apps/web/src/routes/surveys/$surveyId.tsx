@@ -34,7 +34,7 @@ import { formatDate, formatDateTime } from "@/lib/format"
 import { useEntityMutation } from "@/lib/queries"
 import { SurveyStatusPill } from "@/routes/surveys/index"
 import type { Client, Survey, SurveyAggregate } from "@/types/entities"
-import { SurveyStatus } from "@/types/enums"
+import { SurveyCampaignStatus } from "@/types/enums"
 import { getStatusLabel } from "@/utils/statusColors"
 
 export const Route = createFileRoute("/surveys/$surveyId")({
@@ -110,7 +110,7 @@ function SurveyDetailPage() {
   const survey = surveyQuery.data
   const aggregate = aggregateQuery.data ?? null
   const client = clientQuery.data ?? null
-  const isClosed = survey.status === SurveyStatus.CLOSED
+  const isClosed = survey.status === SurveyCampaignStatus.CLOSED
 
   return (
     <PageShell
@@ -163,7 +163,7 @@ function SurveyDetailPage() {
                   <DetailCard title="Identity">
                     <DetailGrid>
                       <DetailRow label="Name" value={survey.name} fullWidth />
-                      <DetailRow label="Description" value={survey.description} fullWidth />
+                      <DetailRow label="Form ID" value={survey.external_form_id} fullWidth />
                       <DetailRow
                         label="Status"
                         value={<SurveyStatusPill status={survey.status} />}
@@ -177,10 +177,8 @@ function SurveyDetailPage() {
                       <DetailRow label="Start" value={formatDate(survey.period_start)} />
                       <DetailRow label="End" value={formatDate(survey.period_end)} />
                       <DetailRow
-                        label="First response"
-                        value={
-                          survey.first_response_at ? formatDateTime(survey.first_response_at) : null
-                        }
+                        label="Activated"
+                        value={survey.activated_at ? formatDateTime(survey.activated_at) : null}
                       />
                       <DetailRow
                         label="Closed"
@@ -192,10 +190,7 @@ function SurveyDetailPage() {
               </TabPanel>
 
               <TabPanel value="webhook">
-                <WebhookSetupHelper
-                  webhookUrl={survey.webhook_url}
-                  webhookToken={survey.webhook_token}
-                />
+                <WebhookSetupHelper campaignId={survey.id} />
               </TabPanel>
 
               <TabPanel value="aggregate">

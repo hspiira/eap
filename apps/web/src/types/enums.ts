@@ -539,12 +539,16 @@ export enum QuestionnaireAdministration {
 /**
  * Lifecycle status of a Survey campaign (Phase 3 #2).
  * - DRAFT: webhook not yet wired; no responses accepted.
- * - COLLECTING: webhook live; responses streaming in.
+ * - ACTIVE: webhook live; responses streaming in.
  * - CLOSED: response window closed; aggregates finalised.
+ *
+ * Named for the API's `SurveyCampaignStatus` so the contract test compares it.
+ * Under its old name and its old `Collecting` member it was neither compared
+ * nor accepted by the API.
  */
-export enum SurveyStatus {
+export enum SurveyCampaignStatus {
   DRAFT = "Draft",
-  COLLECTING = "Collecting",
+  ACTIVE = "Active",
   CLOSED = "Closed",
 }
 
@@ -571,19 +575,6 @@ export enum EngagementStatus {
 }
 
 /**
- * Type of consultancy engagement. Drives default rate-card lookup BE-side and the
- * "kind" badge in the FE.
- */
-export enum EngagementType {
-  POLICY_DRAFT = "Policy Draft",
-  TRAINING = "Training",
-  ASSESSMENT = "Assessment",
-  ADVISORY = "Advisory",
-  AUDIT = "Audit",
-  OTHER = "Other",
-}
-
-/**
  * Engagement deliverable status: independent from the parent engagement's status.
  */
 export enum DeliverableStatus {
@@ -591,18 +582,6 @@ export enum DeliverableStatus {
   IN_PROGRESS = "InProgress",
   DELIVERED = "Delivered",
   ACCEPTED = "Accepted",
-}
-
-/**
- * Engagement timeline event kinds. Mirrors the IncidentTimeline pattern.
- */
-export enum EngagementTimelineEventKind {
-  CREATED = "Created",
-  STATUS_CHANGED = "Status Changed",
-  DELIVERABLE_ADDED = "Deliverable Added",
-  DELIVERABLE_UPDATED = "Deliverable Updated",
-  HOURS_LOGGED = "Hours Logged",
-  NOTE = "Note",
 }
 
 /**

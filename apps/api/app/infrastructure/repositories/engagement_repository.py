@@ -1,9 +1,10 @@
 """SQLAlchemy implementation of the Engagement repository (Phase 4 #D-Engagement)."""
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.domain.entities.engagement import Engagement
+from app.domain.enums import EngagementStatus
 from app.domain.repositories.engagement_repository import EngagementRepository
 from app.domain.value_objects.core import ClientId, EngagementId, TenantId
 from app.infrastructure.mappers.engagement_mapper import EngagementMapper
@@ -61,6 +62,66 @@ class EngagementRepositoryImpl(EngagementRepository):
         )
         rows = (await self._session.execute(stmt)).scalars().all()
         return [EngagementMapper.to_entity(r) for r in rows]
+
+    @staticmethod
+    def _filters(
+        stmt,
+        *,
+        tenant_id: TenantId,
+        client_id: ClientId | None,
+        status: EngagementStatus | None,
+        search: str | None,
+    ):
+        stmt = stmt.where(EngagementModel.tenant_id == tenant_id.value)
+        if client_id:
+            stmt = stmt.where(EngagementModel.client_id == client_id.value)
+        if status:
+            stmt = stmt.where(EngagementModel.status == status)
+        if search and search.strip():
+            stmt = stmt.where(EngagementModel.name.ilike(f"%{search.strip()}%"))
+        return stmt
+
+    async def list_all(
+        self,
+        tenant_id: TenantId,
+        *,
+        client_id: ClientId | None = None,
+        status: EngagementStatus | None = None,
+        search: str | None = None,
+        limit: int = 100,
+        offset: int = 0,
+    ) -> list[Engagement]:
+        stmt = self._filters(
+            select(EngagementModel),
+            tenant_id=tenant_id,
+            client_id=client_id,
+            status=status,
+            search=search,
+        )
+        stmt = (
+            stmt.order_by(EngagementModel.created_at.desc(), EngagementModel.id.asc())
+            .limit(limit)
+            .offset(offset)
+        )
+        rows = (await self._session.execute(stmt)).scalars().all()
+        return [EngagementMapper.to_entity(r) for r in rows]
+
+    async def count(
+        self,
+        tenant_id: TenantId,
+        *,
+        client_id: ClientId | None = None,
+        status: EngagementStatus | None = None,
+        search: str | None = None,
+    ) -> int:
+        stmt = self._filters(
+            select(func.count(EngagementModel.id)),
+            tenant_id=tenant_id,
+            client_id=client_id,
+            status=status,
+            search=search,
+        )
+        return int((await self._session.execute(stmt)).scalar() or 0)
 
     async def list_for_client(
         self,

@@ -338,6 +338,18 @@ than deriving an empty list from every missing `items` field.
 page two works; server errors do not render a successful empty state; fixtures
 and production adapters consume the same contract.
 
+**Closed 2026-09-08.** Both list routes now take `client_id`, `status`,
+`search`, `page` and `limit`, and return the canonical envelope through
+`EngagementListResponse` and `SurveyCampaignListResponse`. Filtering, ordering,
+limit and offset are in SQL, and the page query and its count share one
+`_filters` helper so a total can never be built from a different filter set than
+its page. The frontend list pages read the envelope through `EntityListView`,
+and `fixture-page.ts` applies the same envelope, filters and paging to the
+fixture store, so both modes exercise one contract. `pnpm contracts:check`
+passes. Backend e2e tests assert three pages at `limit=2` return 2/2/1 with a
+stable total, disjoint page ids, and a filtered total that is not the page
+length.
+
 ### SUR-01: The survey creation form cannot satisfy the API
 
 **Evidence: reproduced.** The form submits name, client, source and period, but
@@ -784,3 +796,8 @@ Fix: one merge revision, `uv run alembic merge heads -m "merge taxonomy and
 session contract branches"`. Either branch owner should do it, once. Whoever
 takes it should confirm afterwards that `alembic heads` returns a single
 revision and that the three named test modules upgrade cleanly.
+
+**Resolved 2026-09-08.** `fc5d8bb02d9a` merges the taxonomy, contracts and
+session-linking branches, and takes in the survey-questions branch
+(`b2q4s6u8w0y2`) at the same time. `uv run alembic heads` now returns one
+revision.

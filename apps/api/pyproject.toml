@@ -165,6 +165,7 @@ ignore_imports = [
     "app.api.dependencies.outreach -> app.infrastructure.repositories.care_callback_repository",
     "app.api.dependencies.outreach -> app.infrastructure.repositories.survey_repository",
     "app.api.dependencies.outreach -> app.infrastructure.repositories.survey_source_repository",
+    "app.api.dependencies.outreach -> app.infrastructure.services.survey_aggregation",
     "app.api.dependencies.privacy -> app.infrastructure.repositories.benchmark_consent_repository",
     "app.api.dependencies.privacy -> app.infrastructure.repositories.dsar_repository",
     "app.api.dependencies.privacy -> app.infrastructure.services.benchmark_collector",

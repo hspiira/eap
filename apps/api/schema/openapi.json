@@ -515,6 +515,39 @@
         "title": "AmendClinicalNoteRequest",
         "type": "object"
       },
+      "ApprovedQuestionInput": {
+        "description": "A question whose answers may be counted in an employer-facing aggregate.\n\nAggregates report these questions and these choices only, so free text\nstays out of every employer-facing surface.",
+        "properties": {
+          "choices": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 50,
+            "minItems": 1,
+            "title": "Choices",
+            "type": "array"
+          },
+          "key": {
+            "maxLength": 255,
+            "minLength": 1,
+            "title": "Key",
+            "type": "string"
+          },
+          "label": {
+            "maxLength": 255,
+            "minLength": 1,
+            "title": "Label",
+            "type": "string"
+          }
+        },
+        "required": [
+          "key",
+          "label",
+          "choices"
+        ],
+        "title": "ApprovedQuestionInput",
+        "type": "object"
+      },
       "AssignCounsellorRequest": {
         "properties": {
           "counsellor_id": {
@@ -7241,6 +7274,42 @@
         "title": "EngagementDocumentUpsert",
         "type": "object"
       },
+      "EngagementListResponse": {
+        "properties": {
+          "has_more": {
+            "title": "Has More",
+            "type": "boolean"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/EngagementResponse"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "limit": {
+            "title": "Limit",
+            "type": "integer"
+          },
+          "page": {
+            "title": "Page",
+            "type": "integer"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "items",
+          "total",
+          "page",
+          "limit",
+          "has_more"
+        ],
+        "title": "EngagementListResponse",
+        "type": "object"
+      },
       "EngagementResponse": {
         "properties": {
           "activated_at": {
@@ -12375,6 +12444,87 @@
         "title": "ProviderCreate",
         "type": "object"
       },
+      "ProviderDeliveryOrganisationStat": {
+        "properties": {
+          "organisation_id": {
+            "title": "Organisation Id",
+            "type": "string"
+          },
+          "organisation_name": {
+            "title": "Organisation Name",
+            "type": "string"
+          },
+          "session_count": {
+            "title": "Session Count",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "organisation_id",
+          "organisation_name",
+          "session_count"
+        ],
+        "title": "ProviderDeliveryOrganisationStat",
+        "type": "object"
+      },
+      "ProviderDeliveryStatsResponse": {
+        "description": "Counted over the whole delivery record, not over a fetched page.",
+        "properties": {
+          "by_delivery_context": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "description": "SessionDeliveryContext value to count, zero counts omitted",
+            "title": "By Delivery Context",
+            "type": "object"
+          },
+          "by_organisation": {
+            "description": "Resolved through each session's stored affiliation, busiest first",
+            "items": {
+              "$ref": "#/components/schemas/ProviderDeliveryOrganisationStat"
+            },
+            "title": "By Organisation",
+            "type": "array"
+          },
+          "first_session_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "First Session At"
+          },
+          "last_session_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Session At"
+          },
+          "total_sessions": {
+            "title": "Total Sessions",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "total_sessions",
+          "first_session_at",
+          "last_session_at",
+          "by_delivery_context",
+          "by_organisation"
+        ],
+        "title": "ProviderDeliveryStatsResponse",
+        "type": "object"
+      },
       "ProviderEligibilityResponse": {
         "description": "Preview of the booking gate.\n\n``eligible`` is the same rule the write paths apply, so a preview cannot\ndisagree with the booking it precedes. The non-compete counts are retained\nfor compatibility and are informational: non-compete is not live and does\nnot restrict booking.",
         "properties": {
@@ -15693,6 +15843,7 @@
         "type": "object"
       },
       "SurveyAggregateResponse": {
+        "description": "Employer-facing aggregate: approved questions only, every cell suppressed.\n\nA count below ``min_cell_size`` is returned as the ``\"<n\"`` token rather\nthan a number, including ``response_total``.",
         "properties": {
           "anonymous": {
             "title": "Anonymous",
@@ -15701,7 +15852,14 @@
           "answer_frequencies": {
             "additionalProperties": {
               "additionalProperties": {
-                "type": "integer"
+                "anyOf": [
+                  {
+                    "type": "integer"
+                  },
+                  {
+                    "type": "string"
+                  }
+                ]
               },
               "type": "object"
             },
@@ -15716,17 +15874,39 @@
             "title": "Client Id",
             "type": "string"
           },
+          "disclosure_status": {
+            "title": "Disclosure Status",
+            "type": "string"
+          },
           "generated_at": {
             "title": "Generated At",
             "type": "string"
+          },
+          "min_cell_size": {
+            "title": "Min Cell Size",
+            "type": "integer"
           },
           "name": {
             "title": "Name",
             "type": "string"
           },
+          "question_labels": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "title": "Question Labels",
+            "type": "object"
+          },
           "response_total": {
-            "title": "Response Total",
-            "type": "integer"
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "string"
+              }
+            ],
+            "title": "Response Total"
           },
           "source": {
             "title": "Source",
@@ -15734,6 +15914,20 @@
           },
           "status": {
             "$ref": "#/components/schemas/SurveyCampaignStatus"
+          },
+          "unapproved_answers": {
+            "additionalProperties": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "string"
+                }
+              ]
+            },
+            "title": "Unapproved Answers",
+            "type": "object"
           }
         },
         "required": [
@@ -15743,8 +15937,12 @@
           "status",
           "source",
           "anonymous",
-          "response_total",
+          "disclosure_status",
+          "question_labels",
           "answer_frequencies",
+          "unapproved_answers",
+          "response_total",
+          "min_cell_size",
           "generated_at"
         ],
         "title": "SurveyAggregateResponse",
@@ -15756,6 +15954,13 @@
             "default": true,
             "title": "Anonymous",
             "type": "boolean"
+          },
+          "approved_questions": {
+            "items": {
+              "$ref": "#/components/schemas/ApprovedQuestionInput"
+            },
+            "title": "Approved Questions",
+            "type": "array"
           },
           "client_id": {
             "title": "Client Id",
@@ -15818,6 +16023,42 @@
         "title": "SurveyCampaignCreate",
         "type": "object"
       },
+      "SurveyCampaignListResponse": {
+        "properties": {
+          "has_more": {
+            "title": "Has More",
+            "type": "boolean"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/SurveyCampaignResponse"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "limit": {
+            "title": "Limit",
+            "type": "integer"
+          },
+          "page": {
+            "title": "Page",
+            "type": "integer"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "items",
+          "total",
+          "page",
+          "limit",
+          "has_more"
+        ],
+        "title": "SurveyCampaignListResponse",
+        "type": "object"
+      },
       "SurveyCampaignResponse": {
         "properties": {
           "activated_at": {
@@ -15835,6 +16076,13 @@
           "anonymous": {
             "title": "Anonymous",
             "type": "boolean"
+          },
+          "approved_questions": {
+            "items": {
+              "$ref": "#/components/schemas/ApprovedQuestionInput"
+            },
+            "title": "Approved Questions",
+            "type": "array"
           },
           "client_id": {
             "title": "Client Id",
@@ -15929,6 +16177,7 @@
           "period_start",
           "period_end",
           "anonymous",
+          "approved_questions",
           "response_count",
           "created_by",
           "activated_at",
@@ -28179,20 +28428,103 @@
     "/engagements": {
       "get": {
         "operationId": "list_engagements_engagements_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "client_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Client Id"
+            }
+          },
+          {
+            "in": "query",
+            "name": "status",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/EngagementStatus"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Status"
+            }
+          },
+          {
+            "in": "query",
+            "name": "search",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Search"
+            }
+          },
+          {
+            "description": "Page number",
+            "in": "query",
+            "name": "page",
+            "required": false,
+            "schema": {
+              "default": 1,
+              "description": "Page number",
+              "minimum": 1,
+              "title": "Page",
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Items per page",
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 20,
+              "description": "Items per page",
+              "maximum": 100,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "content": {
               "application/json": {
                 "schema": {
-                  "items": {
-                    "$ref": "#/components/schemas/EngagementResponse"
-                  },
-                  "title": "Response List Engagements Engagements Get",
-                  "type": "array"
+                  "$ref": "#/components/schemas/EngagementListResponse"
                 }
               }
             },
             "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
           }
         },
         "security": [
@@ -35493,6 +35825,54 @@
         ]
       }
     },
+    "/providers/{provider_id}/delivery-stats": {
+      "get": {
+        "description": "The organisation breakdown follows each session's stored affiliation.\n\nA practitioner who moves between organisations keeps the attribution their\npast sessions were delivered under (decision 2).",
+        "operationId": "get_delivery_stats_providers__provider_id__delivery_stats_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "provider_id",
+            "required": true,
+            "schema": {
+              "title": "Provider Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProviderDeliveryStatsResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Counts over one practitioner's whole delivery record",
+        "tags": [
+          "providers"
+        ]
+      }
+    },
     "/providers/{provider_id}/engagement-documents": {
       "get": {
         "operationId": "list_engagement_documents_providers__provider_id__engagement_documents_get",
@@ -38993,20 +39373,103 @@
     "/survey-campaigns": {
       "get": {
         "operationId": "list_survey_campaigns_survey_campaigns_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "client_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Client Id"
+            }
+          },
+          {
+            "in": "query",
+            "name": "status",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/SurveyCampaignStatus"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Status"
+            }
+          },
+          {
+            "in": "query",
+            "name": "search",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Search"
+            }
+          },
+          {
+            "description": "Page number",
+            "in": "query",
+            "name": "page",
+            "required": false,
+            "schema": {
+              "default": 1,
+              "description": "Page number",
+              "minimum": 1,
+              "title": "Page",
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Items per page",
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 20,
+              "description": "Items per page",
+              "maximum": 100,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "content": {
               "application/json": {
                 "schema": {
-                  "items": {
-                    "$ref": "#/components/schemas/SurveyCampaignResponse"
-                  },
-                  "title": "Response List Survey Campaigns Survey Campaigns Get",
-                  "type": "array"
+                  "$ref": "#/components/schemas/SurveyCampaignListResponse"
                 }
               }
             },
             "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
           }
         },
         "security": [

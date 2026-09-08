@@ -1,26 +1,28 @@
 /**
  * In-memory store for consultancy engagements (Phase 4 #1).
  *
- * Tracks engagement, deliverables, time entries, and a derived timeline. Hours roll
- * up from time entries on every mutation; deliverable status transitions emit
- * timeline events. Replaced by BE Phase 4 #1 endpoints.
+ * Records carry the API's `EngagementResponse` shape, deliverables and hours
+ * included, because that is where the API keeps them: the child routes are
+ * mutations only. Listing goes through the shared fixture pager so fixture mode
+ * answers the same envelope and filters as the API
+ * (MODULES_REPAIR_PLAN API-01, ENG-01).
  */
 
-import type { DeliverableCreate, HoursLogCreate } from "@/api/generated"
+import type { DeliverableCreate, EngagementCreate, HoursLogCreate } from "@/api/generated"
 import type {
   Engagement,
   EngagementDeliverable,
+  EngagementSummary,
   EngagementTimeEntry,
-  EngagementTimelineEvent,
 } from "@/types/entities"
-import {
-  DeliverableStatus,
-  EngagementStatus,
-  EngagementTimelineEventKind,
-  EngagementType,
-} from "@/types/enums"
+import type { DeliverableStatusValue, EngagementStatusValue } from "@/types/entities"
+import { DeliverableStatus, EngagementStatus } from "@/types/enums"
+
+import type { EngagementListParams } from "./engagements"
+import { fixturePage, type FixturePageEnvelope } from "./fixture-page"
 
 const TENANT = "tenant-fixture"
+const CREATED_BY = "user-helen"
 
 const ENGAGEMENT_SEED: Engagement[] = [
   {
@@ -31,15 +33,54 @@ const ENGAGEMENT_SEED: Engagement[] = [
     description:
       "2026 mental-health policy redraft incorporating WIBA/ARA changes and new EAP scope.",
     status: EngagementStatus.ACTIVE,
-    engagement_type: EngagementType.POLICY_DRAFT,
-    start_date: "2026-04-01",
-    due_date: "2026-06-15",
+    period_start: "2026-04-01",
+    period_end: "2026-06-15",
+    deliverables: [
+      {
+        id: "dlv-001",
+        title: "Stakeholder interview pack",
+        description: "Summary of interviews with HR, ops, and legal.",
+        due_date: "2026-04-15",
+        status: DeliverableStatus.ACCEPTED,
+        delivered_at: "2026-04-14T09:00:00Z",
+      },
+      {
+        id: "dlv-002",
+        title: "Policy draft v1",
+        description: "Initial policy draft for legal review.",
+        due_date: "2026-05-20",
+        status: DeliverableStatus.IN_PROGRESS,
+        delivered_at: null,
+      },
+    ],
+    hours_log: [
+      {
+        id: "te-001",
+        user_id: "user-helen",
+        logged_on: "2026-04-02",
+        hours: 4,
+        note: "Stakeholder interviews: HR + ops.",
+      },
+      {
+        id: "te-002",
+        user_id: "user-helen",
+        logged_on: "2026-04-08",
+        hours: 6,
+        note: "Interview synthesis + memo draft.",
+      },
+      {
+        id: "te-003",
+        user_id: "user-helen",
+        logged_on: "2026-04-29",
+        hours: 8,
+        note: "Policy draft outline.",
+      },
+    ],
+    created_by: CREATED_BY,
+    activated_at: "2026-04-01T09:00:00Z",
+    delivered_at: null,
+    invoiced_at: null,
     closed_at: null,
-    hourly_rate: 180,
-    currency: "USD",
-    budget_hours: 60,
-    hours_logged: 18,
-    lead_user_id: "user-helen",
     created_at: "2026-03-25T10:00:00Z",
     updated_at: "2026-05-06T16:00:00Z",
   },
@@ -50,15 +91,15 @@ const ENGAGEMENT_SEED: Engagement[] = [
     name: "Manager mental-health training: Q2",
     description: "Two cohorts × half-day workshop. Includes pre/post evaluation.",
     status: EngagementStatus.DRAFT,
-    engagement_type: EngagementType.TRAINING,
-    start_date: "2026-05-20",
-    due_date: "2026-07-10",
+    period_start: "2026-05-20",
+    period_end: "2026-07-10",
+    deliverables: [],
+    hours_log: [],
+    created_by: "user-mary",
+    activated_at: null,
+    delivered_at: null,
+    invoiced_at: null,
     closed_at: null,
-    hourly_rate: 150,
-    currency: "USD",
-    budget_hours: 24,
-    hours_logged: 0,
-    lead_user_id: "user-mary",
     created_at: "2026-05-04T09:30:00Z",
     updated_at: "2026-05-04T09:30:00Z",
   },
@@ -69,216 +110,96 @@ const ENGAGEMENT_SEED: Engagement[] = [
     name: "Wellness audit: branch network",
     description: "On-site assessment + report covering 12 priority branches.",
     status: EngagementStatus.DELIVERED,
-    engagement_type: EngagementType.AUDIT,
-    start_date: "2026-01-15",
-    due_date: "2026-03-31",
+    period_start: "2026-01-15",
+    period_end: "2026-03-31",
+    deliverables: [
+      {
+        id: "dlv-003",
+        title: "Branch audit report",
+        description: "Findings + recommendations for the 12 priority branches.",
+        due_date: "2026-03-31",
+        status: DeliverableStatus.DELIVERED,
+        delivered_at: "2026-04-01T16:00:00Z",
+      },
+    ],
+    hours_log: [
+      {
+        id: "te-004",
+        user_id: "user-helen",
+        logged_on: "2026-03-10",
+        hours: 24,
+        note: "On-site visits: 8 branches.",
+      },
+      {
+        id: "te-005",
+        user_id: "user-mary",
+        logged_on: "2026-03-25",
+        hours: 14,
+        note: "Findings synthesis + report draft.",
+      },
+    ],
+    created_by: CREATED_BY,
+    activated_at: "2026-01-15T09:00:00Z",
+    delivered_at: "2026-04-02T15:00:00Z",
+    invoiced_at: null,
     closed_at: null,
-    hourly_rate: 200,
-    currency: "USD",
-    budget_hours: 40,
-    hours_logged: 38,
-    lead_user_id: "user-helen",
     created_at: "2026-01-10T11:00:00Z",
     updated_at: "2026-04-02T15:00:00Z",
   },
 ]
 
-const DELIVERABLE_SEED: EngagementDeliverable[] = [
-  {
-    id: "dlv-001",
-    engagement_id: "eng-001",
-    title: "Stakeholder interview pack",
-    description: "Summary of interviews with HR, ops, and legal.",
-    status: DeliverableStatus.ACCEPTED,
-    due_date: "2026-04-15",
-    submitted_at: "2026-04-14T09:00:00Z",
-    accepted_at: "2026-04-16T11:00:00Z",
-    artefact_url: null,
-    created_at: "2026-04-01T10:00:00Z",
-    updated_at: "2026-04-16T11:00:00Z",
-  },
-  {
-    id: "dlv-002",
-    engagement_id: "eng-001",
-    title: "Policy draft v1",
-    description: "Initial policy draft for legal review.",
-    status: DeliverableStatus.IN_PROGRESS,
-    due_date: "2026-05-20",
-    submitted_at: null,
-    accepted_at: null,
-    artefact_url: null,
-    created_at: "2026-04-16T11:00:00Z",
-    updated_at: "2026-05-06T16:00:00Z",
-  },
-  {
-    id: "dlv-003",
-    engagement_id: "eng-003",
-    title: "Branch audit report",
-    description: "Findings + recommendations for the 12 priority branches.",
-    status: DeliverableStatus.DELIVERED,
-    due_date: "2026-03-31",
-    submitted_at: "2026-04-01T16:00:00Z",
-    accepted_at: null,
-    artefact_url: null,
-    created_at: "2026-01-15T10:00:00Z",
-    updated_at: "2026-04-01T16:00:00Z",
-  },
-]
-
-const TIME_ENTRY_SEED: EngagementTimeEntry[] = [
-  {
-    id: "te-001",
-    engagement_id: "eng-001",
-    user_id: "user-helen",
-    logged_on: "2026-04-02",
-    hours: 4,
-    note: "Stakeholder interviews: HR + ops.",
-    created_at: "2026-04-02T18:00:00Z",
-  },
-  {
-    id: "te-002",
-    engagement_id: "eng-001",
-    user_id: "user-helen",
-    logged_on: "2026-04-08",
-    hours: 6,
-    note: "Interview synthesis + memo draft.",
-    created_at: "2026-04-08T18:00:00Z",
-  },
-  {
-    id: "te-003",
-    engagement_id: "eng-001",
-    user_id: "user-helen",
-    logged_on: "2026-04-29",
-    hours: 8,
-    note: "Policy draft outline.",
-    created_at: "2026-04-29T18:00:00Z",
-  },
-  {
-    id: "te-004",
-    engagement_id: "eng-003",
-    user_id: "user-helen",
-    logged_on: "2026-03-10",
-    hours: 24,
-    note: "On-site visits: 8 branches.",
-    created_at: "2026-03-10T18:00:00Z",
-  },
-  {
-    id: "te-005",
-    engagement_id: "eng-003",
-    user_id: "user-mary",
-    logged_on: "2026-03-25",
-    hours: 14,
-    note: "Findings synthesis + report draft.",
-    created_at: "2026-03-25T18:00:00Z",
-  },
-]
-
-const TIMELINE_SEED: EngagementTimelineEvent[] = [
-  {
-    id: "tl-eng-001-1",
-    engagement_id: "eng-001",
-    kind: EngagementTimelineEventKind.CREATED,
-    at: "2026-03-25T10:00:00Z",
-    actor: "Helen Mwangi",
-    message: "Engagement created from policy refresh request.",
-  },
-  {
-    id: "tl-eng-001-2",
-    engagement_id: "eng-001",
-    kind: EngagementTimelineEventKind.STATUS_CHANGED,
-    at: "2026-04-01T09:00:00Z",
-    actor: "Helen Mwangi",
-    message: "Status: Scoping → Active.",
-  },
-  {
-    id: "tl-eng-001-3",
-    engagement_id: "eng-001",
-    kind: EngagementTimelineEventKind.DELIVERABLE_ADDED,
-    at: "2026-04-01T10:00:00Z",
-    actor: "Helen Mwangi",
-    message: "Deliverable added: Stakeholder interview pack.",
-    deliverable_id: "dlv-001",
-  },
-  {
-    id: "tl-eng-001-4",
-    engagement_id: "eng-001",
-    kind: EngagementTimelineEventKind.DELIVERABLE_UPDATED,
-    at: "2026-04-16T11:00:00Z",
-    actor: "Helen Mwangi",
-    message: "Deliverable accepted: Stakeholder interview pack.",
-    deliverable_id: "dlv-001",
-  },
-]
-
 const engagementStore: Engagement[] = [...ENGAGEMENT_SEED]
-const deliverableStore: EngagementDeliverable[] = [...DELIVERABLE_SEED]
-const timeStore: EngagementTimeEntry[] = [...TIME_ENTRY_SEED]
-const timelineStore: EngagementTimelineEvent[] = [...TIMELINE_SEED]
 
-export interface EngagementCreateInput {
-  client_id: string
-  name: string
-  description?: string | null
-  engagement_type: EngagementType
-  start_date: string
-  due_date?: string | null
-  hourly_rate?: number | null
-  currency?: string | null
-  budget_hours?: number | null
-  lead_user_id?: string | null
+function find(engagementId: string): Engagement {
+  const target = engagementStore.find((e) => e.id === engagementId)
+  if (!target) throw new Error(`Engagement ${engagementId} not found`)
+  return target
 }
 
-/** `DeliverableCreate` plus the engagement id, which the route carries in its path. */
-export type DeliverableCreateInput = DeliverableCreate & { engagement_id: string }
-
-/** `HoursLogCreate` plus the engagement id, which the route carries in its path. */
-export type TimeEntryCreateInput = HoursLogCreate & { engagement_id: string }
-
-export function fixtureListEngagements(): Engagement[] {
-  return [...engagementStore].sort((a, b) =>
-    a.created_at < b.created_at ? 1 : a.created_at > b.created_at ? -1 : 0,
-  )
+export function fixtureListEngagements(
+  params?: EngagementListParams,
+): FixturePageEnvelope<Engagement> {
+  return fixturePage(engagementStore, params, {
+    search: ["name", "description", "client_id"],
+    equals: ["status", "client_id"],
+    defaultSort: "created_at",
+  })
 }
 
 export function fixtureGetEngagement(id: string): Engagement | undefined {
   return engagementStore.find((e) => e.id === id)
 }
 
-export function fixtureCreateEngagement(input: EngagementCreateInput): Engagement {
+export function fixtureCreateEngagement(input: EngagementCreate): Engagement {
   const now = new Date().toISOString()
   const engagement: Engagement = {
     id: `eng-${Math.random().toString(36).slice(2, 8)}`,
     tenant_id: TENANT,
-    status: EngagementStatus.DRAFT,
-    closed_at: null,
-    hours_logged: 0,
+    client_id: input.client_id,
+    name: input.name,
     description: input.description ?? null,
-    due_date: input.due_date ?? null,
-    hourly_rate: input.hourly_rate ?? null,
-    currency: input.currency ?? null,
-    budget_hours: input.budget_hours ?? null,
-    lead_user_id: input.lead_user_id ?? null,
+    status: EngagementStatus.DRAFT,
+    period_start: input.period_start ?? null,
+    period_end: input.period_end ?? null,
+    deliverables: [],
+    hours_log: [],
+    created_by: CREATED_BY,
+    activated_at: null,
+    delivered_at: null,
+    invoiced_at: null,
+    closed_at: null,
     created_at: now,
     updated_at: now,
-    ...input,
   }
   engagementStore.unshift(engagement)
-  timelineStore.push({
-    id: `tl-${engagement.id}-1`,
-    engagement_id: engagement.id,
-    kind: EngagementTimelineEventKind.CREATED,
-    at: now,
-    actor: "Current user",
-    message: "Engagement created.",
-  })
   return engagement
 }
 
 /**
  * Mirrors the domain FSM in app/domain/entities/engagement.py, which is a strict
- * chain. Scoping and Cancelled have no server-side counterpart.
+ * chain.
  */
-const ALLOWED_TRANSITIONS: Record<EngagementStatus, EngagementStatus[]> = {
+const ALLOWED_TRANSITIONS: Record<EngagementStatusValue, EngagementStatusValue[]> = {
   [EngagementStatus.DRAFT]: [EngagementStatus.ACTIVE],
   [EngagementStatus.ACTIVE]: [EngagementStatus.DELIVERED],
   [EngagementStatus.DELIVERED]: [EngagementStatus.INVOICED],
@@ -286,137 +207,104 @@ const ALLOWED_TRANSITIONS: Record<EngagementStatus, EngagementStatus[]> = {
   [EngagementStatus.CLOSED]: [],
 }
 
-export function fixtureAllowedTransitions(from: EngagementStatus): EngagementStatus[] {
+const TRANSITION_TIMESTAMP: Partial<Record<EngagementStatusValue, keyof Engagement>> = {
+  [EngagementStatus.ACTIVE]: "activated_at",
+  [EngagementStatus.DELIVERED]: "delivered_at",
+  [EngagementStatus.INVOICED]: "invoiced_at",
+  [EngagementStatus.CLOSED]: "closed_at",
+}
+
+export function fixtureAllowedTransitions(from: EngagementStatusValue): EngagementStatusValue[] {
   return ALLOWED_TRANSITIONS[from] ?? []
 }
 
-export function fixtureTransitionEngagement(
-  id: string,
-  to: EngagementStatus,
-  actor = "Current user",
-): Engagement {
-  const target = engagementStore.find((e) => e.id === id)
-  if (!target) throw new Error(`Engagement ${id} not found`)
+export function fixtureTransitionEngagement(id: string, to: EngagementStatusValue): Engagement {
+  const target = find(id)
   const allowed = ALLOWED_TRANSITIONS[target.status] ?? []
   if (!allowed.includes(to)) {
     throw new Error(`Cannot transition ${target.status} → ${to}`)
   }
-  const from = target.status
   const now = new Date().toISOString()
   target.status = to
   target.updated_at = now
-  if (to === EngagementStatus.CLOSED) target.closed_at = now
-  timelineStore.push({
-    id: `tl-${id}-${timelineStore.length + 1}`,
-    engagement_id: id,
-    kind: EngagementTimelineEventKind.STATUS_CHANGED,
-    at: now,
-    actor,
-    message: `Status: ${from} → ${to}.`,
-  })
+  const stamp = TRANSITION_TIMESTAMP[to]
+  if (stamp) Object.assign(target, { [stamp]: now })
   return target
 }
 
-export function fixtureListDeliverables(engagementId: string): EngagementDeliverable[] {
-  return deliverableStore
-    .filter((d) => d.engagement_id === engagementId)
-    .sort((a, b) => (a.created_at < b.created_at ? -1 : 1))
-}
-
-export function fixtureCreateDeliverable(input: DeliverableCreateInput): EngagementDeliverable {
-  const now = new Date().toISOString()
+export function fixtureCreateDeliverable(
+  engagementId: string,
+  input: DeliverableCreate,
+): EngagementDeliverable {
+  const target = find(engagementId)
   const deliverable: EngagementDeliverable = {
     id: `dlv-${Math.random().toString(36).slice(2, 8)}`,
-    engagement_id: input.engagement_id,
     title: input.title,
     description: input.description ?? null,
-    status: DeliverableStatus.PENDING,
     due_date: input.due_date ?? null,
-    submitted_at: null,
-    accepted_at: null,
-    artefact_url: null,
-    created_at: now,
-    updated_at: now,
+    status: DeliverableStatus.PENDING,
+    delivered_at: null,
   }
-  deliverableStore.push(deliverable)
-  timelineStore.push({
-    id: `tl-${input.engagement_id}-${timelineStore.length + 1}`,
-    engagement_id: input.engagement_id,
-    kind: EngagementTimelineEventKind.DELIVERABLE_ADDED,
-    at: now,
-    actor: "Current user",
-    message: `Deliverable added: ${input.title}.`,
-    deliverable_id: deliverable.id,
-  })
+  target.deliverables.push(deliverable)
+  target.updated_at = new Date().toISOString()
   return deliverable
 }
 
 export function fixtureUpdateDeliverableStatus(
-  id: string,
-  status: DeliverableStatus,
-  actor = "Current user",
+  engagementId: string,
+  deliverableId: string,
+  status: DeliverableStatusValue,
 ): EngagementDeliverable {
-  const target = deliverableStore.find((d) => d.id === id)
-  if (!target) throw new Error(`Deliverable ${id} not found`)
+  const target = find(engagementId)
+  const deliverable = target.deliverables.find((d) => d.id === deliverableId)
+  if (!deliverable) throw new Error(`Deliverable ${deliverableId} not found`)
   const now = new Date().toISOString()
-  target.status = status
+  deliverable.status = status
+  if (status === DeliverableStatus.DELIVERED && !deliverable.delivered_at) {
+    deliverable.delivered_at = now
+  }
   target.updated_at = now
-  if (status === DeliverableStatus.DELIVERED && !target.submitted_at) target.submitted_at = now
-  if (status === DeliverableStatus.ACCEPTED && !target.accepted_at) target.accepted_at = now
-  timelineStore.push({
-    id: `tl-${target.engagement_id}-${timelineStore.length + 1}`,
-    engagement_id: target.engagement_id,
-    kind: EngagementTimelineEventKind.DELIVERABLE_UPDATED,
-    at: now,
-    actor,
-    message: `Deliverable status: ${target.title} → ${status}.`,
-    deliverable_id: target.id,
-  })
-  return target
+  return deliverable
 }
 
-export function fixtureListTimeEntries(engagementId: string): EngagementTimeEntry[] {
-  return timeStore
-    .filter((t) => t.engagement_id === engagementId)
-    .sort((a, b) => (a.logged_on < b.logged_on ? 1 : -1))
-}
-
-export function fixtureCreateTimeEntry(input: TimeEntryCreateInput): EngagementTimeEntry {
-  const now = new Date().toISOString()
+export function fixtureCreateTimeEntry(
+  engagementId: string,
+  input: HoursLogCreate,
+): EngagementTimeEntry {
+  const target = find(engagementId)
   const entry: EngagementTimeEntry = {
     id: `te-${Math.random().toString(36).slice(2, 8)}`,
-    engagement_id: input.engagement_id,
     user_id: input.user_id,
     logged_on: input.logged_on,
     hours: input.hours,
     note: input.note ?? null,
-    created_at: now,
   }
-  timeStore.push(entry)
-  rollupHours(input.engagement_id)
-  timelineStore.push({
-    id: `tl-${input.engagement_id}-${timelineStore.length + 1}`,
-    engagement_id: input.engagement_id,
-    kind: EngagementTimelineEventKind.HOURS_LOGGED,
-    at: now,
-    actor: input.user_id,
-    message: `Logged ${input.hours}h on ${input.logged_on}.`,
-  })
+  target.hours_log.push(entry)
+  target.updated_at = new Date().toISOString()
   return entry
 }
 
-export function fixtureGetTimeline(engagementId: string): EngagementTimelineEvent[] {
-  return timelineStore
-    .filter((e) => e.engagement_id === engagementId)
-    .sort((a, b) => (a.at < b.at ? -1 : 1))
-}
-
-function rollupHours(engagementId: string) {
-  const target = engagementStore.find((e) => e.id === engagementId)
-  if (!target) return
-  const total = timeStore
-    .filter((t) => t.engagement_id === engagementId)
-    .reduce((acc, t) => acc + t.hours, 0)
-  target.hours_logged = total
-  target.updated_at = new Date().toISOString()
+export function fixtureGetSummary(engagementId: string): EngagementSummary {
+  const target = find(engagementId)
+  const deliverable_mix: Record<string, number> = {}
+  for (const d of target.deliverables) {
+    deliverable_mix[d.status] = (deliverable_mix[d.status] ?? 0) + 1
+  }
+  const hours_by_user: Record<string, number> = {}
+  for (const entry of target.hours_log) {
+    hours_by_user[entry.user_id] = (hours_by_user[entry.user_id] ?? 0) + entry.hours
+  }
+  return {
+    engagement_id: target.id,
+    client_id: target.client_id,
+    name: target.name,
+    status: target.status,
+    deliverable_count: target.deliverables.length,
+    deliverable_mix,
+    total_hours: target.hours_log.reduce((total, entry) => total + entry.hours, 0),
+    hours_by_user,
+    period_start: target.period_start,
+    period_end: target.period_end,
+    generated_at: new Date().toISOString(),
+  }
 }

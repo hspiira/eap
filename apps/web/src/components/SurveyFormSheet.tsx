@@ -3,6 +3,7 @@ import { z } from "zod"
 
 import { clientsApi } from "@/api/endpoints/clients"
 import { surveysApi } from "@/api/endpoints/surveys"
+import type { SurveyCampaignCreate } from "@/api/generated"
 import { ClientPicker } from "@/components/common/EntityPicker"
 import { FormField } from "@/components/common/FormField"
 import { FormSection } from "@/components/common/FormSection"
@@ -29,12 +30,29 @@ const SOURCE_VALUES = [
   SurveySource.MICROSOFT_FORMS,
 ] as const
 
+const SECRET_LENGTH = 48
+
+/**
+ * The webhook signing secret the API requires on create.
+ *
+ * Generated here, and shown in the form so it can be copied before saving,
+ * because the API accepts it as request input and never returns it afterwards.
+ * SUR-01 moves generation to the server with a copy-once create response; this
+ * is what makes the form satisfy today's contract rather than 422 on it.
+ */
+function generateSecret(): string {
+  const bytes = new Uint8Array(SECRET_LENGTH / 2)
+  crypto.getRandomValues(bytes)
+  return Array.from(bytes, (b) => b.toString(16).padStart(2, "0")).join("")
+}
+
 const schema = z
   .object({
     client_id: z.string().trim().min(1, "Client is required"),
     name: z.string().trim().min(3, "Name must be at least 3 characters"),
-    description: z.string().trim().optional(),
     source: z.enum(SOURCE_VALUES as readonly [string, ...string[]]),
+    external_form_id: z.string().trim().min(1, "The provider's form ID is required"),
+    webhook_secret: z.string().trim().min(32, "Must be at least 32 characters"),
     period_start: z.string().min(1, "Start date is required"),
     period_end: z.string().min(1, "End date is required"),
   })
@@ -48,8 +66,9 @@ type Values = z.infer<typeof schema>
 const EMPTY: Values = {
   client_id: "",
   name: "",
-  description: "",
   source: SurveySource.GOOGLE_FORMS,
+  external_form_id: "",
+  webhook_secret: "",
   period_start: "",
   period_end: "",
 }
@@ -80,19 +99,21 @@ export function SurveyFormSheet({
   >({
     resource: "surveys",
     schema,
-    defaultValues: { ...EMPTY, client_id: clientId ?? "" },
+    defaultValues: { ...EMPTY, client_id: clientId ?? "", webhook_secret: generateSecret() },
     open,
     onOpenChange,
-    parsePayload: (values) => ({
+    parsePayload: (values): SurveyCampaignCreate => ({
       client_id: values.client_id,
       name: values.name,
-      description: values.description?.trim() || null,
-      source: values.source as SurveySource,
+      source: values.source as SurveyCampaignCreate["source"],
+      external_form_id: values.external_form_id,
+      webhook_secret: values.webhook_secret,
       period_start: values.period_start,
       period_end: values.period_end,
+      anonymous: true,
     }),
     save: ({ payload }) => surveysApi.create(payload),
-    successToast: { create: "Survey created: webhook ready to wire" },
+    successToast: { create: "Survey created" },
     onSaved,
   })
 
@@ -105,7 +126,7 @@ export function SurveyFormSheet({
       open={open}
       onOpenChange={onOpenChange}
       title="New survey"
-      description="Define the response window. After saving, copy the webhook URL + token from the detail page into your survey provider."
+      description="Point the campaign at the provider's form and set the response window. Copy the signing secret before saving: it is not shown again."
       size="md"
       onSubmit={submit}
       isSubmitting={formState.isSubmitting}
@@ -137,13 +158,6 @@ export function SurveyFormSheet({
             {...register("name")}
           />
         </FormField>
-        <FormField label="Description" error={errors.description?.message} htmlFor="sf-description">
-          <Input
-            id="sf-description"
-            placeholder="Internal notes for the team."
-            {...register("description")}
-          />
-        </FormField>
       </FormSection>
 
       <FormSection title="Source" description="The platform hosting the form.">
@@ -166,6 +180,24 @@ export function SurveyFormSheet({
               </Select>
             )}
           />
+        </FormField>
+        <FormField
+          label="Form ID"
+          required
+          description="The provider's own ID for the form receiving responses."
+          error={errors.external_form_id?.message}
+          htmlFor="sf-form-id"
+        >
+          <Input id="sf-form-id" placeholder="e.g. 1FAIpQLSf…" {...register("external_form_id")} />
+        </FormField>
+        <FormField
+          label="Signing secret"
+          required
+          description="Copy this into the provider's webhook configuration. It is not retrievable after saving."
+          error={errors.webhook_secret?.message}
+          htmlFor="sf-secret"
+        >
+          <Input id="sf-secret" className="font-mono text-xs" {...register("webhook_secret")} />
         </FormField>
       </FormSection>
 

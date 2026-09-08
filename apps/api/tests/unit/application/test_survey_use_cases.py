@@ -1,5 +1,6 @@
 """Survey ingestion + aggregation use case tests (Phase 3 #D-Survey)."""
 
+import json
 from datetime import UTC, datetime
 
 import pytest
@@ -9,10 +10,11 @@ from app.application.use_cases.survey_use_cases import (
     IngestSurveyResponseUseCase,
 )
 from app.core.webhook_signature import compute_signature
-from app.domain.entities.survey_campaign import SurveyCampaign
+from app.domain.entities.survey_campaign import ApprovedQuestion, SurveyCampaign
 from app.domain.entities.survey_response import SurveyResponse
 from app.domain.enums import SurveyCampaignStatus
 from app.domain.exceptions import DomainError, NotFoundError
+from app.domain.services.survey_disclosure import AnswerTally
 from app.domain.value_objects.core import (
     ClientId,
     SurveyCampaignId,
@@ -76,7 +78,19 @@ class _FakeResponseRepo:
         ]
 
 
-def _campaign(*, status=SurveyCampaignStatus.ACTIVE) -> SurveyCampaign:
+def _helpfulness() -> ApprovedQuestion:
+    return ApprovedQuestion(
+        key="q1",
+        label="Was the service helpful?",
+        choices=("Yes", "No", "Prefer not to say"),
+    )
+
+
+def _campaign(
+    *,
+    status=SurveyCampaignStatus.ACTIVE,
+    approved_questions: list[ApprovedQuestion] | None = None,
+) -> SurveyCampaign:
     now = datetime.now(UTC)
     return SurveyCampaign(
         id=SurveyCampaignId("sc-1"),
@@ -91,6 +105,7 @@ def _campaign(*, status=SurveyCampaignStatus.ACTIVE) -> SurveyCampaign:
         created_at=now,
         updated_at=now,
         activated_at=now if status == SurveyCampaignStatus.ACTIVE else None,
+        approved_questions=list(approved_questions or []),
     )
 
 
@@ -197,28 +212,80 @@ class TestIngestSurveyResponse:
             )
 
 
+class _FakeTallyReader:
+    """Stands in for the SQL reader; records which questions it was asked about."""
+
+    def __init__(self, counts: dict[str, AnswerTally], total: int = 0):
+        self._counts = counts
+        self._total = total
+        self.asked: list[str] = []
+
+    async def count_responses(self, *, tenant_id, campaign_id, since=None, until=None):
+        return self._total
+
+    async def tally(self, *, tenant_id, campaign_id, question, since=None, until=None):
+        self.asked.append(question.key)
+        return self._counts.get(question.key, AnswerTally())
+
+
 class TestGetSurveyAggregate:
     @pytest.mark.asyncio
-    async def test_aggregates_answer_frequencies(self):
-        campaign = _campaign()
-        campaigns = _FakeCampaignRepo(campaign)
-        responses = _FakeResponseRepo()
-        now = datetime.now(UTC)
-        for i, q1 in enumerate(["yes", "yes", "no"]):
-            responses.responses[f"r-{i}"] = SurveyResponse(
-                id=SurveyResponseId(f"r-{i}"),
-                tenant_id=TenantId("t-1"),
-                campaign_id=SurveyCampaignId("sc-1"),
-                external_response_id=f"ext-{i}",
-                submitted_at=now,
-                received_at=now,
-                payload={"q1": q1, "score": 5},
-            )
-        out = await GetSurveyAggregateUseCase(campaigns, responses).execute(
+    async def test_counts_the_approved_choices(self):
+        campaign = _campaign(approved_questions=[_helpfulness()])
+        reader = _FakeTallyReader({"q1": AnswerTally(counts={"Yes": 7, "No": 5})}, total=12)
+        out = await GetSurveyAggregateUseCase(_FakeCampaignRepo(campaign), reader).execute(
             SurveyCampaignId("sc-1")
         )
-        assert out["response_total"] == 3
-        assert out["answer_frequencies"]["q1"] == {"yes": 2, "no": 1}
-        assert out["answer_frequencies"]["score"] == {"5": 3}
-        # Aggregate output never contains individual rows:
-        assert "responses" not in out
+        assert out["response_total"] == 12
+        assert out["answer_frequencies"]["q1"] == {"Yes": 7, "No": 5, "Prefer not to say": "<5"}
+        assert out["question_labels"] == {"q1": "Was the service helpful?"}
+        assert out["disclosure_status"] == "ok"
+
+    @pytest.mark.asyncio
+    async def test_a_free_text_question_is_never_counted(self):
+        """PRIV-01: an unapproved question is not asked about and not reported."""
+        campaign = _campaign(approved_questions=[_helpfulness()])
+        reader = _FakeTallyReader({}, total=12)
+        out = await GetSurveyAggregateUseCase(_FakeCampaignRepo(campaign), reader).execute(
+            SurveyCampaignId("sc-1")
+        )
+        assert reader.asked == ["q1"]
+        assert "comment" not in out["answer_frequencies"]
+        assert "comment" not in json.dumps(out)
+
+    @pytest.mark.asyncio
+    async def test_a_campaign_without_approved_questions_reports_that(self):
+        campaign = _campaign()
+        reader = _FakeTallyReader({}, total=3)
+        out = await GetSurveyAggregateUseCase(_FakeCampaignRepo(campaign), reader).execute(
+            SurveyCampaignId("sc-1")
+        )
+        assert out["disclosure_status"] == "no_approved_questions"
+        assert out["answer_frequencies"] == {}
+
+    @pytest.mark.asyncio
+    async def test_a_small_cohort_total_is_suppressed(self):
+        """PRIV-01: the total obeys the same floor as the cells."""
+        campaign = _campaign(approved_questions=[_helpfulness()])
+        reader = _FakeTallyReader({"q1": AnswerTally(counts={"Yes": 1})}, total=1)
+        out = await GetSurveyAggregateUseCase(_FakeCampaignRepo(campaign), reader).execute(
+            SurveyCampaignId("sc-1")
+        )
+        assert out["response_total"] == "<5"
+        assert out["answer_frequencies"]["q1"]["Yes"] == "<5"
+
+    @pytest.mark.asyncio
+    async def test_off_list_answers_are_counted_but_not_disclosed(self):
+        campaign = _campaign(approved_questions=[_helpfulness()])
+        reader = _FakeTallyReader({"q1": AnswerTally(counts={"Yes": 9}, unapproved=6)}, total=15)
+        out = await GetSurveyAggregateUseCase(_FakeCampaignRepo(campaign), reader).execute(
+            SurveyCampaignId("sc-1")
+        )
+        assert out["unapproved_answers"] == {"q1": 6}
+
+    @pytest.mark.asyncio
+    async def test_unknown_campaign(self):
+        with pytest.raises(NotFoundError):
+            await GetSurveyAggregateUseCase(_FakeCampaignRepo(), _FakeTallyReader({})).execute(
+                SurveyCampaignId("nope")
+            )

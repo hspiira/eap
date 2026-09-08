@@ -1,60 +1,32 @@
-import { Controller } from "react-hook-form"
 import { z } from "zod"
 
 import { clientsApi } from "@/api/endpoints/clients"
 import { engagementsApi } from "@/api/endpoints/engagements"
-import { usersApi } from "@/api/endpoints/users"
-import { ClientPicker, EntityPicker, PickerRow } from "@/components/common/EntityPicker"
+import type { EngagementCreate } from "@/api/generated"
+import { ClientPicker } from "@/components/common/EntityPicker"
 import { FormField } from "@/components/common/FormField"
 import { FormSection } from "@/components/common/FormSection"
 import { SheetForm } from "@/components/common/SheetForm"
 import { Input } from "@/components/ui/input"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
 import { useEntityFormSheet } from "@/hooks/useEntityFormSheet"
 import { nameInitials } from "@/lib/display"
 import { useEntityList } from "@/lib/queries"
 import { cn } from "@/lib/utils"
-import type { Client, Engagement, User } from "@/types/entities"
-import { EngagementType } from "@/types/enums"
-
-const TYPE_VALUES = [
-  EngagementType.POLICY_DRAFT,
-  EngagementType.TRAINING,
-  EngagementType.ASSESSMENT,
-  EngagementType.ADVISORY,
-  EngagementType.AUDIT,
-  EngagementType.OTHER,
-] as const
+import type { Client, Engagement } from "@/types/entities"
 
 const schema = z
   .object({
     client_id: z.string().trim().min(1, "Client is required"),
     name: z.string().trim().min(3, "Name must be at least 3 characters"),
     description: z.string().trim().optional(),
-    engagement_type: z.enum(TYPE_VALUES as readonly [string, ...string[]]),
-    start_date: z.string().min(1, "Start date is required"),
-    due_date: z.string().optional(),
-    hourly_rate: z
-      .string()
-      .optional()
-      .refine((v) => !v || !Number.isNaN(Number(v)), "Must be a number"),
-    currency: z.string().trim().optional(),
-    budget_hours: z
-      .string()
-      .optional()
-      .refine((v) => !v || /^\d+$/.test(v), "Must be a positive integer"),
-    lead_user_id: z.string().optional(),
+    period_start: z.string().optional(),
+    period_end: z.string().optional(),
   })
-  .refine((v) => !v.due_date || Date.parse(v.due_date) >= Date.parse(v.start_date), {
-    path: ["due_date"],
-    message: "Due date must be on or after the start date",
-  })
+  .refine(
+    (v) =>
+      !v.period_start || !v.period_end || Date.parse(v.period_end) >= Date.parse(v.period_start),
+    { path: ["period_end"], message: "Period end must be on or after the start" },
+  )
 
 type Values = z.infer<typeof schema>
 
@@ -62,13 +34,8 @@ const EMPTY: Values = {
   client_id: "",
   name: "",
   description: "",
-  engagement_type: EngagementType.POLICY_DRAFT,
-  start_date: "",
-  due_date: "",
-  hourly_rate: "",
-  currency: "UGX",
-  budget_hours: "",
-  lead_user_id: "",
+  period_start: "",
+  period_end: "",
 }
 
 interface EngagementFormSheetProps {
@@ -89,7 +56,7 @@ export function EngagementFormSheet({
 }: EngagementFormSheetProps) {
   const lockedClientId = clientId
 
-  const { register, control, formState, submit, serverError, setValue, watch } = useEntityFormSheet<
+  const { register, formState, submit, serverError, setValue, watch } = useEntityFormSheet<
     Values,
     Parameters<typeof engagementsApi.create>[0],
     Engagement,
@@ -100,17 +67,12 @@ export function EngagementFormSheet({
     defaultValues: { ...EMPTY, client_id: clientId ?? "" },
     open,
     onOpenChange,
-    parsePayload: (values) => ({
+    parsePayload: (values): EngagementCreate => ({
       client_id: values.client_id,
       name: values.name,
       description: values.description?.trim() || null,
-      engagement_type: values.engagement_type as EngagementType,
-      start_date: values.start_date,
-      due_date: values.due_date || null,
-      hourly_rate: values.hourly_rate ? Number(values.hourly_rate) : null,
-      currency: values.currency?.trim() || null,
-      budget_hours: values.budget_hours ? Number(values.budget_hours) : null,
-      lead_user_id: values.lead_user_id || null,
+      period_start: values.period_start || null,
+      period_end: values.period_end || null,
     }),
     save: ({ payload }) => engagementsApi.create(payload),
     successToast: { create: "Engagement created" },
@@ -118,8 +80,6 @@ export function EngagementFormSheet({
   })
 
   const watchedClient = watch("client_id")
-  const watchedLead = watch("lead_user_id")
-
   const errors = formState.errors
 
   return (
@@ -127,7 +87,7 @@ export function EngagementFormSheet({
       open={open}
       onOpenChange={onOpenChange}
       title="New consultancy engagement"
-      description="Scope the work, agreed dates, and the rate-card snapshot. Deliverables and hours get logged from the engagement detail page once active."
+      description="Scope the work and the agreed period. Deliverables and hours are logged from the engagement detail page."
       size="lg"
       onSubmit={submit}
       isSubmitting={formState.isSubmitting}
@@ -168,96 +128,24 @@ export function EngagementFormSheet({
         </FormField>
       </FormSection>
 
-      <FormSection title="Type & schedule">
-        <FormField label="Type" required error={errors.engagement_type?.message} htmlFor="ef-type">
-          <Controller
-            control={control}
-            name="engagement_type"
-            render={({ field }) => (
-              <Select value={field.value ?? ""} onValueChange={field.onChange}>
-                <SelectTrigger id="ef-type">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {TYPE_VALUES.map((t) => (
-                    <SelectItem key={t} value={t}>
-                      {t}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            )}
-          />
-        </FormField>
+      <FormSection title="Period">
         <div className="grid grid-cols-2 gap-3">
           <FormField
-            label="Start date"
-            required
-            error={errors.start_date?.message}
-            htmlFor="ef-start"
+            label="Period start"
+            error={errors.period_start?.message}
+            htmlFor="ef-period-start"
           >
-            <Input id="ef-start" type="date" {...register("start_date")} />
+            <Input id="ef-period-start" type="date" {...register("period_start")} />
           </FormField>
           <FormField
-            label="Due date"
-            description="Slips trigger an Overdue indicator in the list."
-            error={errors.due_date?.message}
-            htmlFor="ef-due"
+            label="Period end"
+            description="A past end date with the work undelivered shows as Overdue."
+            error={errors.period_end?.message}
+            htmlFor="ef-period-end"
           >
-            <Input id="ef-due" type="date" {...register("due_date")} />
+            <Input id="ef-period-end" type="date" {...register("period_end")} />
           </FormField>
         </div>
-      </FormSection>
-
-      <FormSection
-        title="Commercials"
-        description="Snapshot of rate-card terms for this engagement."
-      >
-        <div className="grid grid-cols-[1fr_6rem] gap-3">
-          <FormField label="Hourly rate" error={errors.hourly_rate?.message} htmlFor="ef-rate">
-            <Input
-              id="ef-rate"
-              type="number"
-              inputMode="decimal"
-              min={0}
-              step="0.01"
-              placeholder="0.00"
-              className="tabular-nums"
-              {...register("hourly_rate")}
-            />
-          </FormField>
-          <FormField label="Currency" error={errors.currency?.message} htmlFor="ef-currency">
-            <Input id="ef-currency" maxLength={3} {...register("currency")} />
-          </FormField>
-        </div>
-        <FormField
-          label="Budget (hours)"
-          description="Leave blank for open-ended."
-          error={errors.budget_hours?.message}
-          htmlFor="ef-budget"
-        >
-          <Input
-            id="ef-budget"
-            type="number"
-            inputMode="numeric"
-            min={0}
-            placeholder="40"
-            className="tabular-nums"
-            {...register("budget_hours")}
-          />
-        </FormField>
-      </FormSection>
-
-      <FormSection title="Lead consultant" description="Owner accountable for delivery.">
-        <FormField label="Lead" error={errors.lead_user_id?.message}>
-          <UserPicker
-            value={watchedLead ?? ""}
-            onChange={(id) =>
-              setValue("lead_user_id", id, { shouldValidate: true, shouldDirty: true })
-            }
-          />
-        </FormField>
-        <Input type="hidden" {...register("lead_user_id")} />
       </FormSection>
     </SheetForm>
   )
@@ -292,22 +180,5 @@ function LockedClientSummary({ clientId, client }: { clientId: string; client: C
         Locked
       </span>
     </div>
-  )
-}
-
-function UserPicker({ value, onChange }: { value: string; onChange: (id: string) => void }) {
-  const row = (u: User) => <PickerRow initials="U" primary={u.email} />
-  return (
-    <EntityPicker<User>
-      resource="users"
-      listFn={usersApi.list}
-      value={value}
-      onChange={onChange}
-      placeholder="Search users by email…"
-      emptyPrompt="Start typing to search users."
-      emptyNoMatch="No users match."
-      renderSelected={row}
-      renderRow={row}
-    />
   )
 }

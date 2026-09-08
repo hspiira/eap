@@ -1,10 +1,9 @@
 import { useQuery } from "@tanstack/react-query"
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router"
-import { AlertTriangle, ArrowLeft, Briefcase, Users } from "lucide-react"
+import { createFileRoute, useNavigate } from "@tanstack/react-router"
+import { AlertTriangle, ArrowLeft, Briefcase } from "lucide-react"
 
 import { clientsApi } from "@/api/endpoints/clients"
 import { engagementsApi } from "@/api/endpoints/engagements"
-import { usersApi } from "@/api/endpoints/users"
 import { DetailCard, DetailGrid, DetailRow } from "@/components/common/DetailPrimitives"
 import { EmptyState } from "@/components/common/EmptyState"
 import { PageShell } from "@/components/common/PageShell"
@@ -15,24 +14,23 @@ import {
   DetailRail,
   Hero,
   HoursPanel,
-  TimelinePanel,
+  SummaryPanel,
 } from "@/components/engagements/EngagementDetailWidgets"
 import { Button } from "@/components/ui/button"
 import { useToast } from "@/contexts/ToastContext"
 import { useTabSearchParam } from "@/hooks/useTabSearchParam"
-import { defaultErrorMessage } from "@/lib/errors"
-import { formatDate, formatMoney } from "@/lib/format"
+import { defaultErrorMessage, normalizeErrorMessage } from "@/lib/errors"
+import { formatDate, formatDateTime } from "@/lib/format"
 import { useEntityMutation } from "@/lib/queries"
-import { cn } from "@/lib/utils"
 import { EngagementStatusPill, isOverdue } from "@/routes/engagements/index"
-import { type EngagementStatus } from "@/types/enums"
+import type { EngagementStatusValue } from "@/types/entities"
 
 export const Route = createFileRoute("/engagements/$engagementId")({
   component: EngagementDetailPage,
 })
 
-type TabValue = "overview" | "deliverables" | "hours" | "timeline"
-const TAB_VALUES: ReadonlyArray<TabValue> = ["overview", "deliverables", "hours", "timeline"]
+type TabValue = "overview" | "deliverables" | "hours" | "summary"
+const TAB_VALUES: ReadonlyArray<TabValue> = ["overview", "deliverables", "hours", "summary"]
 
 function EngagementDetailPage() {
   const { engagementId } = Route.useParams()
@@ -44,17 +42,9 @@ function EngagementDetailPage() {
     queryKey: ["engagements", "detail", engagementId],
     queryFn: () => engagementsApi.getById(engagementId),
   })
-  const deliverablesQuery = useQuery({
-    queryKey: ["engagements", "deliverables", engagementId],
-    queryFn: () => engagementsApi.listDeliverables(engagementId),
-  })
-  const timeQuery = useQuery({
-    queryKey: ["engagements", "time", engagementId],
-    queryFn: () => engagementsApi.listTimeEntries(engagementId),
-  })
-  const timelineQuery = useQuery({
-    queryKey: ["engagements", "timeline", engagementId],
-    queryFn: () => engagementsApi.getTimeline(engagementId),
+  const summaryQuery = useQuery({
+    queryKey: ["engagements", "summary", engagementId],
+    queryFn: () => engagementsApi.getSummary(engagementId),
   })
 
   const clientId = engagementQuery.data?.client_id
@@ -64,17 +54,11 @@ function EngagementDetailPage() {
     enabled: !!clientId,
   })
 
-  const leadId = engagementQuery.data?.lead_user_id
-  const leadQuery = useQuery({
-    queryKey: ["users", "detail", leadId ?? ""],
-    queryFn: () => usersApi.getById(leadId as string),
-    enabled: !!leadId,
-  })
-
   const transitionMutation = useEntityMutation({
     resource: "engagements",
-    mutationFn: (to: EngagementStatus) => engagementsApi.transition(engagementId, to),
+    mutationFn: (to: EngagementStatusValue) => engagementsApi.transition(engagementId, to),
     detailId: engagementId,
+    invalidateKeys: [["engagements", "summary", engagementId]],
     onSuccess: (e) => showSuccess(`Status: ${e.status}`),
     onError: (err) => showError(defaultErrorMessage(err)),
   })
@@ -113,35 +97,28 @@ function EngagementDetailPage() {
 
   const engagement = engagementQuery.data
   const allowed = engagementsApi.allowedTransitions(engagement.status)
-  const deliverables = deliverablesQuery.data ?? []
-  const timeEntries = timeQuery.data ?? []
-  const timeline = timelineQuery.data ?? []
   const client = clientQuery.data ?? null
-  const lead = leadQuery.data ?? null
-  const overdue = isOverdue(engagement.due_date, engagement.status)
-  const budgetPct = engagement.budget_hours
-    ? Math.round((engagement.hours_logged / engagement.budget_hours) * 100)
+  const overdue = isOverdue(engagement.period_end, engagement.status)
+  const summaryError = summaryQuery.isError
+    ? normalizeErrorMessage(summaryQuery.error, "Failed to load the summary")
     : null
-  const budgetExceeded = budgetPct !== null && budgetPct > 100
 
   return (
     <PageShell
       icon={Briefcase}
       breadcrumb={`Commercial · Engagements · ${engagement.name}`}
       actions={
-        <>
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            onClick={() => navigate({ to: "/engagements" })}
-            aria-label="Back to engagements"
-            title="Back to engagements"
-            className="size-7 p-0 text-fg/70"
-          >
-            <ArrowLeft className="size-3.5" />
-          </Button>
-        </>
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          onClick={() => navigate({ to: "/engagements" })}
+          aria-label="Back to engagements"
+          title="Back to engagements"
+          className="size-7 p-0 text-fg/70"
+        >
+          <ArrowLeft className="size-3.5" />
+        </Button>
       }
     >
       <Hero engagement={engagement} client={client} overdue={overdue} />
@@ -152,13 +129,13 @@ function EngagementDetailPage() {
             <Tabs value={tab} onValueChange={(v) => setTab(v as TabValue)}>
               <TabsList className="-mx-3 mb-4 px-3">
                 <Tab value="overview">Overview</Tab>
-                <Tab value="deliverables" count={deliverables.length}>
+                <Tab value="deliverables" count={engagement.deliverables.length}>
                   Deliverables
                 </Tab>
-                <Tab value="hours" count={timeEntries.length}>
+                <Tab value="hours" count={engagement.hours_log.length}>
                   Hours
                 </Tab>
-                <Tab value="timeline">Timeline</Tab>
+                <Tab value="summary">Summary</Tab>
               </TabsList>
 
               <TabPanel value="overview">
@@ -167,95 +144,52 @@ function EngagementDetailPage() {
                     <DetailGrid>
                       <DetailRow label="Name" value={engagement.name} fullWidth />
                       <DetailRow label="Description" value={engagement.description} fullWidth />
-                      <DetailRow label="Type" value={engagement.engagement_type} />
                       <DetailRow
                         label="Status"
                         value={<EngagementStatusPill status={engagement.status} />}
                       />
+                      <DetailRow label="Created by" value={engagement.created_by} />
                     </DetailGrid>
                   </DetailCard>
 
-                  <DetailCard title="Schedule">
+                  <DetailCard title="Period">
                     <DetailGrid>
-                      <DetailRow label="Start" value={formatDate(engagement.start_date)} />
-                      <DetailRow
-                        label="Due"
-                        value={engagement.due_date ? formatDate(engagement.due_date) : null}
-                      />
-                      <DetailRow
-                        label="Closed"
-                        value={engagement.closed_at ? formatDate(engagement.closed_at) : null}
-                      />
+                      <DetailRow label="Start" value={formatDate(engagement.period_start)} />
+                      <DetailRow label="End" value={formatDate(engagement.period_end)} />
                     </DetailGrid>
                     {overdue ? (
                       <p className="mt-3 inline-flex items-center gap-1 rounded-sm border border-amber-500/40 bg-amber-500/10 px-1.5 py-0.5 text-[11px] font-medium text-amber-600">
                         <AlertTriangle className="size-3" />
-                        Overdue: past due date and not yet delivered
+                        Overdue: past the period end and not yet delivered
                       </p>
                     ) : null}
                   </DetailCard>
 
-                  <DetailCard title="Commercials">
+                  <DetailCard title="Lifecycle">
                     <DetailGrid>
                       <DetailRow
-                        label="Hourly rate"
+                        label="Activated"
                         value={
-                          engagement.hourly_rate != null
-                            ? formatMoney(engagement.hourly_rate, engagement.currency)
-                            : null
+                          engagement.activated_at ? formatDateTime(engagement.activated_at) : null
                         }
                       />
                       <DetailRow
-                        label="Budget"
+                        label="Delivered"
                         value={
-                          engagement.budget_hours ? `${engagement.budget_hours}h` : "Open-ended"
+                          engagement.delivered_at ? formatDateTime(engagement.delivered_at) : null
                         }
                       />
-                      <DetailRow label="Logged" value={`${engagement.hours_logged.toFixed(1)}h`} />
                       <DetailRow
-                        label="Utilisation"
+                        label="Invoiced"
                         value={
-                          budgetPct !== null ? (
-                            <span className={cn(budgetExceeded ? "text-amber-600" : "text-fg")}>
-                              {budgetPct}%
-                            </span>
-                          ) : null
+                          engagement.invoiced_at ? formatDateTime(engagement.invoiced_at) : null
                         }
+                      />
+                      <DetailRow
+                        label="Closed"
+                        value={engagement.closed_at ? formatDateTime(engagement.closed_at) : null}
                       />
                     </DetailGrid>
-                    {budgetPct !== null ? (
-                      <div
-                        className="mt-3 h-1 w-full overflow-hidden rounded-sm bg-fg/10"
-                        aria-hidden
-                      >
-                        <div
-                          className={cn("h-full", budgetExceeded ? "bg-amber-500" : "bg-primary")}
-                          style={{ width: `${Math.min(100, budgetPct)}%` }}
-                        />
-                      </div>
-                    ) : null}
-                  </DetailCard>
-
-                  <DetailCard title="Lead">
-                    {lead ? (
-                      <Link
-                        to="/users/$userId"
-                        params={{ userId: lead.id }}
-                        className="flex items-center gap-2.5 rounded-sm border border-fg/10 bg-bg px-3 py-2 transition-colors hover:border-fg/25"
-                      >
-                        <span
-                          aria-hidden
-                          className="grid size-7 shrink-0 place-items-center bg-primary/10 text-primary"
-                        >
-                          <Users className="size-3.5" />
-                        </span>
-                        <div className="min-w-0 flex-1">
-                          <p className="truncate text-sm font-medium text-fg">{lead.email}</p>
-                        </div>
-                      </Link>
-                    ) : (
-                      <p className="text-xs text-fg-muted">No lead assigned.</p>
-                    )}
                   </DetailCard>
                 </div>
               </TabPanel>
@@ -263,21 +197,21 @@ function EngagementDetailPage() {
               <TabPanel value="deliverables">
                 <DeliverablesPanel
                   engagementId={engagementId}
-                  deliverables={deliverables}
-                  loading={deliverablesQuery.isPending}
+                  deliverables={engagement.deliverables}
                 />
               </TabPanel>
 
               <TabPanel value="hours">
-                <HoursPanel
-                  engagementId={engagementId}
-                  entries={timeEntries}
-                  loading={timeQuery.isPending}
-                />
+                <HoursPanel engagementId={engagementId} entries={engagement.hours_log} />
               </TabPanel>
 
-              <TabPanel value="timeline">
-                <TimelinePanel timeline={timeline} loading={timelineQuery.isPending} />
+              <TabPanel value="summary">
+                <SummaryPanel
+                  summary={summaryQuery.data ?? null}
+                  loading={summaryQuery.isPending}
+                  error={summaryError}
+                  onRetry={() => void summaryQuery.refetch()}
+                />
               </TabPanel>
             </Tabs>
           </div>
@@ -286,7 +220,6 @@ function EngagementDetailPage() {
             <DetailRail
               engagement={engagement}
               client={client}
-              budgetPct={budgetPct}
               allowedTransitions={allowed}
               transitioning={transitionMutation.isPending}
               onTransition={(to) => transitionMutation.mutate(to)}

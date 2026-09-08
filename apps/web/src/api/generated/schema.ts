@@ -4665,6 +4665,29 @@ export interface paths {
         patch: operations["change_accreditation_providers__provider_id__accreditation_patch"];
         trace?: never;
     };
+    "/providers/{provider_id}/delivery-stats": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Counts over one practitioner's whole delivery record
+         * @description The organisation breakdown follows each session's stored affiliation.
+         *
+         *     A practitioner who moves between organisations keeps the attribution their
+         *     past sessions were delivered under (decision 2).
+         */
+        get: operations["get_delivery_stats_providers__provider_id__delivery_stats_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/providers/{provider_id}/engagement-documents": {
         parameters: {
             query?: never;
@@ -6779,6 +6802,21 @@ export interface components {
             };
             /** Reason */
             reason: string;
+        };
+        /**
+         * ApprovedQuestionInput
+         * @description A question whose answers may be counted in an employer-facing aggregate.
+         *
+         *     Aggregates report these questions and these choices only, so free text
+         *     stays out of every employer-facing surface.
+         */
+        ApprovedQuestionInput: {
+            /** Choices */
+            choices: string[];
+            /** Key */
+            key: string;
+            /** Label */
+            label: string;
         };
         /** AssignCounsellorRequest */
         AssignCounsellorRequest: {
@@ -9866,6 +9904,19 @@ export interface components {
             note?: string | null;
             state: components["schemas"]["EngagementDocumentState"];
         };
+        /** EngagementListResponse */
+        EngagementListResponse: {
+            /** Has More */
+            has_more: boolean;
+            /** Items */
+            items: components["schemas"]["EngagementResponse"][];
+            /** Limit */
+            limit: number;
+            /** Page */
+            page: number;
+            /** Total */
+            total: number;
+        };
         /** EngagementResponse */
         EngagementResponse: {
             /** Activated At */
@@ -11970,6 +12021,39 @@ export interface components {
             region: components["schemas"]["UgandaRegion"];
             tier: components["schemas"]["ProviderTier"];
         };
+        /** ProviderDeliveryOrganisationStat */
+        ProviderDeliveryOrganisationStat: {
+            /** Organisation Id */
+            organisation_id: string;
+            /** Organisation Name */
+            organisation_name: string;
+            /** Session Count */
+            session_count: number;
+        };
+        /**
+         * ProviderDeliveryStatsResponse
+         * @description Counted over the whole delivery record, not over a fetched page.
+         */
+        ProviderDeliveryStatsResponse: {
+            /**
+             * By Delivery Context
+             * @description SessionDeliveryContext value to count, zero counts omitted
+             */
+            by_delivery_context: {
+                [key: string]: number;
+            };
+            /**
+             * By Organisation
+             * @description Resolved through each session's stored affiliation, busiest first
+             */
+            by_organisation: components["schemas"]["ProviderDeliveryOrganisationStat"][];
+            /** First Session At */
+            first_session_at: string | null;
+            /** Last Session At */
+            last_session_at: string | null;
+            /** Total Sessions */
+            total_sessions: number;
+        };
         /**
          * ProviderEligibilityResponse
          * @description Preview of the booking gate.
@@ -13499,29 +13583,47 @@ export interface components {
             /** @description New subscription tier */
             subscription_tier: components["schemas"]["SubscriptionTier"];
         };
-        /** SurveyAggregateResponse */
+        /**
+         * SurveyAggregateResponse
+         * @description Employer-facing aggregate: approved questions only, every cell suppressed.
+         *
+         *     A count below ``min_cell_size`` is returned as the ``"<n"`` token rather
+         *     than a number, including ``response_total``.
+         */
         SurveyAggregateResponse: {
             /** Anonymous */
             anonymous: boolean;
             /** Answer Frequencies */
             answer_frequencies: {
                 [key: string]: {
-                    [key: string]: number;
+                    [key: string]: number | string;
                 };
             };
             /** Campaign Id */
             campaign_id: string;
             /** Client Id */
             client_id: string;
+            /** Disclosure Status */
+            disclosure_status: string;
             /** Generated At */
             generated_at: string;
+            /** Min Cell Size */
+            min_cell_size: number;
             /** Name */
             name: string;
+            /** Question Labels */
+            question_labels: {
+                [key: string]: string;
+            };
             /** Response Total */
-            response_total: number;
+            response_total: number | string;
             /** Source */
             source: string;
             status: components["schemas"]["SurveyCampaignStatus"];
+            /** Unapproved Answers */
+            unapproved_answers: {
+                [key: string]: number | string;
+            };
         };
         /** SurveyCampaignCreate */
         SurveyCampaignCreate: {
@@ -13530,6 +13632,8 @@ export interface components {
              * @default true
              */
             anonymous: boolean;
+            /** Approved Questions */
+            approved_questions?: components["schemas"]["ApprovedQuestionInput"][];
             /** Client Id */
             client_id: string;
             /** External Form Id */
@@ -13545,12 +13649,27 @@ export interface components {
             /** Webhook Secret */
             webhook_secret: string;
         };
+        /** SurveyCampaignListResponse */
+        SurveyCampaignListResponse: {
+            /** Has More */
+            has_more: boolean;
+            /** Items */
+            items: components["schemas"]["SurveyCampaignResponse"][];
+            /** Limit */
+            limit: number;
+            /** Page */
+            page: number;
+            /** Total */
+            total: number;
+        };
         /** SurveyCampaignResponse */
         SurveyCampaignResponse: {
             /** Activated At */
             activated_at: string | null;
             /** Anonymous */
             anonymous: boolean;
+            /** Approved Questions */
+            approved_questions: components["schemas"]["ApprovedQuestionInput"][];
             /** Client Id */
             client_id: string;
             /** Closed At */
@@ -20353,7 +20472,15 @@ export interface operations {
     };
     list_engagements_engagements_get: {
         parameters: {
-            query?: never;
+            query?: {
+                client_id?: string | null;
+                status?: components["schemas"]["EngagementStatus"] | null;
+                search?: string | null;
+                /** @description Page number */
+                page?: number;
+                /** @description Items per page */
+                limit?: number;
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -20366,7 +20493,16 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["EngagementResponse"][];
+                    "application/json": components["schemas"]["EngagementListResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };
@@ -24387,6 +24523,37 @@ export interface operations {
             };
         };
     };
+    get_delivery_stats_providers__provider_id__delivery_stats_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                provider_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProviderDeliveryStatsResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     list_engagement_documents_providers__provider_id__engagement_documents_get: {
         parameters: {
             query?: never;
@@ -26249,7 +26416,15 @@ export interface operations {
     };
     list_survey_campaigns_survey_campaigns_get: {
         parameters: {
-            query?: never;
+            query?: {
+                client_id?: string | null;
+                status?: components["schemas"]["SurveyCampaignStatus"] | null;
+                search?: string | null;
+                /** @description Page number */
+                page?: number;
+                /** @description Items per page */
+                limit?: number;
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -26262,7 +26437,16 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["SurveyCampaignResponse"][];
+                    "application/json": components["schemas"]["SurveyCampaignListResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };

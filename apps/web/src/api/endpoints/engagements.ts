@@ -1,49 +1,55 @@
 /**
  * Engagement API (Phase 4 #1).
  *
- * BE base path is `/engagements` (confirmed via openapi.json).
- * Fixture is DEV-only.
+ * BE base path is `/engagements`. The list envelope, filters, sort and paging
+ * are the API's; the fixture applies the same ones to its own store
+ * (MODULES_REPAIR_PLAN API-01).
+ *
+ * Deliverables and hours are children of the engagement aggregate: the API
+ * embeds both in the detail response and exposes only mutations on the child
+ * paths. There is no GET for either, and `/summary` is a summary, not an event
+ * feed (MODULES_REPAIR_PLAN ENG-01).
  *
  * Status transitions use per-FSM action routes:
  *   ACTIVE    → POST /engagements/{id}/activate
  *   DELIVERED → POST /engagements/{id}/deliver
+ *   INVOICED  → POST /engagements/{id}/invoice
  *   CLOSED    → POST /engagements/{id}/close
  */
 
+import type { DeliverableCreate, EngagementCreate, HoursLogCreate } from "@/api/generated"
 import { useFixtures } from "@/lib/fixtures"
-import type { DeliverableStatus } from "@/types/enums"
+import type { DeliverableStatusValue, EngagementStatusValue } from "@/types/entities"
 import { EngagementStatus } from "@/types/enums"
 
 import apiClient from "../client"
 import type {
   Engagement,
   EngagementDeliverable,
+  EngagementList,
+  EngagementSummary,
   EngagementTimeEntry,
-  EngagementTimelineEvent,
-  PaginatedResponse,
+  ListParams,
 } from "../types"
 import {
-  type DeliverableCreateInput,
-  type EngagementCreateInput,
   fixtureAllowedTransitions,
   fixtureCreateDeliverable,
   fixtureCreateEngagement,
   fixtureCreateTimeEntry,
   fixtureGetEngagement,
-  fixtureGetTimeline,
-  fixtureListDeliverables,
+  fixtureGetSummary,
   fixtureListEngagements,
-  fixtureListTimeEntries,
   fixtureTransitionEngagement,
   fixtureUpdateDeliverableStatus,
-  type TimeEntryCreateInput,
 } from "./engagements-fixture"
 
-function paginate<T>(items: T[]): PaginatedResponse<T> {
-  return { items, total: items.length, page: 1, limit: items.length, has_more: false }
+/** Mirrors the query params on `GET /engagements` in the BE OpenAPI schema. */
+export interface EngagementListParams extends ListParams {
+  status?: EngagementStatusValue
+  client_id?: string
 }
 
-const FSM_ROUTES: Partial<Record<EngagementStatus, string>> = {
+const FSM_ROUTES: Partial<Record<EngagementStatusValue, string>> = {
   [EngagementStatus.ACTIVE]: "activate",
   [EngagementStatus.DELIVERED]: "deliver",
   [EngagementStatus.INVOICED]: "invoice",
@@ -52,9 +58,9 @@ const FSM_ROUTES: Partial<Record<EngagementStatus, string>> = {
 
 export const engagementsApi = {
   // ── Engagements ──────────────────────────────────────────────────────────
-  async list(): Promise<PaginatedResponse<Engagement>> {
-    if (useFixtures()) return Promise.resolve(paginate(fixtureListEngagements()))
-    return apiClient.get<PaginatedResponse<Engagement>>("/engagements")
+  async list(params?: EngagementListParams): Promise<EngagementList> {
+    if (useFixtures()) return Promise.resolve(fixtureListEngagements(params))
+    return apiClient.get<EngagementList>("/engagements", params)
   },
 
   async getById(id: string): Promise<Engagement> {
@@ -66,12 +72,12 @@ export const engagementsApi = {
     return apiClient.get<Engagement>(`/engagements/${id}`)
   },
 
-  async create(input: EngagementCreateInput): Promise<Engagement> {
+  async create(input: EngagementCreate): Promise<Engagement> {
     if (useFixtures()) return Promise.resolve(fixtureCreateEngagement(input))
     return apiClient.post<Engagement>("/engagements", input)
   },
 
-  async transition(id: string, to: EngagementStatus): Promise<Engagement> {
+  async transition(id: string, to: EngagementStatusValue): Promise<Engagement> {
     if (useFixtures()) return Promise.resolve(fixtureTransitionEngagement(id, to))
     const action = FSM_ROUTES[to]
     if (!action) throw new Error(`No FSM route for status: ${to}`)
@@ -79,56 +85,43 @@ export const engagementsApi = {
   },
 
   /** Static FSM helper: valid in fixture and live modes. */
-  allowedTransitions(from: EngagementStatus): EngagementStatus[] {
+  allowedTransitions(from: EngagementStatusValue): EngagementStatusValue[] {
     return fixtureAllowedTransitions(from)
   },
 
-  // ── Deliverables ─────────────────────────────────────────────────────────
-  async listDeliverables(engagementId: string): Promise<EngagementDeliverable[]> {
-    if (useFixtures()) return Promise.resolve(fixtureListDeliverables(engagementId))
-    return apiClient.get<EngagementDeliverable[]>(`/engagements/${engagementId}/deliverables`)
+  /** Totals, deliverable mix and hours-by-user. A summary, not an event feed. */
+  async getSummary(id: string): Promise<EngagementSummary> {
+    if (useFixtures()) return Promise.resolve(fixtureGetSummary(id))
+    return apiClient.get<EngagementSummary>(`/engagements/${id}/summary`)
   },
 
-  async createDeliverable(input: DeliverableCreateInput): Promise<EngagementDeliverable> {
-    if (useFixtures()) return Promise.resolve(fixtureCreateDeliverable(input))
-    return apiClient.post<EngagementDeliverable>(
-      `/engagements/${input.engagement_id}/deliverables`,
-      input,
-    )
+  // ── Deliverables ─────────────────────────────────────────────────────────
+  async createDeliverable(
+    engagementId: string,
+    input: DeliverableCreate,
+  ): Promise<EngagementDeliverable> {
+    if (useFixtures()) return Promise.resolve(fixtureCreateDeliverable(engagementId, input))
+    return apiClient.post<EngagementDeliverable>(`/engagements/${engagementId}/deliverables`, input)
   },
 
   async updateDeliverableStatus(
     engagementId: string,
     deliverableId: string,
-    status: DeliverableStatus,
+    status: DeliverableStatusValue,
   ): Promise<EngagementDeliverable> {
-    if (useFixtures()) return Promise.resolve(fixtureUpdateDeliverableStatus(deliverableId, status))
+    if (useFixtures())
+      return Promise.resolve(fixtureUpdateDeliverableStatus(engagementId, deliverableId, status))
     return apiClient.patch<EngagementDeliverable>(
       `/engagements/${engagementId}/deliverables/${deliverableId}`,
       { status },
     )
   },
 
-  // ── Time entries ─────────────────────────────────────────────────────────
-  async listTimeEntries(engagementId: string): Promise<EngagementTimeEntry[]> {
-    if (useFixtures()) return Promise.resolve(fixtureListTimeEntries(engagementId))
-    return apiClient.get<EngagementTimeEntry[]>(`/engagements/${engagementId}/hours`)
-  },
-
-  async logTime(input: TimeEntryCreateInput): Promise<EngagementTimeEntry> {
-    if (useFixtures()) return Promise.resolve(fixtureCreateTimeEntry(input))
-    return apiClient.post<EngagementTimeEntry>(`/engagements/${input.engagement_id}/hours`, input)
-  },
-
-  // ── Timeline ──────────────────────────────────────────────────────────────
-  async getTimeline(engagementId: string): Promise<EngagementTimelineEvent[]> {
-    if (useFixtures()) return Promise.resolve(fixtureGetTimeline(engagementId))
-    return apiClient.get<EngagementTimelineEvent[]>(`/engagements/${engagementId}/summary`)
+  // ── Hours ────────────────────────────────────────────────────────────────
+  async logTime(engagementId: string, input: HoursLogCreate): Promise<EngagementTimeEntry> {
+    if (useFixtures()) return Promise.resolve(fixtureCreateTimeEntry(engagementId, input))
+    return apiClient.post<EngagementTimeEntry>(`/engagements/${engagementId}/hours`, input)
   },
 }
 
-export type {
-  DeliverableCreateInput,
-  EngagementCreateInput,
-  TimeEntryCreateInput,
-} from "./engagements-fixture"
+export type { DeliverableCreate, EngagementCreate, HoursLogCreate }

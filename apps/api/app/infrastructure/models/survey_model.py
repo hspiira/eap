@@ -47,6 +47,9 @@ class SurveyCampaignModel(CuidMixin, TenantMixin, Base, TimestampMixin):
     period_start: Mapped[date | None] = mapped_column(Date, nullable=True)
     period_end: Mapped[date | None] = mapped_column(Date, nullable=True)
     anonymous: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+    approved_questions: Mapped[list[dict[str, Any]]] = mapped_column(
+        JSONB, nullable=False, server_default="[]"
+    )
     response_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     created_by: Mapped[str] = mapped_column(String(25), nullable=False)
     activated_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)

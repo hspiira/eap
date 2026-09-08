@@ -58,6 +58,7 @@ from app.api.dependencies.organization import (
 from app.api.dependencies.outreach import (
     get_care_callback_campaign_repository,
     get_outreach_record_repository,
+    get_survey_answer_tally_reader,
     get_survey_campaign_repository,
     get_survey_response_repository,
     get_survey_source_repository,
@@ -137,6 +138,7 @@ __all__ = [
     "get_session_name_reader",
     "get_outbox_repository",
     "get_outreach_record_repository",
+    "get_survey_answer_tally_reader",
     "get_password_set_token_repository",
     "get_person_repository",
     "get_presenting_problem_repository",
