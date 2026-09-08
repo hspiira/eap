@@ -11,13 +11,13 @@ import { documentsApi } from "@/api/endpoints/documents"
 import { membersApi } from "@/api/endpoints/members"
 import { utilisationApi } from "@/api/endpoints/utilisation"
 import type { PaginatedResponse } from "@/api/types"
-import { DetailCard, DetailGrid, DetailRow } from "@/components/common/DetailPrimitives"
+import { DetailGrid, DetailRow, RailSection } from "@/components/common/DetailPrimitives"
 import { DocumentFileLink } from "@/components/common/DocumentFileLink"
 import { EmptyState } from "@/components/common/EmptyState"
 import { FilterBar, FilterSearch, FilterTrigger } from "@/components/common/FilterBar"
 import { TableSkeleton } from "@/components/common/PageSkeletons"
 import { StatusBadge } from "@/components/common/StatusBadge"
-import { ROW_BORDER, TABLE_HEAD } from "@/components/common/tableStyles"
+import { ROW_BORDER, STICKY_TABLE_HEAD } from "@/components/common/tableStyles"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Pagination } from "@/components/ui/pagination"
@@ -255,8 +255,8 @@ export function ClientRosterPanel({
   }
 
   return (
-    <div className="grid grid-cols-12 gap-3">
-      <div className="col-span-12 flex min-w-0 flex-col border border-fg/10 bg-surface lg:col-span-8">
+    <div className="grid grid-cols-12 gap-3 lg:h-[70vh]">
+      <div className="col-span-12 flex min-h-0 min-w-0 flex-col border border-fg/10 bg-surface lg:col-span-8 lg:h-full">
         <FilterBar>
           <FilterTrigger
             label="All relationships"
@@ -297,12 +297,14 @@ export function ClientRosterPanel({
             </Button>
           )}
         </FilterBar>
-        <ClientRosterTable
-          query={roster}
-          filtered={filtered}
-          selectedId={selectedId}
-          onSelect={setSelectedId}
-        />
+        <div className="min-h-0 flex-1 overflow-y-auto">
+          <ClientRosterTable
+            query={roster}
+            filtered={filtered}
+            selectedId={selectedId}
+            onSelect={setSelectedId}
+          />
+        </div>
         {roster.data && roster.data.total > 20 && (
           <div className="shrink-0 border-t border-fg/10 px-3 py-2">
             <Pagination page={page} total={roster.data.total} limit={20} onPageChange={setPage} />
@@ -310,7 +312,7 @@ export function ClientRosterPanel({
         )}
       </div>
 
-      <div className="col-span-12 flex min-w-0 flex-col lg:sticky lg:top-3 lg:col-span-4 lg:self-start">
+      <div className="col-span-12 flex min-h-0 min-w-0 flex-col lg:col-span-4 lg:h-full">
         {selectedMember ? (
           <MemberSummaryCard member={selectedMember} onClose={() => setSelectedId(null)} />
         ) : (
@@ -391,16 +393,18 @@ function ClientRosterTable({
       />
     )
   return (
-    <Table className="w-full text-sm">
-      <TableHeader className={TABLE_HEAD}>
+    <Table className="w-full text-sm" scrollable={false}>
+      <TableHeader className={STICKY_TABLE_HEAD}>
         <TableRow className={`hover:bg-transparent ${ROW_BORDER}`}>
           <TableHead>Member</TableHead>
-          <TableHead className="text-center">Status</TableHead>
-          <TableHead>Member code</TableHead>
-          <TableHead>Relationship</TableHead>
-          <TableHead>Work email</TableHead>
-          <TableHead>Personal email</TableHead>
-          <TableHead>Phone</TableHead>
+          <TableHead className="text-center">
+            <span className="sr-only">Status</span>
+          </TableHead>
+          <TableHead className="text-fg/65">Member code</TableHead>
+          <TableHead className="text-fg/65">Relationship</TableHead>
+          <TableHead className="text-fg/65">Work email</TableHead>
+          <TableHead className="text-fg/65">Personal email</TableHead>
+          <TableHead className="text-fg/65">Phone</TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
@@ -464,20 +468,27 @@ function RosterRow({
 
 function MemberSummaryCard({ member, onClose }: { member: Member; onClose: () => void }) {
   const label = memberLabel(member)
+  const summary = [
+    getStatusLabel(member.relation),
+    getStatusLabel(member.status),
+    member.employer_member_id,
+  ]
+    .filter(Boolean)
+    .join(" · ")
+
   return (
-    <div className="flex min-h-0 flex-col border border-fg/10 bg-surface">
+    <div className="flex min-h-0 flex-1 flex-col border border-fg/10 bg-surface">
       <header className="flex items-start gap-3 border-b border-fg/10 px-4 py-3">
         <span
           aria-hidden
-          className="grid size-8 shrink-0 place-items-center bg-primary/10 text-xs font-semibold text-primary"
+          className="grid size-9 shrink-0 place-items-center bg-primary/10 text-xs font-semibold text-primary"
         >
           {nameInitials(label)}
         </span>
         <div className="min-w-0 flex-1">
           <h3 className="truncate text-sm font-semibold leading-tight text-fg">{label}</h3>
-          <p className="mt-1 text-[11px] text-fg-muted">{member.employer_member_id}</p>
+          <p className="mt-1 truncate text-xs text-fg-muted">{summary}</p>
         </div>
-        <StatusBadge status={member.status} size="sm" />
         <Button
           type="button"
           variant="ghost"
@@ -490,29 +501,27 @@ function MemberSummaryCard({ member, onClose }: { member: Member; onClose: () =>
         </Button>
       </header>
 
-      <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto p-4">
-        <DetailCard title="Membership">
+      <div className="flex min-h-0 flex-1 flex-col gap-5 overflow-y-auto p-4">
+        <RailSection title="Personal">
           <DetailGrid>
-            <DetailRow label="Relationship" value={getStatusLabel(member.relation)} />
-            <DetailRow label="Status" value={getStatusLabel(member.status)} />
             <DetailRow label="Date of birth" value={member.date_of_birth} />
             <DetailRow
               label="Gender"
               value={member.gender ? getStatusLabel(member.gender) : null}
             />
           </DetailGrid>
-        </DetailCard>
-        <DetailCard title="Contact">
+        </RailSection>
+        <RailSection title="Contact" className="border-t border-fg/10 pt-4">
           <DetailGrid>
             <DetailRow label="Phone" value={member.phone} />
             <DetailRow label="Work email" value={member.work_email} />
-            <DetailRow label="Personal email" value={member.personal_email} />
+            <DetailRow label="Personal email" value={member.personal_email} fullWidth />
           </DetailGrid>
-        </DetailCard>
+        </RailSection>
         <Link
           to="/members/$memberId"
           params={{ memberId: member.id }}
-          className="inline-flex items-center gap-1.5 text-sm font-medium text-primary hover:underline"
+          className="mt-auto inline-flex items-center gap-1.5 border-t border-fg/10 pt-4 text-sm font-medium text-primary hover:underline"
         >
           Open full profile
           <ExternalLink className="size-3.5" />
@@ -693,7 +702,7 @@ export function ClientUtilisationPanel({ clientId }: { clientId: string }) {
               </div>
             </div>
             <div className="overflow-x-auto">
-              <Table className="w-full text-left text-sm">
+              <Table className="w-full text-left text-sm" scrollable={false}>
                 <TableHeader className="border-b border-fg/10 text-xs text-fg-muted">
                   <TableRow>
                     <TableHead className="py-3">Date</TableHead>
