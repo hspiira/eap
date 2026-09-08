@@ -34,6 +34,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { useToast } from "@/contexts/ToastContext"
 import { useCanWrite } from "@/hooks/useCanWrite"
+import { useDocumentTitle } from "@/hooks/useDocumentTitle"
 import { useTabSearchParam } from "@/hooks/useTabSearchParam"
 import { contractLabel } from "@/lib/display"
 import { normalizeErrorMessage } from "@/lib/errors"
@@ -67,6 +68,17 @@ const TAB_VALUES: ReadonlyArray<TabValue> = [
   "setup",
   "contacts",
 ]
+
+const TAB_LABELS: Record<TabValue, string> = {
+  overview: "Overview",
+  activity: "Activity",
+  contracts: "Contracts",
+  staff: "Members",
+  documents: "Documents",
+  utilisation: "Sessions",
+  setup: "Setup",
+  contacts: "Contacts",
+}
 
 const CLIENTS_LIST_SEARCH = {
   page: undefined,
@@ -103,6 +115,12 @@ function ClientDetailPage() {
     detailFn: clientsApi.getById,
   })
   const client = clientQuery.data ?? null
+
+  useDocumentTitle(
+    client
+      ? `${tab === "overview" ? "" : `${TAB_LABELS[tab]} · `}${client.name} · Clients · Evexía`
+      : undefined,
+  )
 
   // The related panels only make sense once the client itself resolves; gating
   // on it also stops them firing for an id that turns out not to exist.
