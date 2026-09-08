@@ -5,6 +5,7 @@ import type {
   OrganisationApprovalStatus,
   PanelStatus,
   ProviderGender,
+  ProviderIdentityProvenance,
   ProviderTier,
   UgandaRegion,
 } from "../enums"
@@ -52,6 +53,8 @@ export interface Provider {
   phone: string | null
   user_id: string | null
   status: BaseStatus
+  /** Whether the name was entered for the practitioner or backfilled from an account. */
+  identity_provenance: ProviderIdentityProvenance
   provider_profile: ProviderProfile
   license_info?: LicenseInfo | null
   created_at: string
@@ -158,12 +161,21 @@ export interface NonCompeteClause {
  * This is a preview. The booking write re-evaluates the same policy inside its
  * transaction, so a passing preview does not authorize anything.
  */
+/** One failed check, with the stable code the API guarantees. */
+export interface ProviderEligibilityFailure {
+  code: string
+  message: string
+}
+
 export interface ProviderEligibility {
   provider_id: string
   client_id: string | null
+  scheduled_at: string
   panel_eligible: boolean
   binding_non_compete_count: number
   binding_non_compete_ids: string[]
   eligible: boolean
   reasons: string[]
+  /** Prefer this over `reasons`: match on `code`, never on the message text. */
+  failures: ProviderEligibilityFailure[]
 }

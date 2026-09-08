@@ -399,6 +399,31 @@ export enum ProviderIdentityProvenance {
 }
 
 /**
+ * The documents an engagement requires of a practitioner, mirrors BE
+ * `EngagementDocumentKind`. One checklist entry per kind, per practitioner.
+ */
+export enum EngagementDocumentKind {
+  CONTRACT = "Contract",
+  KYC = "KYC",
+  CERTIFICATE_OF_REGISTRATION = "CertificateOfRegistration",
+  MOA = "MoA",
+  UCA_LICENCE = "UcaLicence",
+  DECLARATION_FORM = "DeclarationForm",
+  LEAD_CONSULTANT_CV = "LeadConsultantCV",
+}
+
+/**
+ * Whether a required engagement document is held, mirrors BE
+ * `EngagementDocumentState`. `OPEN` is the source's own "still being decided",
+ * which is not the same as missing.
+ */
+export enum EngagementDocumentState {
+  PRESENT = "Present",
+  MISSING = "Missing",
+  OPEN = "Open",
+}
+
+/**
  * How a session was delivered: mirrors BE `SessionDeliveryContext`.
  *
  * `UNKNOWN` belongs to historical records whose source evidence does not say.

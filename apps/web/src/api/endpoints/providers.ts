@@ -11,9 +11,12 @@
  */
 
 import type { LicenseInfo } from "@/types/entities/identity"
+import type { ProviderEligibility } from "@/types/entities/providers"
 import type {
   AccreditationStatus,
   BaseStatus,
+  EngagementDocumentKind,
+  EngagementDocumentState,
   PanelStatus,
   ProviderGender,
   ProviderTier,
@@ -55,6 +58,41 @@ export interface ProviderCreateRequest extends ProviderProfileInput {
   display_name: string
   tier: ProviderTier
   region: UgandaRegion
+}
+
+/** One entry in the engagement-document checklist. */
+export interface EngagementDocument {
+  id: string
+  provider_id: string
+  document_kind: EngagementDocumentKind
+  state: EngagementDocumentState
+  note?: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface EngagementDocumentUpsert {
+  state: EngagementDocumentState
+  note?: string | null
+}
+
+export interface ProviderDeliveryOrganisationStat {
+  organisation_id: string
+  organisation_name: string
+  session_count: number
+}
+
+/**
+ * Delivered-session totals for one practitioner. The organisation split follows
+ * each session's own stored affiliation, so moving firms never reattributes
+ * past delivery.
+ */
+export interface ProviderDeliveryStats {
+  total_sessions: number
+  first_session_at?: string | null
+  last_session_at?: string | null
+  by_delivery_context: Record<string, number>
+  by_organisation: ProviderDeliveryOrganisationStat[]
 }
 
 export const providersApi = {
@@ -112,5 +150,32 @@ export const providersApi = {
 
   async unlinkAccount(id: string, data: { reason: string }): Promise<Provider> {
     return apiClient.delete<Provider>(`/providers/${id}/account-link`, data)
+  },
+
+  /**
+   * The booking gate's own verdict. A preview: the booking write re-evaluates
+   * the same policy, so a pass here authorizes nothing.
+   */
+  async getEligibility(id: string, params?: { scheduled_at?: string }) {
+    return apiClient.get<ProviderEligibility>(`/panel/${id}/eligibility`, params)
+  },
+
+  async listEngagementDocuments(id: string): Promise<EngagementDocument[]> {
+    return apiClient.get<EngagementDocument[]>(`/providers/${id}/engagement-documents`)
+  },
+
+  async upsertEngagementDocument(
+    id: string,
+    kind: EngagementDocumentKind,
+    data: EngagementDocumentUpsert,
+  ): Promise<EngagementDocument> {
+    return apiClient.put<EngagementDocument>(
+      `/providers/${id}/engagement-documents/${kind}`,
+      data,
+    )
+  },
+
+  async getDeliveryStats(id: string): Promise<ProviderDeliveryStats> {
+    return apiClient.get<ProviderDeliveryStats>(`/providers/${id}/delivery-stats`)
   },
 }
