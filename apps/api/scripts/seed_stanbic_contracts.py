@@ -249,7 +249,7 @@ async def _create(http, tenant_id, client_id, term, label, plan) -> dict | None:
 
 async def _assignments(http, tenant_id, contract_id, term, services, label, plan, apply) -> None:
     assigned = {
-        row["service_id"]
+        row["service_id"]: row
         for row in await _paged(
             http, "/service-assignments/", tenant_id, f"&contract_id={contract_id}"
         )
@@ -259,8 +259,13 @@ async def _assignments(http, tenant_id, contract_id, term, services, label, plan
         if service_id is None:
             plan.skipped.append(f"{label} {name}: no such service in this tenant")
             continue
-        if service_id in assigned:
-            plan.unchanged.append(f"{label} {name}")
+        existing = assigned.get(service_id)
+        if existing is not None:
+            # A row left Pending by an earlier run is not what the term means.
+            if existing["status"] == "Pending" and apply:
+                await _activate(http, existing["id"], f"{label} {name}", plan)
+            else:
+                plan.unchanged.append(f"{label} {name}")
             continue
         if not apply:
             plan.created.append(f"{label} {name}")
@@ -273,8 +278,17 @@ async def _assignments(http, tenant_id, contract_id, term, services, label, plan
         )
         if response.status_code != 201:
             plan.failed.append(f"{label} {name}: {response.status_code} {response.text[:120]}")
-        else:
-            plan.created.append(f"{label} {name}")
+            continue
+        await _activate(http, response.json()["id"], f"{label} {name}", plan)
+
+
+async def _activate(http, assignment_id: str, label: str, plan) -> None:
+    """An assignment is created Pending; a service the term covers is not."""
+    response = await send(http, "POST", f"/service-assignments/{assignment_id}/activate", json={})
+    if response.status_code != 200:
+        plan.failed.append(f"{label}: activate returned {response.status_code}")
+    else:
+        plan.created.append(label)
 
 
 def main() -> None:
