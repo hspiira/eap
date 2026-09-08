@@ -16,7 +16,14 @@ from app.domain.enums import (
     SessionStatus,
     SessionType,
 )
-from app.domain.events import DomainEvent, SessionCancelled, SessionCompleted, SessionRescheduled
+from app.domain.events import (
+    DomainEvent,
+    SessionCancelled,
+    SessionCompleted,
+    SessionRescheduled,
+    SessionStatusChanged,
+    SessionUpdated,
+)
 from app.domain.exceptions import ConflictError, DomainError
 from app.domain.value_objects.core import (
     ClientId,
@@ -149,8 +156,10 @@ class ServiceSessionEntity:
             raise DomainError("Cannot mark deleted session as no-show")
         if self.status in {SessionStatus.COMPLETED, SessionStatus.CANCELLED, SessionStatus.NO_SHOW}:
             raise DomainError("Cannot mark completed or finalized session as no-show")
+        previous = self.status
         self.status = SessionStatus.NO_SHOW
         self.updated_at = utc_now()
+        self._record_status_change(previous)
 
     def update_location(self, location: str | None) -> None:
         """Update session location"""
@@ -160,6 +169,9 @@ class ServiceSessionEntity:
             raise DomainError("Cannot update location for completed or cancelled session")
         self.location = location
         self.updated_at = utc_now()
+        self.events.append(
+            SessionUpdated(occurred_at=utc_now(), session_id=self.id, field="location")
+        )
 
     def update_notes(self, notes: str | None) -> None:
         """Update session notes"""
@@ -167,6 +179,7 @@ class ServiceSessionEntity:
             raise DomainError("Cannot update notes for deleted session")
         self.notes = notes
         self.updated_at = utc_now()
+        self.events.append(SessionUpdated(occurred_at=utc_now(), session_id=self.id, field="notes"))
 
     def update_feedback(self, feedback: str | None) -> None:
         """Update session feedback"""
@@ -176,6 +189,9 @@ class ServiceSessionEntity:
             raise DomainError("Feedback can only be added to completed sessions")
         self.feedback = feedback
         self.updated_at = utc_now()
+        self.events.append(
+            SessionUpdated(occurred_at=utc_now(), session_id=self.id, field="feedback")
+        )
 
     def archive(self) -> None:
         """Archive a session"""
@@ -184,6 +200,9 @@ class ServiceSessionEntity:
         # Archive is a soft delete operation
         self.deleted_at = utc_now()
         self.updated_at = utc_now()
+        self.events.append(
+            SessionUpdated(occurred_at=utc_now(), session_id=self.id, field="archived")
+        )
 
     def restore(self) -> None:
         """Restore an archived session"""
@@ -191,12 +210,18 @@ class ServiceSessionEntity:
             raise ConflictError("Session is not archived and does not need restoration")
         self.deleted_at = None
         self.updated_at = utc_now()
+        self.events.append(
+            SessionUpdated(occurred_at=utc_now(), session_id=self.id, field="restored")
+        )
 
     def set_session_type(self, session_type: SessionType) -> None:
         if self.deleted_at:
             raise DomainError("Cannot update deleted session")
         self.session_type = session_type
         self.updated_at = utc_now()
+        self.events.append(
+            SessionUpdated(occurred_at=utc_now(), session_id=self.id, field="session_type")
+        )
 
     def set_category(
         self,
@@ -212,6 +237,9 @@ class ServiceSessionEntity:
         if headcount is not None:
             self.headcount = headcount
         self.updated_at = utc_now()
+        self.events.append(
+            SessionUpdated(occurred_at=utc_now(), session_id=self.id, field="category")
+        )
 
     def set_clinical_details(
         self,
@@ -236,6 +264,9 @@ class ServiceSessionEntity:
                 raise DomainError("Rate cannot be negative")
             self.rate_ugx = rate_ugx
         self.updated_at = utc_now()
+        self.events.append(
+            SessionUpdated(occurred_at=utc_now(), session_id=self.id, field="clinical_details")
+        )
 
     def set_partner_details(
         self,
@@ -249,18 +280,40 @@ class ServiceSessionEntity:
         self.partner_name = partner_name
         self.partner_relationship = partner_relationship
         self.updated_at = utc_now()
+        self.events.append(
+            SessionUpdated(occurred_at=utc_now(), session_id=self.id, field="partner_details")
+        )
 
     def set_clinical_outcome(self, outcome: SessionClinicalStatus) -> None:
         if self.deleted_at:
             raise DomainError("Cannot update deleted session")
         self.clinical_outcome = outcome
         self.updated_at = utc_now()
+        self.events.append(
+            SessionUpdated(occurred_at=utc_now(), session_id=self.id, field="clinical_outcome")
+        )
 
     def set_client_type(self, client_type: ClientType) -> None:
         if self.deleted_at:
             raise DomainError("Cannot update deleted session")
         self.client_type = client_type
         self.updated_at = utc_now()
+        self.events.append(
+            SessionUpdated(occurred_at=utc_now(), session_id=self.id, field="client_type")
+        )
+
+    def _record_status_change(self, previous: SessionStatus) -> None:
+        """Record a lifecycle move."""
+        if previous == self.status:
+            return
+        self.events.append(
+            SessionStatusChanged(
+                occurred_at=utc_now(),
+                session_id=self.id,
+                from_status=previous.value,
+                to_status=self.status.value,
+            )
+        )
 
     def is_active(self) -> bool:
         """Check if session is active (scheduled or rescheduled)"""

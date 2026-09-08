@@ -15,6 +15,7 @@ from __future__ import annotations
 CLINICAL_RESOURCE_TYPES: frozenset[str] = frozenset(
     {
         "ClinicalSubject",
+        "ServiceSession",
         "Case",
         "ClinicalNote",
         "RiskAssessment",

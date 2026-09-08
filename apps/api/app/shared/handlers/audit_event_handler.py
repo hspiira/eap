@@ -16,6 +16,7 @@ from app.shared.utils.audit_helper import (
     get_resource_id_from_entity,
     get_resource_type_from_entity,
     map_domain_event_to_audit_action,
+    redact_values,
 )
 from app.shared.utils.clinical_data_classification import is_special_category
 
@@ -51,6 +52,11 @@ class AuditEventHandler:
                 field_changes = [fc.__dict__ for fc in extract_field_changes(old_entity, entity)]
 
             event_type_name = type(event).__name__
+            special_category = is_special_category(
+                resource_type=resource_type, event_type=event_type_name
+            )
+            if special_category:
+                field_changes = redact_values(field_changes)
             payload = {
                 "action_type": action_type.value,
                 "resource_type": resource_type,
@@ -61,9 +67,7 @@ class AuditEventHandler:
                 "event_type": event_type_name,
                 "event_data": _extract_event_data(event),
                 "field_changes": field_changes,
-                "is_special_category": is_special_category(
-                    resource_type=resource_type, event_type=event_type_name
-                ),
+                "is_special_category": special_category,
             }
 
             await self._outbox.enqueue(

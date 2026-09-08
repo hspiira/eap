@@ -64,7 +64,10 @@ import app.domain.entities as entities_pkg
 # the top of this list, and record_import is bookkeeping under an import batch
 # that already emits: a roster file of three thousand rows would otherwise
 # write three thousand audit rows for one operation a person performed once.
-KNOWN_SILENT_MUTATORS = 113
+# 113 -> 101 with ServiceSessionEntity, which needed the redaction rule first:
+# a session carries notes, a presenting issue and a diagnosis, so the handler
+# keeps the field names and drops the values for any special-category record.
+KNOWN_SILENT_MUTATORS = 101
 
 
 def _entity_classes():
@@ -177,6 +180,15 @@ def test_the_commercial_aggregates_are_audited_in_full():
     gap = silent_mutators()
     for entity in ("ClientEntity", "ContractEntity", "ServiceAssignmentEntity"):
         assert gap.get(entity) is None, f"{entity}: {gap.get(entity)}"
+
+
+def test_sessions_are_audited_now_that_their_values_are_redacted():
+    """Delivery records emit, and the trail names fields rather than content."""
+    from app.shared.utils.clinical_data_classification import is_special_category
+
+    gap = silent_mutators()
+    assert gap.get("ServiceSessionEntity") is None, gap.get("ServiceSessionEntity")
+    assert is_special_category(resource_type="ServiceSession")
 
 
 def test_only_the_documented_member_mutators_stay_silent():

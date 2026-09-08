@@ -6,6 +6,7 @@ Refactored to use @transactional decorator to eliminate try/except boilerplate.
 """
 
 from collections.abc import Sequence
+from copy import deepcopy
 from datetime import datetime
 
 from fastapi import APIRouter, Depends, Query, Request, status
@@ -601,6 +602,9 @@ async def update_service_session(
     db: AsyncSession = Depends(get_db),
 ):
     """Update service session information."""
+    # The use case mutates in place, so the audit diff needs the state first.
+    # Values are redacted downstream: a session is special-category.
+    before = deepcopy(session)
     session = await UpdateServiceSessionUseCase(session_repo).execute(
         session.id,
         location=data.location,
@@ -618,7 +622,7 @@ async def update_service_session(
         client_type=data.client_type,
         clinical_outcome=data.clinical_outcome,
     )
-    await audit_change(session, audit_handler, current_user, request)
+    await audit_change(session, audit_handler, current_user, request, old_entity=before)
     return await _one(session, attribution_reader)
 
 

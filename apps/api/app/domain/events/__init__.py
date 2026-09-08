@@ -107,7 +107,13 @@ from app.domain.events.provider import (
     ProviderStatusChanged,
     ProviderTierChanged,
 )
-from app.domain.events.session import SessionCancelled, SessionCompleted, SessionRescheduled
+from app.domain.events.session import (
+    SessionCancelled,
+    SessionCompleted,
+    SessionRescheduled,
+    SessionStatusChanged,
+    SessionUpdated,
+)
 from app.domain.events.tenancy import TenantActivated, TenantSuspended, TenantTerminated
 from app.domain.events.user import (
     UserActivated,
@@ -208,6 +214,8 @@ __all__ = [
     "SessionCancelled",
     "SessionCompleted",
     "SessionRescheduled",
+    "SessionStatusChanged",
+    "SessionUpdated",
     "SurveyCampaignActivated",
     "SurveyCampaignClosed",
     "SurveyCampaignCreated",

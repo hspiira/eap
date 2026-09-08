@@ -37,6 +37,26 @@ def extract_field_changes(old_entity: Any | None, new_entity: Any) -> list[Field
 
 _SKIP_FIELDS = {"events", "created_at", "updated_at"}
 
+REDACTED = "[redacted]"
+
+
+def redact_values(field_changes: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Keep which fields moved on a special-category record, drop what they say.
+
+    The audit trail is read by people outside the care team: a diff on a
+    session would otherwise copy the note, the presenting issue and the
+    diagnosis into `entity_changes` for all of them. Which field a person
+    touched, and when, is the auditable fact.
+    """
+    return [
+        {
+            **change,
+            "old_value": REDACTED if change.get("old_value") is not None else None,
+            "new_value": REDACTED if change.get("new_value") is not None else None,
+        }
+        for change in field_changes
+    ]
+
 
 def _comparable_fields(entity: Any) -> list[str]:
     fields = getattr(entity, "__dataclass_fields__", None)

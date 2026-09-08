@@ -20,7 +20,11 @@ operation, and `record_import` is bookkeeping under an import batch that
 already emits, where a roster file of three thousand rows would otherwise
 write three thousand audit rows for one operation a person performed once.
 
-Not decided here, and deliberately left: the remaining 113 silent mutators
+Sessions are audited too, under a redaction rule. A delivery record carries
+`notes`, `feedback`, `issue_topic` and a diagnosis, so the trail records which
+field a person touched and when, and not what it says. See below.
+
+Not decided here, and deliberately left: the remaining 101 silent mutators
 across the other aggregates. Auditing everything indiscriminately is not
 automatically right, and for special-category health data it creates its own
 disclosure surface, which is why `test_audit_coverage.py` refuses to assert it.
@@ -28,13 +32,14 @@ That scope is a product call.
 
 ## What this pass changed
 
-Baseline moved from 148 silent mutators to 113, which is three separate things
+Baseline moved from 148 silent mutators to 101, which is three separate things
 and they should not be read as one number:
 
 | Change | Count | What it was |
 | --- | --- | --- |
 | Coverage | -14 | `ClientEntity` and `ContractEntity` now emit on create, on every field update, and on archive and restore. Neither has a silent mutator left. |
 | Coverage | -9 | `ServiceAssignmentEntity` in full, and `EligibleMember` apart from the three above. |
+| Coverage | -12 | `ServiceSessionEntity` in full, under the redaction rule below. |
 | Measurement | -3 | The detector follows a private helper. A method that hands the append to one, `ContractEntity._record_status_change`, read as silent while it emitted. |
 | Measurement | -9 | The detector no longer reads `self.x == y` as an assignment, so read predicates like `is_active` were never mutators at all. |
 
@@ -96,17 +101,34 @@ Converging `members.py` onto `audit_change` would give roster edits the same
 field-level detail the rest now has. It is ten call sites in a route file with
 its own tests, so it is named here rather than folded into this pass.
 
+## Special-category records are audited without their content
+
+`ServiceSession` is now in `CLINICAL_RESOURCE_TYPES`, and the audit handler
+redacts the values on any field change for a special-category resource: the
+field name and the fact of the change survive, `old_value` and `new_value`
+become `[redacted]`. A field that was empty and stayed empty reads as null
+rather than as a redaction, so the trail does not imply content that never
+existed.
+
+The reason is the audience. `audit_logs` is read by administrators, and the
+DPO report exists precisely because that is a wider group than the care team.
+Once `extract_field_changes` started working, an unredacted session edit would
+have copied the note text, the presenting issue and the diagnosis into
+`entity_changes` for all of them. Who edited which field of which session, and
+when, is the auditable fact; the clinical content is in the record itself,
+behind the clinical scope wall.
+
+Redaction is per resource, not blanket: a client rename still records
+`Acme Corp -> Acme Holdings`, because that is ordinary business data and the
+before-and-after is the point of auditing it.
+
 ## Still open
 
 - The other 113 silent mutators, pending the scope call above.
 - `members.py` on its own audit path, above.
-- Sessions. `ServiceSessionEntity` has 12 silent mutators and is the largest
-  single gap left. It needs the redaction question answered first: a session
-  carries `notes`, `feedback`, `issue_topic` and a diagnosis, and a diff that
-  copies those into `entity_changes` puts clinical content in front of
-  everyone who can read the audit trail. `ServiceSession` is also absent from
-  `CLINICAL_RESOURCE_TYPES`, so it is not currently flagged as
-  special-category at all.
+- The other clinical aggregates. `Case`, `ClinicalNote` and the rest are
+  already in `CLINICAL_RESOURCE_TYPES`, so the redaction rule covers them the
+  moment they emit. Nothing in this pass made them emit.
 - `map_domain_event_to_audit_action` treating "activated" as CREATE.
 - `apps/web/src/routes/audit.tsx` is a placeholder. The read API exists
   (`/audit/logs`, `/logs/{id}/changes`, `/entity/{type}/{id}/changes`) and
