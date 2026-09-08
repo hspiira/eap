@@ -56,25 +56,40 @@ beforeEach(() => {
 })
 
 describe("client detail tab records", () => {
-  it("lists a contract's services by name, resolving each service once", async () => {
+  it("lists a contract's services and opens one at a time", async () => {
     mocks.assignments.mockResolvedValue({
       items: [
         { id: "assignment-1", service_id: "private-service-id", status: "Active" },
-        { id: "assignment-2", service_id: "private-service-id", status: "Inactive" },
+        { id: "assignment-2", service_id: "other-service-id", status: "Inactive" },
       ],
       total: 2,
     })
+    mocks.service.mockImplementation(async (id: string) => ({
+      id,
+      name: id === "private-service-id" ? "Counselling" : "Health Talk",
+      category: "Therapy",
+      status: "Active",
+      duration_minutes: 50,
+    }))
+    const user = userEvent.setup()
     renderWithProviders(<ContractServicesCard contract={contract} onClose={() => {}} />)
-    expect((await screen.findAllByRole("link", { name: "Counselling" }))[0]).toHaveAttribute(
+
+    const counselling = await screen.findByRole("button", { name: /Counselling/ })
+    expect(screen.queryByRole("link", { name: "Open service" })).not.toBeInTheDocument()
+
+    await user.click(counselling)
+    expect(await screen.findByRole("link", { name: "Open service" })).toHaveAttribute(
       "href",
       "/services/private-service-id",
     )
-    expect(mocks.service).toHaveBeenCalledTimes(1)
-    expect(screen.queryByText("private-service-id")).not.toBeInTheDocument()
-    expect(screen.getByRole("link", { name: /Manage services/ })).toHaveAttribute(
+    expect(screen.getByText("50 minutes")).toBeInTheDocument()
+
+    await user.click(screen.getByRole("button", { name: /Health Talk/ }))
+    expect(await screen.findByRole("link", { name: "Open service" })).toHaveAttribute(
       "href",
-      "/contracts/private-contract-id",
+      "/services/other-service-id",
     )
+    expect(screen.queryByText("private-service-id")).not.toBeInTheDocument()
   })
 
   it("shows failed document requests as errors and retries them", async () => {

@@ -1,16 +1,21 @@
+import { useState } from "react"
+
 import { useQuery } from "@tanstack/react-query"
 import { Link } from "@tanstack/react-router"
-import { ExternalLink, Layers, RotateCw, X } from "lucide-react"
+import { ChevronRight, ExternalLink, Layers, RotateCw, X } from "lucide-react"
 
 import { serviceAssignmentsApi } from "@/api/endpoints/service-assignments"
 import { servicesApi } from "@/api/endpoints/services"
+import { DetailGrid, DetailRow } from "@/components/common/DetailPrimitives"
 import { StatusBadge } from "@/components/common/StatusBadge"
 import { ContractAttachments } from "@/components/contracts/ContractAttachments"
 import { Button } from "@/components/ui/button"
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
 import { contractLabel } from "@/lib/display"
 import { normalizeErrorMessage } from "@/lib/errors"
 import { entityListKey } from "@/lib/queries"
-import type { Contract } from "@/types/entities"
+import { cn } from "@/lib/utils"
+import type { Contract, Service, ServiceAssignment } from "@/types/entities"
 import { getStatusLabel } from "@/utils/statusColors"
 
 /** The list endpoint caps limit at 100, which is far above any real contract. */
@@ -51,7 +56,7 @@ export function ContractServicesCard({
 }) {
   const query = useContractServices(contract.id)
   return (
-    <div className="flex min-h-0 flex-col border border-fg/10 bg-surface">
+    <div className="flex min-h-0 flex-col overflow-hidden border border-fg/10 bg-surface lg:max-h-[calc(100dvh-8rem)]">
       <header className="flex items-start gap-3 border-b border-fg/10 px-4 py-3">
         <span
           aria-hidden
@@ -80,7 +85,7 @@ export function ContractServicesCard({
         </Button>
       </header>
 
-      <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto p-4">
+      <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto overscroll-contain p-4">
         <ContractServicesList query={query} />
         <Link
           to="/contracts/$contractId"
@@ -98,6 +103,7 @@ export function ContractServicesCard({
 }
 
 function ContractServicesList({ query }: { query: ReturnType<typeof useContractServices> }) {
+  const [openId, setOpenId] = useState<string | null>(null)
   if (query.isPending)
     return (
       <p role="status" className="text-sm text-fg-muted">
@@ -131,23 +137,72 @@ function ContractServicesList({ query }: { query: ReturnType<typeof useContractS
   return (
     <ul className="divide-y divide-fg/10 border border-fg/10">
       {query.data.map(({ assignment, service }) => (
-        <li key={assignment.id} className="flex items-start justify-between gap-3 p-3">
-          <div className="min-w-0">
-            <Link
-              to="/services/$serviceId"
-              params={{ serviceId: service.id }}
-              className="text-sm font-medium text-primary hover:underline"
-            >
-              {service.name}
-            </Link>
-            <p className="mt-0.5 text-xs text-fg-muted">
-              {getStatusLabel(service.category ?? "Service")}
-            </p>
-            {assignment.notes && <p className="mt-1.5 text-xs text-fg/70">{assignment.notes}</p>}
-          </div>
-          <StatusBadge status={assignment.status} size="sm" />
-        </li>
+        <ServiceRow
+          key={assignment.id}
+          assignment={assignment}
+          service={service}
+          open={openId === assignment.id}
+          onOpenChange={(open) => setOpenId(open ? assignment.id : null)}
+        />
       ))}
     </ul>
   )
+}
+
+function ServiceRow({
+  assignment,
+  service,
+  open,
+  onOpenChange,
+}: {
+  assignment: ServiceAssignment
+  service: Service
+  open: boolean
+  onOpenChange: (open: boolean) => void
+}) {
+  return (
+    <li>
+      <Collapsible open={open} onOpenChange={onOpenChange}>
+        <CollapsibleTrigger className="flex w-full items-center gap-2 px-3 py-2.5 text-left hover:bg-surface-hover">
+          <ChevronRight
+            aria-hidden
+            className={cn(
+              "size-3.5 shrink-0 text-fg-muted transition-transform",
+              open && "rotate-90",
+            )}
+          />
+          <span className="min-w-0 flex-1 truncate text-sm font-medium text-fg">
+            {service.name}
+          </span>
+          <StatusBadge status={assignment.status} size="sm" />
+        </CollapsibleTrigger>
+        <CollapsibleContent className="space-y-3 border-t border-fg/10 bg-fg/3 px-3 py-3">
+          <DetailGrid>
+            <DetailRow label="Category" value={getStatusLabel(service.category ?? "Service")} />
+            <DetailRow label="Assignment" value={getStatusLabel(assignment.status)} />
+            <DetailRow label="Session length" value={formatDuration(service.duration_minutes)} />
+            <DetailRow label="Delivery" value={formatDelivery(service)} />
+            {assignment.notes && <DetailRow label="Notes" value={assignment.notes} fullWidth />}
+          </DetailGrid>
+          <Link
+            to="/services/$serviceId"
+            params={{ serviceId: service.id }}
+            className="inline-flex items-center gap-1.5 text-xs font-medium text-primary hover:underline"
+          >
+            Open service
+            <ExternalLink className="size-3" />
+          </Link>
+        </CollapsibleContent>
+      </Collapsible>
+    </li>
+  )
+}
+
+function formatDuration(minutes: number | null | undefined): string | null {
+  return minutes ? `${minutes} minutes` : null
+}
+
+function formatDelivery(service: Service): string {
+  if (!service.is_group_service) return "Individual"
+  return service.max_participants ? `Group, up to ${service.max_participants}` : "Group"
 }
