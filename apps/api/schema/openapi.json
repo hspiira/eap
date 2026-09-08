@@ -22861,7 +22861,7 @@
     },
     "/contracts/client/{client_id}/metrics": {
       "get": {
-        "description": "Count the services a term covers and sum what its sessions have cost.\n\nA session carries no contract, only a client and a date, so it is\nattributed to the term its date falls inside. Terms that overlap therefore\nboth count the same session. Only completed sessions count, and a session\nwith no rate adds nothing, which is why the priced count is reported\nalongside the total: 208 of the 369 sessions loaded into dev carry one, so\na bare total would read as the whole cost when it is not.\n\nThe date is taken in UTC before truncating, as `date_trunc` on a\ntimestamptz otherwise buckets by the connection's timezone.",
+        "description": "Count the services a term covers and sum what its sessions have cost.\n\nOnly completed sessions count, and a session with no rate adds nothing,\nwhich is why the priced count is reported alongside the total: 208 of the\n369 sessions loaded into dev carry one, so a bare total would read as the\nwhole cost when it is not. See\n`ContractRepository.get_metrics_for_client` for the attribution rule and\nthe UTC date handling.",
         "operationId": "get_contract_metrics_contracts_client__client_id__metrics_get",
         "parameters": [
           {

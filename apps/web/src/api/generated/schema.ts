@@ -1778,15 +1778,12 @@ export interface paths {
          * Coverage and session spend for each of a client's contract terms
          * @description Count the services a term covers and sum what its sessions have cost.
          *
-         *     A session carries no contract, only a client and a date, so it is
-         *     attributed to the term its date falls inside. Terms that overlap therefore
-         *     both count the same session. Only completed sessions count, and a session
-         *     with no rate adds nothing, which is why the priced count is reported
-         *     alongside the total: 208 of the 369 sessions loaded into dev carry one, so
-         *     a bare total would read as the whole cost when it is not.
-         *
-         *     The date is taken in UTC before truncating, as `date_trunc` on a
-         *     timestamptz otherwise buckets by the connection's timezone.
+         *     Only completed sessions count, and a session with no rate adds nothing,
+         *     which is why the priced count is reported alongside the total: 208 of the
+         *     369 sessions loaded into dev carry one, so a bare total would read as the
+         *     whole cost when it is not. See
+         *     `ContractRepository.get_metrics_for_client` for the attribution rule and
+         *     the UTC date handling.
          */
         get: operations["get_contract_metrics_contracts_client__client_id__metrics_get"];
         put?: never;
