@@ -45,6 +45,8 @@ export type ContractCreate = Schemas["ContractCreate"]
 export type ContractUpdate = Schemas["ContractUpdate"]
 export type ContractRenewRequest = Schemas["ContractRenewRequest"]
 export type ContractTerminateRequest = Schemas["ContractTerminateRequest"]
+export type ContractMetricsResponse = Schemas["ContractMetricsResponse"]
+export type ContractMetricsItem = Schemas["ContractMetricsItem"]
 /** Money used inside ContractCreate.billing_rate (BE has a duplicate-named class in this module). */
 export type MoneySchema = Schemas["app__api__schemas__contract_schemas__MoneySchema"]
 /** Money used in ContractRenewRequest.new_rate / ContractUpdate.billing_rate. */

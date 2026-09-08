@@ -109,6 +109,23 @@ class ContractResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
+class ContractMetricsItem(BaseModel):
+    """What one contract term covers, and what it has cost so far."""
+
+    contract_id: str = Field(..., description="Contract identifier")
+    services: int = Field(..., description="Services assigned to the contract")
+    sessions: int = Field(..., description="Completed sessions inside the term")
+    sessions_priced: int = Field(..., description="How many of those carry a rate")
+    spent: MoneySchema = Field(..., description="Sum of the rates on those sessions")
+
+
+class ContractMetricsResponse(BaseModel):
+    """Per-term coverage and spend for every contract a client holds."""
+
+    client_id: str = Field(..., description="Client identifier")
+    items: list[ContractMetricsItem] = Field(..., description="One entry per contract")
+
+
 class ContractListResponse(BaseModel):
     """Response schema for contract list."""
 

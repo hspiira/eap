@@ -9,6 +9,7 @@ import decimal
 from datetime import date
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
+from sqlalchemy import Date, and_, cast, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.dependencies import (
@@ -20,6 +21,8 @@ from app.api.dependencies import (
 from app.api.schemas.contract_schemas import (
     ContractCreate,
     ContractListResponse,
+    ContractMetricsItem,
+    ContractMetricsResponse,
     ContractRenewRequest,
     ContractResponse,
     ContractSignRequest,
@@ -45,7 +48,7 @@ from app.core.authorization import (
 from app.core.database import get_db
 from app.core.security import TokenData, get_current_user
 from app.domain.entities.contract import ContractEntity
-from app.domain.enums import ContractStatus, PaymentStatus
+from app.domain.enums import ContractStatus, PaymentStatus, SessionStatus
 from app.domain.repositories.contract_repository import ContractRepository
 from app.domain.value_objects.core import (
     ClientId,
@@ -53,11 +56,18 @@ from app.domain.value_objects.core import (
     Money,
     TenantId,
 )
+from app.infrastructure.models import (
+    ContractModel,
+    ServiceAssignmentModel,
+    ServiceSessionModel,
+)
 from app.shared.decorators import readonly, transactional
 from app.shared.utils.generators import generate_cuid
 from app.shared.utils.route_audit_helper import audit_change
 
 router = APIRouter(prefix="/contracts", tags=["contracts"])
+
+SESSION_RATE_CURRENCY = "UGX"
 
 
 def _to_contract_response(contract: ContractEntity) -> ContractResponse:
@@ -455,6 +465,81 @@ async def get_contracts_by_client(
         TenantId(tenant_id), ClientId(client_id)
     )
     return [_to_contract_response(contract) for contract in contracts]
+
+
+@router.get(
+    "/client/{client_id}/metrics",
+    response_model=ContractMetricsResponse,
+    summary="Coverage and session spend for each of a client's contract terms",
+)
+@readonly()
+async def get_contract_metrics(
+    client_id: str,
+    tenant_id: str = Query(..., description="Tenant identifier"),
+    current_user: TokenData = Depends(require_same_tenant),
+    db: AsyncSession = Depends(get_db),
+):
+    """Count the services a term covers and sum what its sessions have cost.
+
+    A session carries no contract, only a client and a date, so it is
+    attributed to the term its date falls inside. Terms that overlap therefore
+    both count the same session. Only completed sessions count, and a session
+    with no rate adds nothing, which is why the priced count is reported
+    alongside the total: 208 of the 369 sessions loaded into dev carry one, so
+    a bare total would read as the whole cost when it is not.
+
+    The date is taken in UTC before truncating, as `date_trunc` on a
+    timestamptz otherwise buckets by the connection's timezone.
+    """
+    session_day = cast(func.timezone("UTC", ServiceSessionModel.scheduled_at), Date)
+    services = (
+        select(func.count(ServiceAssignmentModel.id))
+        .where(
+            ServiceAssignmentModel.contract_id == ContractModel.id,
+            ServiceAssignmentModel.deleted_at.is_(None),
+        )
+        .correlate(ContractModel)
+        .scalar_subquery()
+    )
+    rows = await db.execute(
+        select(
+            ContractModel.id,
+            services,
+            func.count(ServiceSessionModel.id),
+            func.count(ServiceSessionModel.rate_ugx),
+            func.coalesce(func.sum(ServiceSessionModel.rate_ugx), 0),
+        )
+        .select_from(ContractModel)
+        .outerjoin(
+            ServiceSessionModel,
+            and_(
+                ServiceSessionModel.tenant_id == ContractModel.tenant_id,
+                ServiceSessionModel.client_id == ContractModel.client_id,
+                ServiceSessionModel.deleted_at.is_(None),
+                ServiceSessionModel.status == SessionStatus.COMPLETED,
+                session_day.between(ContractModel.start_date, ContractModel.end_date),
+            ),
+        )
+        .where(
+            ContractModel.tenant_id == tenant_id,
+            ContractModel.client_id == client_id,
+            ContractModel.deleted_at.is_(None),
+        )
+        .group_by(ContractModel.id)
+    )
+    return ContractMetricsResponse(
+        client_id=client_id,
+        items=[
+            ContractMetricsItem(
+                contract_id=contract_id,
+                services=int(services_count),
+                sessions=int(sessions),
+                sessions_priced=int(priced),
+                spent=MoneySchema(amount=str(int(total)), currency=SESSION_RATE_CURRENCY),
+            )
+            for contract_id, services_count, sessions, priced, total in rows
+        ],
+    )
 
 
 @router.get(

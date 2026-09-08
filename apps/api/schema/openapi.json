@@ -3879,6 +3879,68 @@
         "title": "ContractListResponse",
         "type": "object"
       },
+      "ContractMetricsItem": {
+        "description": "What one contract term covers, and what it has cost so far.",
+        "properties": {
+          "contract_id": {
+            "description": "Contract identifier",
+            "title": "Contract Id",
+            "type": "string"
+          },
+          "services": {
+            "description": "Services assigned to the contract",
+            "title": "Services",
+            "type": "integer"
+          },
+          "sessions": {
+            "description": "Completed sessions inside the term",
+            "title": "Sessions",
+            "type": "integer"
+          },
+          "sessions_priced": {
+            "description": "How many of those carry a rate",
+            "title": "Sessions Priced",
+            "type": "integer"
+          },
+          "spent": {
+            "$ref": "#/components/schemas/app__api__schemas__contract_schemas__MoneySchema",
+            "description": "Sum of the rates on those sessions"
+          }
+        },
+        "required": [
+          "contract_id",
+          "services",
+          "sessions",
+          "sessions_priced",
+          "spent"
+        ],
+        "title": "ContractMetricsItem",
+        "type": "object"
+      },
+      "ContractMetricsResponse": {
+        "description": "Per-term coverage and spend for every contract a client holds.",
+        "properties": {
+          "client_id": {
+            "description": "Client identifier",
+            "title": "Client Id",
+            "type": "string"
+          },
+          "items": {
+            "description": "One entry per contract",
+            "items": {
+              "$ref": "#/components/schemas/ContractMetricsItem"
+            },
+            "title": "Items",
+            "type": "array"
+          }
+        },
+        "required": [
+          "client_id",
+          "items"
+        ],
+        "title": "ContractMetricsResponse",
+        "type": "object"
+      },
       "ContractPricingSchema": {
         "properties": {
           "admin_fee_floor": {
@@ -22681,6 +22743,63 @@
           }
         ],
         "summary": "Get active contract for a client",
+        "tags": [
+          "contracts"
+        ]
+      }
+    },
+    "/contracts/client/{client_id}/metrics": {
+      "get": {
+        "description": "Count the services a term covers and sum what its sessions have cost.\n\nA session carries no contract, only a client and a date, so it is\nattributed to the term its date falls inside. Terms that overlap therefore\nboth count the same session. Only completed sessions count, and a session\nwith no rate adds nothing, which is why the priced count is reported\nalongside the total: 208 of the 369 sessions loaded into dev carry one, so\na bare total would read as the whole cost when it is not.\n\nThe date is taken in UTC before truncating, as `date_trunc` on a\ntimestamptz otherwise buckets by the connection's timezone.",
+        "operationId": "get_contract_metrics_contracts_client__client_id__metrics_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "client_id",
+            "required": true,
+            "schema": {
+              "title": "Client Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "tenant_id",
+            "required": true,
+            "schema": {
+              "title": "Tenant Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ContractMetricsResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Coverage and session spend for each of a client's contract terms",
         "tags": [
           "contracts"
         ]

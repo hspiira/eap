@@ -1747,6 +1747,36 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/contracts/client/{client_id}/metrics": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Coverage and session spend for each of a client's contract terms
+         * @description Count the services a term covers and sum what its sessions have cost.
+         *
+         *     A session carries no contract, only a client and a date, so it is
+         *     attributed to the term its date falls inside. Terms that overlap therefore
+         *     both count the same session. Only completed sessions count, and a session
+         *     with no rate adds nothing, which is why the priced count is reported
+         *     alongside the total: 208 of the 369 sessions loaded into dev carry one, so
+         *     a bare total would read as the whole cost when it is not.
+         *
+         *     The date is taken in UTC before truncating, as `date_trunc` on a
+         *     timestamptz otherwise buckets by the connection's timezone.
+         */
+        get: operations["get_contract_metrics_contracts_client__client_id__metrics_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/contracts/{contract_id}": {
         parameters: {
             query?: never;
@@ -7745,6 +7775,50 @@ export interface components {
              * @description Total number of contracts matching filters
              */
             total: number;
+        };
+        /**
+         * ContractMetricsItem
+         * @description What one contract term covers, and what it has cost so far.
+         */
+        ContractMetricsItem: {
+            /**
+             * Contract Id
+             * @description Contract identifier
+             */
+            contract_id: string;
+            /**
+             * Services
+             * @description Services assigned to the contract
+             */
+            services: number;
+            /**
+             * Sessions
+             * @description Completed sessions inside the term
+             */
+            sessions: number;
+            /**
+             * Sessions Priced
+             * @description How many of those carry a rate
+             */
+            sessions_priced: number;
+            /** @description Sum of the rates on those sessions */
+            spent: components["schemas"]["app__api__schemas__contract_schemas__MoneySchema"];
+        };
+        /**
+         * ContractMetricsResponse
+         * @description Per-term coverage and spend for every contract a client holds.
+         */
+        ContractMetricsResponse: {
+            /**
+             * Client Id
+             * @description Client identifier
+             */
+            client_id: string;
+            /**
+             * Items
+             * @description One entry per contract
+             */
+            items: components["schemas"]["ContractMetricsItem"][];
         };
         /** ContractPricingSchema */
         ContractPricingSchema: {
@@ -16616,6 +16690,39 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ContractResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_contract_metrics_contracts_client__client_id__metrics_get: {
+        parameters: {
+            query: {
+                tenant_id: string;
+            };
+            header?: never;
+            path: {
+                client_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ContractMetricsResponse"];
                 };
             };
             /** @description Validation Error */
