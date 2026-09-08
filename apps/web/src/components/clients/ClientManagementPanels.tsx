@@ -6,10 +6,8 @@ import { ExternalLink, Plus, RotateCw, User, Users, X } from "lucide-react"
 import type { ReactNode } from "react"
 
 import { contactsApi } from "@/api/endpoints/contacts"
-import { contractsApi } from "@/api/endpoints/contracts"
 import { documentsApi } from "@/api/endpoints/documents"
 import { membersApi } from "@/api/endpoints/members"
-import { utilisationApi } from "@/api/endpoints/utilisation"
 import type { PaginatedResponse } from "@/api/types"
 import { DetailGrid, DetailRow, RailSection } from "@/components/common/DetailPrimitives"
 import { DocumentFileLink } from "@/components/common/DocumentFileLink"
@@ -31,9 +29,8 @@ import {
 } from "@/components/ui/table"
 import { useToast } from "@/contexts/ToastContext"
 import { useDebouncedValue } from "@/hooks/useDebouncedValue"
-import { contractLabel, memberLabel, nameInitials } from "@/lib/display"
+import { memberLabel, nameInitials } from "@/lib/display"
 import { normalizeErrorMessage } from "@/lib/errors"
-import { formatDay } from "@/lib/format"
 import { entityListKey } from "@/lib/queries"
 import { cn } from "@/lib/utils"
 import type { Client, Contact, Document, Member } from "@/types/entities"
@@ -543,17 +540,6 @@ function RosterDetailsPlaceholder() {
   )
 }
 
-async function allPages<T>(
-  fetchPage: (page: number) => Promise<PaginatedResponse<T>>,
-): Promise<T[]> {
-  const items: T[] = []
-  for (let page = 1; ; page++) {
-    const result = await fetchPage(page)
-    items.push(...result.items)
-    if (items.length >= result.total || !result.items.length) return items
-  }
-}
-
 function ClientQueryPanel<T>({
   title,
   description,
@@ -590,9 +576,6 @@ function ClientQueryPanel<T>({
     </Panel>
   )
 }
-
-const clientContracts = (clientId: string) =>
-  allPages((page) => contractsApi.list({ client_id: clientId, page, limit: 100 }))
 
 export function ClientDocumentsPanel({ clientId }: { clientId: string }) {
   const [page, setPage] = useState(1)
@@ -655,91 +638,5 @@ function DocumentRow({ document }: { document: Document }) {
       </div>
       <DocumentFileLink document={document} />
     </div>
-  )
-}
-
-const UTILISATION_PAGE = 20
-
-export function ClientUtilisationPanel({ clientId }: { clientId: string }) {
-  const [page, setPage] = useState(1)
-  // Only used to resolve a contract's label/link for each row; the events
-  // themselves are paged from the server, not derived from this list.
-  const contractsQuery = useQuery({
-    queryKey: ["clients", "utilisation-contracts", clientId],
-    queryFn: () => clientContracts(clientId),
-  })
-  const contractsById = new Map((contractsQuery.data ?? []).map((c) => [c.id, c]))
-
-  const query = useQuery({
-    queryKey: ["clients", "utilisation", clientId, page],
-    queryFn: () => utilisationApi.byClient(clientId, { page, limit: UTILISATION_PAGE }),
-  })
-
-  return (
-    <ClientQueryPanel
-      title="Sessions"
-      description="Recorded service usage across all contract terms."
-      query={query}
-    >
-      {(data) =>
-        data.total === 0 ? (
-          <p className="border border-dashed border-fg/15 p-8 text-center text-sm text-fg-muted">
-            No service delivery recorded yet.
-          </p>
-        ) : (
-          <>
-            <div className="overflow-x-auto">
-              <Table className="w-full text-left text-sm" scrollable={false}>
-                <TableHeader className="border-b border-fg/10 text-xs text-fg-muted">
-                  <TableRow>
-                    <TableHead className="py-3">Date</TableHead>
-                    <TableHead>Service event</TableHead>
-                    <TableHead>Contract term</TableHead>
-                    <TableHead className="text-right">Units</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody className="divide-y divide-fg/10">
-                  {data.items.map((event) => {
-                    const contract = contractsById.get(event.contract_id)
-                    return (
-                      <TableRow key={event.id}>
-                        <TableCell className="whitespace-nowrap py-3 pr-4">
-                          {formatDay(event.occurred_on)}
-                        </TableCell>
-                        <TableCell className="pr-4">{getStatusLabel(event.event_type)}</TableCell>
-                        <TableCell>
-                          {contract ? (
-                            <Link
-                              to="/contracts/$contractId"
-                              params={{ contractId: contract.id }}
-                              className="text-primary hover:underline"
-                            >
-                              {contractLabel(contract)}
-                            </Link>
-                          ) : (
-                            <span className="text-fg-muted">{event.contract_id}</span>
-                          )}
-                        </TableCell>
-                        <TableCell className="text-right tabular-nums">{event.units}</TableCell>
-                      </TableRow>
-                    )
-                  })}
-                </TableBody>
-              </Table>
-            </div>
-            {data.total > UTILISATION_PAGE && (
-              <div className="border-t border-fg/10 pt-3">
-                <Pagination
-                  page={page}
-                  total={data.total}
-                  limit={UTILISATION_PAGE}
-                  onPageChange={setPage}
-                />
-              </div>
-            )}
-          </>
-        )
-      }
-    </ClientQueryPanel>
   )
 }

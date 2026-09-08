@@ -522,6 +522,14 @@ home is the contract detail page's Billing tab, beside the pricing model and
 the invoice preview that consume the same events. Whoever owns pricing should
 either move it there or delete both, rather than leaving them stranded.
 
+Closed for the panel: it now lives on that Billing tab as
+`ContractUtilisationPanel`, reading `GET /contracts/{id}/utilisation-events`,
+and the client-scoped one is deleted. Still open on the API side:
+`GET /clients/{client_id}/utilisation-events` and `utilisationApi.byClient`
+have no caller. Both were left rather than deleted, since a client-level
+billing view is a reasonable thing to want back. Note the contract endpoint
+returns the whole list unpaged, unlike the client one.
+
 The same commit also synced `schema/openapi.json`, which `d18fbfd` had left
 behind: the route existed in code but not in the schema, so `contracts:check`
 would have failed on it.

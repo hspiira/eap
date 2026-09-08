@@ -5,7 +5,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest"
 import { renderWithProviders } from "@/test/utils"
 import type { Contract } from "@/types/entities"
 
-import { ClientDocumentsPanel, ClientUtilisationPanel } from "./ClientManagementPanels"
+import { ClientDocumentsPanel } from "./ClientManagementPanels"
 import { ContractServicesCard } from "./ContractServicesCard"
 
 const mocks = vi.hoisted(() => ({
@@ -89,32 +89,5 @@ describe("client detail tab records", () => {
     mocks.documents.mockResolvedValue({ items: [], total: 0 })
     await user.click(screen.getByRole("button", { name: "Retry" }))
     expect(await screen.findByText("No documents linked yet.")).toBeInTheDocument()
-  })
-
-  it("shows usage by readable contract terms without internal identifiers", async () => {
-    mocks.usage.mockResolvedValue({
-      items: [
-        {
-          id: "event-1",
-          contract_id: "private-contract-id",
-          occurred_on: "2026-09-05",
-          units: 3,
-          event_type: "ServiceDelivered",
-          service_code: "private-service-id",
-        },
-      ],
-      total: 1,
-      page: 1,
-      limit: 20,
-      has_more: false,
-    })
-    renderWithProviders(<ClientUtilisationPanel clientId="client-1" />)
-    expect(await screen.findByRole("link")).toHaveAttribute(
-      "href",
-      "/contracts/private-contract-id",
-    )
-    expect(screen.getByText("Service Delivered")).toBeInTheDocument()
-    expect(screen.queryByText("private-service-id")).not.toBeInTheDocument()
-    expect(screen.queryByText("private-contract-id")).not.toBeInTheDocument()
   })
 })

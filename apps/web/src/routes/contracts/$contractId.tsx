@@ -23,6 +23,7 @@ import { TABLE_HEAD } from "@/components/common/tableStyles"
 import { Tab, TabPanel, Tabs, TabsList } from "@/components/common/Tabs"
 import { ContractFormSheet } from "@/components/ContractFormSheet"
 import { ContractAttachments } from "@/components/contracts/ContractAttachments"
+import { ContractUtilisationPanel } from "@/components/contracts/ContractUtilisationPanel"
 import { ServiceAssignmentFormSheet } from "@/components/ServiceAssignmentFormSheet"
 import { Button } from "@/components/ui/button"
 import {
@@ -232,7 +233,7 @@ function ContractDetailPage() {
               <TabPanel value="attachments">
                 <ContractAttachments key={contractId} contractId={contractId} />
               </TabPanel>
-              <TabPanel value="billing">
+              <TabPanel value="billing" className="space-y-4">
                 <DetailCard title="Billing terms">
                   <DetailGrid>
                     <DetailRow label="Amount" value={formatMoney(contract)} />
@@ -246,6 +247,7 @@ function ContractDetailPage() {
                     <DetailRow label="Next billing" value={formatDay(contract.next_billing_date)} />
                   </DetailGrid>
                 </DetailCard>
+                <ContractUtilisationPanel contractId={contractId} />
               </TabPanel>
 
               <TabPanel value="history">
