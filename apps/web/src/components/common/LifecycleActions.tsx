@@ -1,5 +1,23 @@
 import { useState } from "react"
 
+import {
+  Archive,
+  BadgeCheck,
+  Ban,
+  CalendarClock,
+  CheckCircle2,
+  type LucideIcon,
+  Pause,
+  PauseCircle,
+  Play,
+  RefreshCw,
+  RotateCcw,
+  Upload,
+  UserX,
+  X,
+  XCircle,
+} from "lucide-react"
+
 import { Button } from "@/components/ui/button"
 import { useCanWrite, useCurrentRole } from "@/hooks/useCanWrite"
 import { TenantRole } from "@/types/enums"
@@ -22,6 +40,24 @@ const ACTION_LABELS: Record<LifecycleAction, string> = {
   "no-show": "No-show",
   reschedule: "Reschedule",
   publish: "Publish",
+}
+
+/** Best-effort icons; an action without an obvious one just shows its label. */
+const ACTION_ICONS: Partial<Record<LifecycleAction, LucideIcon>> = {
+  activate: Play,
+  deactivate: Pause,
+  suspend: PauseCircle,
+  terminate: XCircle,
+  archive: Archive,
+  restore: RotateCcw,
+  renew: RefreshCw,
+  verify: BadgeCheck,
+  ban: Ban,
+  complete: CheckCircle2,
+  cancel: X,
+  "no-show": UserX,
+  reschedule: CalendarClock,
+  publish: Upload,
 }
 
 const DESTRUCTIVE_ACTIONS: LifecycleAction[] = ["terminate", "archive", "ban", "cancel"]
@@ -81,19 +117,23 @@ export function LifecycleActions({
 
   return (
     <>
-      <div className="flex flex-wrap gap-2">
-        {allowed.map((action) => (
-          <Button
-            key={action}
-            variant="secondary"
-            size="sm"
-            className="rounded-none"
-            onClick={() => handleClick(action)}
-            disabled={loading}
-          >
-            {ACTION_LABELS[action] ?? action}
-          </Button>
-        ))}
+      <div className="flex flex-nowrap items-center gap-1.5 overflow-x-auto">
+        {allowed.map((action) => {
+          const Icon = ACTION_ICONS[action]
+          return (
+            <Button
+              key={action}
+              variant="secondary"
+              size="sm"
+              className="shrink-0 gap-1.5 rounded-none"
+              onClick={() => handleClick(action)}
+              disabled={loading}
+            >
+              {Icon ? <Icon className="size-3.5" /> : null}
+              {ACTION_LABELS[action] ?? action}
+            </Button>
+          )
+        })}
       </div>
       {confirmState && (
         <ConfirmDialog
