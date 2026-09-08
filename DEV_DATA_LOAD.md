@@ -256,3 +256,35 @@ A dump taken before the first load is at
 `evexia_db_before_import.dump` in the session scratchpad. It is not in version
 control and will not survive the machine; take a fresh dump before any
 production load.
+
+## The audit trail is staged but never delivered (found 2026-09-08)
+
+`audit_logs` and `entity_changes` are both empty in `evexia_db`, while
+`outbox_events` holds **3,668 events with `delivered_at` null and
+`delivery_attempts` at 0**. The worker that drains the outbox into the audit
+tables has never been run against this environment, so no load recorded here
+has produced a readable audit trail.
+
+| Aggregate | Events waiting |
+| --- | --- |
+| EligibleMember | 3,309 |
+| ProviderAlias | 170 |
+| Provider | 117 |
+| ProviderAffiliation | 43 |
+| ProviderOrganisation | 14 |
+| PractitionerImportBatch | 6 |
+| SessionImportBatch | 5 |
+| Client | 3 |
+
+Zero delivery attempts, not failed attempts, so nothing is retrying and
+`last_error` is empty on every row. Run `apps/api/scripts/outbox_worker.py`
+against this database to drain them; the events are durable and none is lost by
+having waited.
+
+Until it is run, every Activity tab in the UI correctly reports no recorded
+activity. That is the data being absent, not the page being broken: a separate
+frontend fault that made those tabs return 404 was fixed in `407ab5d`.
+
+Worth deciding before a production load: whether the worker runs as a service
+alongside the API, or whether draining the outbox is a step in the load
+procedure. Nothing currently runs it.
