@@ -32,8 +32,10 @@ from app.infrastructure.models.eligible_member_model import (
     EligibleMemberModel,
 )
 from app.infrastructure.models.member_next_of_kin_model import MemberNextOfKinModel
+from app.infrastructure.models.next_of_kin_relationship_model import NextOfKinRelationshipModel
 from app.infrastructure.models.outbox_model import OutboxEventModel
 from app.infrastructure.models.tenant_model import TenantModel
+from app.shared.utils.generators import generate_cuid
 
 
 @pytest_asyncio.fixture
@@ -60,6 +62,7 @@ async def isolated_members_db():
             ClinicalSubjectModel,
             EligibleMemberClinicalLinkModel,
             MemberNextOfKinModel,
+            NextOfKinRelationshipModel,
             OutboxEventModel,
         )
     ]
@@ -67,6 +70,14 @@ async def isolated_members_db():
         async with engine.begin() as connection:
             await connection.execute(text("CREATE TABLE users (id varchar(25) PRIMARY KEY)"))
             await connection.run_sync(lambda sync: Base.metadata.create_all(sync, tables=tables))
+            for code in ("Spouse", "Child", "Parent", "Sibling", "Guardian", "Partner", "Other"):
+                await connection.execute(
+                    text(
+                        "INSERT INTO next_of_kin_relationships (id, code, name)"
+                        " VALUES (:id, :c, :c)"
+                    ),
+                    {"id": generate_cuid(), "c": code},
+                )
             for ddl in (
                 "CREATE TABLE service_sessions (id varchar(25) PRIMARY KEY, tenant_id varchar(25) NOT NULL, member_id varchar(25) NOT NULL REFERENCES eligible_members(id), updated_at timestamptz)",
                 "CREATE TABLE cases (id varchar(25) PRIMARY KEY, tenant_id varchar(25) NOT NULL, clinical_subject_id varchar(25) NOT NULL, updated_at timestamptz)",

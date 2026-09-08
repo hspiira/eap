@@ -15,7 +15,7 @@ from __future__ import annotations
 from collections.abc import Iterable, Sequence
 from dataclasses import dataclass
 from datetime import date, datetime, time, timedelta
-from typing import Any
+from typing import Any, cast
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from app.domain.exceptions import DomainError
@@ -67,9 +67,9 @@ def build_report_context(*, tenant_id: str, parameters: dict[str, Any]) -> Repor
     """Validate run parameters and normalize them into a :class:`ReportContext`."""
     unknown = sorted(set(parameters) - KNOWN_PARAMETERS)
     if unknown:
+        supported = ", ".join(sorted(KNOWN_PARAMETERS))
         raise DomainError(
-            f"Unsupported report parameter(s): {', '.join(unknown)}. "
-            f"Supported: {', '.join(sorted(KNOWN_PARAMETERS))}"
+            f"Unsupported report parameter(s): {', '.join(unknown)}. Supported: {supported}"
         )
     date_from = _as_date(parameters.get("from"), field="from")
     date_to = _as_date(parameters.get("to"), field="to")
@@ -130,4 +130,5 @@ def _as_statuses(value: Any) -> tuple[str, ...]:
         return ()
     if isinstance(value, str) or not isinstance(value, Iterable):
         raise DomainError("Report parameter 'status_in' must be a list of statuses")
-    return tuple(str(item) for item in value)
+    items = cast(Iterable[object], value)
+    return tuple(str(item) for item in items)
