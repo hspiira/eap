@@ -41,7 +41,7 @@ function makeContract(overrides: Partial<Contract> = {}): Contract {
 beforeEach(() => {
   vi.clearAllMocks()
   mocks.events.mockResolvedValue([])
-  mocks.listServices.mockResolvedValue({ items: [], total: 0, page: 1, limit: 200, has_more: false })
+  mocks.listServices.mockResolvedValue({ items: [], total: 0, page: 1, limit: 100, has_more: false })
   mocks.invoicePreview.mockResolvedValue({
     contract_id: "contract-1",
     period_from: "2026-08-01",

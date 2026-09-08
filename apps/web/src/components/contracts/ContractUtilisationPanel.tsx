@@ -17,6 +17,9 @@ import { normalizeErrorMessage } from "@/lib/errors"
 import { formatDay } from "@/lib/format"
 import { getStatusLabel } from "@/utils/statusColors"
 
+/** The services list caps `limit` at 100; asking for more is rejected outright. */
+const SERVICE_PAGE = 100
+
 /**
  * Billable usage recorded against one contract.
  *
@@ -30,7 +33,7 @@ function useContractUtilisation(contractId: string) {
     queryFn: async () => {
       const [events, services] = await Promise.all([
         utilisationApi.byContract(contractId),
-        servicesApi.list({ limit: 200 }),
+        servicesApi.list({ limit: SERVICE_PAGE }),
       ])
       const names = new Map((services.items ?? []).map((service) => [service.id, service.name]))
       return events.map((event) => ({

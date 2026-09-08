@@ -37,7 +37,7 @@ beforeEach(() => {
     items: [{ id: "private-service-id", name: "Group Counselling" }],
     total: 1,
     page: 1,
-    limit: 200,
+    limit: 100,
     has_more: false,
   })
 })
@@ -48,8 +48,11 @@ describe("contract utilisation panel", () => {
     expect(await screen.findByText("2 events · 3 units")).toBeInTheDocument()
     expect(screen.getAllByText("Group Counselling")).toHaveLength(2)
     expect(screen.getAllByText("Session Delivered")).toHaveLength(2)
-    // One catalogue request for the whole table, not one per row.
+    // One catalogue request for the whole table, not one per row, and within
+    // the limit the services endpoint accepts: asking for more is a 422, which
+    // reads on the page as every service being unknown.
     expect(mocks.listServices).toHaveBeenCalledTimes(1)
+    expect(mocks.listServices).toHaveBeenCalledWith({ limit: 100 })
     expect(screen.queryByText("private-service-id")).not.toBeInTheDocument()
   })
 
@@ -58,7 +61,7 @@ describe("contract utilisation panel", () => {
       items: [],
       total: 0,
       page: 1,
-      limit: 200,
+      limit: 100,
       has_more: false,
     })
     renderWithProviders(<ContractUtilisationPanel contractId="contract-1" />)

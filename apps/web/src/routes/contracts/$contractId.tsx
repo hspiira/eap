@@ -50,6 +50,9 @@ export const Route = createFileRoute("/contracts/$contractId")({
 })
 
 type TabValue = "overview" | "services" | "attachments" | "billing" | "history"
+
+/** The services list caps `limit` at 100; asking for more is rejected outright. */
+const SERVICE_PAGE = 100
 const TAB_VALUES: ReadonlyArray<TabValue> = [
   "overview",
   "services",
@@ -401,8 +404,8 @@ function ServicesPanel({
   // The assignment carries only a service id, so the catalogue supplies the
   // name. One request for the whole table, not one per row.
   const servicesQuery = useQuery({
-    queryKey: entityListKey("services", { limit: 200 }),
-    queryFn: () => servicesApi.list({ limit: 200 }),
+    queryKey: entityListKey("services", { limit: SERVICE_PAGE }),
+    queryFn: () => servicesApi.list({ limit: SERVICE_PAGE }),
     staleTime: 5 * 60_000,
   })
   const serviceNames = new Map(
