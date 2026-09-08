@@ -3,6 +3,11 @@
 A review of the contracts module across the domain, the API and the two
 screens that render it, and what I recommend representing differently.
 
+**Status: Option A is implemented apart from 2.2 and 2.7.** `f6b08d91` closes
+2.1, 2.3, 2.4, 2.5 and 2.6; `931d4307` syncs the contract. 2.2 needs the
+decision named at the end of section 3, and 2.7 is next. Section 2 is kept as
+written because the reasoning is worth more than a list of done items.
+
 Every claim below was checked against the repository or the local database.
 The value is in section 2; section 1 exists so section 2 can be trusted.
 
@@ -154,6 +159,24 @@ did this agreement say on 3 March", which is a real question in a billing
 dispute.
 
 Cost is high and the module cannot yet answer simpler questions. Not now.
+
+### What was built
+
+`renew()` closes its term as `RENEWED` and returns a successor starting the
+following day, carrying the rate, the pricing and the auto-renew flag forward
+and pointing back through `renewed_from_id`. `POST /contracts/{id}/renew`
+returns the successor: the caller asked for the next term and needs its id.
+Renewal left `TransitionUseCase`, which loads, mutates and saves one aggregate
+and cannot express a second one; a guard test in
+`tests/unit/api/test_use_case_call_sites.py` caught that within a minute of
+the signature changing.
+
+`effective_status()` derives the lapse; the API serves it as `status` and the
+stored value as `recorded_status`. `terminate()` no longer sets `deleted_at`.
+Contracts carry a `reference`, and `_reject_overlap` refuses a second live
+term over the same days, following the affiliation pattern. Two test fixtures
+had been creating overlapping contracts for one client, which is what the rule
+is for.
 
 ### Recommendation
 
