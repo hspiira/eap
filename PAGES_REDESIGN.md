@@ -183,6 +183,30 @@ totals).
 
 ### 2.3 Proposal: readiness-graded directory and a credentialing dossier
 
+The **detail page** was implemented on 2026-09-08 in commits `795c5c1` (API)
+and `381cb82` (web). The list page is not done and is not in that scope.
+
+Two things were decided during implementation and are worth recording, because
+both correct the proposal below:
+
+1. **Readiness is two questions, not one.** The booking gate consults record
+   status, panel status and accreditation, and it consults neither tier nor
+   region (`provider_eligibility.py`). Presenting a missing tier as a booking
+   blocker would have been false. The rail therefore shows the gate's own
+   verdict with its stable failure codes, and a separate profile-completeness
+   list that states plainly it does not block a booking. The claim in
+   `DEV_DATA_LOAD.md` that the 53 canonical practitioners need a tier and
+   region "before any of them can be booked" is a data-quality requirement,
+   not the gate's rule.
+2. **An unrecorded engagement document is not a missing one.** The checklist
+   distinguishes a kind nobody has answered from one recorded `Missing`, so it
+   cannot report an answer the team never gave.
+
+Note for whoever picks up the list page: no session in the dev database
+carries a `provider_affiliation_id`, so the organisation breakdown is empty
+for every practitioner there and can only be exercised by its integration
+tests.
+
 List. Reframe the page around bookability rather than a uniform table.
 A segmented header splits the network into Bookable, In onboarding, and
 Blocked (suspended or removed panel, inactive record), with counts; selecting
