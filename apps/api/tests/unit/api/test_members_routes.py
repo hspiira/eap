@@ -1,5 +1,6 @@
 import csv
 import io
+from datetime import date
 from types import SimpleNamespace
 from unittest.mock import AsyncMock
 
@@ -25,6 +26,7 @@ from app.core.security import TokenData, get_current_user
 from app.domain.entities.eligible_member import EligibleMember
 from app.domain.entities.member_next_of_kin import MemberNextOfKin
 from app.domain.enums import EligibilityStatus, MemberRelation, NextOfKinRelationship, TenantRole
+from app.domain.repositories.eligible_member_repository import MemberRosterStats
 from app.domain.value_objects.core import (
     ClientId,
     EligibleMemberId,
@@ -627,6 +629,77 @@ async def test_export_fetches_every_page(api):
     assert len(list(csv.DictReader(io.StringIO(response.text)))) == 1001
     assert api.members.list_all.call_args.kwargs["offset"] == 1000
     assert api.members.list_all.call_args.kwargs["client_id"] == ClientId("c1")
+
+
+async def test_member_response_reports_coverage_and_eligibility(api):
+    response = await api.http.get("/members/m1")
+    assert response.status_code == 200, response.text
+    body = response.json()
+    assert body["coverage_start"] is None
+    assert body["coverage_end"] is None
+    assert body["is_currently_eligible"] is True
+
+
+@pytest.mark.parametrize(
+    "changes",
+    [
+        {"status": EligibilityStatus.TERMINATED},
+        {"coverage_end": date(2020, 1, 1)},
+        {"coverage_start": date(2999, 1, 1)},
+    ],
+)
+async def test_member_outside_coverage_or_lifecycle_is_not_eligible(api, changes):
+    api.members.get_by_id.return_value = member(**changes)
+    response = await api.http.get("/members/m1")
+    assert response.status_code == 200, response.text
+    assert response.json()["is_currently_eligible"] is False
+
+
+async def test_stats_route_is_not_swallowed_by_the_member_id_route(api):
+    api.members.count_by_status.return_value = MemberRosterStats(by_status={}, with_account=0)
+    response = await api.http.get("/members/stats")
+    assert response.status_code == 200, response.text
+    assert response.json() == {
+        "total": 0,
+        "active": 0,
+        "suspended": 0,
+        "pending": 0,
+        "terminated": 0,
+        "with_account": 0,
+    }
+    api.members.get_by_id.assert_not_awaited()
+
+
+async def test_stats_maps_counts_and_passes_the_list_filters(api):
+    api.members.count_by_status.return_value = MemberRosterStats(
+        by_status={
+            EligibilityStatus.ACTIVE: 3,
+            EligibilityStatus.SUSPENDED: 2,
+            EligibilityStatus.PENDING: 1,
+            EligibilityStatus.TERMINATED: 4,
+        },
+        with_account=5,
+    )
+    response = await api.http.get(
+        "/members/stats",
+        params={"client_id": "c1", "status": "Active", "relation": "Child", "search": "amina"},
+    )
+    assert response.status_code == 200, response.text
+    assert response.json() == {
+        "total": 10,
+        "active": 3,
+        "suspended": 2,
+        "pending": 1,
+        "terminated": 4,
+        "with_account": 5,
+    }
+    api.members.count_by_status.assert_awaited_once_with(
+        TenantId("t1"),
+        client_id=ClientId("c1"),
+        status=EligibilityStatus.ACTIVE,
+        relation=MemberRelation.CHILD,
+        search="amina",
+    )
 
 
 async def test_list_scopes_filters_and_rejects_unknown_sort(api):

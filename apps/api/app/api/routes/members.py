@@ -59,6 +59,7 @@ from app.api.schemas.member_schemas import (
     MemberNextOfKinResponse,
     MemberNextOfKinUpdate,
     MemberResponse,
+    MemberStatsResponse,
     MemberUpdate,
 )
 from app.api.schemas.service_session_schemas import ServiceSessionListResponse
@@ -149,6 +150,9 @@ def _response(member: EligibleMember, client_name: str | None = None) -> MemberR
         primary_employee_member_id=(
             member.primary_employee_member_id.value if member.primary_employee_member_id else None
         ),
+        coverage_start=member.coverage_start,
+        coverage_end=member.coverage_end,
+        is_currently_eligible=member.is_currently_eligible(),
         work_email=member.work_email.value if member.work_email else None,
         personal_email=member.personal_email.value if member.personal_email else None,
         display_label=member.display_label,
@@ -461,6 +465,34 @@ async def list_members(
         page=pg.page,
         limit=pg.limit,
         has_more=pg.offset + pg.limit < total,
+    )
+
+
+@router.get("/stats", response_model=MemberStatsResponse)
+@readonly()
+async def member_stats(
+    current_user: TokenData = Depends(get_current_user),
+    client_id: str | None = Query(None),
+    member_status: EligibilityStatus | None = Query(None, alias="status"),
+    relation: MemberRelation | None = Query(None),
+    search: str | None = Query(None),
+    member_repo: EligibleMemberRepository = Depends(get_eligible_member_repository),
+):
+    """Aggregate counts for the roster summary strip, honouring the list filters."""
+    stats = await member_repo.count_by_status(
+        TenantId(current_user.tenant_id),
+        client_id=ClientId(client_id) if client_id else None,
+        status=member_status,
+        relation=relation,
+        search=search,
+    )
+    return MemberStatsResponse(
+        total=sum(stats.by_status.values()),
+        active=stats.by_status.get(EligibilityStatus.ACTIVE, 0),
+        suspended=stats.by_status.get(EligibilityStatus.SUSPENDED, 0),
+        pending=stats.by_status.get(EligibilityStatus.PENDING, 0),
+        terminated=stats.by_status.get(EligibilityStatus.TERMINATED, 0),
+        with_account=stats.with_account,
     )
 
 

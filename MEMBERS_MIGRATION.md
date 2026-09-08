@@ -214,6 +214,26 @@ outcome; larger files go through the queued job instead. The client importer
 should get the same row-at-a-time treatment. Only the import table's font size
 was corrected in that dialog.
 
+## Coverage visibility in the member API (2026-09-08)
+
+Decision: the product owner reopened the closed decision that coverage is
+invisible in the member API. `MemberResponse` now returns `coverage_start`,
+`coverage_end`, and `is_currently_eligible`, the last computed by the existing
+domain method `EligibleMember.is_currently_eligible()`. Coverage stays
+read-only in the member API: `MemberCreate` and `MemberUpdate` accept no
+coverage dates, which remain set at the client/programme level and by
+`terminate()`.
+
+Consequence, verified against the dev database on 2026-09-08: of 3,305
+members, none has a `coverage_start` and one has a `coverage_end`, so
+`is_currently_eligible` currently reduces to "status is Active". The domain
+method treats a missing bound as open, so this is correct, not a defect.
+
+The same change made `staff_number` searchable in the member list (3,301 of
+3,305 dev members carry one) and added `GET /members/stats` for the roster
+summary strip, returning status and account-link counts for the list's filter
+set.
+
 ## Roster import reference
 
 The sample roster at `/Users/piira/Downloads/persons.csv` is handled by the

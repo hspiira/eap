@@ -144,6 +144,9 @@ class MemberResponse(BaseModel):
     relation: MemberRelation
     status: EligibilityStatus
     primary_employee_member_id: str | None
+    coverage_start: date | None = None
+    coverage_end: date | None = None
+    is_currently_eligible: bool
     work_email: str | None
     personal_email: str | None
     display_label: str | None
@@ -161,6 +164,15 @@ class MemberResponse(BaseModel):
     user_id: str | None = None
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class MemberStatsResponse(BaseModel):
+    total: int
+    active: int
+    suspended: int
+    pending: int
+    terminated: int
+    with_account: int
 
 
 class MemberListResponse(BaseModel):

@@ -505,6 +505,64 @@ async def test_export_csv_carries_the_identity_columns(member_http):
     assert rows[0]["employer_member_id"] == "ACM-001"
 
 
+async def test_search_matches_staff_number(member_http):
+    http, _ = member_http
+    created = await http.post(
+        "/members",
+        json={
+            "client_id": "c1",
+            "display_label": "Amina",
+            "relation": "Employee",
+            "staff_number": "EMP-4321",
+        },
+    )
+    assert created.status_code == 201, created.text
+    await create_member(http, "HR-2", "Bosco")
+
+    listed = await http.get("/members", params={"search": "4321"})
+
+    assert listed.status_code == 200, listed.text
+    assert listed.json()["total"] == 1
+    assert listed.json()["items"][0]["id"] == created.json()["id"]
+
+
+async def test_stats_counts_the_filtered_roster(member_http):
+    http, _ = member_http
+    await create_member(http, "HR-1", "Keeps working")
+    leaver_id = await create_member(http, "HR-2", "Leaver")
+    assert (await http.post(f"/members/{leaver_id}/terminate")).status_code == 200
+
+    stats = await http.get("/members/stats")
+    assert stats.status_code == 200, stats.text
+    assert stats.json() == {
+        "total": 2,
+        "active": 1,
+        "suspended": 0,
+        "pending": 0,
+        "terminated": 1,
+        "with_account": 0,
+    }
+
+    filtered = await http.get("/members/stats", params={"status": "Active"})
+    assert filtered.status_code == 200, filtered.text
+    assert filtered.json()["total"] == 1
+    assert filtered.json()["terminated"] == 0
+
+
+async def test_active_member_without_coverage_dates_is_currently_eligible(member_http):
+    """Real rosters carry null coverage dates, so Active must read as eligible."""
+    http, _ = member_http
+    member_id = await create_member(http)
+
+    fetched = await http.get(f"/members/{member_id}")
+
+    assert fetched.status_code == 200, fetched.text
+    body = fetched.json()
+    assert body["coverage_start"] is None
+    assert body["coverage_end"] is None
+    assert body["is_currently_eligible"] is True
+
+
 async def test_concurrent_auto_issue_does_not_produce_duplicate_codes(
     member_http, isolated_members_db
 ):
