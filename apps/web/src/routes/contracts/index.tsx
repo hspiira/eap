@@ -36,6 +36,7 @@ import {
 import { useCanWrite } from "@/hooks/useCanWrite"
 import { NEWEST_FIRST, useListPage } from "@/hooks/useListPage"
 import { termLabel, termTone } from "@/lib/contract-term"
+import { contractValue } from "@/lib/display"
 import { normalizeErrorMessage } from "@/lib/errors"
 import { formatDay } from "@/lib/format"
 import { useEntityList } from "@/lib/queries"
@@ -405,11 +406,6 @@ export function renewalParams(
   }
 }
 
-/** `billing_rate.amount` is a decimal string on the wire; parse before formatting. */
 function formatBilling(c: Contract): { amount: string; frequency: string } {
-  const parsed = Number(c.billing_rate.amount)
-  const amount = Number.isFinite(parsed)
-    ? `${c.billing_rate.currency} ${parsed.toLocaleString()}`
-    : `${c.billing_rate.currency} ${c.billing_rate.amount}`
-  return { amount, frequency: c.payment_frequency }
+  return { amount: contractValue(c), frequency: c.payment_frequency }
 }

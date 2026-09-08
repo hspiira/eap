@@ -27,11 +27,11 @@ const ROW_BORDER = "border-fg/8"
 
 import { useState } from "react"
 
-import { useQueries } from "@tanstack/react-query"
+import { useQuery } from "@tanstack/react-query"
 import { Link } from "@tanstack/react-router"
 import { ArrowLeft, BadgeCheck, ChevronRight, Plus } from "lucide-react"
 
-import { serviceAssignmentsApi } from "@/api/endpoints/service-assignments"
+import { type ContractMetricsItem, contractsApi } from "@/api/endpoints/contracts"
 import { ContractServicesCard } from "@/components/clients/ContractServicesCard"
 import { DetailGrid, DetailRow, RailSection, Stat } from "@/components/common/DetailPrimitives"
 import { EmptyState } from "@/components/common/EmptyState"
@@ -63,9 +63,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import { contractLabel, nameInitials } from "@/lib/display"
+import { contractLabel, contractValue, moneyLabel, nameInitials } from "@/lib/display"
 import { formatDay } from "@/lib/format"
-import { entityListKey } from "@/lib/queries"
 import { cn } from "@/lib/utils"
 import type { Client, ClientTag, Contract } from "@/types/entities"
 import { ClientTier } from "@/types/enums"
@@ -124,7 +123,7 @@ export function ContractsPanel({
     return fieldValue(row, field)
   })
   const selected = contracts.find((c) => c.id === selectedId) ?? defaultContract(sorted)
-  const serviceCounts = useServiceCounts(contracts)
+  const metrics = useContractMetrics(clientId)
 
   if (error)
     return (
@@ -194,17 +193,9 @@ export function ContractsPanel({
                     <span className="sr-only">Status</span>
                   </SortHeader>
                 </TableHead>
-                <TableHead>
-                  <SortHeader field="start_date" sort={sort} onToggle={toggleSort}>
-                    Start
-                  </SortHeader>
-                </TableHead>
-                <TableHead>
-                  <SortHeader field="end_date" sort={sort} onToggle={toggleSort}>
-                    End
-                  </SortHeader>
-                </TableHead>
                 <TableHead className="text-right text-fg/65">Services</TableHead>
+                <TableHead className="text-right text-fg/65">Value</TableHead>
+                <TableHead className="text-right text-fg/65">Spent</TableHead>
                 <TableHead className="w-10 text-right text-fg/65">
                   <span className="sr-only">Open</span>
                 </TableHead>
@@ -215,7 +206,7 @@ export function ContractsPanel({
                 <ContractRow
                   key={c.id}
                   contract={c}
-                  services={serviceCounts.get(c.id)}
+                  metrics={metrics.get(c.id)}
                   selected={selected?.id === c.id}
                   onSelect={() => setSelectedId(c.id)}
                 />
@@ -233,19 +224,24 @@ export function ContractsPanel({
 }
 
 /**
- * How many services each contract covers, keyed by contract id.
+ * Services covered and session spend per term, in one request.
  *
- * The list endpoint reports the total alongside the page, so a one-row page is
- * enough to count with and nothing larger is fetched.
+ * The server does the counting: a per-row query here would be one request per
+ * contract, and the spend has to be summed over sessions the browser never
+ * holds.
  */
-function useServiceCounts(contracts: Contract[]): Map<string, number | undefined> {
-  const results = useQueries({
-    queries: contracts.map((contract) => ({
-      queryKey: entityListKey("service-assignments", { contract_id: contract.id, limit: 1 }),
-      queryFn: () => serviceAssignmentsApi.list({ contract_id: contract.id, limit: 1 }),
-    })),
+function useContractMetrics(clientId: string): Map<string, ContractMetricsItem> {
+  const { data } = useQuery({
+    queryKey: ["contracts", "metrics", clientId],
+    queryFn: () => contractsApi.metricsByClient(clientId),
   })
-  return new Map(contracts.map((contract, index) => [contract.id, results[index]?.data?.total]))
+  return new Map((data?.items ?? []).map((item) => [item.contract_id, item]))
+}
+
+/** Says what the spend does and does not cover, for the cell's tooltip. */
+function spentCoverage(metrics: ContractMetricsItem): string {
+  if (!metrics.sessions) return "No sessions recorded in this term"
+  return `${metrics.sessions_priced} of ${metrics.sessions} sessions in this term carry a rate`
 }
 
 /** The term in force, else the row at the top of the table as it is sorted. */
@@ -255,13 +251,13 @@ function defaultContract(sorted: Contract[]): Contract | null {
 
 function ContractRow({
   contract,
-  services,
+  metrics,
   selected,
   onSelect,
 }: {
   contract: Contract
-  /** Undefined until the count lands. */
-  services: number | undefined
+  /** Undefined until the metrics request lands. */
+  metrics: ContractMetricsItem | undefined
   selected: boolean
   onSelect: () => void
 }) {
@@ -282,14 +278,17 @@ function ContractRow({
       <TableCell className="text-center">
         <StatusBadge status={contract.status} iconOnly />
       </TableCell>
-      <TableCell className="whitespace-nowrap text-xs text-fg/70">
-        {formatDay(contract.period.start_date)}
-      </TableCell>
-      <TableCell className="whitespace-nowrap text-xs text-fg/70">
-        {formatDay(contract.period.end_date)}
-      </TableCell>
       <TableCell className="text-right tabular-nums text-xs text-fg/70">
-        {services ?? <span className="text-fg-subtle">…</span>}
+        {metrics?.services ?? <span className="text-fg-subtle">…</span>}
+      </TableCell>
+      <TableCell className="whitespace-nowrap text-right tabular-nums text-xs text-fg/70">
+        {contractValue(contract)}
+      </TableCell>
+      <TableCell
+        className="whitespace-nowrap text-right tabular-nums text-xs text-fg/70"
+        title={metrics ? spentCoverage(metrics) : undefined}
+      >
+        {metrics ? moneyLabel(metrics.spent) : <span className="text-fg-subtle">…</span>}
       </TableCell>
       <TableCell className="text-right">
         <Link
