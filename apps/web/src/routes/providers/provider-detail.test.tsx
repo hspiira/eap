@@ -19,6 +19,7 @@ const mocks = vi.hoisted(() => ({
   getDeliveryStats: vi.fn(),
   listLinks: vi.fn(),
   getEntityHistory: vi.fn(),
+  getEntityFieldChanges: vi.fn(),
   listSessions: vi.fn(),
   role: "Admin",
   search: {} as Record<string, unknown>,
@@ -29,7 +30,10 @@ vi.mock("@/api/endpoints/provider-specialties", () => ({
   providerSpecialtiesApi: { listLinks: mocks.listLinks, list: vi.fn().mockResolvedValue([]) },
 }))
 vi.mock("@/api/endpoints/audit", () => ({
-  auditApi: { getEntityHistory: mocks.getEntityHistory },
+  auditApi: {
+    getEntityHistory: mocks.getEntityHistory,
+    getEntityFieldChanges: mocks.getEntityFieldChanges,
+  },
 }))
 vi.mock("@/hooks/useCanWrite", () => ({
   useCanWrite: () => true,
@@ -37,11 +41,8 @@ vi.mock("@/hooks/useCanWrite", () => ({
   useHasClinicalScope: () => ({ hasScope: true, isLoading: false }),
 }))
 vi.mock("@/components/providers/ProviderFormSheet", () => ({ ProviderFormSheet: () => null }))
-vi.mock("@/components/providers/ProviderAffiliationsPanel", () => ({
-  ProviderAffiliationsPanel: () => null,
-}))
-vi.mock("@/components/providers/ProviderNonCompetePanel", () => ({
-  ProviderNonCompetePanel: () => null,
+vi.mock("@/components/providers/ProviderCommitmentsPanel", () => ({
+  ProviderCommitmentsPanel: () => null,
 }))
 vi.mock("@/components/providers/ProviderAccountCard", () => ({ ProviderAccountCard: () => null }))
 vi.mock("@/components/providers/ProviderSpecialtiesPanel", () => ({
@@ -139,6 +140,7 @@ beforeEach(() => {
     by_organisation: [],
   })
   mocks.getEntityHistory.mockResolvedValue([])
+  mocks.getEntityFieldChanges.mockResolvedValue([])
 })
 
 describe("practitioner dossier", () => {
@@ -261,14 +263,24 @@ describe("practitioner dossier", () => {
 
   it("renders the audit trail on the activity tab", async () => {
     const user = userEvent.setup()
+    // The wire shape: the log carries when, the entity change carries which
+    // fields, joined on the audit log id.
     mocks.getEntityHistory.mockResolvedValue([
       {
         id: "a1",
         action_type: "UPDATE",
         resource_type: "Provider",
         resource_id: "prov-1",
-        changes: { panel_status: "Active" },
-        created_at: "2026-09-07T10:00:00Z",
+        occurred_at: "2026-09-07T10:00:00Z",
+      },
+    ])
+    mocks.getEntityFieldChanges.mockResolvedValue([
+      {
+        id: "c1",
+        audit_log_id: "a1",
+        entity_type: "Provider",
+        entity_id: "prov-1",
+        field_changes: [{ field_name: "panel_status", old_value: "Pending", new_value: "Active" }],
       },
     ])
     renderWithProviders(<Page />)

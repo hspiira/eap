@@ -20,6 +20,79 @@ import { Input } from "@/components/ui/input"
 import { useToast } from "@/contexts/ToastContext"
 import { useCanWrite } from "@/hooks/useCanWrite"
 import { isApiError, normalizeErrorMessage } from "@/lib/errors"
+import { addDaysToDay, formatDay } from "@/lib/format"
+import type { ProviderAffiliation } from "@/types/entities"
+
+
+function coverageLabel(affiliation: ProviderAffiliation): string {
+  const from = formatDay(affiliation.valid_from)
+  if (!affiliation.valid_until) return `${from} onwards`
+  return `${from} to ${formatDay(addDaysToDay(affiliation.valid_until, -1))}`
+}
+
+function PractitionerRow({ affiliation }: { affiliation: ProviderAffiliation }) {
+  return (
+    <li className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-0.5 border-b border-fg/10 py-2 last:border-b-0">
+      <ProviderNameLink providerId={affiliation.provider_id} />
+      <span className="text-xs text-fg-muted">
+        {coverageLabel(affiliation)}
+        {affiliation.valid_until ? (
+          <span className="text-fg-subtle"> · ends before {affiliation.valid_until}</span>
+        ) : null}
+      </span>
+    </li>
+  )
+}
+
+/**
+ * Who represents this firm, current before past.
+ *
+ * Past periods are kept because sessions delivered then are still attributed
+ * through them, but they are not who represents the firm today, so they do not
+ * share a list with those who do.
+ */
+function PractitionerList({ items }: { items: ProviderAffiliation[] }) {
+  const today = new Date().toISOString().slice(0, 10)
+  const current = items.filter((item) => !item.valid_until || item.valid_until > today)
+  const past = items.filter((item) => item.valid_until && item.valid_until <= today)
+
+  return (
+    <div className="space-y-4">
+      <section>
+        <h4 className="mb-1 text-xs font-semibold tracking-wide text-fg-muted">
+          Represents this firm now
+          <span className="ml-1.5 font-normal text-fg-subtle">{current.length}</span>
+        </h4>
+        {current.length === 0 ? (
+          <p className="py-2 text-sm text-fg-muted">Nobody currently represents this firm.</p>
+        ) : (
+          <ul>
+            {current.map((affiliation) => (
+              <PractitionerRow key={affiliation.id} affiliation={affiliation} />
+            ))}
+          </ul>
+        )}
+      </section>
+
+      {past.length > 0 ? (
+        <section className="border-t border-fg/10 pt-3">
+          <h4 className="mb-1 text-xs font-semibold tracking-wide text-fg-muted">
+            Represented before
+            <span className="ml-1.5 font-normal text-fg-subtle">{past.length}</span>
+          </h4>
+          <p className="mb-1 text-xs text-fg-muted">
+            Kept because sessions delivered then are attributed through these periods.
+          </p>
+          <ul>
+            {past.map((affiliation) => (
+              <PractitionerRow key={affiliation.id} affiliation={affiliation} />
+            ))}
+          </ul>
+        </section>
+      ) : null}
+    </div>
+  )
+}
 
 /**
  * The practitioners representing this firm, and when.
@@ -107,18 +180,7 @@ export function OrganisationAffiliationsPanel({ organisationId }: { organisation
       ) : items.length === 0 ? (
         <p className="text-sm text-fg-muted">No practitioner represents this firm yet.</p>
       ) : (
-        <ul className="space-y-2">
-          {items.map((affiliation) => (
-            <li key={affiliation.id} className="border border-fg/10 p-3">
-              <ProviderNameLink providerId={affiliation.provider_id} />
-              <p className="mt-0.5 text-xs text-fg-muted">
-                {affiliation.valid_until
-                  ? `${affiliation.valid_from} until ${affiliation.valid_until} exclusive`
-                  : `From ${affiliation.valid_from}, open ended`}
-              </p>
-            </li>
-          ))}
-        </ul>
+        <PractitionerList items={items} />
       )}
 
       <Dialog

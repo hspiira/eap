@@ -12,18 +12,17 @@ import {
   RailSection,
 } from "@/components/common/DetailPrimitives"
 import { renderDetailState } from "@/components/common/DetailStates"
+import { EntityActivityPanel } from "@/components/common/EntityActivityPanel"
 import { PageShell } from "@/components/common/PageShell"
 import { ProviderTierBadge } from "@/components/common/ProviderTierBadge"
 import { StatusBadge } from "@/components/common/StatusBadge"
 import { Tab, TabPanel, Tabs, TabsList } from "@/components/common/Tabs"
 import { ProviderAccountCard } from "@/components/providers/ProviderAccountCard"
-import { ProviderActivityPanel } from "@/components/providers/ProviderActivityPanel"
-import { ProviderAffiliationsPanel } from "@/components/providers/ProviderAffiliationsPanel"
+import { ProviderCommitmentsPanel } from "@/components/providers/ProviderCommitmentsPanel"
 import { ProviderDeliveryPanel } from "@/components/providers/ProviderDeliveryPanel"
 import { ProviderEngagementDocumentsCard } from "@/components/providers/ProviderEngagementDocumentsCard"
 import { ProviderFormSheet } from "@/components/providers/ProviderFormSheet"
 import { ProviderLifecyclePanel } from "@/components/providers/ProviderLifecyclePanel"
-import { ProviderNonCompetePanel } from "@/components/providers/ProviderNonCompetePanel"
 import { ProviderReadinessRail } from "@/components/providers/ProviderReadinessRail"
 import { ProviderSpecialtiesPanel } from "@/components/providers/ProviderSpecialtiesPanel"
 import { Button } from "@/components/ui/button"
@@ -39,13 +38,7 @@ export const Route = createFileRoute("/providers/$providerId")({
   component: ProviderDetailPage,
 })
 
-const TAB_VALUES = [
-  "overview",
-  "affiliations",
-  "non-compete",
-  "delivery",
-  "activity",
-] as const
+const TAB_VALUES = ["overview", "commitments", "delivery", "activity"] as const
 type TabValue = (typeof TAB_VALUES)[number]
 
 function ProviderDetailPage() {
@@ -118,8 +111,7 @@ function ProviderDetailPage() {
             <Tabs value={tab} onValueChange={(value) => setTab(value as TabValue)}>
               <TabsList className="mb-5 px-0">
                 <Tab value="overview">Overview</Tab>
-                <Tab value="affiliations">Affiliations</Tab>
-                <Tab value="non-compete">Non-compete</Tab>
+                <Tab value="commitments">Commitments</Tab>
                 <Tab value="delivery">Delivery record</Tab>
                 <Tab value="activity">Activity</Tab>
               </TabsList>
@@ -162,12 +154,8 @@ function ProviderDetailPage() {
                 </div>
               </TabPanel>
 
-              <TabPanel value="affiliations">
-                <ProviderAffiliationsPanel providerId={provider.id} />
-              </TabPanel>
-
-              <TabPanel value="non-compete">
-                <ProviderNonCompetePanel providerId={provider.id} />
+              <TabPanel value="commitments">
+                <ProviderCommitmentsPanel providerId={provider.id} />
               </TabPanel>
 
               <TabPanel value="delivery">
@@ -175,7 +163,11 @@ function ProviderDetailPage() {
               </TabPanel>
 
               <TabPanel value="activity">
-                <ProviderActivityPanel providerId={provider.id} />
+                <EntityActivityPanel
+                  resourceType="Provider"
+                  resourceId={provider.id}
+                  emptyDescription="Profile edits and lifecycle commands appear here once they happen."
+                />
               </TabPanel>
             </Tabs>
           </div>
