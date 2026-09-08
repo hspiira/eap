@@ -21,7 +21,7 @@ vi.mock("@/api/endpoints/service-assignments", () => ({
 }))
 vi.mock("@/api/endpoints/services", () => ({ servicesApi: { getById: mocks.service } }))
 vi.mock("@/api/endpoints/documents", () => ({ documentsApi: { list: mocks.documents } }))
-vi.mock("@/api/endpoints/utilisation", () => ({ utilisationApi: { byContract: mocks.usage } }))
+vi.mock("@/api/endpoints/utilisation", () => ({ utilisationApi: { byClient: mocks.usage } }))
 vi.mock("@tanstack/react-router", () => ({
   Link: ({
     children,
@@ -92,15 +92,22 @@ describe("client detail tab records", () => {
   })
 
   it("shows usage by readable contract terms without internal identifiers", async () => {
-    mocks.usage.mockResolvedValue([
-      {
-        id: "event-1",
-        occurred_on: "2026-09-05",
-        units: 3,
-        event_type: "ServiceDelivered",
-        service_code: "private-service-id",
-      },
-    ])
+    mocks.usage.mockResolvedValue({
+      items: [
+        {
+          id: "event-1",
+          contract_id: "private-contract-id",
+          occurred_on: "2026-09-05",
+          units: 3,
+          event_type: "ServiceDelivered",
+          service_code: "private-service-id",
+        },
+      ],
+      total: 1,
+      page: 1,
+      limit: 20,
+      has_more: false,
+    })
     renderWithProviders(<ClientUtilisationPanel clientId="client-1" />)
     expect(await screen.findByRole("link")).toHaveAttribute(
       "href",

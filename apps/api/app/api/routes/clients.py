@@ -38,6 +38,7 @@ from app.api.dependencies import (
     get_industry_repository,
     get_tenant_repository,
     get_user_repository,
+    get_utilisation_event_repository,
     pagination,
 )
 from app.api.schemas.client_schemas import (
@@ -73,6 +74,10 @@ from app.api.schemas.client_schemas import (
     ClientUpdateContactInfo,
     ClientUpdateTier,
     ContactInfoSchema,
+)
+from app.api.schemas.pricing_schemas import (
+    UtilisationEventListResponse,
+    UtilisationEventResponse,
 )
 from app.application.services import client_import
 from app.application.services.client_import import CreatedClient, ImportRepositories
@@ -111,6 +116,9 @@ from app.domain.repositories.contract_repository import ContractRepository
 from app.domain.repositories.industry_repository import IndustryRepository
 from app.domain.repositories.tenant_repository import TenantRepository
 from app.domain.repositories.user_repository import UserRepository
+from app.domain.repositories.utilisation_event_repository import (
+    UtilisationEventRepository,
+)
 from app.domain.value_objects.core import (
     Address,
     ClientId,
@@ -1872,6 +1880,49 @@ async def get_client_stats(
         active_contracts_count=active_contracts_count,
         is_verified=client.is_verified,
         status=client.status,
+    )
+
+
+@router.get(
+    "/{client_id}/utilisation-events",
+    response_model=UtilisationEventListResponse,
+    summary="List utilisation events recorded across a client's contracts",
+)
+@readonly()
+async def list_client_utilisation_events(
+    client: ClientEntity = Depends(get_client_for_current_tenant),
+    pg: PageParams = Depends(pagination()),
+    utilisation_repo: UtilisationEventRepository = Depends(get_utilisation_event_repository),
+    db: AsyncSession = Depends(get_db),
+):
+    """Page through utilisation events for every contract owned by this client."""
+    events = await utilisation_repo.list_for_client(
+        client.tenant_id,
+        client.id.value,
+        limit=pg.limit,
+        offset=pg.offset,
+    )
+    total = await utilisation_repo.count_for_client(client.tenant_id, client.id.value)
+
+    return UtilisationEventListResponse(
+        items=[
+            UtilisationEventResponse(
+                id=event.id.value,
+                tenant_id=event.tenant_id.value,
+                contract_id=event.contract_id.value,
+                event_type=event.event_type,
+                occurred_on=event.occurred_on,
+                units=event.units,
+                service_code=event.service_code,
+                source_id=event.source_id,
+                notes=event.notes,
+            )
+            for event in events
+        ],
+        total=total,
+        page=pg.page,
+        limit=pg.limit,
+        has_more=(pg.offset + pg.limit) < total,
     )
 
 

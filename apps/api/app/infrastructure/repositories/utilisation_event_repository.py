@@ -2,7 +2,7 @@
 
 from datetime import date
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.domain.entities.utilisation_event import UtilisationEventEntity
@@ -17,6 +17,7 @@ from app.domain.value_objects.core import (
 from app.infrastructure.mappers.utilisation_event_mapper import (
     UtilisationEventMapper,
 )
+from app.infrastructure.models.contract_model import ContractModel
 from app.infrastructure.models.utilisation_event_model import (
     UtilisationEventModel,
 )
@@ -76,3 +77,36 @@ class UtilisationEventRepositoryImpl(UtilisationEventRepository):
             stmt = stmt.where(UtilisationEventModel.occurred_on <= to_date)
         rows = (await self._session.execute(stmt)).scalars().all()
         return [UtilisationEventMapper.to_entity(r) for r in rows]
+
+    async def list_for_client(
+        self,
+        tenant_id: TenantId,
+        client_id: str,
+        *,
+        limit: int,
+        offset: int,
+    ) -> list[UtilisationEventEntity]:
+        stmt = (
+            select(UtilisationEventModel)
+            .join(ContractModel, ContractModel.id == UtilisationEventModel.contract_id)
+            .where(
+                UtilisationEventModel.tenant_id == tenant_id.value,
+                ContractModel.client_id == client_id,
+            )
+            .order_by(UtilisationEventModel.occurred_on.desc())
+            .limit(limit)
+            .offset(offset)
+        )
+        rows = (await self._session.execute(stmt)).scalars().all()
+        return [UtilisationEventMapper.to_entity(r) for r in rows]
+
+    async def count_for_client(self, tenant_id: TenantId, client_id: str) -> int:
+        stmt = (
+            select(func.count(UtilisationEventModel.id))
+            .join(ContractModel, ContractModel.id == UtilisationEventModel.contract_id)
+            .where(
+                UtilisationEventModel.tenant_id == tenant_id.value,
+                ContractModel.client_id == client_id,
+            )
+        )
+        return int((await self._session.execute(stmt)).scalar() or 0)

@@ -658,49 +658,36 @@ function DocumentRow({ document }: { document: Document }) {
   )
 }
 
+const UTILISATION_PAGE = 20
+
 export function ClientUtilisationPanel({ clientId }: { clientId: string }) {
-  const query = useQuery({
-    queryKey: ["clients", "utilisation", clientId],
-    queryFn: async () => {
-      const contracts = await clientContracts(clientId)
-      const groups = await Promise.all(
-        contracts.map(async (contract) => ({
-          contract,
-          events: await utilisationApi.byContract(contract.id),
-        })),
-      )
-      return groups
-        .flatMap(({ contract, events }) => events.map((event) => ({ contract, event })))
-        .sort((a, b) => b.event.occurred_on.localeCompare(a.event.occurred_on))
-    },
+  const [page, setPage] = useState(1)
+  // Only used to resolve a contract's label/link for each row; the events
+  // themselves are paged from the server, not derived from this list.
+  const contractsQuery = useQuery({
+    queryKey: ["clients", "utilisation-contracts", clientId],
+    queryFn: () => clientContracts(clientId),
   })
+  const contractsById = new Map((contractsQuery.data ?? []).map((c) => [c.id, c]))
+
+  const query = useQuery({
+    queryKey: ["clients", "utilisation", clientId, page],
+    queryFn: () => utilisationApi.byClient(clientId, { page, limit: UTILISATION_PAGE }),
+  })
+
   return (
     <ClientQueryPanel
       title="Sessions"
       description="Recorded service usage across all contract terms."
       query={query}
     >
-      {(rows) =>
-        !rows.length ? (
+      {(data) =>
+        data.total === 0 ? (
           <p className="border border-dashed border-fg/15 p-8 text-center text-sm text-fg-muted">
             No service delivery recorded yet.
           </p>
         ) : (
           <>
-            <div className="grid grid-cols-2 gap-4 border-y border-fg/10 py-4">
-              <div>
-                <p className="text-2xl font-semibold tabular-nums">
-                  {rows.reduce((sum, { event }) => sum + event.units, 0).toLocaleString()}
-                </p>
-                <p className="text-xs text-fg-muted">Recorded units</p>
-              </div>
-              <div>
-                <p className="text-2xl font-semibold tabular-nums">
-                  {rows.length.toLocaleString()}
-                </p>
-                <p className="text-xs text-fg-muted">Recorded events</p>
-              </div>
-            </div>
             <div className="overflow-x-auto">
               <Table className="w-full text-left text-sm" scrollable={false}>
                 <TableHeader className="border-b border-fg/10 text-xs text-fg-muted">
@@ -712,27 +699,44 @@ export function ClientUtilisationPanel({ clientId }: { clientId: string }) {
                   </TableRow>
                 </TableHeader>
                 <TableBody className="divide-y divide-fg/10">
-                  {rows.map(({ event, contract }) => (
-                    <TableRow key={event.id}>
-                      <TableCell className="whitespace-nowrap py-3 pr-4">
-                        {formatDay(event.occurred_on)}
-                      </TableCell>
-                      <TableCell className="pr-4">{getStatusLabel(event.event_type)}</TableCell>
-                      <TableCell>
-                        <Link
-                          to="/contracts/$contractId"
-                          params={{ contractId: contract.id }}
-                          className="text-primary hover:underline"
-                        >
-                          {contractLabel(contract)}
-                        </Link>
-                      </TableCell>
-                      <TableCell className="text-right tabular-nums">{event.units}</TableCell>
-                    </TableRow>
-                  ))}
+                  {data.items.map((event) => {
+                    const contract = contractsById.get(event.contract_id)
+                    return (
+                      <TableRow key={event.id}>
+                        <TableCell className="whitespace-nowrap py-3 pr-4">
+                          {formatDay(event.occurred_on)}
+                        </TableCell>
+                        <TableCell className="pr-4">{getStatusLabel(event.event_type)}</TableCell>
+                        <TableCell>
+                          {contract ? (
+                            <Link
+                              to="/contracts/$contractId"
+                              params={{ contractId: contract.id }}
+                              className="text-primary hover:underline"
+                            >
+                              {contractLabel(contract)}
+                            </Link>
+                          ) : (
+                            <span className="text-fg-muted">{event.contract_id}</span>
+                          )}
+                        </TableCell>
+                        <TableCell className="text-right tabular-nums">{event.units}</TableCell>
+                      </TableRow>
+                    )
+                  })}
                 </TableBody>
               </Table>
             </div>
+            {data.total > UTILISATION_PAGE && (
+              <div className="border-t border-fg/10 pt-3">
+                <Pagination
+                  page={page}
+                  total={data.total}
+                  limit={UTILISATION_PAGE}
+                  onPageChange={setPage}
+                />
+              </div>
+            )}
           </>
         )
       }
