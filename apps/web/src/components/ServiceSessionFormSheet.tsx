@@ -26,6 +26,7 @@ import {
 import { StoredAttribution } from "@/components/sessions/SessionAttribution"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Input } from "@/components/ui/input"
+import { Textarea } from "@/components/ui/textarea"
 import {
   Select,
   SelectContent,
@@ -611,7 +612,7 @@ export function ServiceSessionFormSheet({
             error={errors.notes?.message}
             htmlFor="ss-notes"
           >
-            <Input id="ss-notes" {...register("notes")} />
+            <Textarea id="ss-notes" rows={4} {...register("notes")} />
           </FormField>
         ) : null}
       </FormSection>
