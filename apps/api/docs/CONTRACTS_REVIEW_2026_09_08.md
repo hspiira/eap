@@ -242,3 +242,36 @@ is a separate piece of work with a shape decision of its own.
   `5d2f06a` a contract emits on create, sign, status change, update, renew and
   terminate, and `/audit/entity/Contract/{id}/changes` will serve it. The tab
   is buildable today.
+
+## 7. Acted on, 2026-09-08 (web)
+
+Two of the findings above are now closed on the frontend, in `a05f8fa`.
+
+**The History tab is built.** It reads `/audit/logs` filtered to the contract,
+joined to `/audit/entity/Contract/{id}/changes` for the field names, through the
+shared `EntityActivityPanel`. Note it will read as empty in dev until the outbox
+is drained: `audit_logs` is empty while `outbox_events` holds 3,668 undelivered
+rows, recorded in `DEV_DATA_LOAD.md`.
+
+**Billing shows money.** `GET /contracts/{id}/invoice-preview` had no caller;
+the client had a placeholder sending `projected_sessions` to a contract id of
+`"unknown"`. The billing tab now calls it properly and renders a line per charge
+with quantity, unit and amount, the subtotal, and the engine's notes.
+
+The pricing-shape mismatch in section 5 is untouched and still open. The
+what-if projector in `PricingConfig.tsx` keeps its browser-side
+`previewLocally`, which is a second pricing implementation modelling a session
+cap and overflow rate the backend does not have. That is tolerable only while
+the editor stays unreachable; it must not survive the pricing UI being wired.
+
+One consequence of `last_billing_date` and `next_billing_date` never being
+populated: the preview's default window falls back to the contract term
+(`period.start_date` to `period.end_date`), so it prices the whole term rather
+than a billing period. That is the honest default given the data, and it stops
+being right the moment those two fields are populated.
+
+Also worth knowing for anyone reading a preview against dev data: all 6
+contracts are `Retainer`, and `_retainer` in the pricing engine ignores
+utilisation events entirely, so the preview is one fixed line whatever the 59
+recorded events say. That is correct for a flat retainer, and it is why the tab
+keeps the usage table underneath as the evidence rather than as the charge.
