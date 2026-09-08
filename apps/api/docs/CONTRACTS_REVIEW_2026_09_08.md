@@ -3,10 +3,9 @@
 A review of the contracts module across the domain, the API and the two
 screens that render it, and what I recommend representing differently.
 
-**Status: Option A is implemented apart from 2.2 and 2.7.** `f6b08d91` closes
-2.1, 2.3, 2.4, 2.5 and 2.6; `931d4307` syncs the contract. 2.2 needs the
-decision named at the end of section 3, and 2.7 is next. Section 2 is kept as
-written because the reasoning is worth more than a list of done items.
+**Status: Option A is implemented.** `f6b08d91` closes 2.1, 2.3, 2.4, 2.5 and
+2.6; `399ac603` closes 2.2; `da8eb76d` closes 2.7. Section 2 is kept as written
+because the reasoning is worth more than a list of done items.
 
 Every claim below was checked against the repository or the local database.
 The value is in section 2; section 1 exists so section 2 can be trusted.
@@ -186,6 +185,15 @@ A survives a later move to B: `renewed_from_id` becomes the agreement's
 ordering, `reference` moves up to the agreement, the overlap rule becomes an
 invariant of the agreement.
 
+2.2 was decided as: pricing is the single representation. `headline_rate()`
+reads the standing charge back out of it, `update_billing_rate` writes through
+to it, and a migration gives every existing contract the Retainer its flat rate
+already implied. Fee-for-service returns no headline figure rather than
+inventing one from a rate card, so the response carries `pricing_model` for a
+caller to show instead.
+
+The original wording of that decision follows, since it is why it was asked.
+
 The one piece I would not defer is 2.2. Two representations of price is the
 defect most likely to produce a wrong number in front of a client. Decide
 whether `billing_rate` is a summary of `pricing` (then derive it and stop
@@ -204,7 +212,22 @@ must fall back to `billing_rate` instead of refusing). It cannot stay both.
 5. **`contract_id` on sessions** (2.7), which makes the metrics endpoint exact
    rather than inferred.
 
-## 5. What I did not evaluate
+## 5. Found while implementing
+
+The frontend has a third representation of price. `PricingConfig.tsx` is a
+model-aware editor whose shapes do not match the backend's: its retainer is
+`{monthly_fee, session_cap, overflow_rate}` where the backend's is
+`{retainer_amount: Money}`, and its framework is three numbers where the
+backend has a deposit and a rate card. It previews against `previewLocally`, a
+DEV-only function in `api/endpoints/pricing.ts`.
+
+Nothing reaches it: the only references are its own test and the design
+gallery. So the editor is unreachable, disagrees with the server, and
+`PATCH /contracts/{id}/pricing` has no caller in the product. Deriving
+`billing_rate` on the server was therefore safe, and wiring pricing into the UI
+is a separate piece of work with a shape decision of its own.
+
+## 6. What I did not evaluate
 
 - Whether the five pricing models match the commercial reality. I read them as
   written and they are internally consistent.
