@@ -93,6 +93,13 @@ clear-filters button. The standalone `/members` page got none of that pass
 
 ### 1.3 Proposal: roster directory with a master-detail split
 
+Implemented on 2026-09-08 in commits `911201b` (API) and `54c456b` (web).
+What shipped differs from the proposal below in two places: the summary strip
+hides status counts that are zero, and the client link in the table was added
+despite a prior test asserting the row carried a single link, because reaching
+the employer without a detour is worth the second target. Both are noted where
+the tests were updated.
+
 List. Promote the proven `ClientRosterPanel` split to the standalone page: the
 table on the left, a row-click summary card on the right, "Open full profile"
 to navigate. Re-rank columns by actual data density: Member, status icon,
@@ -343,24 +350,49 @@ Existing but unused endpoints the redesigns consume with no backend change:
 `GET /audit/entity/{type}/{id}`, `PATCH /panel/bulk-panel-status`,
 multi-value and status filters on `GET /providers`.
 
-Open questions for the product owner:
+## 5. Product owner answers, 2026-09-08
 
-- Q1: coverage windows. `coverage_start`/`coverage_end` exist on the member
-  model, drive `is_currently_eligible()`, and are invisible product-wide by
-  policy. If eligibility ever needs to be visible per member, that policy
-  needs reopening explicitly; this proposal leaves it closed.
-- Q2: session read access. Clinical fields on a session are readable by any
-  same-tenant user including viewers, while the member's session history
-  endpoint requires the clinical scope. The asymmetry looks unintended and
-  should be decided deliberately before more clinical fields are surfaced.
-- Q3: vocabulary. "Intervention", "Mode", "Counsellor" follow the source
-  workbook's language; `SESSIONS_REVIEW.md:186-188` already asked whether
-  these are the counselling team's words. The redesign should land whatever
-  the team confirms.
-- Q4: the readiness framing for providers assumes the onboarding phase lasts
-  a while. If the 53 canonical practitioners are completed quickly, the
-  bookable/blocked segmentation stays useful but tier and region may earn
-  their columns back.
+The four open questions were answered by the product owner. Recorded here as
+decisions, with what each one changes.
+
+**Q1, coverage windows: reopened.** The closed policy that coverage is
+invisible in the member API is withdrawn. `coverage_start`, `coverage_end` and
+the computed `is_currently_eligible` are now on `MemberResponse` and shown in
+the member profile's at-a-glance rail. Coverage stays read-only in the member
+API: it is still set at the client or programme level and by `terminate()`,
+and it is not a member form field. Implemented in commit `911201b`, recorded
+in `MEMBERS_MIGRATION.md` and `apps/api/docs/MEMBERS_MODULE.md`.
+
+Consequence with the current data: no member carries a `coverage_start` and
+one carries a `coverage_end`, so `is_currently_eligible` reduces to "status is
+Active" for the whole roster. That is correct behaviour, not a defect, because
+the domain method skips a bound that is not set.
+
+**Q2, session read access: gate and log clinical reads.** The owner's answer
+was to encrypt the clinical fields. Note that `notes`, `feedback`,
+`issue_topic` and `partner_name` are already encrypted at rest with a
+tenant-keyed cipher (`service_session_mapper.py:77-90`), so encryption is not
+the open half of this question. What remains open, and what the answer is
+taken to mean, is that clinical session content should not be readable by any
+same-tenant user: `GET /service-sessions/{id}` and the list should require the
+clinical scope for the clinical fields, and reads should be logged so the
+"PHI, access logged" chip is true. Scope: the sessions track, not this one.
+This restatement should be confirmed by the product owner before it is built.
+
+**Q3, vocabulary: confirmed with corrections.** These are the counselling
+team's words, with the mapping made explicit: "Intervention" is the service,
+"Mode" is mode of delivery (Online or Physical), "Counsellor" is the
+practitioner. The session pages should use "Service", "Mode of delivery" and
+"Practitioner" where they currently echo the workbook, and `SESSIONS_REVIEW.md`
+can close its open vocabulary question against this. Scope: the sessions
+track.
+
+**Q4, provider onboarding duration: no decision needed yet.** The question was
+whether the readiness framing should be permanent. It does not need answering
+before the provider work starts: the readiness segmentation is correct for the
+current network (112 of 113 practitioners are Pending with no tier or region)
+and stays useful afterwards. Revisit whether tier and region earn their table
+columns back once most practitioners are bookable; nothing blocks on it now.
 
 Findings recorded here that belong to other tracks and are not expanded on:
 the taxonomy admin gap (`TAXONOMY_MANAGEMENT_GAP.md`), the per-row session
