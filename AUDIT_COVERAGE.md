@@ -24,7 +24,7 @@ Sessions are audited too, under a redaction rule. A delivery record carries
 `notes`, `feedback`, `issue_topic` and a diagnosis, so the trail records which
 field a person touched and when, and not what it says. See below.
 
-Not decided here, and deliberately left: the remaining 101 silent mutators
+Not decided here, and deliberately left: the remaining 93 silent mutators
 across the other aggregates. Auditing everything indiscriminately is not
 automatically right, and for special-category health data it creates its own
 disclosure surface, which is why `test_audit_coverage.py` refuses to assert it.
@@ -32,7 +32,7 @@ That scope is a product call.
 
 ## What this pass changed
 
-Baseline moved from 148 silent mutators to 101, which is three separate things
+Baseline moved from 148 silent mutators to 93, which is three separate things
 and they should not be read as one number:
 
 | Change | Count | What it was |
@@ -40,6 +40,7 @@ and they should not be read as one number:
 | Coverage | -14 | `ClientEntity` and `ContractEntity` now emit on create, on every field update, and on archive and restore. Neither has a silent mutator left. |
 | Coverage | -9 | `ServiceAssignmentEntity` in full, and `EligibleMember` apart from the three above. |
 | Coverage | -12 | `ServiceSessionEntity` in full, under the redaction rule below. |
+| Coverage | -8 | `Case`, `ClinicalNote`, `ClinicalSubject` and `OutreachRecord`. Amending a signed note recorded nothing before this. |
 | Measurement | -3 | The detector follows a private helper. A method that hands the append to one, `ContractEntity._record_status_change`, read as silent while it emitted. |
 | Measurement | -9 | The detector no longer reads `self.x == y` as an assignment, so read predicates like `is_active` were never mutators at all. |
 
@@ -124,11 +125,11 @@ before-and-after is the point of auditing it.
 
 ## Still open
 
-- The other 113 silent mutators, pending the scope call above.
+- The other 93 silent mutators, pending the scope call above.
 - `members.py` on its own audit path, above.
-- The other clinical aggregates. `Case`, `ClinicalNote` and the rest are
-  already in `CLINICAL_RESOURCE_TYPES`, so the redaction rule covers them the
-  moment they emit. Nothing in this pass made them emit.
+- The remaining 93 sit on `UserEntity`, `ServiceEntity`, `PersonEntity`,
+  `TenantEntity` and the smaller reference aggregates. None of them holds
+  client or clinical data, which is why they are last rather than next.
 - `map_domain_event_to_audit_action` treating "activated" as CREATE.
 - `apps/web/src/routes/audit.tsx` is a placeholder. The read API exists
   (`/audit/logs`, `/logs/{id}/changes`, `/entity/{type}/{id}/changes`) and

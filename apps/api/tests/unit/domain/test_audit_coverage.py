@@ -67,7 +67,11 @@ import app.domain.entities as entities_pkg
 # 113 -> 101 with ServiceSessionEntity, which needed the redaction rule first:
 # a session carries notes, a presenting issue and a diagnosis, so the handler
 # keeps the field names and drops the values for any special-category record.
-KNOWN_SILENT_MUTATORS = 101
+# 101 -> 93 with the clinical aggregates: Case, ClinicalNote, ClinicalSubject
+# and OutreachRecord. They are already in CLINICAL_RESOURCE_TYPES, so the
+# redaction rule covered them the moment they emitted. Amending a signed note
+# is the one that matters most and recorded nothing at all.
+KNOWN_SILENT_MUTATORS = 93
 
 
 def _entity_classes():
@@ -189,6 +193,16 @@ def test_sessions_are_audited_now_that_their_values_are_redacted():
     gap = silent_mutators()
     assert gap.get("ServiceSessionEntity") is None, gap.get("ServiceSessionEntity")
     assert is_special_category(resource_type="ServiceSession")
+
+
+def test_the_clinical_aggregates_emit_and_are_classified():
+    """A clinical record's changes are recorded, and its values are redacted."""
+    from app.shared.utils.clinical_data_classification import is_special_category
+
+    gap = silent_mutators()
+    for entity in ("Case", "ClinicalNote", "ClinicalSubject", "OutreachRecord"):
+        assert gap.get(entity) is None, f"{entity}: {gap.get(entity)}"
+        assert is_special_category(resource_type=entity), entity
 
 
 def test_only_the_documented_member_mutators_stay_silent():

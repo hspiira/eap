@@ -12,7 +12,11 @@ Existence of this aggregate is the structural keystone of the privacy wall.
 from dataclasses import dataclass, field
 from datetime import datetime
 
-from app.domain.events import DomainEvent
+from app.domain.events import (
+    ClinicalSubjectDeactivated,
+    ClinicalSubjectUpdated,
+    DomainEvent,
+)
 from app.domain.exceptions import DomainError
 from app.domain.value_objects.core import (
     ClinicalSubjectId,
@@ -59,6 +63,11 @@ class ClinicalSubject:
         if notes_for_continuity is not None:
             self.notes_for_continuity = notes_for_continuity
         self.updated_at = utc_now()
+        self.events.append(
+            ClinicalSubjectUpdated(
+                occurred_at=utc_now(), subject_id=self.id, field="continuity_metadata"
+            )
+        )
 
     def deactivate(self, now: datetime | None = None) -> None:
         if not self.is_active:
@@ -67,3 +76,4 @@ class ClinicalSubject:
         self.is_active = False
         self.deactivated_at = now
         self.updated_at = now
+        self.events.append(ClinicalSubjectDeactivated(occurred_at=now, subject_id=self.id))

@@ -13,6 +13,8 @@ from typing import Any
 
 from app.domain.enums import ClinicalNoteType
 from app.domain.events import (
+    ClinicalNoteAmended,
+    ClinicalNoteDraftEdited,
     ClinicalNoteLocked,
     ClinicalNoteSigned,
     DomainEvent,
@@ -110,6 +112,9 @@ class ClinicalNote:
             raise DomainError("Only the author can edit the draft body")
         self.body = dict(new_body)
         self.updated_at = utc_now()
+        self.events.append(
+            ClinicalNoteDraftEdited(occurred_at=utc_now(), note_id=self.id, editor_id=editor_id)
+        )
 
     def sign(self, *, signer_id: UserId, now: datetime | None = None) -> None:
         if self.is_signed():
@@ -167,4 +172,12 @@ class ClinicalNote:
         )
         self.amendments = (*self.amendments, amendment)
         self.updated_at = now
+        self.events.append(
+            ClinicalNoteAmended(
+                occurred_at=now,
+                note_id=self.id,
+                amendment_id=amendment_id.value,
+                author_id=author_id,
+            )
+        )
         return amendment

@@ -24,6 +24,7 @@ from app.domain.events import (
     CaseAssigned,
     CaseClosed,
     CaseOpened,
+    CaseUpdated,
     DomainEvent,
 )
 from app.domain.exceptions import DomainError, InvalidStateError
@@ -100,6 +101,10 @@ class Case:
                 )
             )
 
+    def _record_update(self, field: str) -> None:
+        """Record a change to the case outside a status transition."""
+        self.events.append(CaseUpdated(occurred_at=utc_now(), case_id=self.id, field=field))
+
     def is_terminal(self) -> bool:
         return self.status in _TERMINAL_STATUSES
 
@@ -118,6 +123,7 @@ class Case:
             raise InvalidStateError(f"Cannot attach an authorization on a {self.status.value} case")
         self.authorization_id = authorization_id
         self.updated_at = utc_now()
+        self._record_update("authorization_id")
 
     def record_intake_screener(self, admin_id: str) -> None:
         if not admin_id:
@@ -132,6 +138,7 @@ class Case:
                 admin_id,
             )
             self.updated_at = utc_now()
+            self._record_update("intake_screener_admin_ids")
 
     def record_closure_screener(self, admin_id: str) -> None:
         if not admin_id:
@@ -147,6 +154,7 @@ class Case:
                 admin_id,
             )
             self.updated_at = utc_now()
+            self._record_update("closure_screener_admin_ids")
 
     def advance(self, target: CaseStatus, *, now: datetime | None = None) -> None:
         if target not in _STATUS_TRANSITIONS.get(self.status, frozenset()):

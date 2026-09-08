@@ -160,17 +160,8 @@ class TestImportJob:
             names = (await session.execute(select(ClientModel.name))).scalars().all()
             assert sorted(names) == ["Acme Corp", "Globex"]
 
-    @pytest.mark.xfail(
-        reason=(
-            "ClientEntity emits no creation event, so creating a client is never "
-            "audited. The audit machinery already maps a 'created' event to "
-            "AuditActionType.CREATE and other entities (CareCallbackCampaign, Case) "
-            "emit one from __post_init__. Adding ClientCreated changes audit volume "
-            "for every create path, so it needs a decision rather than a drive-by fix."
-        ),
-        strict=True,
-    )
     async def test_audit_events_are_enqueued_in_the_import_transaction(self, import_db):
+        """One event per client the import creates, in the import's own transaction."""
         job_id = await _queue_job(import_db, _csv("Acme Corp"))
 
         await client_import_job.run_import_job(job_id, _Gateway(import_db))
@@ -204,9 +195,6 @@ class TestImportJob:
             clients = await session.scalar(select(func.count(ClientModel.id)))
             outbox = await session.scalar(select(func.count(OutboxEventModel.id)))
         assert clients == 0, "a failed import must not leave partial clients behind"
-        # Zero for two reasons today: the rollback, and the missing creation
-        # event covered by the xfail above. Kept so the rollback stays asserted
-        # once ClientCreated exists.
         assert outbox == 0, "audit events must roll back with the import"
 
     async def test_validation_errors_complete_the_job_without_creating_clients(self, import_db):

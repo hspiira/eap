@@ -23,8 +23,13 @@ from app.domain.events.clinical import (
     CaseAssigned,
     CaseClosed,
     CaseOpened,
+    CaseUpdated,
+    ClinicalNoteAmended,
+    ClinicalNoteDraftEdited,
     ClinicalNoteLocked,
     ClinicalNoteSigned,
+    ClinicalSubjectDeactivated,
+    ClinicalSubjectUpdated,
     EAPProgrammeCreated,
 )
 from app.domain.events.consultancy import (
@@ -73,6 +78,7 @@ from app.domain.events.outreach import (
     CareCallbackCampaignCompleted,
     CareCallbackCampaignCreated,
     OutreachAssigned,
+    OutreachAttemptRecorded,
     OutreachCompleted,
     SurveyCampaignActivated,
     SurveyCampaignClosed,
@@ -128,6 +134,12 @@ from app.domain.events.user import (
 )
 
 __all__ = [
+    "CaseUpdated",
+    "ClinicalNoteAmended",
+    "ClinicalNoteDraftEdited",
+    "ClinicalSubjectDeactivated",
+    "ClinicalSubjectUpdated",
+    "OutreachAttemptRecorded",
     "DomainEvent",
     "AuthorizationConsumed",
     "AuthorizationExtended",

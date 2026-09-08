@@ -45,6 +45,50 @@ class CaseClosed(DomainEvent):
 
 
 @dataclass(frozen=True)
+class CaseUpdated(DomainEvent):
+    """Event raised when a case's own details change outside a transition."""
+
+    case_id: CaseId
+    field: str
+
+
+@dataclass(frozen=True)
+class ClinicalNoteAmended(DomainEvent):
+    """Event raised when a signed note is amended.
+
+    The amendment's reason and body are on the note, not here: an audit reader
+    is entitled to know a signed record was changed and by whom.
+    """
+
+    note_id: ClinicalNoteId
+    amendment_id: str
+    author_id: UserId
+
+
+@dataclass(frozen=True)
+class ClinicalNoteDraftEdited(DomainEvent):
+    """Event raised when an unsigned note's body is edited."""
+
+    note_id: ClinicalNoteId
+    editor_id: UserId
+
+
+@dataclass(frozen=True)
+class ClinicalSubjectUpdated(DomainEvent):
+    """Event raised when a subject's continuity metadata changes."""
+
+    subject_id: ClinicalSubjectId
+    field: str
+
+
+@dataclass(frozen=True)
+class ClinicalSubjectDeactivated(DomainEvent):
+    """Event raised when a clinical subject is deactivated."""
+
+    subject_id: ClinicalSubjectId
+
+
+@dataclass(frozen=True)
 class ClinicalNoteSigned(DomainEvent):
     note_id: "ClinicalNoteId"
     case_id: "CaseId"
