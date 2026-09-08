@@ -108,6 +108,7 @@ function ClientDetailPage() {
   const [editOpen, setEditOpen] = useState(false)
   const [addContractOpen, setAddContractOpen] = useState(false)
   const [addMemberOpen, setAddMemberOpen] = useState(false)
+  const [activityPage, setActivityPage] = useState(1)
 
   const clientQuery = useEntityDetail<Client>({
     resource: "clients",
@@ -466,7 +467,12 @@ function ClientDetailPage() {
               </TabPanel>
 
               <TabPanel value="activity">
-                <ClientActivityCard clientId={clientId} limit={20} />
+                <ClientActivityCard
+                  clientId={clientId}
+                  limit={20}
+                  page={activityPage}
+                  onPageChange={setActivityPage}
+                />
               </TabPanel>
 
               <TabPanel value="contacts">
