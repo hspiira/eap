@@ -265,6 +265,36 @@ describe("descriptions", () => {
    * writable in the form sheet and readable through the API but rendered
    * nowhere, so a curator could only see it by opening the edit form.
    */
+  const TWO_DESCRIBED = {
+    types: [
+      {
+        id: "t_gbv",
+        code: "GBV",
+        name: "Gender-Based Violence",
+        description: "Violence directed at a person on the basis of gender.",
+        sort_order: 0,
+        diagnoses: [
+          {
+            id: "d_dv",
+            code: "DV",
+            name: "Domestic Violence",
+            description: "Physical, sexual or psychological violence by a partner.",
+            type_id: "t_gbv",
+            sort_order: 0,
+          },
+          {
+            id: "d_ea",
+            code: "EA",
+            name: "Economic Abuse",
+            description: "Controlling a partner's access to money.",
+            type_id: "t_gbv",
+            sort_order: 1,
+          },
+        ],
+      },
+    ],
+  }
+
   const DESCRIBED = {
     types: [
       {
@@ -305,13 +335,30 @@ describe("descriptions", () => {
     ).toBeInTheDocument()
   })
 
+  it("closes the open description when another is opened", async () => {
+    vi.mocked(diagnosesApi.getTree).mockResolvedValue(TWO_DESCRIBED)
+    const user = userEvent.setup()
+    renderPage()
+
+    await user.click(await screen.findByRole("button", { name: /^Domestic Violence/ }))
+    expect(
+      await screen.findByText("Physical, sexual or psychological violence by a partner."),
+    ).toBeInTheDocument()
+
+    await user.click(screen.getByRole("button", { name: /^Economic Abuse/ }))
+
+    expect(await screen.findByText("Controlling a partner's access to money.")).toBeInTheDocument()
+    expect(
+      screen.queryByText("Physical, sexual or psychological violence by a partner."),
+    ).not.toBeInTheDocument()
+  })
+
   it("keeps a diagnosis description closed until it is asked for", async () => {
     vi.mocked(diagnosesApi.getTree).mockResolvedValue(DESCRIBED)
     const user = userEvent.setup()
     renderPage()
 
-    // The first type is selected on arrival, so its diagnoses are listed, but a
-    // list of thirty definitions all open at once is unreadable.
+    // The first type is selected on arrival, so its diagnoses are listed.
     const toggle = await screen.findByRole("button", { name: /^Domestic Violence/ })
     expect(toggle).toHaveAttribute("aria-expanded", "false")
     expect(

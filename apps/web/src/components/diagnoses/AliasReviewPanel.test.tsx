@@ -103,8 +103,6 @@ describe("AliasReviewPanel", () => {
   })
 
   it("rejecting records the refusal instead of deleting the mapping", async () => {
-    // A deleted alias and one nobody has read look the same to the next import,
-    // so the decision has to be stored rather than the row removed.
     const user = userEvent.setup()
     renderWithProviders(<AliasReviewPanel tree={TREE} />)
     await user.click(await screen.findByRole("button", { name: /reject/i }))

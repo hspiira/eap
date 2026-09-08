@@ -16,11 +16,9 @@ import type { DiagnosisTree } from "@/types/entities"
  * that a clinical owner would check them. Without a surface, "listable for
  * review" means running SQL, so in practice they would never be reviewed.
  *
- * A reviewer can confirm the reading or reject it. Rejecting keeps the row and
- * marks it refused rather than deleting it: a deleted alias and one nobody has
- * read are indistinguishable, so the next import would infer the same reading
- * again. Correcting a mapping is a third thing, and remains the form sheet's
- * job, because getting it wrong silently is worse than leaving it flagged.
+ * Rejecting marks the row refused rather than deleting it: a deleted alias and
+ * one nobody has read look the same to the next import. Correcting a mapping
+ * stays the form sheet's job.
  */
 export function AliasReviewPanel({ tree }: { tree: DiagnosisTree | null }) {
   const [aliases, setAliases] = useState<DiagnosisAlias[] | null>(null)
