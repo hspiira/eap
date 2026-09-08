@@ -22,6 +22,7 @@ from app.api.dependencies import (
     get_session_name_reader,
 )
 from app.api.routes.service_sessions import router
+from app.core.authorization import get_service_session_for_current_tenant
 from app.core.database import get_db
 from app.core.exception_handlers import register_exception_handlers
 from app.core.security import TokenData, get_current_user
@@ -64,8 +65,12 @@ async def api():
     app.include_router(router)
     register_exception_handlers(app)
     state = SimpleNamespace(sessions=AsyncMock(), names=AsyncMock(), attribution=AsyncMock())
-    state.sessions.list_all.return_value = [_session("s1", "mem-1"), _session("s2", None)]
+    page = [_session("s1", "mem-1"), _session("s2", None)]
+    state.sessions.list_all.return_value = page
     state.sessions.count.return_value = 2
+    state.sessions.get_by_member_id.return_value = page
+    state.sessions.get_by_provider_id.return_value = page
+    state.sessions.get_by_service_id.return_value = page
     state.attribution.organisation_ids_by_affiliation.return_value = {}
     state.names.names_for.return_value = SessionNames(
         clients={"cli-1": "Stanbic Bank"},
@@ -83,9 +88,14 @@ async def api():
     app.dependency_overrides[get_current_user] = lambda: TokenData(
         user_id="u1", tenant_id="t1", role="Admin"
     )
+    state.app = app
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as http:
         state.http = http
         yield state
+
+
+def _use_session(api, session: ServiceSessionEntity) -> None:
+    api.app.dependency_overrides[get_service_session_for_current_tenant] = lambda: session
 
 
 class TestHydratedNames:
@@ -122,6 +132,78 @@ class TestHydratedNames:
 
         assert response.status_code == 200, response.text
         assert response.json()["items"][0]["client_name"] is None
+
+
+class TestDetailNames:
+    """The detail response carries the names the list does.
+
+    It did not, so the detail page fetched the member, the practitioner and the
+    service separately to fill in what the row beside it already showed.
+    """
+
+    async def test_a_single_session_carries_every_name(self, api):
+        _use_session(api, _session("s1", "mem-1"))
+
+        response = await api.http.get("/service-sessions/s1")
+
+        assert response.status_code == 200, response.text
+        body = response.json()
+        assert body["client_name"] == "Stanbic Bank"
+        assert body["member_display_label"] == "Amina Namukasa"
+        assert body["provider_display_name"] == "Moses Mpanga"
+        assert body["service_name"] == "Individual Counselling"
+
+    async def test_a_company_wide_session_names_everything_but_its_absent_member(self, api):
+        _use_session(api, _session("s2", None))
+
+        response = await api.http.get("/service-sessions/s2")
+
+        assert response.status_code == 200, response.text
+        body = response.json()
+        assert body["member_id"] is None
+        assert body["member_display_label"] is None
+        assert body["client_name"] == "Stanbic Bank"
+        assert body["provider_display_name"] == "Moses Mpanga"
+        assert body["service_name"] == "Individual Counselling"
+
+    async def test_one_session_costs_one_bulk_resolution_not_one_per_name(self, api):
+        _use_session(api, _session("s1", "mem-1"))
+
+        await api.http.get("/service-sessions/s1")
+
+        assert api.names.names_for.await_count == 1
+        kwargs = api.names.names_for.await_args.kwargs
+        assert kwargs["client_ids"] == ["cli-1"]
+        assert kwargs["member_ids"] == ["mem-1"]
+
+    async def test_a_company_wide_session_asks_for_no_member_name(self, api):
+        _use_session(api, _session("s2", None))
+
+        await api.http.get("/service-sessions/s2")
+
+        assert api.names.names_for.await_args.kwargs["member_ids"] == []
+
+
+class TestScopedListNames:
+    @pytest.mark.parametrize(
+        ("path", "repository_method"),
+        [
+            ("member/mem-1", "get_by_member_id"),
+            ("provider/prv-1", "get_by_provider_id"),
+            ("service/svc-1", "get_by_service_id"),
+        ],
+    )
+    async def test_a_scoped_list_carries_names(self, api, path, repository_method):
+        response = await api.http.get(f"/service-sessions/{path}?tenant_id=t1")
+
+        assert response.status_code == 200, response.text
+        assert getattr(api.sessions, repository_method).await_count == 1
+        first = response.json()[0]
+        assert first["client_name"] == "Stanbic Bank"
+        assert first["member_display_label"] == "Amina Namukasa"
+        assert first["provider_display_name"] == "Moses Mpanga"
+        assert first["service_name"] == "Individual Counselling"
+        assert api.names.names_for.await_count == 1
 
 
 class TestSortAllowlist:
