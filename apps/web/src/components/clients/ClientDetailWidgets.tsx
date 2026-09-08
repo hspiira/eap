@@ -37,8 +37,6 @@ interface DetailRailProps {
   childrenLoading: boolean
   onAction: (id: string, action: LifecycleAction) => Promise<void>
   actionLoading: boolean
-  onTierChange: (tier: ClientTier | null) => Promise<void>
-  tierLoading: boolean
   onVerify: () => Promise<void>
 }
 
@@ -68,13 +66,6 @@ import { STICKY_TABLE_HEAD } from "@/components/common/tableStyles"
 import { TierBadge } from "@/components/common/TierBadge"
 import { Button } from "@/components/ui/button"
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
-import {
   Table,
   TableBody,
   TableCell,
@@ -86,7 +77,6 @@ import { contractLabel, contractValue, moneyLabel, nameInitials } from "@/lib/di
 import { formatDay } from "@/lib/format"
 import { cn } from "@/lib/utils"
 import type { Client, ClientTag, Contract } from "@/types/entities"
-import { ClientTier } from "@/types/enums"
 import type { LifecycleAction } from "@/utils/lifecycleConfig"
 
 export function Hero({ client, verified }: { client: Client; verified: boolean }) {
@@ -336,13 +326,12 @@ export function DetailRail({
   childrenLoading,
   onAction,
   actionLoading,
-  onTierChange,
-  tierLoading,
   onVerify,
 }: DetailRailProps) {
   return (
     <div className="space-y-4">
       <AtAGlanceSection
+        client={client}
         stats={stats}
         statsLoading={statsLoading}
         nextRenewal={nextRenewal}
@@ -352,7 +341,6 @@ export function DetailRail({
       <BillingSection client={client} />
       <HierarchySection client={client} childClients={children} childrenLoading={childrenLoading} />
       <TagsSection tags={tags} tagsLoading={tagsLoading} />
-      <TierSection client={client} onTierChange={onTierChange} tierLoading={tierLoading} />
       <LifecycleSection
         client={client}
         onAction={onAction}
@@ -371,11 +359,13 @@ function milestoneLabel(milestonesState: MilestonesState, nextRenewal?: string):
 }
 
 function AtAGlanceSection({
+  client,
   stats,
   statsLoading,
   nextRenewal,
   milestonesState,
 }: {
+  client: Client
   stats: ClientStatsResponse | null
   statsLoading: boolean
   nextRenewal?: string
@@ -384,6 +374,7 @@ function AtAGlanceSection({
   return (
     <RailSection title="At a glance">
       <div className="grid grid-cols-2 gap-x-3 gap-y-2">
+        <GlanceStat label="Tier" value={client.tier ? `Tier ${client.tier}` : "Unassigned"} />
         <GlanceStat
           label="Employees"
           value={statsLoading ? "…" : fmtCount(stats?.employee_members_count)}
@@ -541,38 +532,6 @@ function TagsSection({ tags, tagsLoading }: { tags: ClientTag[]; tagsLoading: bo
           ))}
         </div>
       )}
-    </RailSection>
-  )
-}
-
-function TierSection({
-  client,
-  onTierChange,
-  tierLoading,
-}: {
-  client: Client
-  onTierChange: (tier: ClientTier | null) => Promise<void>
-  tierLoading: boolean
-}) {
-  return (
-    <RailSection title="Tier">
-      <Select
-        value={client.tier ?? "none"}
-        onValueChange={(v) => {
-          void onTierChange(v === "none" ? null : (v as ClientTier))
-        }}
-        disabled={tierLoading}
-      >
-        <SelectTrigger className="h-7 w-full text-xs">
-          <SelectValue placeholder="Unassigned" />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="none">Unassigned</SelectItem>
-          <SelectItem value={ClientTier.A}>Tier A</SelectItem>
-          <SelectItem value={ClientTier.B}>Tier B</SelectItem>
-          <SelectItem value={ClientTier.C}>Tier C</SelectItem>
-        </SelectContent>
-      </Select>
     </RailSection>
   )
 }

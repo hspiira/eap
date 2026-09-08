@@ -42,7 +42,6 @@ import { addDaysToDay, daysBetweenDays, formatDay, todayDayKey, toDayKey } from 
 import { entityDetailKey, entityListKey, useEntityDetail } from "@/lib/queries"
 import { useAuthStore } from "@/store/slices/authSlice"
 import type { Client } from "@/types/entities"
-import type { ClientTier } from "@/types/enums"
 import type { LifecycleAction } from "@/utils/lifecycleConfig"
 
 export const Route = createFileRoute("/clients/$clientId")({
@@ -104,7 +103,6 @@ function ClientDetailPage() {
   const canWrite = useCanWrite()
   const userId = useAuthStore((s) => s.user_id)
   const [tab, setTab] = useTabSearchParam<TabValue>(TAB_VALUES, "overview")
-  const [tierLoading, setTierLoading] = useState(false)
   const [editOpen, setEditOpen] = useState(false)
   const [addContractOpen, setAddContractOpen] = useState(false)
   const [addMemberOpen, setAddMemberOpen] = useState(false)
@@ -207,22 +205,6 @@ function ClientDetailPage() {
       }
     },
     [queryClient, toast],
-  )
-
-  const handleTierChange = useCallback(
-    async (tier: ClientTier | null) => {
-      setTierLoading(true)
-      try {
-        const updated = await clientsApi.setTier(clientId, tier)
-        queryClient.setQueryData(entityDetailKey("clients", clientId), updated)
-        toast.showSuccess("Tier updated")
-      } catch (err) {
-        toast.showError(normalizeErrorMessage(err, "Tier update failed"))
-      } finally {
-        setTierLoading(false)
-      }
-    },
-    [clientId, queryClient, toast],
   )
 
   const handleVerify = useCallback(async () => {
@@ -560,8 +542,6 @@ function ClientDetailPage() {
                 childrenLoading={childrenQuery.isPending}
                 onAction={handleAction}
                 actionLoading={actionLoading}
-                onTierChange={handleTierChange}
-                tierLoading={tierLoading}
                 onVerify={handleVerify}
               />
             </aside>
