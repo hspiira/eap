@@ -203,7 +203,7 @@ function CaseDetailPage() {
             </Tabs>
           </div>
 
-          <aside className="col-span-12 min-w-0 lg:col-span-4 lg:pt-14">
+          <aside className="col-span-12 min-w-0 lg:sticky lg:top-3 lg:col-span-4 lg:max-h-[80vh] lg:overflow-y-auto lg:pt-14">
             <DetailRail
               caseData={caseData}
               onAssignCounsellor={() => setAssignOpen(true)}

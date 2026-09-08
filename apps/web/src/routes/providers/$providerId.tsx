@@ -172,7 +172,7 @@ function ProviderDetailPage() {
             </Tabs>
           </div>
 
-          <aside className="col-span-12 min-w-0 space-y-5 lg:col-span-4 lg:pt-14">
+          <aside className="col-span-12 min-w-0 space-y-5 lg:sticky lg:top-3 lg:col-span-4 lg:max-h-[80vh] lg:overflow-y-auto lg:pt-14">
             <ProviderReadinessRail provider={provider} />
             <ProviderProvenanceSection provider={provider} />
           </aside>
