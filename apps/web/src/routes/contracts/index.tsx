@@ -34,7 +34,7 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { useCanWrite } from "@/hooks/useCanWrite"
-import { useListPage } from "@/hooks/useListPage"
+import { NEWEST_FIRST, useListPage } from "@/hooks/useListPage"
 import { termLabel, termTone } from "@/lib/contract-term"
 import { normalizeErrorMessage } from "@/lib/errors"
 import { formatDay } from "@/lib/format"
@@ -99,7 +99,11 @@ function ContractsListPage() {
     toggleSort,
     setFilter,
     sortParams,
-  } = useListPage({ searchParams, navigate })
+  } = useListPage({
+    searchParams,
+    navigate,
+    initialSort: NEWEST_FIRST,
+  })
   const canWrite = useCanWrite()
 
   const activeStatus = searchParams.status
@@ -235,16 +239,16 @@ function ContractsListPage() {
         ) : (
           <>
             <div className="relative min-h-0 flex-1 overflow-auto">
-              <Table className="w-full caption-bottom text-sm">
+              <Table className="w-full caption-bottom text-sm" scrollable={false}>
                 <TableHeader className={STICKY_TABLE_HEAD}>
                   <TableRow className={`hover:bg-transparent ${ROW_BORDER}`}>
                     <TableHead className="text-fg/65">Client</TableHead>
-                    <TableHead>
+                    <TableHead className="text-center">
                       <SortHeader field="status" sort={sort} onToggle={toggleSort}>
-                        Status
+                        <span className="sr-only">Status</span>
                       </SortHeader>
                     </TableHead>
-                    <TableHead>
+                    <TableHead className="text-center">
                       <SortHeader field="payment_status" sort={sort} onToggle={toggleSort}>
                         Payment
                       </SortHeader>
@@ -308,11 +312,11 @@ function ContractRow({ row, clientsById }: { row: Contract; clientsById: Map<str
           </span>
         </Link>
       </TableCell>
-      <TableCell>
-        <StatusBadge status={row.status} />
+      <TableCell className="text-center">
+        <StatusBadge status={row.status} iconOnly />
       </TableCell>
-      <TableCell>
-        <StatusBadge status={row.payment_status} />
+      <TableCell className="text-center">
+        <StatusBadge status={row.payment_status} iconOnly />
       </TableCell>
       <TableCell className="whitespace-nowrap text-xs text-fg/70">
         {formatDay(row.period.start_date)}

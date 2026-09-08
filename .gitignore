@@ -77,3 +77,11 @@ todos.json
 # Local graph cache, regenerable with `graft build`. Root-anchored so a source
 # directory named graft/ elsewhere is unaffected.
 /graft/
+
+# --- Practitioner import review -------------------------------------------
+# Real names, personal emails and phone numbers extracted from a source
+# workbook for local review. Never commit this data.
+/practitioner-import-review/
+
+# Extracts derived from client activity logs. Clinical free text, never committed.
+apps/api/data/taxonomy/

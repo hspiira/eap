@@ -219,6 +219,11 @@ class TestReplayKey:
         """A changed file needs explicit reconciliation, not silent dedup."""
         assert _row().replay_key("sha256:other") != _row().replay_key(HASH)
 
+    def test_the_key_staging_decided_wins_over_the_derived_one(self):
+        """A duplicate row defers with a key only staging could work out."""
+        row = _row(staged_replay_key=f"duplicate:b-old:file:{HASH}:row:1")
+        assert row.replay_key(HASH) == f"duplicate:b-old:file:{HASH}:row:1"
+
     def test_row_numbers_are_one_based(self):
         with pytest.raises(DomainError):
             _row(row_number=0)

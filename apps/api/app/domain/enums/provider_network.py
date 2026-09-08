@@ -76,3 +76,26 @@ class PractitionerImportOutcome(str, Enum):
     NEEDS_REVIEW = "NeedsReview"
     DUPLICATE = "Duplicate"
     REJECTED = "Rejected"
+
+
+class ImportReasonCode(str, Enum):
+    """Machine-readable code for a staged row's outcome reason (P-10).
+
+    A message alone is fine to display but not to build a review UI or any
+    other consumer against: rewording it silently breaks a string match.
+    Every reason attached to a row carries one of these alongside its
+    human-readable message.
+    """
+
+    ALREADY_STAGED = "AlreadyStaged"
+    MISSING_NAME = "MissingName"
+    UNMAPPED_PROFESSION = "UnmappedProfession"
+    UNMAPPED_SPECIALITY = "UnmappedSpeciality"
+    DUPLICATE_NAME_CANDIDATE = "DuplicateNameCandidate"
+    ORGANISATION_NAME_COLLISION = "OrganisationNameCollision"
+    MULTI_EMAIL_CELL = "MultiEmailCell"
+    EMPLOYEE_CONTRACT_MEMO = "EmployeeContractMemo"
+    APPLY_FAILED = "ApplyFailed"
+    # Rows staged before reasons carried codes hold bare strings; they read
+    # back under this code rather than failing the whole listing.
+    LEGACY = "Legacy"

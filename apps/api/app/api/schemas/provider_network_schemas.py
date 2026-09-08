@@ -181,6 +181,17 @@ class ProviderAliasListResponse(BaseModel):
     has_more: bool
 
 
+class ProviderAliasCreateRequest(BaseModel):
+    """Open a review queue entry for a name a source system uses.
+
+    Creating one attributes nothing: the alias starts unmapped, and naming the
+    practitioner is still the separate, audited resolve step.
+    """
+
+    source_system: NonBlankStr = Field(..., max_length=100)
+    source_value: NonBlankStr = Field(..., max_length=500)
+
+
 class ProviderAliasResolveRequest(BaseModel):
     """Explicit reconciliation. There is no automatic resolution endpoint."""
 
@@ -189,6 +200,12 @@ class ProviderAliasResolveRequest(BaseModel):
 
 class ProviderAliasRejectRequest(BaseModel):
     note: NonBlankStr
+
+
+class SessionImportAbandonRequest(BaseModel):
+    """Why nobody will apply this batch. It goes on the record, so it is required."""
+
+    reason: NonBlankStr
 
 
 class SessionImportRowPreview(BaseModel):

@@ -9,6 +9,7 @@ from app.application.use_cases.apply_practitioner_import import (
     ApplyPractitionerImportUseCase,
 )
 from app.domain.entities.practitioner_import import (
+    ImportReviewReason,
     PractitionerImportBatchEntity,
     PractitionerImportRowEntity,
 )
@@ -16,6 +17,7 @@ from app.domain.entities.provider_organisation import ProviderOrganisationEntity
 from app.domain.enums import AccreditationStatus, BaseStatus, PanelStatus
 from app.domain.enums.provider_network import (
     ImportBatchStatus,
+    ImportReasonCode,
     OrganisationApprovalStatus,
     PractitionerImportOutcome,
 )
@@ -57,11 +59,13 @@ def _row(
     organisation: str | None = None,
     outcome: PractitionerImportOutcome = PractitionerImportOutcome.ACCEPTED,
     email: str | None = None,
+    provenance: dict | None = None,
 ) -> PractitionerImportRowEntity:
     held = outcome in (
         PractitionerImportOutcome.NEEDS_REVIEW,
         PractitionerImportOutcome.REJECTED,
     )
+    reason = ImportReviewReason(ImportReasonCode.DUPLICATE_NAME_CANDIDATE, "held for review")
     return PractitionerImportRowEntity(
         id=PractitionerImportRowId(f"r-{number}"),
         batch_id=BATCH_ID,
@@ -75,7 +79,8 @@ def _row(
         mapped_profession="Clinical Psychologist",
         contact_email=email,
         outcome=outcome,
-        reasons=("held for review",) if held else (),
+        reasons=(reason,) if held else (),
+        provenance=provenance or {},
         created_at=NOW,
     )
 
@@ -241,6 +246,37 @@ class TestCreation:
         decision = evaluate_practitioner(provider, scheduled_at=NOW, now=NOW)
         assert not decision.eligible
 
+    async def test_the_first_mobile_column_becomes_contact_phone(self):
+        harness = Harness([_row(3, "Jane Doe", provenance={"CONTACT MOBILE 1": "0700000001"})])
+        await harness.execute()
+        assert harness.providers.saved[0].contact_phone == "0700000001"
+
+    async def test_the_second_mobile_column_is_used_only_when_the_first_is_blank(self):
+        harness = Harness([_row(3, "Jane Doe", provenance={"MOBILE CONTACT 2": "0700000002"})])
+        await harness.execute()
+        assert harness.providers.saved[0].contact_phone == "0700000002"
+
+    async def test_the_two_mobile_columns_are_never_concatenated(self):
+        harness = Harness(
+            [
+                _row(
+                    3,
+                    "Jane Doe",
+                    provenance={
+                        "CONTACT MOBILE 1": "0700000001",
+                        "MOBILE CONTACT 2": "0700000002",
+                    },
+                )
+            ]
+        )
+        await harness.execute()
+        assert harness.providers.saved[0].contact_phone == "0700000001"
+
+    async def test_no_mobile_column_leaves_contact_phone_unset(self):
+        harness = Harness([_row(3, "Jane Doe")])
+        await harness.execute()
+        assert harness.providers.saved[0].contact_phone is None
+
     async def test_created_ids_are_recorded_on_the_row(self):
         harness = Harness([_row(3, "Jane Doe", organisation="Safe Places")])
         result = await harness.execute()
@@ -313,7 +349,10 @@ class TestIdempotencyAndIsolation:
         assert result.failed == 1
         failed = next(r for r in harness.imports.recorded if r.raw_name == "Broken Person")
         assert failed.outcome is PractitionerImportOutcome.NEEDS_REVIEW
-        assert any("database refused" in reason for reason in failed.reasons)
+        assert any(
+            reason.code is ImportReasonCode.APPLY_FAILED and "database refused" in reason.message
+            for reason in failed.reasons
+        )
         assert failed.imported_provider_id is None
         assert harness.imports.batch.status is ImportBatchStatus.APPLIED
 

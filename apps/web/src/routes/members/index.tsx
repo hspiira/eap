@@ -3,10 +3,14 @@ import { useCallback, useState } from "react"
 import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { createFileRoute, Link, useNavigate, useSearch } from "@tanstack/react-router"
 import {
+  CirclePause,
+  CirclePlay,
+  CircleX,
   Download,
   ExternalLink,
   FileDown,
   FileUp,
+  Merge,
   MoreHorizontal,
   Plus,
   ScanSearch,
@@ -15,6 +19,7 @@ import {
 } from "lucide-react"
 
 import { type MemberDuplicateCandidate, membersApi } from "@/api/endpoints/members"
+import { BulkAction } from "@/components/common/BulkAction"
 import { EmptyState } from "@/components/common/EmptyState"
 import { EntityListView, type ListColumn } from "@/components/common/EntityListView"
 import { FilterBar, FilterChip, FilterSearch, FilterTrigger } from "@/components/common/FilterBar"
@@ -44,7 +49,7 @@ import {
 import { TableCell, TableRow } from "@/components/ui/table"
 import { useToast } from "@/contexts/ToastContext"
 import { useCanWrite, useCurrentRole } from "@/hooks/useCanWrite"
-import { useListPage } from "@/hooks/useListPage"
+import { NEWEST_FIRST, useListPage } from "@/hooks/useListPage"
 import { useTableSelection } from "@/hooks/useTableSelection"
 import { normalizeErrorMessage } from "@/lib/errors"
 import { useEntityList } from "@/lib/queries"
@@ -99,7 +104,11 @@ type StatusFilter = (typeof STATUS_OPTIONS)[number]["value"]
 function MembersListPage() {
   const searchParams = useSearch({ from: "/members/" })
   const navigate = useNavigate({ from: "/members/" })
-  const list = useListPage({ searchParams, navigate })
+  const list = useListPage({
+    searchParams,
+    navigate,
+    initialSort: NEWEST_FIRST,
+  })
   const canWrite = useCanWrite()
   const queryClient = useQueryClient()
   const toast = useToast()
@@ -169,7 +178,7 @@ function MembersListPage() {
       actions={
         <>
           <IconButton
-            label="Export members"
+            label="Export"
             icon={Download}
             onClick={() =>
               void download(
@@ -183,39 +192,21 @@ function MembersListPage() {
               )
             }
           />
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            className="h-7 gap-1.5 px-2"
+          <IconButton
+            label="Download import template"
+            icon={FileDown}
             onClick={() =>
               void download(membersApi.getImportTemplate(), "members-import-template.csv")
             }
-          >
-            <FileDown className="size-3.5" />
-            Template
-          </Button>
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            className="h-7 gap-1.5 px-2"
-            onClick={scanDuplicates}
-          >
-            <ScanSearch className="size-3.5" />
-            Find duplicates
-          </Button>
+          />
+          <IconButton label="Find duplicates" icon={ScanSearch} onClick={scanDuplicates} />
           {canWrite ? (
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              className="h-7 gap-1.5 rounded-none px-2"
+            <IconButton
+              label="Import"
+              icon={FileUp}
+              emphasis="raised"
               onClick={() => setImportOpen(true)}
-            >
-              <FileUp className="size-3.5" />
-              Import
-            </Button>
+            />
           ) : null}
           {canWrite ? (
             <Button
@@ -344,31 +335,65 @@ function MembersListPage() {
         toolbar={
           <SelectionBar count={selection.selectedIds.size} onClear={selection.clearSelection}>
             {role === "Admin" && mergePair ? (
-              <Button
-                type="button"
-                variant="destructive"
-                size="sm"
-                className="h-7 rounded-none px-2.5"
+              <IconButton
+                label="Merge selected"
+                icon={Merge}
+                destructive
                 onClick={() => setMergeOpen(true)}
-              >
-                Merge selected
-              </Button>
+              />
             ) : null}
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              className="h-7 rounded-none px-2.5"
+            <BulkAction
+              ids={selection.selectedIds}
+              label="Suspend"
+              icon={CirclePause}
+              confirmTitle="Suspend members"
+              confirmDescription={(n) => `Suspend ${n} selected member${n === 1 ? "" : "s"}?`}
+              action={membersApi.suspend}
+              invalidateKey={["members"]}
+              verb="suspended"
+              noun="member"
+              labelFor={(id) => mergeMembers.find((m) => m.id === id)?.display_label ?? id}
+              onDone={selection.clearSelection}
+            />
+            <BulkAction
+              ids={selection.selectedIds}
+              label="Reinstate"
+              icon={CirclePlay}
+              confirmTitle="Reinstate members"
+              confirmDescription={(n) => `Reinstate ${n} selected member${n === 1 ? "" : "s"}?`}
+              action={membersApi.reinstate}
+              invalidateKey={["members"]}
+              verb="reinstated"
+              noun="member"
+              labelFor={(id) => mergeMembers.find((m) => m.id === id)?.display_label ?? id}
+              onDone={selection.clearSelection}
+            />
+            <BulkAction
+              ids={selection.selectedIds}
+              label="Terminate"
+              icon={CircleX}
+              confirmTitle="Terminate members"
+              confirmDescription={(n) =>
+                `Terminate ${n} selected member${n === 1 ? "" : "s"}? This ends their eligibility.`
+              }
+              destructive
+              action={membersApi.terminate}
+              invalidateKey={["members"]}
+              verb="terminated"
+              noun="member"
+              labelFor={(id) => mergeMembers.find((m) => m.id === id)?.display_label ?? id}
+              onDone={selection.clearSelection}
+            />
+            <IconButton
+              label="Export selected"
+              icon={Download}
               onClick={() =>
                 void download(
                   membersApi.exportCsv({ member_ids: [...selection.selectedIds] }),
                   "selected-members.csv",
                 )
               }
-            >
-              <Download className="mr-1.5 size-3.5" />
-              Export selected
-            </Button>
+            />
           </SelectionBar>
         }
       />

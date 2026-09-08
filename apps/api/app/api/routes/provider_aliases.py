@@ -12,6 +12,7 @@ from app.api.dependencies import get_audit_event_handler
 from app.api.dependencies.pagination import PageParams, pagination
 from app.api.dependencies.provider_network import get_provider_alias_repository
 from app.api.schemas.provider_network_schemas import (
+    ProviderAliasCreateRequest,
     ProviderAliasListResponse,
     ProviderAliasRejectRequest,
     ProviderAliasResolveRequest,
@@ -23,12 +24,14 @@ from app.core.security import TokenData
 from app.domain.entities.provider_alias import ProviderAliasEntity
 from app.domain.enums.provider_network import AliasResolutionState
 from app.domain.enums.tenancy import TenantRole
-from app.domain.exceptions import NotFoundError
+from app.domain.exceptions import NotFoundError, ValidationException
 from app.domain.repositories.provider_network_repository import ProviderAliasRepository
+from app.domain.services.provider_alias_normalisation import normalise_practitioner_name
 from app.domain.value_objects.core import ProviderId, TenantId, UserId
 from app.domain.value_objects.provider_network import ProviderAliasId
 from app.shared.decorators import readonly, transactional
 from app.shared.utils.datetime import utc_now
+from app.shared.utils.generators import generate_cuid
 from app.shared.utils.route_audit_helper import audit_change
 
 router = APIRouter(prefix="/provider-aliases", tags=["provider-aliases"])
@@ -87,6 +90,56 @@ async def list_aliases(
         limit=pg.limit,
         has_more=(pg.offset + len(items)) < total,
     )
+
+
+@router.post(
+    "",
+    response_model=ProviderAliasResponse,
+    status_code=status.HTTP_201_CREATED,
+    dependencies=[Depends(require_tenant_role(TenantRole.ADMIN))],
+)
+@transactional()
+async def create_alias(
+    data: ProviderAliasCreateRequest,
+    request: Request,
+    tenant_id: str = Query(...),
+    current_user: TokenData = Depends(require_same_tenant),
+    repo: ProviderAliasRepository = Depends(get_provider_alias_repository),
+    audit_handler=Depends(get_audit_event_handler),
+    db: AsyncSession = Depends(get_db),
+):
+    """Put a source name into the review queue, unmapped.
+
+    Staging reads decisions; it does not open them, so a source system whose
+    names nobody has queued has nothing for a reviewer to act on. This is how
+    those names arrive. Asking twice returns the entry that is already there
+    rather than a second one, so a re-run of a seeding script cannot split one
+    name across two queue entries or reopen a decision somebody made.
+    """
+    tenant = TenantId(tenant_id)
+    normalized = normalise_practitioner_name(data.source_value)
+    if not normalized:
+        raise ValidationException(
+            "Source value has nothing usable left once titles and punctuation are dropped",
+            field="source_value",
+        )
+    existing = await repo.find_alias(tenant, data.source_system, normalized)
+    if existing is not None:
+        return _response(existing)
+
+    now = utc_now()
+    alias = ProviderAliasEntity(
+        id=ProviderAliasId(generate_cuid()),
+        tenant_id=tenant,
+        source_system=data.source_system,
+        source_value=data.source_value,
+        normalized_value=normalized,
+        created_at=now,
+        updated_at=now,
+    )
+    await repo.save_alias(alias)
+    await audit_change(alias, audit_handler, current_user, request)
+    return _response(alias)
 
 
 @router.post(

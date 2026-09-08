@@ -392,10 +392,16 @@ because staging resolves neither members nor services. Closing that means:
 
 Blocked inputs, unchanged: the diagnosis vocabulary (clinician) and Phase D
 collection changes (counselling team). A real import additionally waits on
-data prerequisites, not code: approved practitioner aliases (5,227 rows held
-as UnmappedPractitioner in the end-to-end run), the client list and aliases
-(838 UnresolvedClient), the member roster (740 UnresolvedMember), and
-catalogue services matching the intervention canon (15 UnresolvedService).
+data prerequisites, not code: approved practitioner aliases, the client list
+and aliases, the member roster, and catalogue services matching the
+intervention canon.
+
+2026-09-07: those prerequisites were loaded into dev and the workbook's 7,471
+activity-log rows were staged and applied for real. 85 imported; the rest wait
+on data, not code. `DEV_DATA_LOAD.md` carries the counts per outcome, what each
+one waits on, and the one design change worth making first: a staged session
+row keeps no copy of the source values it was judged from, so improving the
+reference data forces a re-stage rather than a re-judge.
 
 ## Sequencing summary
 

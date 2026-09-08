@@ -171,6 +171,7 @@ ignore_imports = [
     "app.api.dependencies.reporting -> app.infrastructure.repositories.report_repository",
     "app.api.dependencies.reporting -> app.infrastructure.repositories.utilisation_event_repository",
     "app.api.dependencies.reporting -> app.infrastructure.services.report_query_runner",
+    "app.api.dependencies.reporting -> app.infrastructure.services.dashboard_query_runner",
     "app.api.dependencies.tenancy -> app.infrastructure.repositories.password_set_token_repository",
     "app.api.dependencies.tenancy -> app.infrastructure.repositories.refresh_token_repository",
     "app.api.dependencies.tenancy -> app.infrastructure.repositories.tenant_repository",

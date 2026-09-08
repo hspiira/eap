@@ -224,6 +224,27 @@ class SessionImportRepository(ABC):
         """
 
     @abstractmethod
+    async def release_replay_keys(self, tenant_id: TenantId, batch_id: SessionImportBatchId) -> int:
+        """Stop an abandoned batch's rows claiming their source rows.
+
+        A replay key says "this source row has been imported". Rows of a batch
+        nobody will apply imported nothing, and while they hold their keys the
+        same extract cannot be staged again. The original key stays legible
+        inside the released one, so what was staged is still readable.
+        """
+
+    @abstractmethod
+    async def release_superseded_rows(self, tenant_id: TenantId, file_hash: str) -> int:
+        """Stop earlier judgings of this file claiming rows they never imported.
+
+        Staging the same extract again is how rows re-judge against reference
+        data that has since improved. A row from an earlier batch that produced
+        no session is exactly such a row: its judgement is being replaced, so
+        it gives its key up. Rows that did produce a session keep theirs, and
+        the new judging returns them as duplicates.
+        """
+
+    @abstractmethod
     async def find_row_by_replay_key(
         self, tenant_id: TenantId, replay_key: str
     ) -> SessionImportRowEntity | None: ...

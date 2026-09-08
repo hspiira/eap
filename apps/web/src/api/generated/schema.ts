@@ -2051,6 +2051,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/dashboard": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Aggregate dashboard figures for the caller's tenant
+         * @description All dashboard figures in one read, computed against the same instant.
+         */
+        get: operations["get_dashboard_dashboard_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/diagnoses": {
         parameters: {
             query?: never;
@@ -3934,7 +3954,17 @@ export interface paths {
         /** List Aliases */
         get: operations["list_aliases_provider_aliases_get"];
         put?: never;
-        post?: never;
+        /**
+         * Create Alias
+         * @description Put a source name into the review queue, unmapped.
+         *
+         *     Staging reads decisions; it does not open them, so a source system whose
+         *     names nobody has queued has nothing for a reviewer to act on. This is how
+         *     those names arrive. Asking twice returns the entry that is already there
+         *     rather than a second one, so a re-run of a seeding script cannot split one
+         *     name across two queue entries or reopen a decision somebody made.
+         */
+        post: operations["create_alias_provider_aliases_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -4991,7 +5021,9 @@ export interface paths {
          * Stage Import
          * @description Stage rows for review. Writes no sessions and has no billing side effects.
          *
-         *     Restaging the same file in one tenant is a conflict, not a second batch.
+         *     Restaging a file whose batch is still awaiting a decision is a conflict,
+         *     not a second batch. Restaging one that has been applied or abandoned is how
+         *     rows re-judge against reference data that has since improved.
          */
         post: operations["stage_import_session_imports_post"];
         delete?: never;
@@ -5017,6 +5049,33 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/session-imports/{batch_id}/abandon": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Abandon Batch
+         * @description Close a batch nobody will apply, with the reason on the record.
+         *
+         *     A batch stages what the review data said at the time. One staged before
+         *     the practitioner aliases or the member roster were loaded holds outcomes
+         *     that are now wrong, and a staged row keeps no copy of the source values it
+         *     was judged from, so its rows cannot be re-judged in place. Abandoning the
+         *     batch says so and frees the extract to be staged again: neither the file's
+         *     hash nor its rows' replay keys go on claiming a source nobody will import.
+         */
+        post: operations["abandon_batch_session_imports__batch_id__abandon_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/session-imports/{batch_id}/apply": {
         parameters: {
             query?: never;
@@ -5031,9 +5090,9 @@ export interface paths {
          * @description Write every importable row through the historical path, then close the batch.
          *
          *     Applying a second time is refused, so a replayed request cannot write
-         *     twice. `imported` is zero today for every batch: no staged row can reach
-         *     Accepted while member and service resolution does not exist, which the
-         *     row outcomes state per row rather than leaving to be discovered here.
+         *     twice. Only Accepted rows are written; every other row states per row why
+         *     it was passed over, so an unimportable batch is legible without reading
+         *     this code.
          */
         post: operations["apply_batch_session_imports__batch_id__apply_post"];
         delete?: never;
@@ -6623,6 +6682,16 @@ export interface components {
          */
         CaseStatus: "Intake" | "Assessment" | "Active" | "Closed" | "ReferredOut" | "NoShowClosed";
         /**
+         * CategoryCount
+         * @description Completed sessions per session category inside the range.
+         */
+        CategoryCount: {
+            /** Category */
+            category: string;
+            /** Total */
+            total: number;
+        };
+        /**
          * ClientAliasMergeRequest
          * @description Move aliases from another client into the selected client.
          */
@@ -7047,6 +7116,18 @@ export interface components {
             tenant_id: string;
             /** Updated At */
             updated_at: string;
+        };
+        /**
+         * ClientSessions
+         * @description Completed sessions per client inside the range.
+         */
+        ClientSessions: {
+            /** Client Id */
+            client_id: string;
+            /** Client Name */
+            client_name: string;
+            /** Total */
+            total: number;
         };
         /**
          * ClientStatsResponse
@@ -8006,6 +8087,94 @@ export interface components {
          */
         DSARRequestType: "Export" | "Erasure";
         /**
+         * DashboardKpis
+         * @description Headline counts. Session counts follow the range; the rest are stock.
+         */
+        DashboardKpis: {
+            /**
+             * Clients Served
+             * @description Distinct clients with a completed session inside the range
+             */
+            clients_served: number;
+            /**
+             * Clients Total
+             * @description Clients on the tenant, any status
+             */
+            clients_total: number;
+            /**
+             * Clients With Roster
+             * @description Clients that have at least one eligible member on file
+             */
+            clients_with_roster: number;
+            /**
+             * Covered Members
+             * @description Eligible members with Active status
+             */
+            covered_members: number;
+            /**
+             * Import Backlog
+             * @description Rows in the current import batch still blocked on an unresolved identity
+             */
+            import_backlog: number;
+            /**
+             * Sessions
+             * @description Completed sessions inside the range
+             */
+            sessions: number;
+            /**
+             * Sessions Prior
+             * @description Completed sessions in the equal-length prior window, for the delta
+             */
+            sessions_prior: number;
+        };
+        /**
+         * DashboardResponse
+         * @description The whole dashboard in one authenticated, tenant-scoped read.
+         */
+        DashboardResponse: {
+            data_quality: components["schemas"]["DataQuality"];
+            /** @description Absent when the tenant has never staged an import */
+            import_batch?: components["schemas"]["ImportBatchSummary"] | null;
+            /** Import Queues */
+            import_queues: components["schemas"]["ImportQueueEntry"][];
+            kpis: components["schemas"]["DashboardKpis"];
+            range: components["schemas"]["RangeInfo"];
+            /** Sessions By Category */
+            sessions_by_category: components["schemas"]["CategoryCount"][];
+            /** Sessions Series */
+            sessions_series: components["schemas"]["SeriesPoint"][];
+            /** Top Clients */
+            top_clients: components["schemas"]["ClientSessions"][];
+            /** Trending Services */
+            trending_services: components["schemas"]["ServiceTrend"][];
+        };
+        /**
+         * DataQuality
+         * @description Derived gaps that block reporting, each one an actionable queue.
+         */
+        DataQuality: {
+            /**
+             * Clients Without Roster
+             * @description Clients with no eligible members on file
+             */
+            clients_without_roster: number;
+            /**
+             * Providers Pending
+             * @description Practitioners not yet activated
+             */
+            providers_pending: number;
+            /**
+             * Sessions Missing Outcome
+             * @description Completed sessions with no clinical outcome recorded
+             */
+            sessions_missing_outcome: number;
+            /**
+             * Sessions Missing Rate
+             * @description Completed sessions with no rate
+             */
+            sessions_missing_rate: number;
+        };
+        /**
          * DateRangeSchema
          * @description Date range schema.
          */
@@ -8338,7 +8507,15 @@ export interface components {
              */
             sort_order: number;
         };
-        /** DiagnosisUpdate */
+        /**
+         * DiagnosisUpdate
+         * @description Edit a diagnosis, including moving it under a different type.
+         *
+         *     ``type_id`` exists because the taxonomy is curated over time and a leaf can
+         *     be filed under the wrong category. Moving one does not rewrite history: a
+         *     session records ``diagnosis_type_id`` and ``diagnosis_id`` independently, so
+         *     an existing session keeps the type it was recorded against.
+         */
         DiagnosisUpdate: {
             /** Description */
             description?: string | null;
@@ -8346,6 +8523,11 @@ export interface components {
             name?: string | null;
             /** Sort Order */
             sort_order?: number | null;
+            /**
+             * Type Id
+             * @description Move the diagnosis under this type
+             */
+            type_id?: string | null;
         };
         /**
          * DocumentCreate
@@ -9078,6 +9260,61 @@ export interface components {
          * @enum {string}
          */
         ImportBatchStatus: "Staged" | "Applied" | "Abandoned";
+        /**
+         * ImportBatchSummary
+         * @description The batch the backlog figures describe, as a part-to-whole composition.
+         */
+        ImportBatchSummary: {
+            /** Accepted */
+            accepted: number;
+            /** Applied At */
+            applied_at?: string | null;
+            /**
+             * Blocked
+             * @description Rows held on an unresolved identity
+             */
+            blocked: number;
+            /** Duplicate */
+            duplicate: number;
+            /** File Name */
+            file_name: string;
+            /** Row Count */
+            row_count: number;
+            /** Status */
+            status: string;
+        };
+        /**
+         * ImportQueueEntry
+         * @description One unresolved outcome bucket in the current import batch.
+         */
+        ImportQueueEntry: {
+            /** Outcome */
+            outcome: string;
+            /** Total */
+            total: number;
+        };
+        /**
+         * ImportReasonCode
+         * @description Machine-readable code for a staged row's outcome reason (P-10).
+         *
+         *     A message alone is fine to display but not to build a review UI or any
+         *     other consumer against: rewording it silently breaks a string match.
+         *     Every reason attached to a row carries one of these alongside its
+         *     human-readable message.
+         * @enum {string}
+         */
+        ImportReasonCode: "AlreadyStaged" | "MissingName" | "UnmappedProfession" | "UnmappedSpeciality" | "DuplicateNameCandidate" | "OrganisationNameCollision" | "MultiEmailCell" | "EmployeeContractMemo" | "ApplyFailed" | "Legacy";
+        /**
+         * ImportReasonSchema
+         * @description Why one row needs review, applied or apply failed (P-10).
+         *
+         *     `code` is stable and machine-readable; match on it, never on `message`.
+         */
+        ImportReasonSchema: {
+            code: components["schemas"]["ImportReasonCode"];
+            /** Message */
+            message: string;
+        };
         /**
          * ImportRowOutcome
          * @description Per-row result of a staged historical import.
@@ -10401,6 +10638,12 @@ export interface components {
         PractitionerImportRowPreview: {
             /** Contact Email */
             contact_email: string | null;
+            /** Imported Affiliation Id */
+            imported_affiliation_id?: string | null;
+            /** Imported Organisation Id */
+            imported_organisation_id?: string | null;
+            /** Imported Provider Id */
+            imported_provider_id?: string | null;
             /** Mapped Profession */
             mapped_profession: string | null;
             /** Normalized Name */
@@ -10417,7 +10660,7 @@ export interface components {
             /** Raw Profession */
             raw_profession: string | null;
             /** Reasons */
-            reasons: string[];
+            reasons: components["schemas"]["ImportReasonSchema"][];
             /** Row Number */
             row_number: number;
             /** Sheet Name */
@@ -10526,6 +10769,19 @@ export interface components {
             valid_from: string;
             /** Valid Until */
             valid_until: string | null;
+        };
+        /**
+         * ProviderAliasCreateRequest
+         * @description Open a review queue entry for a name a source system uses.
+         *
+         *     Creating one attributes nothing: the alias starts unmapped, and naming the
+         *     practitioner is still the separate, audited resolve step.
+         */
+        ProviderAliasCreateRequest: {
+            /** Source System */
+            source_system: string;
+            /** Source Value */
+            source_value: string;
         };
         /** ProviderAliasListResponse */
         ProviderAliasListResponse: {
@@ -10859,6 +11115,38 @@ export interface components {
             phone?: string | null;
             region?: components["schemas"]["UgandaRegion"] | null;
         };
+        /**
+         * RangeInfo
+         * @description The resolved window the flow figures describe.
+         */
+        RangeInfo: {
+            /**
+             * End
+             * @description Exclusive window end, ISO 8601
+             */
+            end: string;
+            /**
+             * Granularity
+             * @description Bucket size of sessions_series, chosen from the window length
+             * @enum {string}
+             */
+            granularity: "day" | "week" | "month";
+            /**
+             * Preset
+             * @enum {string}
+             */
+            preset: "this_week" | "this_month" | "last_30d" | "last_90d" | "last_180d" | "custom";
+            /**
+             * Prior Start
+             * @description Start of the equal-length window before this one, ISO 8601
+             */
+            prior_start: string;
+            /**
+             * Start
+             * @description Inclusive window start, ISO 8601
+             */
+            start: string;
+        };
         /** RateCardEntrySchema */
         RateCardEntrySchema: {
             rate: components["schemas"]["app__api__schemas__pricing_schemas__MoneySchema-Input"];
@@ -11072,6 +11360,34 @@ export interface components {
              * @enum {string}
              */
             type: "client" | "practitioner" | "provider_organisation";
+        };
+        /**
+         * SeriesPoint
+         * @description One bucket of completed sessions, split by how it was delivered.
+         *
+         *     `unknown` carries sessions whose source recorded no delivery type. It is
+         *     kept as its own band rather than folded into either, so the chart never
+         *     asserts a delivery type the record does not carry.
+         */
+        SeriesPoint: {
+            /**
+             * Bucket
+             * @description Bucket start: YYYY-MM-DD, or YYYY-MM when monthly
+             */
+            bucket: string;
+            /**
+             * Label
+             * @description Display label for the bucket
+             */
+            label: string;
+            /** Online */
+            online: number;
+            /** Physical */
+            physical: number;
+            /** Total */
+            total: number;
+            /** Unknown */
+            unknown: number;
         };
         /**
          * ServiceAssignmentCreate
@@ -11749,6 +12065,25 @@ export interface components {
             feedback: string;
         };
         /**
+         * ServiceTrend
+         * @description One service's demand inside the range, against the prior window.
+         */
+        ServiceTrend: {
+            /**
+             * Change Pct
+             * @description Percentage change against the prior window; null when it had no sessions
+             */
+            change_pct?: number | null;
+            /** Prior Total */
+            prior_total: number;
+            /** Service Id */
+            service_id: string;
+            /** Service Name */
+            service_name: string;
+            /** Total */
+            total: number;
+        };
+        /**
          * ServiceUpdate
          * @description Request schema for updating service information.
          */
@@ -11852,6 +12187,14 @@ export interface components {
              * @description Remaining after the drawdown
              */
             sessions_remaining?: number | null;
+        };
+        /**
+         * SessionImportAbandonRequest
+         * @description Why nobody will apply this batch. It goes on the record, so it is required.
+         */
+        SessionImportAbandonRequest: {
+            /** Reason */
+            reason: string;
         };
         /**
          * SessionImportApplyResponse
@@ -16891,6 +17234,43 @@ export interface operations {
             };
         };
     };
+    get_dashboard_dashboard_get: {
+        parameters: {
+            query: {
+                tenant_id: string;
+                /** @description Window the flow figures cover */
+                range?: "this_week" | "this_month" | "last_30d" | "last_90d" | "last_180d" | "custom";
+                /** @description Window start when range is custom, ISO 8601 */
+                start?: string | null;
+                /** @description Window end when range is custom, ISO 8601 */
+                end?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DashboardResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     list_diagnoses_diagnoses_get: {
         parameters: {
             query?: {
@@ -20924,6 +21304,41 @@ export interface operations {
             };
         };
     };
+    create_alias_provider_aliases_post: {
+        parameters: {
+            query: {
+                tenant_id: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ProviderAliasCreateRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProviderAliasResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     reject_alias_provider_aliases__alias_id__reject_post: {
         parameters: {
             query: {
@@ -23218,6 +23633,43 @@ export interface operations {
             cookie?: never;
         };
         requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SessionImportBatchResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    abandon_batch_session_imports__batch_id__abandon_post: {
+        parameters: {
+            query: {
+                tenant_id: string;
+            };
+            header?: never;
+            path: {
+                batch_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SessionImportAbandonRequest"];
+            };
+        };
         responses: {
             /** @description Successful Response */
             200: {

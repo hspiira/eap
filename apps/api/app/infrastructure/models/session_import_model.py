@@ -8,10 +8,12 @@ from sqlalchemy import (
     DateTime,
     ForeignKey,
     ForeignKeyConstraint,
+    Index,
     Integer,
     String,
     Text,
     UniqueConstraint,
+    text,
 )
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -32,15 +34,22 @@ from app.infrastructure.models.base import (
 class SessionImportBatchModel(CuidMixin, TenantMixin, Base, TimestampMixin):
     """One import attempt and its provenance.
 
-    The tenant/hash uniqueness makes restaging the same file within a tenant an
-    explicit conflict rather than a silent second batch.
+    The tenant/hash uniqueness makes restaging the same file an explicit
+    conflict while a batch of it is still awaiting a decision. It stops there:
+    once a batch is applied or abandoned, staging the extract again is the only
+    way to re-judge rows that could not be resolved when reference data was
+    thinner, and the rows' replay keys are what stop a second import.
     """
 
     __tablename__ = "session_import_batches"
     __table_args__ = (
         UniqueConstraint("tenant_id", "id", name="uq_session_import_batches_tenant"),
-        UniqueConstraint(
-            "tenant_id", "file_hash", name="uq_session_import_batches_tenant_file_hash"
+        Index(
+            "uq_session_import_batches_tenant_file_hash",
+            "tenant_id",
+            "file_hash",
+            unique=True,
+            postgresql_where=text("status = 'Staged'"),
         ),
     )
 

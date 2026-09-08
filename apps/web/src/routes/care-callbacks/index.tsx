@@ -3,12 +3,15 @@ import { useEffect, useState } from "react"
 import { useQuery } from "@tanstack/react-query"
 import { createFileRoute, Link, useNavigate, useSearch } from "@tanstack/react-router"
 import {
+  Archive,
+  CheckCheck,
   Download,
   ExternalLink,
   Headphones,
   MoreHorizontal,
   Phone,
   Plus,
+  Power,
   RotateCw,
 } from "lucide-react"
 
@@ -192,7 +195,38 @@ function CampaignsListPage() {
             <SelectionBar count={selection.selectedIds.size} onClear={selection.clearSelection}>
               <BulkAction
                 ids={selection.selectedIds}
+                label="Activate"
+                icon={Power}
+                confirmTitle="Activate campaigns"
+                confirmDescription={(n) =>
+                  `Activate ${n} selected ${n === 1 ? "campaign" : "campaigns"}?`
+                }
+                labelFor={(id) => items.find((i) => i.id === id)?.name ?? id}
+                action={careCallbacksApi.activateCampaign}
+                invalidateKey={["care-callback-campaigns"]}
+                verb="activated"
+                noun="campaign"
+                onDone={selection.clearSelection}
+              />
+              <BulkAction
+                ids={selection.selectedIds}
+                label="Complete"
+                icon={CheckCheck}
+                confirmTitle="Complete campaigns"
+                confirmDescription={(n) =>
+                  `Complete ${n} selected ${n === 1 ? "campaign" : "campaigns"}?`
+                }
+                labelFor={(id) => items.find((i) => i.id === id)?.name ?? id}
+                action={careCallbacksApi.completeCampaign}
+                invalidateKey={["care-callback-campaigns"]}
+                verb="completed"
+                noun="campaign"
+                onDone={selection.clearSelection}
+              />
+              <BulkAction
+                ids={selection.selectedIds}
                 label="Archive"
+                icon={Archive}
                 confirmTitle="Archive campaigns"
                 confirmDescription={(n) =>
                   `${n} ${n === 1 ? "campaign" : "campaigns"} will be archived.`
@@ -207,7 +241,7 @@ function CampaignsListPage() {
               />
             </SelectionBar>
             <div className="relative min-h-0 flex-1 overflow-auto">
-              <Table className="w-full caption-bottom text-sm">
+              <Table className="w-full caption-bottom text-sm" scrollable={false}>
                 <TableHeader className={STICKY_TABLE_HEAD}>
                   <TableRow className={`hover:bg-transparent ${ROW_BORDER}`}>
                     <TableHead className="w-10 px-3">

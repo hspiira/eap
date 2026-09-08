@@ -39,6 +39,12 @@ async def get_report_query_runner(db: AsyncSession = Depends(get_db)):
     return ReportQueryRunner(db)
 
 
+async def get_dashboard_query_runner(db: AsyncSession = Depends(get_db)):
+    from app.infrastructure.services.dashboard_query_runner import DashboardQueryRunner
+
+    return DashboardQueryRunner(db)
+
+
 async def get_utilisation_event_repository(
     db: AsyncSession = Depends(get_db),
 ) -> "UtilisationEventRepository":

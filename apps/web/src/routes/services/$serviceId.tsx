@@ -440,15 +440,10 @@ function DetailRail({
             label="Duration"
             value={service.duration_minutes != null ? `${service.duration_minutes}m` : null}
           />
+          <DetailRow label="Group" value={service.is_group_service ? "Group" : "Individual"} />
           <DetailRow
-            label="Group"
-            value={
-              service.is_group_service
-                ? service.max_participants
-                  ? `Group · up to ${service.max_participants}`
-                  : "Group"
-                : "Individual"
-            }
+            label="Max participants"
+            value={service.is_group_service ? service.max_participants : null}
           />
         </DetailGrid>
       </RailSection>

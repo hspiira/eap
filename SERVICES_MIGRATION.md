@@ -171,6 +171,30 @@ not.
 selection and leaves history intact. This is a stricter contract than
 industries has, deliberately.
 
+**Amended 2026-09-07.** The rejection stands; the claim about the mechanism was
+false when written. `version` and `effective_until` were read and filtered on
+but never written by any code path, so "keep the existing versioning" kept
+nothing: deactivation wrote only `is_active`, and a rename mutated the label in
+place. The protection this decision claimed for `report_runs.output` did not
+exist.
+
+What the mechanism now is, in code and tested in
+`apps/api/tests/integration/test_diagnosis_versioning.py`:
+
+- Retirement is dated. Deactivating sets `effective_until`; reactivating clears
+  it. The two conditions the read queries require now always agree.
+- Any edit that changes a field bumps `version`.
+- `code` is the stable identity. `name` and `description` are mutable display
+  labels, edited in place.
+
+Successor-row versioning was considered and rejected: `service_sessions`
+references `diagnosis_id` and `diagnosis_type_id` directly, so a new row per
+edit would orphan them, and the retention requirement is met by
+`report_runs.output` already holding the rendered label. The consequence to
+accept explicitly is that a superseded label is not recoverable from these
+tables. Recovering one needs an audit trail, which the diagnosis routes do not
+write; tracked as item 11 in `apps/api/docs/TAXONOMY_FINDINGS.md`.
+
 ### Services decisions
 
 **4. `services.category` must become the `ServiceCategory` enum. This is the

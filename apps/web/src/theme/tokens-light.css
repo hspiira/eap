@@ -54,21 +54,40 @@
   --brand-fg: var(--neutral-0);
 
   /* Semantic roles: four colours, each with surface + fg + emphasis. */
-  --success: #15803d;
-  --success-soft: #dcfce7;
-  --success-fg: #14532d;
+  --success: #1c7d5d;
+  --success-soft: #eff5f3;
+  --success-fg: #1c7d5d;
 
   --warning: #b45309;
   --warning-soft: #fef3c7;
   --warning-fg: #78350f;
 
-  --danger: #b91c1c;
-  --danger-soft: #fee2e2;
-  --danger-fg: #7f1d1d;
+  --danger: #92203d;
+  --danger-soft: #f6eff1;
+  --danger-fg: #92203d;
 
   --info: #1d4ed8;
   --info-soft: #dbeafe;
   --info-fg: #1e3a8a;
+
+  /* Grey chip for an inert status. */
+  --status-neutral: #525252;
+
+  /* Chart series. A fixed categorical order, assigned by series identity and
+     never cycled; validated as a set for colour-vision deficiency separation
+     against this surface. Slots 3 and 4 sit below 3:1 here, so a chart using
+     them ships direct labels rather than relying on the fill alone.
+     --chart-muted carries an absent value, which is not an identity. */
+  --chart-1: #2a78d6;
+  --chart-2: #eb6834;
+  --chart-3: #1baf7a;
+  --chart-4: #eda100;
+  --chart-muted: #a3a3a3;
+
+  /* Import composition: state, not identity, so it wears status colours and
+     always ships with a label. */
+  --chart-good: #0ca30c;
+  --chart-serious: #ec835a;
 
   /* Focus ring + selection. */
   --ring: var(--brand);

@@ -77,9 +77,22 @@ const { Route } = await import("@/routes/service-sessions/index")
 const Page = (Route as unknown as { options: { component: React.ComponentType } }).options.component
 
 describe("sessions list: happy path", () => {
-  it("resolves the service name instead of an id fragment", async () => {
+  it("leads with the attendee and resolves the service name", async () => {
     const screen = renderWithProviders(<Page />)
+    // A session's name-like value is who it was for, not when it happened.
+    const lead = await screen.findByText("Janet Nakato")
+    expect(lead.closest("a")).not.toBeNull()
     expect(await screen.findByText("Short-term counselling")).toBeInTheDocument()
     expect(screen.queryByText("sv_1")).not.toBeInTheDocument()
+  })
+
+  it("offers no sort the list endpoint refuses", async () => {
+    // The endpoint sorts on the session's own columns. Offering member_id or
+    // service_id sent a sort_by it rejects, and the page showed the error
+    // instead of the list.
+    const source = (await import("@/routes/service-sessions/index?raw")).default as string
+    const offered = [...source.matchAll(/field="([a-z_]+)"/g)].map((match) => match[1])
+    expect(offered).toEqual(expect.arrayContaining(["scheduled_at", "status"]))
+    expect(offered.filter((field) => field.endsWith("_id"))).toEqual([])
   })
 })

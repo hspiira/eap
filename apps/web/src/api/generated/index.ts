@@ -78,6 +78,18 @@ export type HoursLogCreate = Schemas["HoursLogCreate"]
 // ----- Care callbacks --------------------------------------------------------
 export type CareCallbackCampaignCreate = Schemas["CareCallbackCampaignCreate"]
 
+// ----- Dashboard -------------------------------------------------------------
+export type DashboardResponse = Schemas["DashboardResponse"]
+export type DashboardKpis = Schemas["DashboardKpis"]
+export type RangeInfo = Schemas["RangeInfo"]
+export type SeriesPoint = Schemas["SeriesPoint"]
+export type ServiceTrend = Schemas["ServiceTrend"]
+export type CategoryCount = Schemas["CategoryCount"]
+export type ClientSessions = Schemas["ClientSessions"]
+export type ImportQueueEntry = Schemas["ImportQueueEntry"]
+export type ImportBatchSummary = Schemas["ImportBatchSummary"]
+export type DataQuality = Schemas["DataQuality"]
+
 // ----- Global search ---------------------------------------------------------
 export type GlobalSearchRequest = Schemas["GlobalSearchRequest"]
 export type GlobalSearchResponse = Schemas["GlobalSearchResponse"]

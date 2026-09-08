@@ -51,6 +51,7 @@ from app.infrastructure.models.session_import_model import (
     SessionImportBatchModel,
     SessionImportRowModel,
 )
+from app.shared.utils.replay_key import RELEASED_PREFIX
 
 _ORGANISATION_SORTS = {
     "name": ProviderOrganisationModel.name,
@@ -418,6 +419,40 @@ class SessionImportRepositoryImpl(SessionImportRepository):
     async def save_batch(self, batch: SessionImportBatchEntity) -> None:
         await self.session.merge(SessionImportMapper.batch_to_model(batch))
         await self.session.flush()
+
+    async def release_replay_keys(self, tenant_id: TenantId, batch_id: SessionImportBatchId) -> int:
+        return await self._release(tenant_id, SessionImportRowModel.batch_id == batch_id.value)
+
+    async def release_superseded_rows(self, tenant_id: TenantId, file_hash: str) -> int:
+        return await self._release(
+            tenant_id,
+            SessionImportRowModel.batch_id.in_(
+                select(SessionImportBatchModel.id).where(
+                    SessionImportBatchModel.tenant_id == tenant_id.value,
+                    SessionImportBatchModel.file_hash == file_hash,
+                )
+            ),
+        )
+
+    async def _release(self, tenant_id: TenantId, scope) -> int:
+        """Give up the keys of rows in `scope` that never produced a session."""
+        result = await self.session.execute(
+            update(SessionImportRowModel)
+            .where(
+                SessionImportRowModel.tenant_id == tenant_id.value,
+                scope,
+                SessionImportRowModel.imported_session_id.is_(None),
+                SessionImportRowModel.replay_key.not_like(f"{RELEASED_PREFIX}%"),
+            )
+            .values(
+                replay_key=RELEASED_PREFIX
+                + SessionImportRowModel.batch_id
+                + ":"
+                + SessionImportRowModel.replay_key
+            )
+        )
+        await self.session.flush()
+        return result.rowcount or 0
 
     async def add_rows(self, rows: Sequence[SessionImportRowEntity], *, file_hash: str) -> None:
         for row in rows:

@@ -4,7 +4,11 @@ from datetime import datetime
 
 from pydantic import BaseModel
 
-from app.domain.enums.provider_network import ImportBatchStatus, PractitionerImportOutcome
+from app.domain.enums.provider_network import (
+    ImportBatchStatus,
+    ImportReasonCode,
+    PractitionerImportOutcome,
+)
 
 
 class PractitionerImportBatchResponse(BaseModel):
@@ -20,6 +24,16 @@ class PractitionerImportBatchResponse(BaseModel):
     applied_at: datetime | None
 
 
+class ImportReasonSchema(BaseModel):
+    """Why one row needs review, applied or apply failed (P-10).
+
+    `code` is stable and machine-readable; match on it, never on `message`.
+    """
+
+    code: ImportReasonCode
+    message: str
+
+
 class PractitionerImportRowPreview(BaseModel):
     sheet_name: str
     row_number: int
@@ -30,8 +44,13 @@ class PractitionerImportRowPreview(BaseModel):
     raw_profession: str | None
     mapped_profession: str | None
     contact_email: str | None
-    reasons: list[str]
+    reasons: list[ImportReasonSchema]
     provenance: dict
+    #: What applying the batch created from this row. Null until it is applied,
+    #: and null for a row the apply passed over.
+    imported_provider_id: str | None = None
+    imported_organisation_id: str | None = None
+    imported_affiliation_id: str | None = None
 
 
 class PractitionerImportRowListResponse(BaseModel):

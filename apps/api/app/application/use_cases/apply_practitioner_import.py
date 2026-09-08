@@ -20,8 +20,17 @@ Adopted decisions (recorded in PROVIDERS_MIGRATION.md, 2026-09-07):
   organisation arrives with Pending approval: imported paperwork is not
   approval.
 - A created practitioner is not bookable: no tier, no region, panel and
-  accreditation Pending, no gender. Profession, rates and contact extras stay
-  in the staged row's provenance.
+  accreditation Pending, no gender. Rates and the contract memo stay in the
+  staged row's provenance only; profession does too (P-01's catalogue
+  vocabulary is still an open product/clinical decision, so nothing here
+  invents a specialty link).
+- Adopted 2026-09-07 (P-08): a practitioner's phone number was being computed
+  during staging and then dropped at apply, unlike contact_email. Fixed by
+  reading it from the row's own provenance rather than adding a new column:
+  `CONTACT MOBILE 1` if populated, else `MOBILE CONTACT 2`, first non-blank
+  only, never concatenated. This resolves which single number becomes
+  `contact_phone`; it does not resolve keeping the second number anywhere
+  structured, which stays P-04's open question.
 """
 
 from collections.abc import Callable
@@ -35,7 +44,11 @@ from app.domain.entities.provider import ProviderEntity
 from app.domain.entities.provider_affiliation import ProviderAffiliationEntity
 from app.domain.entities.provider_organisation import ProviderOrganisationEntity
 from app.domain.enums import AccreditationStatus, BaseStatus, PanelStatus
-from app.domain.enums.provider_network import ImportBatchStatus, PractitionerImportOutcome
+from app.domain.enums.provider_network import (
+    ImportBatchStatus,
+    ImportReasonCode,
+    PractitionerImportOutcome,
+)
 from app.domain.exceptions import DomainError, NotFoundError
 from app.domain.repositories.practitioner_import_repository import PractitionerImportRepository
 from app.domain.repositories.provider_network_repository import (
@@ -209,7 +222,7 @@ class ApplyPractitionerImportUseCase:
             return await self._create_records(tenant_id, row, actor, now, organisations, counters)
         except Exception as exc:  # noqa: BLE001 - one bad row must not sink the batch
             counters.failed += 1
-            row.quarantine(f"Apply failed: {exc}")
+            row.quarantine(ImportReasonCode.APPLY_FAILED, f"Apply failed: {exc}")
             await self._imports.record_row_apply(row)
             return AppliedRow(
                 sheet_name=row.sheet_name,
@@ -303,7 +316,7 @@ class ApplyPractitionerImportUseCase:
             user_id=None,
             display_name=(row.raw_name or "").strip(),
             contact_email=row.contact_email,
-            contact_phone=None,
+            contact_phone=_contact_phone(row),
             status=BaseStatus.PENDING,
             provider_profile=ProviderProfile(
                 tier=None,
@@ -342,3 +355,22 @@ class ApplyPractitionerImportUseCase:
         await self._affiliations.save_affiliation(affiliation)
         await self._audit(affiliation)
         return affiliation
+
+
+_PHONE_COLUMNS = ("CONTACT MOBILE 1", "MOBILE CONTACT 2")
+
+
+def _contact_phone(row: PractitionerImportRowEntity) -> str | None:
+    """First non-blank of the workbook's two mobile columns (P-08, P-04).
+
+    Only the partner-list sheet carries these columns at all; the consultants
+    sheet's provenance simply has neither key. Whichever column is blank is
+    skipped rather than treated as a value; the two numbers are never
+    concatenated, and the second one, when the first is also present, is not
+    promoted anywhere structured.
+    """
+    for column in _PHONE_COLUMNS:
+        value = row.provenance.get(column)
+        if value:
+            return str(value).strip() or None
+    return None

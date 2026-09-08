@@ -238,7 +238,7 @@ function EngagementsListPage() {
         ) : (
           <>
             <div className="relative min-h-0 flex-1 overflow-auto">
-              <Table className="w-full caption-bottom text-sm">
+              <Table className="w-full caption-bottom text-sm" scrollable={false}>
                 <TableHeader className={STICKY_TABLE_HEAD}>
                   <TableRow className={`hover:bg-transparent ${ROW_BORDER}`}>
                     <TableHead>

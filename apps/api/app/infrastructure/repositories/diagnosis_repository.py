@@ -1,5 +1,7 @@
 """SQLAlchemy implementation of the diagnosis repository (Phase 2 #D-Tax)."""
 
+from datetime import UTC, datetime
+
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -43,10 +45,30 @@ def _to_overlay(model: TenantDiagnosisSettingModel) -> TenantOverlay:
     )
 
 
-def _apply(model, **fields) -> None:
+def _apply(model, **fields) -> bool:
+    """Set the fields that were supplied, and report whether any value changed.
+
+    A no-op patch must not bump ``version``, so the caller needs to know
+    whether anything actually moved rather than whether a field was named.
+    """
+    changed = False
     for key, value in fields.items():
-        if value is not None:
+        if value is not None and getattr(model, key) != value:
             setattr(model, key, value)
+            changed = True
+    return changed
+
+
+def _retire(model, *, is_active: bool) -> None:
+    """Flip a row's availability and keep ``effective_until`` in step with it.
+
+    The read queries require ``is_active`` and a null ``effective_until`` to
+    agree, so writing one without the other leaves a row that is neither
+    available nor visibly retired. Reactivating clears the date: a stale one
+    would keep the row filtered out.
+    """
+    model.is_active = is_active
+    model.effective_until = None if is_active else datetime.now(UTC)
 
 
 def _to_type(model: DiagnosisTypeModel) -> DiagnosisType:
@@ -96,6 +118,10 @@ class DiagnosisRepositoryImpl(DiagnosisRepository):
         stmt = select(DiagnosisTypeModel).where(DiagnosisTypeModel.code == code)
         row = (await self._session.execute(stmt)).scalar_one_or_none()
         return _to_type(row) if row else None
+
+    async def get_type_by_id(self, type_id: str) -> DiagnosisType | None:
+        model = await self._session.get(DiagnosisTypeModel, type_id)
+        return _to_type(model) if model else None
 
     async def list_diagnoses(
         self,
@@ -149,7 +175,8 @@ class DiagnosisRepositoryImpl(DiagnosisRepository):
         model = await self._session.get(DiagnosisTypeModel, type_id)
         if model is None:
             return None
-        _apply(model, name=name, description=description, sort_order=sort_order)
+        if _apply(model, name=name, description=description, sort_order=sort_order):
+            model.version += 1
         await self._session.flush()
         return _to_type(model)
 
@@ -157,7 +184,7 @@ class DiagnosisRepositoryImpl(DiagnosisRepository):
         model = await self._session.get(DiagnosisTypeModel, type_id)
         if model is None:
             return None
-        model.is_active = is_active
+        _retire(model, is_active=is_active)
         await self._session.flush()
         return _to_type(model)
 
@@ -180,6 +207,7 @@ class DiagnosisRepositoryImpl(DiagnosisRepository):
         self,
         diagnosis_id: str,
         *,
+        type_id: str | None = None,
         name: str | None = None,
         description: str | None = None,
         sort_order: int | None = None,
@@ -187,7 +215,10 @@ class DiagnosisRepositoryImpl(DiagnosisRepository):
         model = await self._session.get(DiagnosisModel, diagnosis_id)
         if model is None:
             return None
-        _apply(model, name=name, description=description, sort_order=sort_order)
+        if _apply(
+            model, type_id=type_id, name=name, description=description, sort_order=sort_order
+        ):
+            model.version += 1
         await self._session.flush()
         return _to_diagnosis(model)
 
@@ -195,7 +226,7 @@ class DiagnosisRepositoryImpl(DiagnosisRepository):
         model = await self._session.get(DiagnosisModel, diagnosis_id)
         if model is None:
             return None
-        model.is_active = is_active
+        _retire(model, is_active=is_active)
         await self._session.flush()
         return _to_diagnosis(model)
 

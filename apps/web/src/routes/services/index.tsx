@@ -30,7 +30,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import { useListPage } from "@/hooks/useListPage"
+import { NEWEST_FIRST, useListPage } from "@/hooks/useListPage"
 import { normalizeErrorMessage } from "@/lib/errors"
 import { useEntityList } from "@/lib/queries"
 import { listSearchSchema } from "@/lib/search-params"
@@ -87,7 +87,11 @@ function ServicesListPage() {
     toggleSort,
     setFilter,
     sortParams,
-  } = useListPage({ searchParams, navigate })
+  } = useListPage({
+    searchParams,
+    navigate,
+    initialSort: NEWEST_FIRST,
+  })
 
   const activeStatus = searchParams.status
   const activeGroup: GroupFilter = searchParams.group ?? "all"
@@ -188,7 +192,7 @@ function ServicesListPage() {
         ) : (
           <>
             <div className="relative min-h-0 flex-1 overflow-auto">
-              <Table className="w-full caption-bottom text-sm">
+              <Table className="w-full caption-bottom text-sm" scrollable={false}>
                 <TableHeader className={STICKY_TABLE_HEAD}>
                   <TableRow className={`hover:bg-transparent ${ROW_BORDER}`}>
                     <TableHead className="w-10 px-3">
@@ -204,9 +208,9 @@ function ServicesListPage() {
                         Category
                       </SortHeader>
                     </TableHead>
-                    <TableHead>
+                    <TableHead className="text-center">
                       <SortHeader field="status" sort={sort} onToggle={toggleSort}>
-                        Status
+                        <span className="sr-only">Status</span>
                       </SortHeader>
                     </TableHead>
                     <TableHead>
@@ -258,13 +262,8 @@ function ServiceRow({ row }: { row: Service }) {
           >
             <Wrench className="size-3" />
           </span>
-          <span className="min-w-0">
-            <span className="block truncate text-sm font-medium text-fg group-hover:text-primary">
-              {row.name}
-            </span>
-            {row.description ? (
-              <span className="block truncate text-xs text-fg-muted">{row.description}</span>
-            ) : null}
+          <span className="block max-w-[40ch] truncate text-sm font-medium text-fg group-hover:text-primary">
+            {row.name}
           </span>
         </Link>
       </TableCell>
@@ -277,17 +276,15 @@ function ServiceRow({ row }: { row: Service }) {
           <span className="text-fg-subtle">-</span>
         )}
       </TableCell>
-      <TableCell>
-        <StatusBadge status={row.status} />
+      <TableCell className="text-center">
+        <StatusBadge status={row.status} iconOnly />
       </TableCell>
       <TableCell className="tabular-nums text-sm text-fg/75">
         {row.duration_minutes != null ? `${row.duration_minutes}m` : "-"}
       </TableCell>
       <TableCell>
         {allowGroup ? (
-          <span className="text-xs text-fg">
-            {row.max_participants != null ? `Up to ${row.max_participants}` : "Group"}
-          </span>
+          <span className="text-xs text-fg">Group</span>
         ) : (
           <span className="text-xs text-fg-muted">Individual</span>
         )}

@@ -1694,6 +1694,25 @@
         "title": "CaseStatus",
         "type": "string"
       },
+      "CategoryCount": {
+        "description": "Completed sessions per session category inside the range.",
+        "properties": {
+          "category": {
+            "title": "Category",
+            "type": "string"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "category",
+          "total"
+        ],
+        "title": "CategoryCount",
+        "type": "object"
+      },
       "ClientAliasMergeRequest": {
         "description": "Move aliases from another client into the selected client.",
         "properties": {
@@ -2671,6 +2690,30 @@
           "updated_at"
         ],
         "title": "ClientSavedViewResponse",
+        "type": "object"
+      },
+      "ClientSessions": {
+        "description": "Completed sessions per client inside the range.",
+        "properties": {
+          "client_id": {
+            "title": "Client Id",
+            "type": "string"
+          },
+          "client_name": {
+            "title": "Client Name",
+            "type": "string"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "client_id",
+          "client_name",
+          "total"
+        ],
+        "title": "ClientSessions",
         "type": "object"
       },
       "ClientStatsResponse": {
@@ -4662,6 +4705,162 @@
         "title": "DSARRequestType",
         "type": "string"
       },
+      "DashboardKpis": {
+        "description": "Headline counts. Session counts follow the range; the rest are stock.",
+        "properties": {
+          "clients_served": {
+            "description": "Distinct clients with a completed session inside the range",
+            "title": "Clients Served",
+            "type": "integer"
+          },
+          "clients_total": {
+            "description": "Clients on the tenant, any status",
+            "title": "Clients Total",
+            "type": "integer"
+          },
+          "clients_with_roster": {
+            "description": "Clients that have at least one eligible member on file",
+            "title": "Clients With Roster",
+            "type": "integer"
+          },
+          "covered_members": {
+            "description": "Eligible members with Active status",
+            "title": "Covered Members",
+            "type": "integer"
+          },
+          "import_backlog": {
+            "description": "Rows in the current import batch still blocked on an unresolved identity",
+            "title": "Import Backlog",
+            "type": "integer"
+          },
+          "sessions": {
+            "description": "Completed sessions inside the range",
+            "title": "Sessions",
+            "type": "integer"
+          },
+          "sessions_prior": {
+            "description": "Completed sessions in the equal-length prior window, for the delta",
+            "title": "Sessions Prior",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "sessions",
+          "sessions_prior",
+          "clients_served",
+          "covered_members",
+          "clients_with_roster",
+          "clients_total",
+          "import_backlog"
+        ],
+        "title": "DashboardKpis",
+        "type": "object"
+      },
+      "DashboardResponse": {
+        "description": "The whole dashboard in one authenticated, tenant-scoped read.",
+        "properties": {
+          "data_quality": {
+            "$ref": "#/components/schemas/DataQuality"
+          },
+          "import_batch": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ImportBatchSummary"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Absent when the tenant has never staged an import"
+          },
+          "import_queues": {
+            "items": {
+              "$ref": "#/components/schemas/ImportQueueEntry"
+            },
+            "title": "Import Queues",
+            "type": "array"
+          },
+          "kpis": {
+            "$ref": "#/components/schemas/DashboardKpis"
+          },
+          "range": {
+            "$ref": "#/components/schemas/RangeInfo"
+          },
+          "sessions_by_category": {
+            "items": {
+              "$ref": "#/components/schemas/CategoryCount"
+            },
+            "title": "Sessions By Category",
+            "type": "array"
+          },
+          "sessions_series": {
+            "items": {
+              "$ref": "#/components/schemas/SeriesPoint"
+            },
+            "title": "Sessions Series",
+            "type": "array"
+          },
+          "top_clients": {
+            "items": {
+              "$ref": "#/components/schemas/ClientSessions"
+            },
+            "title": "Top Clients",
+            "type": "array"
+          },
+          "trending_services": {
+            "items": {
+              "$ref": "#/components/schemas/ServiceTrend"
+            },
+            "title": "Trending Services",
+            "type": "array"
+          }
+        },
+        "required": [
+          "range",
+          "kpis",
+          "sessions_series",
+          "sessions_by_category",
+          "top_clients",
+          "trending_services",
+          "import_queues",
+          "data_quality"
+        ],
+        "title": "DashboardResponse",
+        "type": "object"
+      },
+      "DataQuality": {
+        "description": "Derived gaps that block reporting, each one an actionable queue.",
+        "properties": {
+          "clients_without_roster": {
+            "description": "Clients with no eligible members on file",
+            "title": "Clients Without Roster",
+            "type": "integer"
+          },
+          "providers_pending": {
+            "description": "Practitioners not yet activated",
+            "title": "Providers Pending",
+            "type": "integer"
+          },
+          "sessions_missing_outcome": {
+            "description": "Completed sessions with no clinical outcome recorded",
+            "title": "Sessions Missing Outcome",
+            "type": "integer"
+          },
+          "sessions_missing_rate": {
+            "description": "Completed sessions with no rate",
+            "title": "Sessions Missing Rate",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "sessions_missing_outcome",
+          "sessions_missing_rate",
+          "clients_without_roster",
+          "providers_pending"
+        ],
+        "title": "DataQuality",
+        "type": "object"
+      },
       "DateRangeSchema": {
         "description": "Date range schema.",
         "properties": {
@@ -5346,6 +5545,7 @@
         "type": "object"
       },
       "DiagnosisUpdate": {
+        "description": "Edit a diagnosis, including moving it under a different type.\n\n``type_id`` exists because the taxonomy is curated over time and a leaf can\nbe filed under the wrong category. Moving one does not rewrite history: a\nsession records ``diagnosis_type_id`` and ``diagnosis_id`` independently, so\nan existing session keeps the type it was recorded against.",
         "properties": {
           "description": {
             "anyOf": [
@@ -5381,6 +5581,18 @@
               }
             ],
             "title": "Sort Order"
+          },
+          "type_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Move the diagnosis under this type",
+            "title": "Type Id"
           }
         },
         "title": "DiagnosisUpdate",
@@ -7102,6 +7314,111 @@
         ],
         "title": "ImportBatchStatus",
         "type": "string"
+      },
+      "ImportBatchSummary": {
+        "description": "The batch the backlog figures describe, as a part-to-whole composition.",
+        "properties": {
+          "accepted": {
+            "title": "Accepted",
+            "type": "integer"
+          },
+          "applied_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Applied At"
+          },
+          "blocked": {
+            "description": "Rows held on an unresolved identity",
+            "title": "Blocked",
+            "type": "integer"
+          },
+          "duplicate": {
+            "title": "Duplicate",
+            "type": "integer"
+          },
+          "file_name": {
+            "title": "File Name",
+            "type": "string"
+          },
+          "row_count": {
+            "title": "Row Count",
+            "type": "integer"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "file_name",
+          "status",
+          "row_count",
+          "accepted",
+          "duplicate",
+          "blocked"
+        ],
+        "title": "ImportBatchSummary",
+        "type": "object"
+      },
+      "ImportQueueEntry": {
+        "description": "One unresolved outcome bucket in the current import batch.",
+        "properties": {
+          "outcome": {
+            "title": "Outcome",
+            "type": "string"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "outcome",
+          "total"
+        ],
+        "title": "ImportQueueEntry",
+        "type": "object"
+      },
+      "ImportReasonCode": {
+        "description": "Machine-readable code for a staged row's outcome reason (P-10).\n\nA message alone is fine to display but not to build a review UI or any\nother consumer against: rewording it silently breaks a string match.\nEvery reason attached to a row carries one of these alongside its\nhuman-readable message.",
+        "enum": [
+          "AlreadyStaged",
+          "MissingName",
+          "UnmappedProfession",
+          "UnmappedSpeciality",
+          "DuplicateNameCandidate",
+          "OrganisationNameCollision",
+          "MultiEmailCell",
+          "EmployeeContractMemo",
+          "ApplyFailed",
+          "Legacy"
+        ],
+        "title": "ImportReasonCode",
+        "type": "string"
+      },
+      "ImportReasonSchema": {
+        "description": "Why one row needs review, applied or apply failed (P-10).\n\n`code` is stable and machine-readable; match on it, never on `message`.",
+        "properties": {
+          "code": {
+            "$ref": "#/components/schemas/ImportReasonCode"
+          },
+          "message": {
+            "title": "Message",
+            "type": "string"
+          }
+        },
+        "required": [
+          "code",
+          "message"
+        ],
+        "title": "ImportReasonSchema",
+        "type": "object"
       },
       "ImportRowOutcome": {
         "description": "Per-row result of a staged historical import.",
@@ -10410,6 +10727,39 @@
             ],
             "title": "Contact Email"
           },
+          "imported_affiliation_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Imported Affiliation Id"
+          },
+          "imported_organisation_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Imported Organisation Id"
+          },
+          "imported_provider_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Imported Provider Id"
+          },
           "mapped_profession": {
             "anyOf": [
               {
@@ -10475,7 +10825,7 @@
           },
           "reasons": {
             "items": {
-              "type": "string"
+              "$ref": "#/components/schemas/ImportReasonSchema"
             },
             "title": "Reasons",
             "type": "array"
@@ -10745,6 +11095,27 @@
           "updated_at"
         ],
         "title": "ProviderAffiliationResponse",
+        "type": "object"
+      },
+      "ProviderAliasCreateRequest": {
+        "description": "Open a review queue entry for a name a source system uses.\n\nCreating one attributes nothing: the alias starts unmapped, and naming the\npractitioner is still the separate, audited resolve step.",
+        "properties": {
+          "source_system": {
+            "maxLength": 500,
+            "title": "Source System",
+            "type": "string"
+          },
+          "source_value": {
+            "maxLength": 500,
+            "title": "Source Value",
+            "type": "string"
+          }
+        },
+        "required": [
+          "source_system",
+          "source_value"
+        ],
+        "title": "ProviderAliasCreateRequest",
         "type": "object"
       },
       "ProviderAliasListResponse": {
@@ -11716,6 +12087,57 @@
         "title": "ProviderUpdate",
         "type": "object"
       },
+      "RangeInfo": {
+        "description": "The resolved window the flow figures describe.",
+        "properties": {
+          "end": {
+            "description": "Exclusive window end, ISO 8601",
+            "title": "End",
+            "type": "string"
+          },
+          "granularity": {
+            "description": "Bucket size of sessions_series, chosen from the window length",
+            "enum": [
+              "day",
+              "week",
+              "month"
+            ],
+            "title": "Granularity",
+            "type": "string"
+          },
+          "preset": {
+            "enum": [
+              "this_week",
+              "this_month",
+              "last_30d",
+              "last_90d",
+              "last_180d",
+              "custom"
+            ],
+            "title": "Preset",
+            "type": "string"
+          },
+          "prior_start": {
+            "description": "Start of the equal-length window before this one, ISO 8601",
+            "title": "Prior Start",
+            "type": "string"
+          },
+          "start": {
+            "description": "Inclusive window start, ISO 8601",
+            "title": "Start",
+            "type": "string"
+          }
+        },
+        "required": [
+          "preset",
+          "start",
+          "end",
+          "prior_start",
+          "granularity"
+        ],
+        "title": "RangeInfo",
+        "type": "object"
+      },
       "RateCardEntrySchema": {
         "properties": {
           "rate": {
@@ -12171,6 +12593,47 @@
           "type"
         ],
         "title": "SearchResultItem",
+        "type": "object"
+      },
+      "SeriesPoint": {
+        "description": "One bucket of completed sessions, split by how it was delivered.\n\n`unknown` carries sessions whose source recorded no delivery type. It is\nkept as its own band rather than folded into either, so the chart never\nasserts a delivery type the record does not carry.",
+        "properties": {
+          "bucket": {
+            "description": "Bucket start: YYYY-MM-DD, or YYYY-MM when monthly",
+            "title": "Bucket",
+            "type": "string"
+          },
+          "label": {
+            "description": "Display label for the bucket",
+            "title": "Label",
+            "type": "string"
+          },
+          "online": {
+            "title": "Online",
+            "type": "integer"
+          },
+          "physical": {
+            "title": "Physical",
+            "type": "integer"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          },
+          "unknown": {
+            "title": "Unknown",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "bucket",
+          "label",
+          "physical",
+          "online",
+          "unknown",
+          "total"
+        ],
+        "title": "SeriesPoint",
         "type": "object"
       },
       "ServiceAssignmentCreate": {
@@ -13520,6 +13983,47 @@
         "title": "ServiceSessionUpdateFeedback",
         "type": "object"
       },
+      "ServiceTrend": {
+        "description": "One service's demand inside the range, against the prior window.",
+        "properties": {
+          "change_pct": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Percentage change against the prior window; null when it had no sessions",
+            "title": "Change Pct"
+          },
+          "prior_total": {
+            "title": "Prior Total",
+            "type": "integer"
+          },
+          "service_id": {
+            "title": "Service Id",
+            "type": "string"
+          },
+          "service_name": {
+            "title": "Service Name",
+            "type": "string"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "service_id",
+          "service_name",
+          "total",
+          "prior_total"
+        ],
+        "title": "ServiceTrend",
+        "type": "object"
+      },
       "ServiceUpdate": {
         "description": "Request schema for updating service information.",
         "properties": {
@@ -13695,6 +14199,21 @@
           "consumed"
         ],
         "title": "SessionDrawdownResponse",
+        "type": "object"
+      },
+      "SessionImportAbandonRequest": {
+        "description": "Why nobody will apply this batch. It goes on the record, so it is required.",
+        "properties": {
+          "reason": {
+            "maxLength": 500,
+            "title": "Reason",
+            "type": "string"
+          }
+        },
+        "required": [
+          "reason"
+        ],
+        "title": "SessionImportAbandonRequest",
         "type": "object"
       },
       "SessionImportApplyResponse": {
@@ -23169,6 +23688,110 @@
         ]
       }
     },
+    "/dashboard": {
+      "get": {
+        "description": "All dashboard figures in one read, computed against the same instant.",
+        "operationId": "get_dashboard_dashboard_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "tenant_id",
+            "required": true,
+            "schema": {
+              "title": "Tenant Id",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Window the flow figures cover",
+            "in": "query",
+            "name": "range",
+            "required": false,
+            "schema": {
+              "default": "last_90d",
+              "description": "Window the flow figures cover",
+              "enum": [
+                "this_week",
+                "this_month",
+                "last_30d",
+                "last_90d",
+                "last_180d",
+                "custom"
+              ],
+              "title": "Range",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Window start when range is custom, ISO 8601",
+            "in": "query",
+            "name": "start",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Window start when range is custom, ISO 8601",
+              "title": "Start"
+            }
+          },
+          {
+            "description": "Window end when range is custom, ISO 8601",
+            "in": "query",
+            "name": "end",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Window end when range is custom, ISO 8601",
+              "title": "End"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DashboardResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Aggregate dashboard figures for the caller's tenant",
+        "tags": [
+          "dashboard"
+        ]
+      }
+    },
     "/diagnoses": {
       "get": {
         "operationId": "list_diagnoses_diagnoses_get",
@@ -30297,6 +30920,62 @@
         "tags": [
           "provider-aliases"
         ]
+      },
+      "post": {
+        "description": "Put a source name into the review queue, unmapped.\n\nStaging reads decisions; it does not open them, so a source system whose\nnames nobody has queued has nothing for a reviewer to act on. This is how\nthose names arrive. Asking twice returns the entry that is already there\nrather than a second one, so a re-run of a seeding script cannot split one\nname across two queue entries or reopen a decision somebody made.",
+        "operationId": "create_alias_provider_aliases_post",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "tenant_id",
+            "required": true,
+            "schema": {
+              "title": "Tenant Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProviderAliasCreateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProviderAliasResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Create Alias",
+        "tags": [
+          "provider-aliases"
+        ]
       }
     },
     "/provider-aliases/{alias_id}/reject": {
@@ -34559,7 +35238,7 @@
     },
     "/session-imports": {
       "post": {
-        "description": "Stage rows for review. Writes no sessions and has no billing side effects.\n\nRestaging the same file in one tenant is a conflict, not a second batch.",
+        "description": "Stage rows for review. Writes no sessions and has no billing side effects.\n\nRestaging a file whose batch is still awaiting a decision is a conflict,\nnot a second batch. Restaging one that has been applied or abandoned is how\nrows re-judge against reference data that has since improved.",
         "operationId": "stage_import_session_imports_post",
         "parameters": [
           {
@@ -34700,9 +35379,76 @@
         ]
       }
     },
+    "/session-imports/{batch_id}/abandon": {
+      "post": {
+        "description": "Close a batch nobody will apply, with the reason on the record.\n\nA batch stages what the review data said at the time. One staged before\nthe practitioner aliases or the member roster were loaded holds outcomes\nthat are now wrong, and a staged row keeps no copy of the source values it\nwas judged from, so its rows cannot be re-judged in place. Abandoning the\nbatch says so and frees the extract to be staged again: neither the file's\nhash nor its rows' replay keys go on claiming a source nobody will import.",
+        "operationId": "abandon_batch_session_imports__batch_id__abandon_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "batch_id",
+            "required": true,
+            "schema": {
+              "title": "Batch Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "tenant_id",
+            "required": true,
+            "schema": {
+              "title": "Tenant Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SessionImportAbandonRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessionImportBatchResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Abandon Batch",
+        "tags": [
+          "session-imports"
+        ]
+      }
+    },
     "/session-imports/{batch_id}/apply": {
       "post": {
-        "description": "Write every importable row through the historical path, then close the batch.\n\nApplying a second time is refused, so a replayed request cannot write\ntwice. `imported` is zero today for every batch: no staged row can reach\nAccepted while member and service resolution does not exist, which the\nrow outcomes state per row rather than leaving to be discovered here.",
+        "description": "Write every importable row through the historical path, then close the batch.\n\nApplying a second time is refused, so a replayed request cannot write\ntwice. Only Accepted rows are written; every other row states per row why\nit was passed over, so an unimportable batch is legible without reading\nthis code.",
         "operationId": "apply_batch_session_imports__batch_id__apply_post",
         "parameters": [
           {

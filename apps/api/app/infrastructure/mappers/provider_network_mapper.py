@@ -243,6 +243,7 @@ class SessionImportMapper:
             source_record_key=model.source_record_key,
             raw_practitioner_name=model.raw_practitioner_name,
             session_date=model.session_date,
+            staged_replay_key=model.replay_key,
             outcome=ImportRowOutcome(model.outcome),
             delivery_context=DeliveryContext(model.delivery_context),
             provider_id=ProviderId(model.provider_id) if model.provider_id else None,

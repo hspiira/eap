@@ -30,7 +30,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import { useListPage } from "@/hooks/useListPage"
+import { NEWEST_FIRST, useListPage } from "@/hooks/useListPage"
 import { normalizeErrorMessage } from "@/lib/errors"
 import { formatDateTime } from "@/lib/format"
 import { useEntityList } from "@/lib/queries"
@@ -74,7 +74,11 @@ function TenantsListBody() {
     setPage,
     limit,
     setFilter,
-  } = useListPage({ searchParams, navigate })
+  } = useListPage({
+    searchParams,
+    navigate,
+    initialSort: NEWEST_FIRST,
+  })
   const [credentials, setCredentials] = useState<TenantCreateResponse | null>(null)
   const activeStatus = searchParams.status
 
@@ -177,7 +181,9 @@ function TenantsListBody() {
                     <TableRow>
                       <TableHead>Name</TableHead>
                       <TableHead>Code</TableHead>
-                      <TableHead>Status</TableHead>
+                      <TableHead className="text-center">
+                        <span className="sr-only">Status</span>
+                      </TableHead>
                       <TableHead>Tier</TableHead>
                       <TableHead>SSO</TableHead>
                       <TableHead className="w-12" />
@@ -300,8 +306,8 @@ function TenantRow({ tenant }: { tenant: Tenant }) {
         </Link>
       </TableCell>
       <TableCell className="text-xs text-fg/75">{tenant.code ?? "-"}</TableCell>
-      <TableCell>
-        <StatusBadge status={tenant.status} />
+      <TableCell className="text-center">
+        <StatusBadge status={tenant.status} iconOnly />
       </TableCell>
       <TableCell className="text-sm text-fg/75">{tenant.subscription_tier ?? "-"}</TableCell>
       <TableCell>

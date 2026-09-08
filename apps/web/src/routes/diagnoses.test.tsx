@@ -258,3 +258,74 @@ describe("diagnoses admin page", () => {
     expect(diagnosesApi.listAliases).not.toHaveBeenCalled()
   })
 })
+
+describe("descriptions", () => {
+  /**
+   * The taxonomy carries a clinical definition on every row. Before this it was
+   * writable in the form sheet and readable through the API but rendered
+   * nowhere, so a curator could only see it by opening the edit form.
+   */
+  const DESCRIBED = {
+    types: [
+      {
+        id: "t_gbv",
+        code: "GBV",
+        name: "Gender-Based Violence",
+        description: "Violence directed at a person on the basis of gender.",
+        sort_order: 0,
+        diagnoses: [
+          {
+            id: "d_dv",
+            code: "DV",
+            name: "Domestic Violence",
+            description: "Physical, sexual or psychological violence by a partner.",
+            type_id: "t_gbv",
+            sort_order: 0,
+          },
+        ],
+      },
+    ],
+  }
+
+  beforeEach(() => {
+    vi.mocked(diagnosesApi.capabilities).mockResolvedValue({
+      can_manage_taxonomy: true,
+      can_manage_overlay: true,
+    })
+    vi.mocked(diagnosesApi.listOverlay).mockResolvedValue([])
+  })
+
+  it("shows a type's description on its row", async () => {
+    vi.mocked(diagnosesApi.getTree).mockResolvedValue(DESCRIBED)
+
+    renderPage()
+
+    expect(
+      await screen.findByText("Violence directed at a person on the basis of gender."),
+    ).toBeInTheDocument()
+  })
+
+  it("shows a diagnosis description once its type is expanded", async () => {
+    vi.mocked(diagnosesApi.getTree).mockResolvedValue(DESCRIBED)
+    renderPage()
+    await screen.findByText("Gender-Based Violence")
+
+    // The row's action buttons carry the type name too. The toggle is the one
+    // whose name also runs on into the code and the child count.
+    await userEvent.click(screen.getByRole("button", { name: /Gender-Based ViolenceGBV/ }))
+
+    expect(
+      await screen.findByText("Physical, sexual or psychological violence by a partner."),
+    ).toBeInTheDocument()
+  })
+
+  it("renders no placeholder when a row has no description", async () => {
+    vi.mocked(diagnosesApi.getTree).mockResolvedValue(TREE)
+
+    renderPage()
+
+    await screen.findByText("Gender-Based Violence")
+    expect(screen.queryByText(/^null$/)).not.toBeInTheDocument()
+    expect(screen.queryByText(/undefined/)).not.toBeInTheDocument()
+  })
+})

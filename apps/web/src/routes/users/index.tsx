@@ -1,11 +1,15 @@
 import { createFileRoute, Link, useNavigate, useSearch } from "@tanstack/react-router"
 import {
   BadgeCheck,
+  Ban,
+  CirclePause,
+  CircleX,
   Download,
   ExternalLink,
   KeyRound,
   MoreHorizontal,
   Plus,
+  PowerOff,
   ShieldCheck,
   ShieldOff,
   UserCog,
@@ -13,6 +17,7 @@ import {
 
 import { type UserListParams, usersApi } from "@/api/endpoints/users"
 import { BulkAction } from "@/components/common/BulkAction"
+import { BulkActionWithReason } from "@/components/common/BulkActionWithReason"
 import { EmptyState } from "@/components/common/EmptyState"
 import { ErrorState } from "@/components/common/ErrorState"
 import { FilterBar, FilterChip, FilterSearch, FilterTrigger } from "@/components/common/FilterBar"
@@ -43,7 +48,7 @@ import {
 } from "@/components/ui/table"
 import { UserFormSheet } from "@/components/UserFormSheet"
 import { useCanWrite } from "@/hooks/useCanWrite"
-import { useListPage } from "@/hooks/useListPage"
+import { NEWEST_FIRST, useListPage } from "@/hooks/useListPage"
 import { useTableSelection } from "@/hooks/useTableSelection"
 import { normalizeErrorMessage } from "@/lib/errors"
 import { formatDate } from "@/lib/format"
@@ -100,7 +105,11 @@ function UsersListPage() {
     toggleSort,
     setFilter,
     sortParams,
-  } = useListPage({ searchParams, navigate })
+  } = useListPage({
+    searchParams,
+    navigate,
+    initialSort: NEWEST_FIRST,
+  })
   const canWrite = useCanWrite()
 
   const activeStatus = searchParams.status
@@ -206,9 +215,26 @@ function UsersListPage() {
         ) : (
           <>
             <SelectionBar count={selection.selectedIds.size} onClear={selection.clearSelection}>
+              <BulkActionWithReason
+                ids={selection.selectedIds}
+                label="Suspend"
+                icon={CirclePause}
+                confirmTitle="Suspend users"
+                confirmDescription={(n) =>
+                  `${n} ${n === 1 ? "user" : "users"} will lose access until reinstated.`
+                }
+                destructive
+                labelFor={(id) => items.find((i) => i.id === id)?.email ?? id}
+                action={usersApi.suspend}
+                invalidateKey={["users"]}
+                verb="suspended"
+                noun="user"
+                onDone={selection.clearSelection}
+              />
               <BulkAction
                 ids={selection.selectedIds}
                 label="Deactivate"
+                icon={PowerOff}
                 confirmTitle="Deactivate users"
                 confirmDescription={(n) =>
                   `${n} ${n === 1 ? "user" : "users"} will lose access until reactivated.`
@@ -221,9 +247,41 @@ function UsersListPage() {
                 noun="user"
                 onDone={selection.clearSelection}
               />
+              <BulkActionWithReason
+                ids={selection.selectedIds}
+                label="Ban"
+                icon={Ban}
+                confirmTitle="Ban users"
+                confirmDescription={(n) =>
+                  `${n} ${n === 1 ? "user" : "users"} will be permanently banned.`
+                }
+                destructive
+                labelFor={(id) => items.find((i) => i.id === id)?.email ?? id}
+                action={usersApi.ban}
+                invalidateKey={["users"]}
+                verb="banned"
+                noun="user"
+                onDone={selection.clearSelection}
+              />
+              <BulkActionWithReason
+                ids={selection.selectedIds}
+                label="Terminate"
+                icon={CircleX}
+                confirmTitle="Terminate users"
+                confirmDescription={(n) =>
+                  `${n} ${n === 1 ? "user" : "users"} will be permanently terminated.`
+                }
+                destructive
+                labelFor={(id) => items.find((i) => i.id === id)?.email ?? id}
+                action={usersApi.terminate}
+                invalidateKey={["users"]}
+                verb="terminated"
+                noun="user"
+                onDone={selection.clearSelection}
+              />
             </SelectionBar>
             <div className="relative min-h-0 flex-1 overflow-auto">
-              <Table className="w-full caption-bottom text-sm">
+              <Table className="w-full caption-bottom text-sm" scrollable={false}>
                 <TableHeader className={STICKY_TABLE_HEAD}>
                   <TableRow className={`hover:bg-transparent ${ROW_BORDER}`}>
                     <TableHead className="w-10 px-3">
@@ -238,9 +296,9 @@ function UsersListPage() {
                         Email
                       </SortHeader>
                     </TableHead>
-                    <TableHead>
+                    <TableHead className="text-center">
                       <SortHeader field="status" sort={sort} onToggle={toggleSort}>
-                        Status
+                        <span className="sr-only">Status</span>
                       </SortHeader>
                     </TableHead>
                     <TableHead className="text-fg/65">Email verified</TableHead>
@@ -309,8 +367,8 @@ function UserRow({
           <span className="text-sm font-medium text-fg group-hover:text-primary">{row.email}</span>
         </Link>
       </TableCell>
-      <TableCell>
-        <StatusBadge status={row.status} />
+      <TableCell className="text-center">
+        <StatusBadge status={row.status} iconOnly />
       </TableCell>
       <TableCell>
         {row.is_email_verified ? (

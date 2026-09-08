@@ -3,8 +3,12 @@ import { useCallback, useEffect, useState } from "react"
 import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { createFileRoute, Link, useNavigate, useSearch } from "@tanstack/react-router"
 import {
+  Archive,
+  ArchiveRestore,
   Bookmark,
+  BookmarkCheck,
   Building2,
+  CircleX,
   Download,
   ExternalLink,
   FileDown,
@@ -12,6 +16,7 @@ import {
   MoreHorizontal,
   Plus,
   ScanSearch,
+  Tag,
 } from "lucide-react"
 
 import { clientTagsApi } from "@/api/endpoints/client-tags"
@@ -23,11 +28,13 @@ import {
 import { ClientFormSheet } from "@/components/clients/ClientFormSheet"
 import { ClientImportDialog } from "@/components/clients/ClientImportDialog"
 import { BulkAction } from "@/components/common/BulkAction"
+import { BulkActionWithReason } from "@/components/common/BulkActionWithReason"
 import { ConfirmDialog } from "@/components/common/ConfirmDialog"
 import { EmptyState } from "@/components/common/EmptyState"
 import { EntityListView, type ListColumn } from "@/components/common/EntityListView"
 import { EntityNameCell } from "@/components/common/EntityNameCell"
 import { FilterBar, FilterChip, FilterSearch, FilterTrigger } from "@/components/common/FilterBar"
+import { IconButton } from "@/components/common/IconButton"
 import { PageShell } from "@/components/common/PageShell"
 import { SelectionBar } from "@/components/common/SelectionBar"
 import { StatusBadge } from "@/components/common/StatusBadge"
@@ -59,7 +66,7 @@ import {
 import { TableCell, TableRow } from "@/components/ui/table"
 import { useToast } from "@/contexts/ToastContext"
 import { useCanWrite, useCurrentRole } from "@/hooks/useCanWrite"
-import { useListPage } from "@/hooks/useListPage"
+import { NEWEST_FIRST, useListPage } from "@/hooks/useListPage"
 import { useTableSelection } from "@/hooks/useTableSelection"
 import { nameInitials } from "@/lib/display"
 import { normalizeErrorMessage } from "@/lib/errors"
@@ -127,7 +134,11 @@ function ClientsListPage() {
     toggleSort,
     setFilter,
     sortParams,
-  } = useListPage({ searchParams, navigate })
+  } = useListPage({
+    searchParams,
+    navigate,
+    initialSort: NEWEST_FIRST,
+  })
   const activeTier = searchParams.tier
   const activeParentClientId = searchParams.parent_client_id
   const includeArchived = searchParams.archived === true
@@ -303,32 +314,24 @@ function ClientsListPage() {
       actions={
         <>
           {canWrite ? (
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              className="h-7 gap-1.5 px-2"
-              onClick={saveCurrentView}
-            >
-              <Bookmark className="size-3.5" />
-              Save view
-            </Button>
+            <IconButton label="Save view" icon={Bookmark} onClick={saveCurrentView} />
           ) : null}
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            className="h-7 gap-1.5 px-2"
-            onClick={scanDuplicates}
-          >
-            <ScanSearch className="size-3.5" />
-            Find duplicates
-          </Button>
+          <IconButton label="Find duplicates" icon={ScanSearch} onClick={scanDuplicates} />
           {savedViews.length > 0 ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button type="button" variant="ghost" size="sm" className="h-7 px-2">
-                  Views
+                {/* Not IconButton: a tooltip trigger and a menu trigger both
+                    want to be the button, and the menu is the one that has to
+                    hold the ref. The title carries the name instead. */}
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  aria-label="Saved views"
+                  title="Saved views"
+                  className="size-7 shrink-0 p-0 text-fg/70"
+                >
+                  <BookmarkCheck className="size-3.5" aria-hidden />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
@@ -355,23 +358,16 @@ function ClientsListPage() {
               </DropdownMenuContent>
             </DropdownMenu>
           ) : null}
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            className="h-7 gap-1.5 px-2"
+          <IconButton
+            label="Download import template"
+            icon={FileDown}
             onClick={() =>
               void download(clientsApi.getImportTemplate(), "clients-import-template.csv")
             }
-          >
-            <FileDown className="size-3.5" />
-            Template
-          </Button>
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            className="h-7 gap-1.5 px-2"
+          />
+          <IconButton
+            label="Export"
+            icon={Download}
             onClick={() =>
               void download(
                 clientsApi.exportCsv({
@@ -384,22 +380,15 @@ function ClientsListPage() {
                 "clients.csv",
               )
             }
-          >
-            <Download className="size-3.5" />
-            Export
-          </Button>
+          />
           {canWrite ? (
             <>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                className="h-7 gap-1.5 px-2"
+              <IconButton
+                label="Import"
+                icon={FileUp}
+                emphasis="raised"
                 onClick={() => setImportOpen(true)}
-              >
-                <FileUp className="size-3.5" />
-                Import
-              </Button>
+              />
               <Button
                 size="sm"
                 className="h-7 gap-1.5 px-2.5"
@@ -571,11 +560,9 @@ function ClientsListPage() {
                     ))}
                   </SelectContent>
                 </Select>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  className="h-7 px-2.5"
+                <IconButton
+                  label="Apply tag"
+                  icon={Tag}
                   disabled={!bulkTagId}
                   onClick={() => {
                     void clientsApi
@@ -589,30 +576,24 @@ function ClientsListPage() {
                         toast.showError(normalizeErrorMessage(err, "Could not apply tag")),
                       )
                   }}
-                >
-                  Apply tag
-                </Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  className="h-7 px-2.5"
+                />
+                <IconButton
+                  label="Export selected"
+                  icon={Download}
                   onClick={() =>
                     void download(
                       clientsApi.exportSelected([...selection.selectedIds]),
                       "selected-clients.csv",
                     )
                   }
-                >
-                  <Download className="mr-1.5 size-3.5" />
-                  Export selected
-                </Button>
+                />
               </>
             ) : null}
             {canArchive ? (
               <BulkAction
                 ids={selection.selectedIds}
                 label="Archive"
+                icon={Archive}
                 confirmTitle="Archive clients"
                 confirmDescription={(n) =>
                   `${n} ${n === 1 ? "client" : "clients"} will be hidden from the active list. You can restore them later.`
@@ -622,6 +603,41 @@ function ClientsListPage() {
                 action={clientsApi.archive}
                 invalidateKey={["clients"]}
                 verb="archived"
+                noun="client"
+                onDone={selection.clearSelection}
+              />
+            ) : null}
+            {canWrite ? (
+              <BulkAction
+                ids={selection.selectedIds}
+                label="Restore"
+                icon={ArchiveRestore}
+                confirmTitle="Restore clients"
+                confirmDescription={(n) =>
+                  `Restore ${n} selected ${n === 1 ? "client" : "clients"} to the active list?`
+                }
+                labelFor={(id) => items.find((i) => i.id === id)?.name ?? id}
+                action={clientsApi.restore}
+                invalidateKey={["clients"]}
+                verb="restored"
+                noun="client"
+                onDone={selection.clearSelection}
+              />
+            ) : null}
+            {canArchive ? (
+              <BulkActionWithReason
+                ids={selection.selectedIds}
+                label="Terminate"
+                icon={CircleX}
+                confirmTitle="Terminate clients"
+                confirmDescription={(n) =>
+                  `Terminate ${n} selected ${n === 1 ? "client" : "clients"}? This ends the engagement.`
+                }
+                destructive
+                labelFor={(id) => items.find((i) => i.id === id)?.name ?? id}
+                action={clientsApi.terminate}
+                invalidateKey={["clients"]}
+                verb="terminated"
                 noun="client"
                 onDone={selection.clearSelection}
               />

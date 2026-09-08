@@ -146,6 +146,14 @@
   --color-info: var(--info);
   --color-info-soft: var(--info-soft);
   --color-info-fg: var(--info-fg);
+  --color-status-neutral: var(--status-neutral);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-muted: var(--chart-muted);
+  --color-chart-good: var(--chart-good);
+  --color-chart-serious: var(--chart-serious);
   --color-ring: var(--ring);
 
   /* shadcn-conventional aliases. Override the legacy mappings for any

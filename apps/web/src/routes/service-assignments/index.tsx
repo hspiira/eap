@@ -30,7 +30,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import { useListPage } from "@/hooks/useListPage"
+import { NEWEST_FIRST, useListPage } from "@/hooks/useListPage"
 import { normalizeErrorMessage } from "@/lib/errors"
 import { useEntityList } from "@/lib/queries"
 import { listSearchSchema } from "@/lib/search-params"
@@ -80,7 +80,11 @@ function ServiceAssignmentsListPage() {
     toggleSort,
     setFilter,
     sortParams,
-  } = useListPage({ searchParams, navigate })
+  } = useListPage({
+    searchParams,
+    navigate,
+    initialSort: NEWEST_FIRST,
+  })
   const activeStatus = searchParams.status
   const activeContractId = searchParams.contract_id
 
@@ -180,7 +184,7 @@ function ServiceAssignmentsListPage() {
         ) : (
           <>
             <div className="relative min-h-0 flex-1 overflow-auto">
-              <Table className="w-full caption-bottom text-sm">
+              <Table className="w-full caption-bottom text-sm" scrollable={false}>
                 <TableHeader className={STICKY_TABLE_HEAD}>
                   <TableRow className={`hover:bg-transparent ${ROW_BORDER}`}>
                     <TableHead className="w-10 px-3">
@@ -196,9 +200,9 @@ function ServiceAssignmentsListPage() {
                         Service
                       </SortHeader>
                     </TableHead>
-                    <TableHead>
+                    <TableHead className="text-center">
                       <SortHeader field="status" sort={sort} onToggle={toggleSort}>
-                        Status
+                        <span className="sr-only">Status</span>
                       </SortHeader>
                     </TableHead>
                     <TableHead>Notes</TableHead>
@@ -254,8 +258,8 @@ function AssignmentRow({ row }: { row: ServiceAssignment }) {
           {row.service_id.slice(0, 8)}
         </Link>
       </TableCell>
-      <TableCell>
-        <StatusBadge status={row.status} />
+      <TableCell className="text-center">
+        <StatusBadge status={row.status} iconOnly />
       </TableCell>
       <TableCell className="max-w-[24ch] truncate text-sm text-fg/75">
         {row.notes ?? <span className="text-fg-subtle">-</span>}

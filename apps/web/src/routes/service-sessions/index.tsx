@@ -1,8 +1,20 @@
-import { useMemo } from "react"
+import { useMemo, useState } from "react"
 
 import { useQuery } from "@tanstack/react-query"
 import { createFileRoute, Link, useNavigate, useSearch } from "@tanstack/react-router"
-import { CalendarClock, Download, ExternalLink, MoreHorizontal, Plus } from "lucide-react"
+import {
+  Archive,
+  ArchiveRestore,
+  CalendarClock,
+  CalendarX,
+  Download,
+  ExternalLink,
+  FileUp,
+  MoreHorizontal,
+  Plus,
+  User,
+  Users,
+} from "lucide-react"
 
 import { membersApi } from "@/api/endpoints/members"
 import { type ServiceSessionListParams, serviceSessionsApi } from "@/api/endpoints/service-sessions"
@@ -19,6 +31,7 @@ import { SortHeader } from "@/components/common/SortHeader"
 import { StatusBadge } from "@/components/common/StatusBadge"
 import { STICKY_TABLE_HEAD } from "@/components/common/tableStyles"
 import { ServiceSessionFormSheet } from "@/components/ServiceSessionFormSheet"
+import { SessionImportDialog } from "@/components/sessions/SessionImportDialog"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import {
@@ -115,6 +128,7 @@ function ServiceSessionsListPage() {
     navigate,
     initialSort: { field: "scheduled_at", desc: true },
   })
+  const [importOpen, setImportOpen] = useState(false)
   const canWrite = useCanWrite()
   const activeStatus = searchParams.status
   const activeServiceId = searchParams.service_id
@@ -198,6 +212,14 @@ function ServiceSessionsListPage() {
           <IconButton label="Export" icon={Download} />
           <span className="mx-1 h-4 w-px bg-fg/15" aria-hidden />
           {canWrite && (
+            <IconButton
+              label="Import"
+              icon={FileUp}
+              emphasis="raised"
+              onClick={() => setImportOpen(true)}
+            />
+          )}
+          {canWrite && (
             <Button size="sm" className="h-7 gap-1.5 px-2.5" onClick={() => setAddOpen(true)}>
               <Plus className="size-3.5" />
               Schedule session
@@ -258,6 +280,11 @@ function ServiceSessionsListPage() {
         />
       </FilterBar>
 
+      <SessionImportDialog
+        open={importOpen}
+        onOpenChange={setImportOpen}
+        onImported={() => void query.refetch()}
+      />
       <ServiceSessionFormSheet
         open={addOpen}
         onOpenChange={setAddOpen}
@@ -295,7 +322,36 @@ function ServiceSessionsListPage() {
             <SelectionBar count={selection.selectedIds.size} onClear={selection.clearSelection}>
               <BulkAction
                 ids={selection.selectedIds}
+                label="No-show"
+                icon={CalendarX}
+                confirmTitle="Mark sessions as no-show"
+                confirmDescription={(n) =>
+                  `Mark ${n} selected ${n === 1 ? "session" : "sessions"} as no-show?`
+                }
+                action={serviceSessionsApi.noShow}
+                invalidateKey={["service-sessions"]}
+                verb="marked as no-show"
+                noun="session"
+                onDone={selection.clearSelection}
+              />
+              <BulkAction
+                ids={selection.selectedIds}
+                label="Restore"
+                icon={ArchiveRestore}
+                confirmTitle="Restore sessions"
+                confirmDescription={(n) =>
+                  `Restore ${n} selected ${n === 1 ? "session" : "sessions"}?`
+                }
+                action={serviceSessionsApi.restore}
+                invalidateKey={["service-sessions"]}
+                verb="restored"
+                noun="session"
+                onDone={selection.clearSelection}
+              />
+              <BulkAction
+                ids={selection.selectedIds}
                 label="Archive"
+                icon={Archive}
                 confirmTitle="Archive sessions"
                 confirmDescription={(n) =>
                   `${n} ${n === 1 ? "session" : "sessions"} will be archived. You can restore them later.`
@@ -309,7 +365,7 @@ function ServiceSessionsListPage() {
               />
             </SelectionBar>
             <div className="relative min-h-0 flex-1 overflow-auto">
-              <Table className="w-full caption-bottom text-sm">
+              <Table className="w-full caption-bottom text-sm" scrollable={false}>
                 <TableHeader className={STICKY_TABLE_HEAD}>
                   <TableRow className={`hover:bg-transparent ${ROW_BORDER}`}>
                     <TableHead className="w-10 px-3">
@@ -319,33 +375,41 @@ function ServiceSessionsListPage() {
                         onCheckedChange={selection.toggleSelectAll}
                       />
                     </TableHead>
+                    <TableHead className="text-fg/65">Attendee</TableHead>
+                    <TableHead className="text-center">
+                      <SortHeader field="status" sort={sort} onToggle={toggleSort}>
+                        <span className="sr-only">Status</span>
+                      </SortHeader>
+                    </TableHead>
                     <TableHead>
                       <SortHeader field="scheduled_at" sort={sort} onToggle={toggleSort}>
                         Date
                       </SortHeader>
                     </TableHead>
                     <TableHead className="text-fg/65">Time</TableHead>
-                    <TableHead>
-                      <SortHeader field="member_id" sort={sort} onToggle={toggleSort}>
-                        Member
-                      </SortHeader>
-                    </TableHead>
                     <TableHead className="text-fg/65">Client</TableHead>
                     <TableHead className="text-fg/65">Counsellor</TableHead>
+                    <TableHead className="text-fg/65">Intervention</TableHead>
                     <TableHead>
-                      <SortHeader field="service_id" sort={sort} onToggle={toggleSort}>
-                        Intervention
+                      <SortHeader field="session_type" sort={sort} onToggle={toggleSort}>
+                        Mode
                       </SortHeader>
                     </TableHead>
-                    <TableHead className="text-fg/65">Mode</TableHead>
-                    <TableHead className="text-fg/65">Category</TableHead>
-                    <TableHead className="text-right text-fg/65">Session #</TableHead>
                     <TableHead>
-                      <SortHeader field="status" sort={sort} onToggle={toggleSort}>
-                        Status
+                      <SortHeader field="category" sort={sort} onToggle={toggleSort}>
+                        Category
                       </SortHeader>
                     </TableHead>
-                    <TableHead className="text-fg/65">Outcome</TableHead>
+                    <TableHead className="text-right">
+                      <SortHeader field="session_number" sort={sort} onToggle={toggleSort}>
+                        Session #
+                      </SortHeader>
+                    </TableHead>
+                    <TableHead>
+                      <SortHeader field="clinical_outcome" sort={sort} onToggle={toggleSort}>
+                        Outcome
+                      </SortHeader>
+                    </TableHead>
                     <TableHead className="w-16 text-right text-fg/65">
                       <span className="sr-only">Actions</span>
                     </TableHead>
@@ -389,7 +453,11 @@ function SessionRow({
   isSelected: boolean
   onToggle: () => void
 }) {
-  const personLabel = row.member_display_label ?? "Member unavailable"
+  // A session's name-like value is who it was for. A company-wide session has
+  // no member, and its client is the attendee.
+  const attendeeLabel =
+    row.member_display_label ??
+    (row.member_id ? "Member unavailable" : (row.client_name ?? "Company-wide"))
   const scheduled = new Date(row.scheduled_at)
   const dateLabel = formatDate(scheduled)
   const timeLabel = scheduled.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
@@ -402,7 +470,7 @@ function SessionRow({
           onCheckedChange={onToggle}
         />
       </TableCell>
-      <TableCell>
+      <TableCell className="max-w-52">
         <Link
           to="/service-sessions/$sessionId"
           params={{ sessionId: row.id }}
@@ -412,28 +480,19 @@ function SessionRow({
             aria-hidden
             className="grid size-6 shrink-0 place-items-center bg-primary/10 text-primary"
           >
-            <CalendarClock className="size-3" />
+            {row.member_id ? <User className="size-3" /> : <Users className="size-3" />}
           </span>
           <span className="truncate text-sm font-medium text-fg group-hover:text-primary">
-            {dateLabel}
+            {attendeeLabel}
           </span>
         </Link>
       </TableCell>
+      <TableCell className="text-center">
+        <StatusBadge status={row.status} iconOnly />
+      </TableCell>
+      <TableCell className="whitespace-nowrap text-xs text-fg/75">{dateLabel}</TableCell>
       <TableCell className="whitespace-nowrap tabular-nums text-xs text-fg/75">
         {timeLabel}
-      </TableCell>
-      <TableCell className="max-w-44 truncate">
-        {row.member_id ? (
-          <Link
-            to="/members/$memberId"
-            params={{ memberId: row.member_id }}
-            className="text-xs text-fg/75 hover:text-primary"
-          >
-            {personLabel}
-          </Link>
-        ) : (
-          <span className="text-xs text-fg-muted">Company-wide</span>
-        )}
       </TableCell>
       <TableCell className="max-w-36 truncate text-xs text-fg/75">
         {row.client_name ?? <Blank />}
@@ -464,9 +523,6 @@ function SessionRow({
       <TableCell className="text-xs text-fg/75">{row.category ?? <Blank />}</TableCell>
       <TableCell className="text-right tabular-nums text-xs text-fg/75">
         {row.session_number ?? <Blank />}
-      </TableCell>
-      <TableCell>
-        <StatusBadge status={row.status} />
       </TableCell>
       <TableCell className="text-xs text-fg/75">
         {row.clinical_outcome ? getStatusLabel(row.clinical_outcome) : <Blank />}

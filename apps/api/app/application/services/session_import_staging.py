@@ -45,6 +45,7 @@ from app.domain.value_objects.provider_network import (
     SessionImportRowId,
 )
 from app.shared.utils.generators import generate_cuid
+from app.shared.utils.replay_key import DUPLICATE_PREFIX, deferred_key
 from app.shared.utils.session_import_normalisation import (
     Unmapped,
     classify_gender,
@@ -164,6 +165,8 @@ class SessionImportStagingService:
         replay_key = _replay_key(row, file_hash)
         existing = await self._imports.find_row_by_replay_key(tenant_id, replay_key)
         if existing is not None:
+            # The earlier row holds the key. This one records that the source
+            # row was seen again, and defers rather than claiming it twice.
             return self._staged(
                 row,
                 ImportRowOutcome.DUPLICATE,
@@ -173,7 +176,7 @@ class SessionImportStagingService:
                 (
                     f"Already staged as row {existing.row_number} of batch {existing.batch_id.value}",
                 ),
-                replay_key,
+                deferred_key(DUPLICATE_PREFIX, existing.batch_id.value, replay_key),
             )
 
         if row.session_date is None:
