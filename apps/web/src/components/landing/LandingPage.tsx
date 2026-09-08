@@ -105,7 +105,12 @@ function SiteHeader() {
     <header className="sticky top-0 z-50 border-b border-(--lp-line-soft) bg-(--lp-page)/85 backdrop-blur-md">
       <div className="mx-auto flex w-full max-w-[80rem] items-center justify-between gap-6 px-5 py-3.5 md:px-8">
         <Link to="/" className="flex items-center gap-2.5">
-          <img src="/evexía.svg" alt="" aria-hidden className="size-6 shrink-0" />
+          <img
+            src="/evexia-logo.png"
+            alt=""
+            aria-hidden
+            className="size-6 shrink-0 object-contain"
+          />
           <span className="lp-display text-lg tracking-[-0.02em]">Evexía</span>
         </Link>
 
@@ -330,7 +335,12 @@ function SiteFooter() {
     <footer className="border-t border-(--lp-line-soft)">
       <div className="mx-auto flex w-full max-w-[80rem] flex-wrap items-center justify-between gap-4 px-5 py-6 md:px-8">
         <div className="flex items-center gap-2.5">
-          <img src="/evexía.svg" alt="" aria-hidden className="size-5 shrink-0" />
+          <img
+            src="/evexia-logo.png"
+            alt=""
+            aria-hidden
+            className="size-5 shrink-0 object-contain"
+          />
           <span className="text-sm text-(--lp-fg-muted)">© 2026 Evexía, a Minet company</span>
         </div>
         <span className="lp-mono text-[11px] text-(--lp-fg-muted)">v0.1</span>
