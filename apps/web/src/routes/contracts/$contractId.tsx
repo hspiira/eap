@@ -7,6 +7,7 @@ import { ArrowLeft, ChevronRight, FileCheck, FileSignature, Pencil, Plus } from 
 import { clientsApi } from "@/api/endpoints/clients"
 import { contractsApi } from "@/api/endpoints/contracts"
 import { serviceAssignmentsApi } from "@/api/endpoints/service-assignments"
+import { servicesApi } from "@/api/endpoints/services"
 import {
   DetailCard,
   DetailGrid,
@@ -16,6 +17,7 @@ import {
 } from "@/components/common/DetailPrimitives"
 import { renderDetailState } from "@/components/common/DetailStates"
 import { EmptyState } from "@/components/common/EmptyState"
+import { EntityActivityPanel } from "@/components/common/EntityActivityPanel"
 import { LifecycleActions } from "@/components/common/LifecycleActions"
 import { PageShell } from "@/components/common/PageShell"
 import { StatusBadge } from "@/components/common/StatusBadge"
@@ -23,7 +25,7 @@ import { TABLE_HEAD } from "@/components/common/tableStyles"
 import { Tab, TabPanel, Tabs, TabsList } from "@/components/common/Tabs"
 import { ContractFormSheet } from "@/components/ContractFormSheet"
 import { ContractAttachments } from "@/components/contracts/ContractAttachments"
-import { ContractUtilisationPanel } from "@/components/contracts/ContractUtilisationPanel"
+import { ContractBillingPanel } from "@/components/contracts/ContractBillingPanel"
 import { ServiceAssignmentFormSheet } from "@/components/ServiceAssignmentFormSheet"
 import { Button } from "@/components/ui/button"
 import {
@@ -48,6 +50,9 @@ export const Route = createFileRoute("/contracts/$contractId")({
 })
 
 type TabValue = "overview" | "services" | "attachments" | "billing" | "history"
+
+/** The services list caps `limit` at 100; asking for more is rejected outright. */
+const SERVICE_PAGE = 100
 const TAB_VALUES: ReadonlyArray<TabValue> = [
   "overview",
   "services",
@@ -233,33 +238,21 @@ function ContractDetailPage() {
               <TabPanel value="attachments">
                 <ContractAttachments key={contractId} contractId={contractId} />
               </TabPanel>
-              <TabPanel value="billing" className="space-y-4">
-                <DetailCard title="Billing terms">
-                  <DetailGrid>
-                    <DetailRow label="Amount" value={formatMoney(contract)} />
-                    <DetailRow label="Frequency" value={contract.payment_frequency} />
-                    <DetailRow
-                      label="Payment status"
-                      value={<StatusBadge status={contract.payment_status} />}
-                    />
-                    <DetailRow label="Auto-renew" value={contract.is_auto_renew ? "Yes" : "No"} />
-                    <DetailRow label="Last billed" value={formatDay(contract.last_billing_date)} />
-                    <DetailRow label="Next billing" value={formatDay(contract.next_billing_date)} />
-                  </DetailGrid>
-                </DetailCard>
-                <ContractUtilisationPanel contractId={contractId} />
+              <TabPanel value="billing">
+                <ContractBillingPanel contract={contract} />
               </TabPanel>
 
               <TabPanel value="history">
-                <EmptyState
-                  title="No activity yet"
-                  description="Lifecycle changes and amendments will appear here once the audit feed is wired up."
+                <EntityActivityPanel
+                  resourceType="Contract"
+                  resourceId={contractId}
+                  emptyDescription="Lifecycle changes and amendments appear here once they happen."
                 />
               </TabPanel>
             </Tabs>
           </div>
 
-          <aside className="col-span-12 min-w-0 lg:col-span-4 lg:pt-14">
+          <aside className="col-span-12 min-w-0 lg:sticky lg:top-3 lg:col-span-4 lg:max-h-[80vh] lg:overflow-y-auto lg:pt-14">
             <DetailRail
               contract={contract}
               client={client}
@@ -408,6 +401,17 @@ function ServicesPanel({
   loading: boolean
   onAdd: () => void
 }) {
+  // The assignment carries only a service id, so the catalogue supplies the
+  // name. One request for the whole table, not one per row.
+  const servicesQuery = useQuery({
+    queryKey: entityListKey("services", { limit: SERVICE_PAGE }),
+    queryFn: () => servicesApi.list({ limit: SERVICE_PAGE }),
+    staleTime: 5 * 60_000,
+  })
+  const serviceNames = new Map(
+    (servicesQuery.data?.items ?? []).map((service) => [service.id, service.name]),
+  )
+
   if (loading) {
     return <p className="text-sm text-fg/65">Loading assignments…</p>
   }
@@ -459,7 +463,8 @@ function ServicesPanel({
                     params={{ assignmentId: a.id }}
                     className="text-sm text-fg group-hover:text-primary"
                   >
-                    {a.service_id.slice(0, 8)}
+                    {serviceNames.get(a.service_id) ??
+                      (servicesQuery.isPending ? "Loading…" : "Unknown service")}
                   </Link>
                 </TableCell>
                 <TableCell>

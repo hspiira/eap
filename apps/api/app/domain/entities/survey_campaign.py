@@ -4,12 +4,17 @@ A SurveyCampaign owns the configuration and lifecycle of an external-form
 collection (Google Forms first; Typeform/MS Forms via the same shape). The
 campaign carries a tenant-scoped HMAC ``webhook_secret`` so the public
 ingestion endpoint can verify each delivery without an authenticated user.
+
+It also carries the campaign's approved questions. Employer-facing aggregates
+count those questions and no others, so a free-text answer never reaches a
+report even though the raw payload is stored (SAD §5.2.7; MODULES_REPAIR_PLAN
+PRIV-01).
 """
 
 from dataclasses import dataclass, field
 from datetime import date, datetime
 
-from app.domain.enums import SurveyCampaignStatus, SurveySource
+from app.domain.enums import SurveyCampaignStatus
 from app.domain.events import (
     DomainEvent,
     SurveyCampaignActivated,
@@ -26,6 +31,29 @@ from app.domain.value_objects.core import (
 from app.shared.utils.datetime import utc_now
 
 
+@dataclass(frozen=True)
+class ApprovedQuestion:
+    """A question whose answers may be counted in an employer-facing aggregate.
+
+    ``choices`` is the closed answer list. An answer outside it is counted as
+    unapproved and its text is never returned.
+    """
+
+    key: str
+    label: str
+    choices: tuple[str, ...]
+
+    def __post_init__(self) -> None:
+        if not self.key:
+            raise DomainError("ApprovedQuestion requires a key")
+        if not self.label:
+            raise DomainError("ApprovedQuestion requires a label")
+        if not self.choices:
+            raise DomainError(f"ApprovedQuestion '{self.key}' requires at least one choice")
+        if len(set(self.choices)) != len(self.choices):
+            raise DomainError(f"ApprovedQuestion '{self.key}' has duplicate choices")
+
+
 @dataclass
 class SurveyCampaign:
     """Configuration + lifecycle for one external survey collection."""
@@ -34,7 +62,7 @@ class SurveyCampaign:
     tenant_id: TenantId
     client_id: ClientId
     name: str
-    source: SurveySource
+    source: str
     external_form_id: str
     webhook_secret: str
     status: SurveyCampaignStatus
@@ -44,6 +72,7 @@ class SurveyCampaign:
     period_start: date | None = None
     period_end: date | None = None
     anonymous: bool = True
+    approved_questions: list[ApprovedQuestion] = field(default_factory=list["ApprovedQuestion"])
     activated_at: datetime | None = None
     closed_at: datetime | None = None
     response_count: int = 0
@@ -60,6 +89,9 @@ class SurveyCampaign:
             raise DomainError("period_end must be on or after period_start")
         if self.response_count < 0:
             raise DomainError("response_count cannot be negative")
+        keys = [q.key for q in self.approved_questions]
+        if len(set(keys)) != len(keys):
+            raise DomainError("approved_questions contains a duplicate question key")
         if self.created_at == self.updated_at and not self.events:
             self.events.append(
                 SurveyCampaignCreated(

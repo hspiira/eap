@@ -47,7 +47,31 @@ import app.domain.entities as entities_pkg
 # PractitionerImportBatchApplied with actor and counts, and each row carries
 # its created ids and quarantine reason as persisted detail.
 # Net of the two the provider work removed, that is 148.
-KNOWN_SILENT_MUTATORS = 148
+#
+# 148 -> 122 in one pass over clients and contracts, which is three separate
+# things and worth keeping apart:
+#   -14  ClientEntity and ContractEntity now emit on create, on every field
+#        update, and on archive and restore. Neither has a silent mutator left.
+#    -3  the detector follows a private helper: a method that hands the append
+#        to one (ContractEntity._record_status_change) was read as silent.
+#    -9  the detector no longer reads `self.x == y` as an assignment, so read
+#        predicates like `is_active` were never mutators at all.
+# Only the first is coverage. The other twelve were the measurement.
+#
+# 122 -> 113 extending the same pass outwards: ServiceAssignmentEntity in full,
+# and EligibleMember except the three below.
+# EligibleMember.link_account and unlink_account stay silent for the reason at
+# the top of this list, and record_import is bookkeeping under an import batch
+# that already emits: a roster file of three thousand rows would otherwise
+# write three thousand audit rows for one operation a person performed once.
+# 113 -> 101 with ServiceSessionEntity, which needed the redaction rule first:
+# a session carries notes, a presenting issue and a diagnosis, so the handler
+# keeps the field names and drops the values for any special-category record.
+# 101 -> 93 with the clinical aggregates: Case, ClinicalNote, ClinicalSubject
+# and OutreachRecord. They are already in CLINICAL_RESOURCE_TYPES, so the
+# redaction rule covered them the moment they emitted. Amending a signed note
+# is the one that matters most and recorded nothing at all.
+KNOWN_SILENT_MUTATORS = 93
 
 
 def _entity_classes():
@@ -67,6 +91,28 @@ def _entity_classes():
             yield name, obj
 
 
+def _emits(cls, source: str, seen: frozenset[str] = frozenset()) -> bool:
+    """Whether a method appends an event, itself or through a private helper.
+
+    A method that hands the append to a helper is still audited, and factoring
+    a repeated append out is the normal way to write one. Without following the
+    call, `ContractEntity.activate` reads as silent while it emits.
+    """
+    if "events.append" in source:
+        return True
+    for helper in set(re.findall(r"self\.(_\w+)\(", source)) - seen:
+        member = getattr(cls, helper, None)
+        if not inspect.isfunction(member):
+            continue
+        try:
+            helper_source = inspect.getsource(member)
+        except (OSError, TypeError):
+            continue
+        if _emits(cls, helper_source, seen | {helper}):
+            return True
+    return False
+
+
 def _mutating_methods(cls):
     """Public methods that assign to self, with whether they emit an event."""
     for name, member in vars(cls).items():
@@ -76,9 +122,11 @@ def _mutating_methods(cls):
             source = inspect.getsource(member)
         except (OSError, TypeError):
             continue
-        if not re.search(r"self\.\w+\s*=", source):
+        # `=(?!=)` so a comparison is not read as an assignment: `is_active`
+        # returns `self.status == ACTIVE` and mutates nothing.
+        if not re.search(r"self\.\w+\s*=(?!=)", source):
             continue
-        yield name, "events.append" in source
+        yield name, _emits(cls, source)
 
 
 def silent_mutators() -> dict[str, list[str]]:
@@ -113,17 +161,56 @@ def test_lifecycle_transitions_are_audited():
     assert "activate" in emitting.get("ClientEntity", [])
 
 
-def test_creating_a_client_is_not_audited():
-    """Documents the gap rather than asserting it is acceptable.
+def test_creating_a_client_is_audited():
+    """Creation emits, and from the use case rather than the constructor.
 
-    ClientEntity has no __post_init__ emitting a creation event, so
-    POST /clients produces no outbox row. Verified against a running API.
+    A `__post_init__` would fire in the mapper too, which builds an entity for
+    every row it reads, so loading a client would record a creation. The
+    create use case calls `record_created` instead: see test_client_api.py for
+    the outbox row it produces.
     """
     from app.domain.entities.client import ClientEntity
 
     source = inspect.getsource(ClientEntity)
     assert "__post_init__" not in source, (
-        "ClientEntity gained a __post_init__. If it now emits a creation "
-        "event, client creation is audited and this test should assert that "
-        "instead."
+        "ClientEntity gained a __post_init__. Emitting there records a "
+        "creation every time the mapper hydrates a row."
     )
+    assert "ClientCreated" in inspect.getsource(ClientEntity.record_created)
+
+
+def test_the_commercial_aggregates_are_audited_in_full():
+    """The records a dispute is argued from leave no silent mutator behind."""
+    gap = silent_mutators()
+    for entity in ("ClientEntity", "ContractEntity", "ServiceAssignmentEntity"):
+        assert gap.get(entity) is None, f"{entity}: {gap.get(entity)}"
+
+
+def test_sessions_are_audited_now_that_their_values_are_redacted():
+    """Delivery records emit, and the trail names fields rather than content."""
+    from app.shared.utils.clinical_data_classification import is_special_category
+
+    gap = silent_mutators()
+    assert gap.get("ServiceSessionEntity") is None, gap.get("ServiceSessionEntity")
+    assert is_special_category(resource_type="ServiceSession")
+
+
+def test_the_clinical_aggregates_emit_and_are_classified():
+    """A clinical record's changes are recorded, and its values are redacted."""
+    from app.shared.utils.clinical_data_classification import is_special_category
+
+    gap = silent_mutators()
+    for entity in ("Case", "ClinicalNote", "ClinicalSubject", "OutreachRecord"):
+        assert gap.get(entity) is None, f"{entity}: {gap.get(entity)}"
+        assert is_special_category(resource_type=entity), entity
+
+
+def test_only_the_documented_member_mutators_stay_silent():
+    """Roster changes emit, apart from the two the route audits itself.
+
+    Account linkage is an association between two aggregates and the members
+    route records it as its own operation; record_import is bookkeeping under
+    a batch that already emits.
+    """
+    gap = silent_mutators()
+    assert gap.get("EligibleMember") == ["link_account", "record_import", "unlink_account"]

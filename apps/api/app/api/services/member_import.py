@@ -14,7 +14,6 @@ from datetime import date
 from pydantic import ValidationError
 
 from app.api.schemas.member_schemas import MemberCreate, MemberImportRowValues
-from app.application.services.member_audit import record_member_change
 from app.application.use_cases.eligible_member_use_cases import EnrolEligibleMemberUseCase
 from app.core.security import TokenData
 from app.domain.entities.client import ClientEntity
@@ -24,7 +23,9 @@ from app.domain.repositories.client_repository import ClientRepository
 from app.domain.repositories.eligible_member_repository import EligibleMemberRepository
 from app.domain.repositories.outbox_repository import OutboxRepository
 from app.domain.value_objects.core import ClientId, EligibleMemberId, Email, TenantId, UserId
+from app.shared.handlers.audit_event_handler import AuditEventHandler
 from app.shared.utils.member_csv import MemberCsvRow
+from app.shared.utils.route_audit_helper import audit_change
 
 DECISIONS = {"import", "skip"}
 
@@ -199,14 +200,9 @@ class MemberRowImporter:
         _apply_imported_status(member, row.status)
         member.record_import()
         await self._members.save(member)
-        await record_member_change(
-            self._outbox,
-            tenant_id=self._user.tenant_id,
-            user_id=self._user.user_id,
-            resource_id=member.id.value,
-            action="CREATE",
-            operation="Imported",
-        )
+        # One row per imported member, as before: the enrolment use case emits
+        # the creation and this sends it down the same path the routes use.
+        await audit_change(member, AuditEventHandler(self._outbox), self._user)
         return member
 
 

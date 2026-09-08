@@ -11,13 +11,18 @@ from typing import Any
 
 from app.application.use_cases.base import BaseUseCase
 from app.core.webhook_signature import verify_signature
-from app.domain.entities.survey_campaign import SurveyCampaign
+from app.domain.entities.survey_campaign import ApprovedQuestion, SurveyCampaign
 from app.domain.entities.survey_response import SurveyResponse
-from app.domain.enums import SurveyCampaignStatus, SurveySource
+from app.domain.enums import SurveyCampaignStatus
 from app.domain.exceptions import DomainError, NotFoundError
 from app.domain.repositories.survey_repository import (
     SurveyCampaignRepository,
     SurveyResponseRepository,
+)
+from app.domain.services.cell_suppression import DEFAULT_MIN_CELL_SIZE
+from app.domain.services.survey_disclosure import (
+    SurveyAnswerTallyReader,
+    aggregate_payload,
 )
 from app.domain.value_objects.core import (
     ClientId,
@@ -41,13 +46,14 @@ class CreateSurveyCampaignUseCase(BaseUseCase[SurveyCampaign, SurveyCampaignId])
         tenant_id: TenantId,
         client_id: ClientId,
         name: str,
-        source: SurveySource,
+        source: str,
         external_form_id: str,
         webhook_secret: str,
         created_by: UserId,
         period_start: date | None = None,
         period_end: date | None = None,
         anonymous: bool = True,
+        approved_questions: list[ApprovedQuestion] | None = None,
     ) -> SurveyCampaign:
         now = utc_now()
         campaign = SurveyCampaign(
@@ -62,6 +68,7 @@ class CreateSurveyCampaignUseCase(BaseUseCase[SurveyCampaign, SurveyCampaignId])
             period_start=period_start,
             period_end=period_end,
             anonymous=anonymous,
+            approved_questions=list(approved_questions or []),
             created_by=created_by,
             created_at=now,
             updated_at=now,
@@ -142,20 +149,24 @@ class IngestSurveyResponseUseCase:
 
 
 class GetSurveyAggregateUseCase:
-    """Read-side aggregation that never exposes individual answers.
+    """Read-side aggregation of a campaign's approved categorical answers.
 
-    Returns counts + per-question answer-frequency tables, computed entirely
-    in-memory from the per-campaign response set. Suitable for renewal packs;
-    individual-row inspection is intentionally not surfaced via this path.
+    Counts come from the database over the whole campaign, so the total is the
+    campaign's real total rather than a query limit. Free text is never counted:
+    only the campaign's approved questions and their approved choices appear,
+    and every cell and total goes through the small-cell floor.
     """
 
     def __init__(
         self,
         campaign_repository: SurveyCampaignRepository,
-        response_repository: SurveyResponseRepository,
+        tally_reader: SurveyAnswerTallyReader,
+        *,
+        min_cell_size: int = DEFAULT_MIN_CELL_SIZE,
     ):
         self._campaigns = campaign_repository
-        self._responses = response_repository
+        self._tallies = tally_reader
+        self._min_cell_size = min_cell_size
 
     async def execute(self, campaign_id: SurveyCampaignId) -> dict[str, Any]:
         campaign = await self._campaigns.get_by_id(campaign_id)
@@ -165,23 +176,30 @@ class GetSurveyAggregateUseCase:
                 resource_type="SurveyCampaign",
                 resource_id=campaign_id.value,
             )
-        responses = await self._responses.list_for_campaign(
-            campaign.tenant_id, campaign_id, limit=10_000
+        tenant_id = campaign.tenant_id.value
+        tallies = {
+            question.key: await self._tallies.tally(
+                tenant_id=tenant_id,
+                campaign_id=campaign_id.value,
+                question=question,
+            )
+            for question in campaign.approved_questions
+        }
+        response_total = await self._tallies.count_responses(
+            tenant_id=tenant_id, campaign_id=campaign_id.value
         )
-        per_question: dict[str, dict[str, int]] = {}
-        for r in responses:
-            for k, v in (r.payload or {}).items():
-                bucket = per_question.setdefault(k, {})
-                key = str(v)
-                bucket[key] = bucket.get(key, 0) + 1
         return {
             "campaign_id": campaign.id.value,
             "client_id": campaign.client_id.value,
             "name": campaign.name,
             "status": campaign.status.value,
-            "source": campaign.source.value,
+            "source": campaign.source,
             "anonymous": campaign.anonymous,
-            "response_total": len(responses),
-            "answer_frequencies": per_question,
             "generated_at": utc_now().isoformat(),
+            **aggregate_payload(
+                questions=campaign.approved_questions,
+                tallies=tallies,
+                response_total=response_total,
+                floor=self._min_cell_size,
+            ),
         }

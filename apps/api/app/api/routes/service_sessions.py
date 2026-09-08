@@ -6,6 +6,7 @@ Refactored to use @transactional decorator to eliminate try/except boilerplate.
 """
 
 from collections.abc import Sequence
+from copy import deepcopy
 from datetime import datetime
 
 from fastapi import APIRouter, Depends, Query, Request, status
@@ -17,6 +18,7 @@ from app.api.dependencies import (
     get_authorization_repository,
     get_case_repository,
     get_client_repository,
+    get_contract_repository,
     get_eligible_member_repository,
     get_provider_repository,
     get_service_repository,
@@ -74,6 +76,7 @@ from app.domain.enums.provider_network import OrganisationApprovalStatus
 from app.domain.exceptions import NotFoundError, ValidationException
 from app.domain.repositories.case_repository import CaseRepository
 from app.domain.repositories.client_repository import ClientRepository
+from app.domain.repositories.contract_repository import ContractRepository
 from app.domain.repositories.eap_programme_repository import AuthorizationRepository
 from app.domain.repositories.eligible_member_repository import EligibleMemberRepository
 from app.domain.repositories.provider_network_repository import (
@@ -128,6 +131,7 @@ def to_service_session_response(
         service_id=session.service_id.value,
         provider_id=session.provider_id.value,
         client_id=session.client_id.value,
+        contract_id=session.contract_id.value if session.contract_id else None,
         client_name=names.clients.get(session.client_id.value),
         attendance=session.attendance,
         member_id=session.member_id.value if session.member_id else None,
@@ -247,18 +251,20 @@ async def _delivery_reasons(
 
 
 async def _one(
-    session: ServiceSessionEntity, reader: SessionAttributionReader
+    session: ServiceSessionEntity,
+    reader: SessionAttributionReader,
+    names: SessionNameReader,
 ) -> ServiceSessionResponse:
-    """One session, with the organisation resolved from its own affiliation."""
-    return (await _many([session], reader))[0]
+    """One session, with the organisation and display names resolved for it."""
+    return (await _many([session], reader, names))[0]
 
 
 async def _many(
     sessions: Sequence[ServiceSessionEntity],
     reader: SessionAttributionReader,
-    names: SessionNameReader | None = None,
+    names: SessionNameReader,
 ) -> list[ServiceSessionResponse]:
-    """Sessions with attribution resolved in one query rather than one per row.
+    """Sessions with attribution and names resolved in bulk rather than per row.
 
     The organisation comes from the affiliation stored on each session, never
     from the practitioner's current affiliations, so moving firms does not
@@ -270,16 +276,12 @@ async def _many(
     organisations = await reader.organisation_ids_by_affiliation(
         sessions[0].tenant_id, affiliation_ids
     )
-    resolved = (
-        await names.names_for(
-            sessions[0].tenant_id,
-            client_ids=[s.client_id.value for s in sessions],
-            member_ids=[s.member_id.value for s in sessions if s.member_id],
-            provider_ids=[s.provider_id.value for s in sessions],
-            service_ids=[s.service_id.value for s in sessions],
-        )
-        if names
-        else None
+    resolved = await names.names_for(
+        sessions[0].tenant_id,
+        client_ids=[s.client_id.value for s in sessions],
+        member_ids=[s.member_id.value for s in sessions if s.member_id],
+        provider_ids=[s.provider_id.value for s in sessions],
+        service_ids=[s.service_id.value for s in sessions],
     )
     return [
         to_service_session_response(
@@ -344,6 +346,8 @@ async def create_service_session(
         get_provider_organisation_repository
     ),
     attribution_reader: SessionAttributionReader = Depends(get_session_attribution_reader),
+    name_reader: SessionNameReader = Depends(get_session_name_reader),
+    contract_repo: ContractRepository = Depends(get_contract_repository),
     audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
 ):
@@ -366,7 +370,7 @@ async def create_service_session(
         raise NotFoundError(
             "Service not found", resource_type="Service", resource_id=data.service_id
         )
-    session = await CreateServiceSessionUseCase(session_repo).execute(
+    session = await CreateServiceSessionUseCase(session_repo, contract_repo).execute(
         session_id=SessionId(generate_cuid()),
         tenant_id=TenantId(tenant_id),
         service_id=ServiceId(data.service_id),
@@ -393,7 +397,7 @@ async def create_service_session(
         clinical_outcome=data.clinical_outcome,
     )
     await audit_change(session, audit_handler, current_user, request, tenant_id=tenant_id)
-    return await _one(session, attribution_reader)
+    return await _one(session, attribution_reader, name_reader)
 
 
 @router.post(
@@ -413,6 +417,7 @@ async def complete_service_session(
     case_repo: CaseRepository = Depends(get_case_repository),
     member_repo: EligibleMemberRepository = Depends(get_eligible_member_repository),
     attribution_reader: SessionAttributionReader = Depends(get_session_attribution_reader),
+    name_reader: SessionNameReader = Depends(get_session_name_reader),
     audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
 ):
@@ -436,7 +441,7 @@ async def complete_service_session(
         member_repo=member_repo,
     )
     return ServiceSessionCompleteResponse(
-        session=await _one(session, attribution_reader), drawdown=drawdown
+        session=await _one(session, attribution_reader, name_reader), drawdown=drawdown
     )
 
 
@@ -495,6 +500,7 @@ async def cancel_service_session(
     session: ServiceSessionEntity = Depends(get_service_session_for_current_tenant),
     session_repo: ServiceSessionRepository = Depends(get_service_session_repository),
     attribution_reader: SessionAttributionReader = Depends(get_session_attribution_reader),
+    name_reader: SessionNameReader = Depends(get_session_name_reader),
     audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
 ):
@@ -507,7 +513,7 @@ async def cancel_service_session(
         tenant_id=current_user.tenant_id,
     )
     await audit_change(session, audit_handler, current_user, request)
-    return await _one(session, attribution_reader)
+    return await _one(session, attribution_reader, name_reader)
 
 
 @router.post(
@@ -529,6 +535,7 @@ async def reschedule_service_session(
         get_provider_organisation_repository
     ),
     attribution_reader: SessionAttributionReader = Depends(get_session_attribution_reader),
+    name_reader: SessionNameReader = Depends(get_session_name_reader),
     audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
 ):
@@ -557,7 +564,7 @@ async def reschedule_service_session(
         tenant_id=current_user.tenant_id,
     )
     await audit_change(session, audit_handler, current_user, request)
-    return await _one(session, attribution_reader)
+    return await _one(session, attribution_reader, name_reader)
 
 
 @router.post(
@@ -572,6 +579,7 @@ async def mark_no_show_service_session(
     session: ServiceSessionEntity = Depends(get_service_session_for_current_tenant),
     session_repo: ServiceSessionRepository = Depends(get_service_session_repository),
     attribution_reader: SessionAttributionReader = Depends(get_session_attribution_reader),
+    name_reader: SessionNameReader = Depends(get_session_name_reader),
     audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
 ):
@@ -581,7 +589,7 @@ async def mark_no_show_service_session(
         session.id, ServiceSessionTransition.MARK_NO_SHOW, tenant_id=current_user.tenant_id
     )
     await audit_change(session, audit_handler, current_user, request)
-    return await _one(session, attribution_reader)
+    return await _one(session, attribution_reader, name_reader)
 
 
 @router.patch(
@@ -597,10 +605,14 @@ async def update_service_session(
     session: ServiceSessionEntity = Depends(get_service_session_for_current_tenant),
     session_repo: ServiceSessionRepository = Depends(get_service_session_repository),
     attribution_reader: SessionAttributionReader = Depends(get_session_attribution_reader),
+    name_reader: SessionNameReader = Depends(get_session_name_reader),
     audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
 ):
     """Update service session information."""
+    # The use case mutates in place, so the audit diff needs the state first.
+    # Values are redacted downstream: a session is special-category.
+    before = deepcopy(session)
     session = await UpdateServiceSessionUseCase(session_repo).execute(
         session.id,
         location=data.location,
@@ -618,8 +630,8 @@ async def update_service_session(
         client_type=data.client_type,
         clinical_outcome=data.clinical_outcome,
     )
-    await audit_change(session, audit_handler, current_user, request)
-    return await _one(session, attribution_reader)
+    await audit_change(session, audit_handler, current_user, request, old_entity=before)
+    return await _one(session, attribution_reader, name_reader)
 
 
 @router.patch(
@@ -635,6 +647,7 @@ async def update_service_session_feedback(
     session: ServiceSessionEntity = Depends(get_service_session_for_current_tenant),
     session_repo: ServiceSessionRepository = Depends(get_service_session_repository),
     attribution_reader: SessionAttributionReader = Depends(get_session_attribution_reader),
+    name_reader: SessionNameReader = Depends(get_session_name_reader),
     audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
 ):
@@ -647,7 +660,7 @@ async def update_service_session_feedback(
         tenant_id=current_user.tenant_id,
     )
     await audit_change(session, audit_handler, current_user, request)
-    return await _one(session, attribution_reader)
+    return await _one(session, attribution_reader, name_reader)
 
 
 @router.post(
@@ -662,6 +675,7 @@ async def archive_service_session(
     session: ServiceSessionEntity = Depends(get_service_session_for_current_tenant),
     session_repo: ServiceSessionRepository = Depends(get_service_session_repository),
     attribution_reader: SessionAttributionReader = Depends(get_session_attribution_reader),
+    name_reader: SessionNameReader = Depends(get_session_name_reader),
     audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
 ):
@@ -671,7 +685,7 @@ async def archive_service_session(
         session.id, ServiceSessionTransition.ARCHIVE, tenant_id=current_user.tenant_id
     )
     await audit_change(session, audit_handler, current_user, request)
-    return await _one(session, attribution_reader)
+    return await _one(session, attribution_reader, name_reader)
 
 
 @router.post(
@@ -686,6 +700,7 @@ async def restore_service_session(
     session: ServiceSessionEntity = Depends(get_service_session_for_current_tenant),
     session_repo: ServiceSessionRepository = Depends(get_service_session_repository),
     attribution_reader: SessionAttributionReader = Depends(get_session_attribution_reader),
+    name_reader: SessionNameReader = Depends(get_session_name_reader),
     audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
 ):
@@ -695,7 +710,7 @@ async def restore_service_session(
         session.id, ServiceSessionTransition.RESTORE, tenant_id=current_user.tenant_id
     )
     await audit_change(session, audit_handler, current_user, request)
-    return await _one(session, attribution_reader)
+    return await _one(session, attribution_reader, name_reader)
 
 
 # ==================== QUERIES (Direct Repository) ====================
@@ -808,10 +823,11 @@ async def list_service_sessions(
 async def get_service_session(
     session: ServiceSessionEntity = Depends(get_service_session_for_current_tenant),
     attribution_reader: SessionAttributionReader = Depends(get_session_attribution_reader),
+    name_reader: SessionNameReader = Depends(get_session_name_reader),
     db: AsyncSession = Depends(get_db),
 ):
     """Get service session by ID."""
-    return await _one(session, attribution_reader)
+    return await _one(session, attribution_reader, name_reader)
 
 
 @router.get(
@@ -826,13 +842,14 @@ async def get_sessions_by_member(
     current_user: TokenData = Depends(require_same_tenant),
     session_repo: ServiceSessionRepository = Depends(get_service_session_repository),
     attribution_reader: SessionAttributionReader = Depends(get_session_attribution_reader),
+    name_reader: SessionNameReader = Depends(get_session_name_reader),
     db: AsyncSession = Depends(get_db),
 ):
     """Get all sessions for a member."""
     sessions = await GetServiceSessionUseCase(session_repo).execute_by_member(
         TenantId(tenant_id), EligibleMemberId(member_id)
     )
-    return await _many(sessions, attribution_reader)
+    return await _many(sessions, attribution_reader, name_reader)
 
 
 @router.get(
@@ -847,13 +864,14 @@ async def get_sessions_by_provider(
     current_user: TokenData = Depends(require_same_tenant),
     session_repo: ServiceSessionRepository = Depends(get_service_session_repository),
     attribution_reader: SessionAttributionReader = Depends(get_session_attribution_reader),
+    name_reader: SessionNameReader = Depends(get_session_name_reader),
     db: AsyncSession = Depends(get_db),
 ):
     """Get all sessions for a provider."""
     sessions = await GetServiceSessionUseCase(session_repo).execute_by_provider(
         TenantId(tenant_id), ProviderId(provider_id)
     )
-    return await _many(sessions, attribution_reader)
+    return await _many(sessions, attribution_reader, name_reader)
 
 
 @router.get(
@@ -868,10 +886,11 @@ async def get_sessions_by_service(
     current_user: TokenData = Depends(require_same_tenant),
     session_repo: ServiceSessionRepository = Depends(get_service_session_repository),
     attribution_reader: SessionAttributionReader = Depends(get_session_attribution_reader),
+    name_reader: SessionNameReader = Depends(get_session_name_reader),
     db: AsyncSession = Depends(get_db),
 ):
     """Get all sessions for a service."""
     sessions = await GetServiceSessionUseCase(session_repo).execute_by_service(
         TenantId(tenant_id), ServiceId(service_id)
     )
-    return await _many(sessions, attribution_reader)
+    return await _many(sessions, attribution_reader, name_reader)

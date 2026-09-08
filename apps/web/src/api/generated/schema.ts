@@ -617,6 +617,58 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/case-referral-sources": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List case referral sources */
+        get: operations["list_case_referral_sources_case_referral_sources_get"];
+        put?: never;
+        /** Create Case Referral Source */
+        post: operations["create_case_referral_source_case_referral_sources_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/case-referral-sources/{source_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Update Case Referral Source */
+        patch: operations["update_case_referral_source_case_referral_sources__source_id__patch"];
+        trace?: never;
+    };
+    "/case-referral-sources/{source_id}/active": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Set Case Referral Source Active */
+        post: operations["set_case_referral_source_active_case_referral_sources__source_id__active_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/cases": {
         parameters: {
             query?: never;
@@ -856,6 +908,58 @@ export interface paths {
          * @description Deactivate a client tag.
          */
         post: operations["deactivate_client_tag_client_tags__tag_id__deactivate_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/client-tiers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List client tiers */
+        get: operations["list_client_tiers_client_tiers_get"];
+        put?: never;
+        /** Create Client Tier */
+        post: operations["create_client_tier_client_tiers_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/client-tiers/{tier_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Update Client Tier */
+        patch: operations["update_client_tier_client_tiers__tier_id__patch"];
+        trace?: never;
+    };
+    "/client-tiers/{tier_id}/active": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Set Client Tier Active */
+        post: operations["set_client_tier_active_client_tiers__tier_id__active_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -2295,6 +2399,58 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/document-types": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List document types */
+        get: operations["list_document_types_document_types_get"];
+        put?: never;
+        /** Create Document Type */
+        post: operations["create_document_type_document_types_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/document-types/{type_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Update Document Type */
+        patch: operations["update_document_type_document_types__type_id__patch"];
+        trace?: never;
+    };
+    "/document-types/{type_id}/active": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Set Document Type Active */
+        post: operations["set_document_type_active_document_types__type_id__active_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/documents/": {
         parameters: {
             query?: never;
@@ -3026,6 +3182,110 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/kpi-categories": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List KPI categories */
+        get: operations["list_kpi_categories_kpi_categories_get"];
+        put?: never;
+        /** Create Kpi Category */
+        post: operations["create_kpi_category_kpi_categories_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/kpi-categories/{category_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Update Kpi Category */
+        patch: operations["update_kpi_category_kpi_categories__category_id__patch"];
+        trace?: never;
+    };
+    "/kpi-categories/{category_id}/active": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Set Kpi Category Active */
+        post: operations["set_kpi_category_active_kpi_categories__category_id__active_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/kpi-measurement-units": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List KPI measurement units */
+        get: operations["list_kpi_measurement_units_kpi_measurement_units_get"];
+        put?: never;
+        /** Create Kpi Measurement Unit */
+        post: operations["create_kpi_measurement_unit_kpi_measurement_units_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/kpi-measurement-units/{unit_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Update Kpi Measurement Unit */
+        patch: operations["update_kpi_measurement_unit_kpi_measurement_units__unit_id__patch"];
+        trace?: never;
+    };
+    "/kpi-measurement-units/{unit_id}/active": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Set Kpi Measurement Unit Active */
+        post: operations["set_kpi_measurement_unit_active_kpi_measurement_units__unit_id__active_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/kpis/": {
         parameters: {
             query?: never;
@@ -3400,6 +3660,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/members/stats": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Member Stats
+         * @description Aggregate counts for the roster summary strip, honouring the list filters.
+         */
+        get: operations["member_stats_members_stats_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/members/{member_id}": {
         parameters: {
             query?: never;
@@ -3568,6 +3848,58 @@ export interface paths {
         put?: never;
         /** Terminate Member */
         post: operations["terminate_member_members__member_id__terminate_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/next-of-kin-relationships": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List NOK relationships */
+        get: operations["list_next_of_kin_relationships_next_of_kin_relationships_get"];
+        put?: never;
+        /** Create Next Of Kin Relationship */
+        post: operations["create_next_of_kin_relationship_next_of_kin_relationships_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/next-of-kin-relationships/{relationship_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Update Next Of Kin Relationship */
+        patch: operations["update_next_of_kin_relationship_next_of_kin_relationships__relationship_id__patch"];
+        trace?: never;
+    };
+    "/next-of-kin-relationships/{relationship_id}/active": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Set Next Of Kin Relationship Active */
+        post: operations["set_next_of_kin_relationship_active_next_of_kin_relationships__relationship_id__active_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -3945,6 +4277,58 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/presenting-problems": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List presenting problems */
+        get: operations["list_presenting_problems_presenting_problems_get"];
+        put?: never;
+        /** Create Presenting Problem */
+        post: operations["create_presenting_problem_presenting_problems_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/presenting-problems/{problem_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Update Presenting Problem */
+        patch: operations["update_presenting_problem_presenting_problems__problem_id__patch"];
+        trace?: never;
+    };
+    "/presenting-problems/{problem_id}/active": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Set Presenting Problem Active */
+        post: operations["set_presenting_problem_active_presenting_problems__problem_id__active_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/provider-affiliations": {
         parameters: {
             query?: never;
@@ -4281,6 +4665,29 @@ export interface paths {
         patch: operations["change_accreditation_providers__provider_id__accreditation_patch"];
         trace?: never;
     };
+    "/providers/{provider_id}/delivery-stats": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Counts over one practitioner's whole delivery record
+         * @description The organisation breakdown follows each session's stored affiliation.
+         *
+         *     A practitioner who moves between organisations keeps the attribution their
+         *     past sessions were delivered under (decision 2).
+         */
+        get: operations["get_delivery_stats_providers__provider_id__delivery_stats_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/providers/{provider_id}/engagement-documents": {
         parameters: {
             query?: never;
@@ -4610,6 +5017,58 @@ export interface paths {
          * @description Deactivate a service assignment.
          */
         post: operations["deactivate_service_assignment_service_assignments__assignment_id__deactivate_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/service-categories": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List service categories */
+        get: operations["list_service_categories_service_categories_get"];
+        put?: never;
+        /** Create Service Category */
+        post: operations["create_service_category_service_categories_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/service-categories/{category_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Update Service Category */
+        patch: operations["update_service_category_service_categories__category_id__patch"];
+        trace?: never;
+    };
+    "/service-categories/{category_id}/active": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Set Service Category Active */
+        post: operations["set_service_category_active_service_categories__category_id__active_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -5268,6 +5727,58 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/survey-sources": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List survey sources */
+        get: operations["list_survey_sources_survey_sources_get"];
+        put?: never;
+        /** Create Survey Source */
+        post: operations["create_survey_source_survey_sources_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/survey-sources/{source_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Update Survey Source */
+        patch: operations["update_survey_source_survey_sources__source_id__patch"];
+        trace?: never;
+    };
+    "/survey-sources/{source_id}/active": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Set Survey Source Active */
+        post: operations["set_survey_source_active_survey_sources__source_id__active_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/tenants/": {
         parameters: {
             query?: never;
@@ -5916,6 +6427,58 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/utilisation-event-types": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List utilisation event types */
+        get: operations["list_utilisation_event_types_utilisation_event_types_get"];
+        put?: never;
+        /** Create Utilisation Event Type */
+        post: operations["create_utilisation_event_type_utilisation_event_types_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/utilisation-event-types/{event_type_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Update Utilisation Event Type */
+        patch: operations["update_utilisation_event_type_utilisation_event_types__event_type_id__patch"];
+        trace?: never;
+    };
+    "/utilisation-event-types/{event_type_id}/active": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Set Utilisation Event Type Active */
+        post: operations["set_utilisation_event_type_active_utilisation_event_types__event_type_id__active_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/utilisation-events": {
         parameters: {
             query?: never;
@@ -6219,9 +6782,15 @@ export interface components {
          *     ``INFERRED`` is a reading of the label that nobody has signed off, so it
          *     stays filterable: a reviewer can list exactly the mappings still awaiting
          *     a clinical owner without re-deriving which ones those were.
+         *
+         *     ``REJECTED`` records that a reviewer read the mapping and refused it. It is
+         *     kept rather than deleted so the same spelling is not inferred again by the
+         *     next import: a deleted row and a row nobody has seen are indistinguishable.
+         *     A rejected alias maps nothing, so its legacy values stay unresolved, which
+         *     is the honest outcome when the only reading on offer is wrong.
          * @enum {string}
          */
-        AliasConfidence: "confirmed" | "inferred";
+        AliasConfidence: "confirmed" | "inferred" | "rejected";
         /**
          * AliasResolutionState
          * @description Whether a source name has been reconciled to a practitioner.
@@ -6239,6 +6808,21 @@ export interface components {
             };
             /** Reason */
             reason: string;
+        };
+        /**
+         * ApprovedQuestionInput
+         * @description A question whose answers may be counted in an employer-facing aggregate.
+         *
+         *     Aggregates report these questions and these choices only, so free text
+         *     stays out of every employer-facing surface.
+         */
+        ApprovedQuestionInput: {
+            /** Choices */
+            choices: string[];
+            /** Key */
+            key: string;
+            /** Label */
+            label: string;
         };
         /** AssignCounsellorRequest */
         AssignCounsellorRequest: {
@@ -6382,7 +6966,8 @@ export interface components {
             id: string;
             /** Programme Id */
             programme_id: string;
-            service_category: components["schemas"]["ServiceCategory"];
+            /** Service Category */
+            service_category: string;
             /** Sessions Granted */
             sessions_granted: number;
             /** Sessions Remaining */
@@ -6410,7 +6995,8 @@ export interface components {
             expires_on?: string | null;
             /** Programme Id */
             programme_id: string;
-            service_category: components["schemas"]["ServiceCategory"];
+            /** Service Category */
+            service_category: string;
         };
         /**
          * BaseStatus
@@ -6670,12 +7256,67 @@ export interface components {
          * @enum {string}
          */
         CaseClosureReason: "GoalsMet" | "ClientDiscontinued" | "ReferredOut" | "NoShow" | "SessionCapReached" | "Ineligible" | "Other";
-        /**
-         * CaseReferralSource
-         * @description Origin of a case, drives downstream disclosure and reporting rules.
-         * @enum {string}
-         */
-        CaseReferralSource: "Self" | "InformalManager" | "FormalMandatory" | "HR" | "CISMFollowUp" | "EmployerProactive";
+        /** CaseReferralSourceCreate */
+        CaseReferralSourceCreate: {
+            /**
+             * Code
+             * @description Stable code
+             */
+            code: string;
+            /**
+             * Description
+             * @description Optional description
+             */
+            description?: string | null;
+            /**
+             * Name
+             * @description Display name
+             */
+            name: string;
+            /**
+             * Sort Order
+             * @description Sort order
+             * @default 0
+             */
+            sort_order: number;
+        };
+        /** CaseReferralSourceResponse */
+        CaseReferralSourceResponse: {
+            /**
+             * Code
+             * @description Stable code
+             */
+            code: string;
+            /**
+             * Description
+             * @description Optional description
+             */
+            description?: string | null;
+            /**
+             * Id
+             * @description Referral source identifier
+             */
+            id: string;
+            /**
+             * Name
+             * @description Display name
+             */
+            name: string;
+            /**
+             * Sort Order
+             * @description Sort order
+             */
+            sort_order: number;
+        };
+        /** CaseReferralSourceUpdate */
+        CaseReferralSourceUpdate: {
+            /** Description */
+            description?: string | null;
+            /** Name */
+            name?: string | null;
+            /** Sort Order */
+            sort_order?: number | null;
+        };
         /** CaseResponse */
         CaseResponse: {
             /** Assigned Counsellor Id */
@@ -6707,10 +7348,12 @@ export interface components {
              * Format: date-time
              */
             opened_at: string;
-            presenting_problem: components["schemas"]["PresentingProblem"];
+            /** Presenting Problem */
+            presenting_problem: string;
             /** Referral Notes */
             referral_notes: string | null;
-            referral_source: components["schemas"]["CaseReferralSource"];
+            /** Referral Source */
+            referral_source: string;
             /** Referred By User Id */
             referred_by_user_id: string | null;
             status: components["schemas"]["CaseStatus"];
@@ -7103,8 +7746,11 @@ export interface components {
              * @description Tenant identifier
              */
             tenant_id: string;
-            /** @description Engagement tier (A/B/C) */
-            tier?: components["schemas"]["ClientTier"] | null;
+            /**
+             * Tier
+             * @description Engagement tier code
+             */
+            tier?: string | null;
         };
         /**
          * ClientSavedViewCreate
@@ -7134,7 +7780,8 @@ export interface components {
             parent_client_id?: string | null;
             /** Search */
             search?: string | null;
-            tier?: components["schemas"]["ClientTier"] | null;
+            /** Tier */
+            tier?: string | null;
         };
         /** ClientSavedViewListResponse */
         ClientSavedViewListResponse: {
@@ -7386,16 +8033,67 @@ export interface components {
              */
             reason: string;
         };
-        /**
-         * ClientTier
-         * @description Joseph's A/B/C clustering for client engagement tiering.
-         *
-         *     A: strategic / large account, full service mix.
-         *     B: mid-tier, consultancy-extension candidates.
-         *     C: long-tail / small account, lower-touch service model.
-         * @enum {string}
-         */
-        ClientTier: "A" | "B" | "C";
+        /** ClientTierCreate */
+        ClientTierCreate: {
+            /**
+             * Code
+             * @description Stable code
+             */
+            code: string;
+            /**
+             * Description
+             * @description Optional description
+             */
+            description?: string | null;
+            /**
+             * Name
+             * @description Display name
+             */
+            name: string;
+            /**
+             * Sort Order
+             * @description Sort order
+             * @default 0
+             */
+            sort_order: number;
+        };
+        /** ClientTierResponse */
+        ClientTierResponse: {
+            /**
+             * Code
+             * @description Stable code
+             */
+            code: string;
+            /**
+             * Description
+             * @description Optional description
+             */
+            description?: string | null;
+            /**
+             * Id
+             * @description Client tier identifier
+             */
+            id: string;
+            /**
+             * Name
+             * @description Display name
+             */
+            name: string;
+            /**
+             * Sort Order
+             * @description Sort order
+             */
+            sort_order: number;
+        };
+        /** ClientTierUpdate */
+        ClientTierUpdate: {
+            /** Description */
+            description?: string | null;
+            /** Name */
+            name?: string | null;
+            /** Sort Order */
+            sort_order?: number | null;
+        };
         /**
          * ClientType
          * @enum {string}
@@ -7427,8 +8125,11 @@ export interface components {
             name?: string | null;
             /** @description Preferred contact method */
             preferred_contact_method?: components["schemas"]["ContactMethod"] | null;
-            /** @description Engagement tier (A/B/C) */
-            tier?: components["schemas"]["ClientTier"] | null;
+            /**
+             * Tier
+             * @description Engagement tier code
+             */
+            tier?: string | null;
         };
         /**
          * ClientUpdateAliases
@@ -7459,8 +8160,11 @@ export interface components {
          * @description Request schema for updating client engagement tier.
          */
         ClientUpdateTier: {
-            /** @description Engagement tier; null clears it */
-            tier: components["schemas"]["ClientTier"] | null;
+            /**
+             * Tier
+             * @description Engagement tier code; null clears it
+             */
+            tier: string | null;
         };
         /** ClinicalNoteResponse */
         ClinicalNoteResponse: {
@@ -7882,19 +8586,24 @@ export interface components {
             /**
              * New End Date
              * Format: date
-             * @description New contract end date
+             * @description End date of the new term
              */
             new_end_date: string;
             /** @description New billing rate (optional) */
             new_rate?: components["schemas"]["MoneyCreate"] | null;
+            /**
+             * Reference
+             * @description Reference for the new term
+             */
+            reference?: string | null;
         };
         /**
          * ContractResponse
          * @description Response schema for contract.
          */
         ContractResponse: {
-            /** @description Billing rate */
-            billing_rate: components["schemas"]["app__api__schemas__contract_schemas__MoneySchema"];
+            /** @description The standing charge, read from the contract's pricing. Absent on a model priced only by rate card, where no single figure stands for it. */
+            billing_rate?: components["schemas"]["app__api__schemas__contract_schemas__MoneySchema"] | null;
             /**
              * Client Id
              * @description Client identifier
@@ -7936,6 +8645,20 @@ export interface components {
             payment_status: components["schemas"]["PaymentStatus"];
             /** @description Contract period */
             period: components["schemas"]["DateRangeSchema"];
+            /** @description How this contract is priced */
+            pricing_model?: components["schemas"]["PricingModel"] | null;
+            /** @description The status stored on the row, before the lapse is derived */
+            recorded_status: components["schemas"]["ContractStatus"];
+            /**
+             * Reference
+             * @description Human reference for the term
+             */
+            reference?: string | null;
+            /**
+             * Renewed From Id
+             * @description The term this one renewed
+             */
+            renewed_from_id?: string | null;
             /**
              * Signed At
              * @description When contract was signed
@@ -7946,7 +8669,7 @@ export interface components {
              * @description Name of person who signed
              */
             signed_by?: string | null;
-            /** @description Contract status */
+            /** @description Status as at today. A term past its end date reads Expired whether or not anybody wrote that down. */
             status: components["schemas"]["ContractStatus"];
             /**
              * Tenant Id
@@ -8660,8 +9383,11 @@ export interface components {
              * @description Document description
              */
             description?: string | null;
-            /** @description Document type */
-            document_type: components["schemas"]["DocumentType"];
+            /**
+             * Document Type
+             * @description Document type
+             */
+            document_type: string;
             /**
              * Expires At
              * @description Expiry date
@@ -8802,8 +9528,11 @@ export interface components {
              * @description Document description
              */
             description?: string | null;
-            /** @description Document type */
-            document_type: components["schemas"]["DocumentType"];
+            /**
+             * Document Type
+             * @description Document type
+             */
+            document_type: string;
             /**
              * Expires At
              * @description Expiry date
@@ -8921,12 +9650,67 @@ export interface components {
          * @enum {string}
          */
         DocumentStatus: "Draft" | "Published" | "Archived" | "Expired";
-        /**
-         * DocumentType
-         * @description Types of documents in the system.
-         * @enum {string}
-         */
-        DocumentType: "Contract" | "Certification" | "KPI Report" | "Feedback Summary" | "Billing Report" | "Utilization Report" | "Other";
+        /** DocumentTypeCreate */
+        DocumentTypeCreate: {
+            /**
+             * Code
+             * @description Stable type code
+             */
+            code: string;
+            /**
+             * Description
+             * @description Optional description
+             */
+            description?: string | null;
+            /**
+             * Name
+             * @description Display name
+             */
+            name: string;
+            /**
+             * Sort Order
+             * @description Sort order
+             * @default 0
+             */
+            sort_order: number;
+        };
+        /** DocumentTypeResponse */
+        DocumentTypeResponse: {
+            /**
+             * Code
+             * @description Stable type code
+             */
+            code: string;
+            /**
+             * Description
+             * @description Optional description
+             */
+            description?: string | null;
+            /**
+             * Id
+             * @description Document type identifier
+             */
+            id: string;
+            /**
+             * Name
+             * @description Display name
+             */
+            name: string;
+            /**
+             * Sort Order
+             * @description Sort order
+             */
+            sort_order: number;
+        };
+        /** DocumentTypeUpdate */
+        DocumentTypeUpdate: {
+            /** Description */
+            description?: string | null;
+            /** Name */
+            name?: string | null;
+            /** Sort Order */
+            sort_order?: number | null;
+        };
         /**
          * DocumentUpdate
          * @description Request schema for updating document metadata.
@@ -9125,6 +9909,19 @@ export interface components {
             /** Note */
             note?: string | null;
             state: components["schemas"]["EngagementDocumentState"];
+        };
+        /** EngagementListResponse */
+        EngagementListResponse: {
+            /** Has More */
+            has_more: boolean;
+            /** Items */
+            items: components["schemas"]["EngagementResponse"][];
+            /** Limit */
+            limit: number;
+            /** Page */
+            page: number;
+            /** Total */
+            total: number;
         };
         /** EngagementResponse */
         EngagementResponse: {
@@ -9750,19 +10547,77 @@ export interface components {
              */
             target_value?: number | string | null;
         };
-        /**
-         * KPICategory
-         * @description Categories for KPIs.
-         * @enum {string}
-         */
-        KPICategory: "Utilization" | "Satisfaction" | "Outcome" | "Operational";
+        /** KPICategoryCreate */
+        KPICategoryCreate: {
+            /**
+             * Code
+             * @description Stable category code
+             */
+            code: string;
+            /**
+             * Description
+             * @description Optional description
+             */
+            description?: string | null;
+            /**
+             * Name
+             * @description Display name
+             */
+            name: string;
+            /**
+             * Sort Order
+             * @description Sort order
+             * @default 0
+             */
+            sort_order: number;
+        };
+        /** KPICategoryResponse */
+        KPICategoryResponse: {
+            /**
+             * Code
+             * @description Stable category code
+             */
+            code: string;
+            /**
+             * Description
+             * @description Optional description
+             */
+            description?: string | null;
+            /**
+             * Id
+             * @description KPI category identifier
+             */
+            id: string;
+            /**
+             * Name
+             * @description Display name
+             */
+            name: string;
+            /**
+             * Sort Order
+             * @description Sort order
+             */
+            sort_order: number;
+        };
+        /** KPICategoryUpdate */
+        KPICategoryUpdate: {
+            /** Description */
+            description?: string | null;
+            /** Name */
+            name?: string | null;
+            /** Sort Order */
+            sort_order?: number | null;
+        };
         /**
          * KPICreate
          * @description Request schema for creating a KPI.
          */
         KPICreate: {
-            /** @description KPI category */
-            category: components["schemas"]["KPICategory"];
+            /**
+             * Category
+             * @description KPI category
+             */
+            category: string;
             /**
              * Description
              * @description KPI description
@@ -9773,8 +10628,11 @@ export interface components {
              * @description Calculation formula
              */
             formula?: string | null;
-            /** @description Measurement unit */
-            measurement_unit: components["schemas"]["KPIMeasurementUnit"];
+            /**
+             * Measurement Unit
+             * @description Measurement unit
+             */
+            measurement_unit: string;
             /**
              * Name
              * @description KPI name
@@ -9827,19 +10685,77 @@ export interface components {
              */
             total: number;
         };
-        /**
-         * KPIMeasurementUnit
-         * @description Units for KPI measurements.
-         * @enum {string}
-         */
-        KPIMeasurementUnit: "Percentage" | "Count" | "Rate" | "Score" | "Time" | "Currency";
+        /** KPIMeasurementUnitCreate */
+        KPIMeasurementUnitCreate: {
+            /**
+             * Code
+             * @description Stable code
+             */
+            code: string;
+            /**
+             * Description
+             * @description Optional description
+             */
+            description?: string | null;
+            /**
+             * Name
+             * @description Display name
+             */
+            name: string;
+            /**
+             * Sort Order
+             * @description Sort order
+             * @default 0
+             */
+            sort_order: number;
+        };
+        /** KPIMeasurementUnitResponse */
+        KPIMeasurementUnitResponse: {
+            /**
+             * Code
+             * @description Stable code
+             */
+            code: string;
+            /**
+             * Description
+             * @description Optional description
+             */
+            description?: string | null;
+            /**
+             * Id
+             * @description KPI measurement unit identifier
+             */
+            id: string;
+            /**
+             * Name
+             * @description Display name
+             */
+            name: string;
+            /**
+             * Sort Order
+             * @description Sort order
+             */
+            sort_order: number;
+        };
+        /** KPIMeasurementUnitUpdate */
+        KPIMeasurementUnitUpdate: {
+            /** Description */
+            description?: string | null;
+            /** Name */
+            name?: string | null;
+            /** Sort Order */
+            sort_order?: number | null;
+        };
         /**
          * KPIResponse
          * @description Response schema for KPI.
          */
         KPIResponse: {
-            /** @description KPI category */
-            category: components["schemas"]["KPICategory"];
+            /**
+             * Category
+             * @description KPI category
+             */
+            category: string;
             /**
              * Created At
              * Format: date-time
@@ -9866,8 +10782,11 @@ export interface components {
              * @description Whether KPI is active
              */
             is_active: boolean;
-            /** @description Measurement unit */
-            measurement_unit: components["schemas"]["KPIMeasurementUnit"];
+            /**
+             * Measurement Unit
+             * @description Measurement unit
+             */
+            measurement_unit: string;
             /**
              * Name
              * @description KPI name
@@ -10285,7 +11204,8 @@ export interface components {
             name: string;
             /** Phone */
             phone?: string | null;
-            relationship: components["schemas"]["NextOfKinRelationship"];
+            /** Relationship */
+            relationship: string;
         };
         /** MemberNextOfKinResponse */
         MemberNextOfKinResponse: {
@@ -10306,7 +11226,8 @@ export interface components {
             name: string;
             /** Phone */
             phone: string | null;
-            relationship: components["schemas"]["NextOfKinRelationship"];
+            /** Relationship */
+            relationship: string;
             /** Tenant Id */
             tenant_id: string;
             /**
@@ -10328,7 +11249,8 @@ export interface components {
             name: string;
             /** Phone */
             phone?: string | null;
-            relationship: components["schemas"]["NextOfKinRelationship"];
+            /** Relationship */
+            relationship: string;
         };
         /**
          * MemberRelation
@@ -10342,6 +11264,10 @@ export interface components {
             client_id: string;
             /** Client Name */
             client_name?: string | null;
+            /** Coverage End */
+            coverage_end?: string | null;
+            /** Coverage Start */
+            coverage_start?: string | null;
             /**
              * Created At
              * Format: date-time
@@ -10356,6 +11282,8 @@ export interface components {
             gender: components["schemas"]["MemberGender"] | null;
             /** Id */
             id: string;
+            /** Is Currently Eligible */
+            is_currently_eligible: boolean;
             /** Last Imported At */
             last_imported_at: string | null;
             /** National Id */
@@ -10387,6 +11315,21 @@ export interface components {
             user_id?: string | null;
             /** Work Email */
             work_email: string | null;
+        };
+        /** MemberStatsResponse */
+        MemberStatsResponse: {
+            /** Active */
+            active: number;
+            /** Pending */
+            pending: number;
+            /** Suspended */
+            suspended: number;
+            /** Terminated */
+            terminated: number;
+            /** Total */
+            total: number;
+            /** With Account */
+            with_account: number;
         };
         /**
          * MemberUpdate
@@ -10432,12 +11375,67 @@ export interface components {
              */
             currency: string;
         };
-        /**
-         * NextOfKinRelationship
-         * @description Relationship of a restricted emergency contact to a member.
-         * @enum {string}
-         */
-        NextOfKinRelationship: "Spouse" | "Child" | "Parent" | "Sibling" | "Guardian" | "Partner" | "Other";
+        /** NextOfKinRelationshipCreate */
+        NextOfKinRelationshipCreate: {
+            /**
+             * Code
+             * @description Stable code
+             */
+            code: string;
+            /**
+             * Description
+             * @description Optional description
+             */
+            description?: string | null;
+            /**
+             * Name
+             * @description Display name
+             */
+            name: string;
+            /**
+             * Sort Order
+             * @description Sort order
+             * @default 0
+             */
+            sort_order: number;
+        };
+        /** NextOfKinRelationshipResponse */
+        NextOfKinRelationshipResponse: {
+            /**
+             * Code
+             * @description Stable code
+             */
+            code: string;
+            /**
+             * Description
+             * @description Optional description
+             */
+            description?: string | null;
+            /**
+             * Id
+             * @description Relationship identifier
+             */
+            id: string;
+            /**
+             * Name
+             * @description Display name
+             */
+            name: string;
+            /**
+             * Sort Order
+             * @description Sort order
+             */
+            sort_order: number;
+        };
+        /** NextOfKinRelationshipUpdate */
+        NextOfKinRelationshipUpdate: {
+            /** Description */
+            description?: string | null;
+            /** Name */
+            name?: string | null;
+            /** Sort Order */
+            sort_order?: number | null;
+        };
         /** NonCompeteCreate */
         NonCompeteCreate: {
             /**
@@ -10552,10 +11550,12 @@ export interface components {
             client_id: string;
             /** Member Id */
             member_id: string;
-            presenting_problem: components["schemas"]["PresentingProblem"];
+            /** Presenting Problem */
+            presenting_problem: string;
             /** Referral Notes */
             referral_notes?: string | null;
-            referral_source: components["schemas"]["CaseReferralSource"];
+            /** Referral Source */
+            referral_source: string;
         };
         /**
          * OrganisationApprovalStatus
@@ -10777,12 +11777,67 @@ export interface components {
             /** Sheet Name */
             sheet_name: string;
         };
-        /**
-         * PresentingProblem
-         * @description Top-level category of the presenting concern at intake.
-         * @enum {string}
-         */
-        PresentingProblem: "MentalHealth" | "Stress" | "Relationship" | "Work" | "Financial" | "Substance" | "Bereavement" | "Trauma" | "FamilyChild" | "Other";
+        /** PresentingProblemCreate */
+        PresentingProblemCreate: {
+            /**
+             * Code
+             * @description Stable code
+             */
+            code: string;
+            /**
+             * Description
+             * @description Optional description
+             */
+            description?: string | null;
+            /**
+             * Name
+             * @description Display name
+             */
+            name: string;
+            /**
+             * Sort Order
+             * @description Sort order
+             * @default 0
+             */
+            sort_order: number;
+        };
+        /** PresentingProblemResponse */
+        PresentingProblemResponse: {
+            /**
+             * Code
+             * @description Stable code
+             */
+            code: string;
+            /**
+             * Description
+             * @description Optional description
+             */
+            description?: string | null;
+            /**
+             * Id
+             * @description Presenting problem identifier
+             */
+            id: string;
+            /**
+             * Name
+             * @description Display name
+             */
+            name: string;
+            /**
+             * Sort Order
+             * @description Sort order
+             */
+            sort_order: number;
+        };
+        /** PresentingProblemUpdate */
+        PresentingProblemUpdate: {
+            /** Description */
+            description?: string | null;
+            /** Name */
+            name?: string | null;
+            /** Sort Order */
+            sort_order?: number | null;
+        };
         /**
          * PricingModel
          * @description Joseph's five contract pricing strategies (SAD §5.2.3 / Meeting §3).
@@ -10803,7 +11858,8 @@ export interface components {
             per_issue_per_year: number;
             /** Per Year */
             per_year?: number | null;
-            service_category: components["schemas"]["ServiceCategory"];
+            /** Service Category */
+            service_category: string;
         };
         /**
          * ProviderAffiliationCreate
@@ -10970,6 +12026,39 @@ export interface components {
             phone?: string | null;
             region: components["schemas"]["UgandaRegion"];
             tier: components["schemas"]["ProviderTier"];
+        };
+        /** ProviderDeliveryOrganisationStat */
+        ProviderDeliveryOrganisationStat: {
+            /** Organisation Id */
+            organisation_id: string;
+            /** Organisation Name */
+            organisation_name: string;
+            /** Session Count */
+            session_count: number;
+        };
+        /**
+         * ProviderDeliveryStatsResponse
+         * @description Counted over the whole delivery record, not over a fetched page.
+         */
+        ProviderDeliveryStatsResponse: {
+            /**
+             * By Delivery Context
+             * @description SessionDeliveryContext value to count, zero counts omitted
+             */
+            by_delivery_context: {
+                [key: string]: number;
+            };
+            /**
+             * By Organisation
+             * @description Resolved through each session's stored affiliation, busiest first
+             */
+            by_organisation: components["schemas"]["ProviderDeliveryOrganisationStat"][];
+            /** First Session At */
+            first_session_at: string | null;
+            /** Last Session At */
+            last_session_at: string | null;
+            /** Total Sessions */
+            total_sessions: number;
         };
         /**
          * ProviderEligibilityResponse
@@ -11623,19 +12712,77 @@ export interface components {
              */
             notes?: string | null;
         };
-        /**
-         * ServiceCategory
-         * @description Coarse grouping used by EAP programme caps and authorization rules.
-         * @enum {string}
-         */
-        ServiceCategory: "ShortTermCounselling" | "CrisisIntervention" | "SubstanceUse" | "ManagerConsult" | "WorkLifeReferral" | "CISMResponse" | "WellnessCoaching";
+        /** ServiceCategoryCreate */
+        ServiceCategoryCreate: {
+            /**
+             * Code
+             * @description Stable category code
+             */
+            code: string;
+            /**
+             * Description
+             * @description Optional description
+             */
+            description?: string | null;
+            /**
+             * Name
+             * @description Display name
+             */
+            name: string;
+            /**
+             * Sort Order
+             * @description Sort order
+             * @default 0
+             */
+            sort_order: number;
+        };
+        /** ServiceCategoryResponse */
+        ServiceCategoryResponse: {
+            /**
+             * Code
+             * @description Stable category code
+             */
+            code: string;
+            /**
+             * Description
+             * @description Optional description
+             */
+            description?: string | null;
+            /**
+             * Id
+             * @description Service category identifier
+             */
+            id: string;
+            /**
+             * Name
+             * @description Display name
+             */
+            name: string;
+            /**
+             * Sort Order
+             * @description Sort order
+             */
+            sort_order: number;
+        };
+        /** ServiceCategoryUpdate */
+        ServiceCategoryUpdate: {
+            /** Description */
+            description?: string | null;
+            /** Name */
+            name?: string | null;
+            /** Sort Order */
+            sort_order?: number | null;
+        };
         /**
          * ServiceCreate
          * @description Request schema for creating a service.
          */
         ServiceCreate: {
-            /** @description Programme category this service is delivered under */
-            category?: components["schemas"]["ServiceCategory"] | null;
+            /**
+             * Category
+             * @description Programme category this service is delivered under
+             */
+            category?: string | null;
             /**
              * Description
              * @description Service description
@@ -11699,8 +12846,11 @@ export interface components {
          * @description Response schema for service.
          */
         ServiceResponse: {
-            /** @description Programme category this service is delivered under */
-            category?: components["schemas"]["ServiceCategory"] | null;
+            /**
+             * Category
+             * @description Programme category this service is delivered under
+             */
+            category?: string | null;
             /**
              * Description
              * @description Service description
@@ -11967,6 +13117,11 @@ export interface components {
              * @description Completion date and time
              */
             completed_at?: string | null;
+            /**
+             * Contract Id
+             * @description The contract term this session was delivered under, if any
+             */
+            contract_id?: string | null;
             /** @description How this was delivered */
             delivery_context: components["schemas"]["SessionDeliveryContext"];
             /**
@@ -12199,8 +13354,11 @@ export interface components {
          * @description Request schema for updating service information.
          */
         ServiceUpdate: {
-            /** @description Programme category this service is delivered under */
-            category?: components["schemas"]["ServiceCategory"] | null;
+            /**
+             * Category
+             * @description Programme category this service is delivered under
+             */
+            category?: string | null;
             /**
              * Description
              * @description Service description
@@ -12431,28 +13589,47 @@ export interface components {
             /** @description New subscription tier */
             subscription_tier: components["schemas"]["SubscriptionTier"];
         };
-        /** SurveyAggregateResponse */
+        /**
+         * SurveyAggregateResponse
+         * @description Employer-facing aggregate: approved questions only, every cell suppressed.
+         *
+         *     A count below ``min_cell_size`` is returned as the ``"<n"`` token rather
+         *     than a number, including ``response_total``.
+         */
         SurveyAggregateResponse: {
             /** Anonymous */
             anonymous: boolean;
             /** Answer Frequencies */
             answer_frequencies: {
                 [key: string]: {
-                    [key: string]: number;
+                    [key: string]: number | string;
                 };
             };
             /** Campaign Id */
             campaign_id: string;
             /** Client Id */
             client_id: string;
+            /** Disclosure Status */
+            disclosure_status: string;
             /** Generated At */
             generated_at: string;
+            /** Min Cell Size */
+            min_cell_size: number;
             /** Name */
             name: string;
+            /** Question Labels */
+            question_labels: {
+                [key: string]: string;
+            };
             /** Response Total */
-            response_total: number;
-            source: components["schemas"]["SurveySource"];
+            response_total: number | string;
+            /** Source */
+            source: string;
             status: components["schemas"]["SurveyCampaignStatus"];
+            /** Unapproved Answers */
+            unapproved_answers: {
+                [key: string]: number | string;
+            };
         };
         /** SurveyCampaignCreate */
         SurveyCampaignCreate: {
@@ -12461,6 +13638,8 @@ export interface components {
              * @default true
              */
             anonymous: boolean;
+            /** Approved Questions */
+            approved_questions?: components["schemas"]["ApprovedQuestionInput"][];
             /** Client Id */
             client_id: string;
             /** External Form Id */
@@ -12471,9 +13650,23 @@ export interface components {
             period_end?: string | null;
             /** Period Start */
             period_start?: string | null;
-            source: components["schemas"]["SurveySource"];
+            /** Source */
+            source: string;
             /** Webhook Secret */
             webhook_secret: string;
+        };
+        /** SurveyCampaignListResponse */
+        SurveyCampaignListResponse: {
+            /** Has More */
+            has_more: boolean;
+            /** Items */
+            items: components["schemas"]["SurveyCampaignResponse"][];
+            /** Limit */
+            limit: number;
+            /** Page */
+            page: number;
+            /** Total */
+            total: number;
         };
         /** SurveyCampaignResponse */
         SurveyCampaignResponse: {
@@ -12481,6 +13674,8 @@ export interface components {
             activated_at: string | null;
             /** Anonymous */
             anonymous: boolean;
+            /** Approved Questions */
+            approved_questions: components["schemas"]["ApprovedQuestionInput"][];
             /** Client Id */
             client_id: string;
             /** Closed At */
@@ -12504,7 +13699,8 @@ export interface components {
             period_start: string | null;
             /** Response Count */
             response_count: number;
-            source: components["schemas"]["SurveySource"];
+            /** Source */
+            source: string;
             status: components["schemas"]["SurveyCampaignStatus"];
             /** Tenant Id */
             tenant_id: string;
@@ -12532,12 +13728,67 @@ export interface components {
             /** Response Id */
             response_id: string;
         };
-        /**
-         * SurveySource
-         * @description Upstream survey provider (extensible).
-         * @enum {string}
-         */
-        SurveySource: "GoogleForms" | "Typeform" | "MicrosoftForms";
+        /** SurveySourceCreate */
+        SurveySourceCreate: {
+            /**
+             * Code
+             * @description Stable code
+             */
+            code: string;
+            /**
+             * Description
+             * @description Optional description
+             */
+            description?: string | null;
+            /**
+             * Name
+             * @description Display name
+             */
+            name: string;
+            /**
+             * Sort Order
+             * @description Sort order
+             * @default 0
+             */
+            sort_order: number;
+        };
+        /** SurveySourceResponse */
+        SurveySourceResponse: {
+            /**
+             * Code
+             * @description Stable code
+             */
+            code: string;
+            /**
+             * Description
+             * @description Optional description
+             */
+            description?: string | null;
+            /**
+             * Id
+             * @description Survey source identifier
+             */
+            id: string;
+            /**
+             * Name
+             * @description Display name
+             */
+            name: string;
+            /**
+             * Sort Order
+             * @description Sort order
+             */
+            sort_order: number;
+        };
+        /** SurveySourceUpdate */
+        SurveySourceUpdate: {
+            /** Description */
+            description?: string | null;
+            /** Name */
+            name?: string | null;
+            /** Sort Order */
+            sort_order?: number | null;
+        };
         /** TemplateSectionInput */
         TemplateSectionInput: {
             /** Narrative */
@@ -13232,7 +14483,8 @@ export interface components {
         UtilisationEventCreate: {
             /** Contract Id */
             contract_id: string;
-            event_type: components["schemas"]["UtilisationEventType"];
+            /** Event Type */
+            event_type: string;
             /** Notes */
             notes?: string | null;
             /**
@@ -13267,7 +14519,8 @@ export interface components {
         UtilisationEventResponse: {
             /** Contract Id */
             contract_id: string;
-            event_type: components["schemas"]["UtilisationEventType"];
+            /** Event Type */
+            event_type: string;
             /** Id */
             id: string;
             /** Notes */
@@ -13286,12 +14539,67 @@ export interface components {
             /** Units */
             units: number;
         };
-        /**
-         * UtilisationEventType
-         * @description Kinds of billable activity tracked against a contract.
-         * @enum {string}
-         */
-        UtilisationEventType: "SessionDelivered" | "CareCallback" | "Survey" | "IncidentResponse" | "ConsultancyHours";
+        /** UtilisationEventTypeCreate */
+        UtilisationEventTypeCreate: {
+            /**
+             * Code
+             * @description Stable code
+             */
+            code: string;
+            /**
+             * Description
+             * @description Optional description
+             */
+            description?: string | null;
+            /**
+             * Name
+             * @description Display name
+             */
+            name: string;
+            /**
+             * Sort Order
+             * @description Sort order
+             * @default 0
+             */
+            sort_order: number;
+        };
+        /** UtilisationEventTypeResponse */
+        UtilisationEventTypeResponse: {
+            /**
+             * Code
+             * @description Stable code
+             */
+            code: string;
+            /**
+             * Description
+             * @description Optional description
+             */
+            description?: string | null;
+            /**
+             * Id
+             * @description Utilisation event type identifier
+             */
+            id: string;
+            /**
+             * Name
+             * @description Display name
+             */
+            name: string;
+            /**
+             * Sort Order
+             * @description Sort order
+             */
+            sort_order: number;
+        };
+        /** UtilisationEventTypeUpdate */
+        UtilisationEventTypeUpdate: {
+            /** Description */
+            description?: string | null;
+            /** Name */
+            name?: string | null;
+            /** Sort Order */
+            sort_order?: number | null;
+        };
         /** UtilisationTierSchema */
         UtilisationTierSchema: {
             unit_rate: components["schemas"]["app__api__schemas__pricing_schemas__MoneySchema-Input"];
@@ -14471,6 +15779,140 @@ export interface operations {
             };
         };
     };
+    list_case_referral_sources_case_referral_sources_get: {
+        parameters: {
+            query?: {
+                /** @description Return only active rows */
+                active_only?: boolean;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CaseReferralSourceResponse"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_case_referral_source_case_referral_sources_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CaseReferralSourceCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CaseReferralSourceResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_case_referral_source_case_referral_sources__source_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                source_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CaseReferralSourceUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CaseReferralSourceResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    set_case_referral_source_active_case_referral_sources__source_id__active_post: {
+        parameters: {
+            query: {
+                /** @description Activate or retire the row */
+                is_active: boolean;
+            };
+            header?: never;
+            path: {
+                source_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CaseReferralSourceResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     list_cases_cases_get: {
         parameters: {
             query?: never;
@@ -14996,6 +16438,140 @@ export interface operations {
             };
         };
     };
+    list_client_tiers_client_tiers_get: {
+        parameters: {
+            query?: {
+                /** @description Return only active rows */
+                active_only?: boolean;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ClientTierResponse"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_client_tier_client_tiers_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ClientTierCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ClientTierResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_client_tier_client_tiers__tier_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                tier_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ClientTierUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ClientTierResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    set_client_tier_active_client_tiers__tier_id__active_post: {
+        parameters: {
+            query: {
+                /** @description Activate or retire the row */
+                is_active: boolean;
+            };
+            header?: never;
+            path: {
+                tier_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ClientTierResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     list_clients_clients__get: {
         parameters: {
             query: {
@@ -15004,8 +16580,8 @@ export interface operations {
                 status?: components["schemas"]["BaseStatus"] | null;
                 /** @description Filter by verification status */
                 is_verified?: boolean | null;
-                /** @description Filter by engagement tier (A/B/C) */
-                tier?: components["schemas"]["ClientTier"] | null;
+                /** @description Filter by engagement tier code */
+                tier?: string | null;
                 /** @description Filter by parent client */
                 parent_client_id?: string | null;
                 /** @description Include archived clients */
@@ -15191,8 +16767,8 @@ export interface operations {
                 client_ids?: string[] | null;
                 /** @description Filter by client status */
                 status?: components["schemas"]["BaseStatus"] | null;
-                /** @description Filter by engagement tier (A/B/C) */
-                tier?: components["schemas"]["ClientTier"] | null;
+                /** @description Filter by engagement tier code */
+                tier?: string | null;
                 /** @description Filter by parent client */
                 parent_client_id?: string | null;
                 /** @description Include archived clients */
@@ -17904,12 +19480,146 @@ export interface operations {
             };
         };
     };
+    list_document_types_document_types_get: {
+        parameters: {
+            query?: {
+                /** @description Return only active types */
+                active_only?: boolean;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DocumentTypeResponse"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_document_type_document_types_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DocumentTypeCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DocumentTypeResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_document_type_document_types__type_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                type_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DocumentTypeUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DocumentTypeResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    set_document_type_active_document_types__type_id__active_post: {
+        parameters: {
+            query: {
+                /** @description Activate or retire the type */
+                is_active: boolean;
+            };
+            header?: never;
+            path: {
+                type_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DocumentTypeResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     list_documents_documents__get: {
         parameters: {
             query: {
                 tenant_id: string;
                 /** @description Filter by document type */
-                document_type?: components["schemas"]["DocumentType"] | null;
+                document_type?: string | null;
                 /** @description Filter by document status */
                 status?: components["schemas"]["DocumentStatus"] | null;
                 /** @description Filter by associated client */
@@ -18768,7 +20478,15 @@ export interface operations {
     };
     list_engagements_engagements_get: {
         parameters: {
-            query?: never;
+            query?: {
+                client_id?: string | null;
+                status?: components["schemas"]["EngagementStatus"] | null;
+                search?: string | null;
+                /** @description Page number */
+                page?: number;
+                /** @description Items per page */
+                limit?: number;
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -18781,7 +20499,16 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["EngagementResponse"][];
+                    "application/json": components["schemas"]["EngagementListResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };
@@ -19401,12 +21128,280 @@ export interface operations {
             };
         };
     };
+    list_kpi_categories_kpi_categories_get: {
+        parameters: {
+            query?: {
+                /** @description Return only active categories */
+                active_only?: boolean;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KPICategoryResponse"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_kpi_category_kpi_categories_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["KPICategoryCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KPICategoryResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_kpi_category_kpi_categories__category_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                category_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["KPICategoryUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KPICategoryResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    set_kpi_category_active_kpi_categories__category_id__active_post: {
+        parameters: {
+            query: {
+                /** @description Activate or retire the category */
+                is_active: boolean;
+            };
+            header?: never;
+            path: {
+                category_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KPICategoryResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_kpi_measurement_units_kpi_measurement_units_get: {
+        parameters: {
+            query?: {
+                /** @description Return only active rows */
+                active_only?: boolean;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KPIMeasurementUnitResponse"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_kpi_measurement_unit_kpi_measurement_units_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["KPIMeasurementUnitCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KPIMeasurementUnitResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_kpi_measurement_unit_kpi_measurement_units__unit_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                unit_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["KPIMeasurementUnitUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KPIMeasurementUnitResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    set_kpi_measurement_unit_active_kpi_measurement_units__unit_id__active_post: {
+        parameters: {
+            query: {
+                /** @description Activate or retire the row */
+                is_active: boolean;
+            };
+            header?: never;
+            path: {
+                unit_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KPIMeasurementUnitResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     list_kpis_kpis__get: {
         parameters: {
             query: {
                 tenant_id: string;
                 /** @description Filter by KPI category */
-                category?: components["schemas"]["KPICategory"] | null;
+                category?: string | null;
                 /** @description Filter by active status */
                 is_active?: boolean | null;
                 /** @description Search in KPI name or description */
@@ -20166,6 +22161,40 @@ export interface operations {
             };
         };
     };
+    member_stats_members_stats_get: {
+        parameters: {
+            query?: {
+                client_id?: string | null;
+                status?: components["schemas"]["EligibilityStatus"] | null;
+                relation?: components["schemas"]["MemberRelation"] | null;
+                search?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MemberStatsResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     get_member_members__member_id__get: {
         parameters: {
             query?: never;
@@ -20612,6 +22641,140 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["MemberResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_next_of_kin_relationships_next_of_kin_relationships_get: {
+        parameters: {
+            query?: {
+                /** @description Return only active rows */
+                active_only?: boolean;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NextOfKinRelationshipResponse"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_next_of_kin_relationship_next_of_kin_relationships_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NextOfKinRelationshipCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NextOfKinRelationshipResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_next_of_kin_relationship_next_of_kin_relationships__relationship_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                relationship_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NextOfKinRelationshipUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NextOfKinRelationshipResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    set_next_of_kin_relationship_active_next_of_kin_relationships__relationship_id__active_post: {
+        parameters: {
+            query: {
+                /** @description Activate or retire the row */
+                is_active: boolean;
+            };
+            header?: never;
+            path: {
+                relationship_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NextOfKinRelationshipResponse"];
                 };
             };
             /** @description Validation Error */
@@ -21332,6 +23495,140 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PractitionerImportRowListResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_presenting_problems_presenting_problems_get: {
+        parameters: {
+            query?: {
+                /** @description Return only active rows */
+                active_only?: boolean;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PresentingProblemResponse"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_presenting_problem_presenting_problems_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PresentingProblemCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PresentingProblemResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_presenting_problem_presenting_problems__problem_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                problem_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PresentingProblemUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PresentingProblemResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    set_presenting_problem_active_presenting_problems__problem_id__active_post: {
+        parameters: {
+            query: {
+                /** @description Activate or retire the row */
+                is_active: boolean;
+            };
+            header?: never;
+            path: {
+                problem_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PresentingProblemResponse"];
                 };
             };
             /** @description Validation Error */
@@ -22232,6 +24529,37 @@ export interface operations {
             };
         };
     };
+    get_delivery_stats_providers__provider_id__delivery_stats_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                provider_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProviderDeliveryStatsResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     list_engagement_documents_providers__provider_id__engagement_documents_get: {
         parameters: {
             query?: never;
@@ -22910,6 +25238,140 @@ export interface operations {
             };
         };
     };
+    list_service_categories_service_categories_get: {
+        parameters: {
+            query?: {
+                /** @description Return only active categories */
+                active_only?: boolean;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ServiceCategoryResponse"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_service_category_service_categories_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ServiceCategoryCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ServiceCategoryResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_service_category_service_categories__category_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                category_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ServiceCategoryUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ServiceCategoryResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    set_service_category_active_service_categories__category_id__active_post: {
+        parameters: {
+            query: {
+                /** @description Activate or retire the category */
+                is_active: boolean;
+            };
+            header?: never;
+            path: {
+                category_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ServiceCategoryResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     list_service_sessions_service_sessions__get: {
         parameters: {
             query: {
@@ -23411,7 +25873,7 @@ export interface operations {
                 /** @description Search in service name */
                 search?: string | null;
                 /** @description Filter by category */
-                category?: components["schemas"]["ServiceCategory"] | null;
+                category?: string | null;
                 /** @description Filter by group service */
                 is_group_service?: boolean | null;
                 /** @description Field to sort by */
@@ -23960,7 +26422,15 @@ export interface operations {
     };
     list_survey_campaigns_survey_campaigns_get: {
         parameters: {
-            query?: never;
+            query?: {
+                client_id?: string | null;
+                status?: components["schemas"]["SurveyCampaignStatus"] | null;
+                search?: string | null;
+                /** @description Page number */
+                page?: number;
+                /** @description Items per page */
+                limit?: number;
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -23973,7 +26443,16 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["SurveyCampaignResponse"][];
+                    "application/json": components["schemas"]["SurveyCampaignListResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };
@@ -24155,6 +26634,140 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SurveyResponseAcceptedResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_survey_sources_survey_sources_get: {
+        parameters: {
+            query?: {
+                /** @description Return only active rows */
+                active_only?: boolean;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SurveySourceResponse"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_survey_source_survey_sources_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SurveySourceCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SurveySourceResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_survey_source_survey_sources__source_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                source_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SurveySourceUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SurveySourceResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    set_survey_source_active_survey_sources__source_id__active_post: {
+        parameters: {
+            query: {
+                /** @description Activate or retire the row */
+                is_active: boolean;
+            };
+            header?: never;
+            path: {
+                source_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SurveySourceResponse"];
                 };
             };
             /** @description Validation Error */
@@ -25295,6 +27908,140 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["UserResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_utilisation_event_types_utilisation_event_types_get: {
+        parameters: {
+            query?: {
+                /** @description Return only active rows */
+                active_only?: boolean;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UtilisationEventTypeResponse"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_utilisation_event_type_utilisation_event_types_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UtilisationEventTypeCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UtilisationEventTypeResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_utilisation_event_type_utilisation_event_types__event_type_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                event_type_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UtilisationEventTypeUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UtilisationEventTypeResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    set_utilisation_event_type_active_utilisation_event_types__event_type_id__active_post: {
+        parameters: {
+            query: {
+                /** @description Activate or retire the row */
+                is_active: boolean;
+            };
+            header?: never;
+            path: {
+                event_type_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UtilisationEventTypeResponse"];
                 };
             };
             /** @description Validation Error */

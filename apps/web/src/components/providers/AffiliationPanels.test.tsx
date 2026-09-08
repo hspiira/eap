@@ -2,7 +2,7 @@ import { fireEvent, screen, waitFor } from "@testing-library/react"
 import { beforeEach, describe, expect, it, vi } from "vitest"
 
 import { OrganisationAffiliationsPanel } from "@/components/providers/OrganisationAffiliationsPanel"
-import { ProviderAffiliationsPanel } from "@/components/providers/ProviderAffiliationsPanel"
+import { ProviderCommitmentsPanel } from "@/components/providers/ProviderCommitmentsPanel"
 import { renderWithProviders } from "@/test/utils"
 import { ApiError } from "@/types/api"
 import type { ProviderAffiliation } from "@/types/entities"
@@ -11,8 +11,16 @@ const mocks = vi.hoisted(() => ({
   list: vi.fn(),
   create: vi.fn(),
   setValidUntil: vi.fn(),
+  getDeliveryStats: vi.fn(),
+  listClauses: vi.fn(),
 }))
 vi.mock("@/api/endpoints/provider-affiliations", () => ({ providerAffiliationsApi: mocks }))
+vi.mock("@/api/endpoints/providers", () => ({
+  providersApi: { getDeliveryStats: mocks.getDeliveryStats },
+}))
+vi.mock("@/api/endpoints/non-compete-clauses", () => ({
+  nonCompeteClausesApi: { listForProvider: mocks.listClauses },
+}))
 vi.mock("@/hooks/useCanWrite", () => ({
   useCanWrite: () => true,
   useCurrentRole: () => "Admin",
@@ -42,7 +50,7 @@ function makeAffiliation(overrides: Partial<ProviderAffiliation> = {}): Provider
     provider_id: "prv-1",
     organisation_id: "org-1",
     valid_from: "2026-01-01",
-    valid_until: "2026-07-01",
+    valid_until: null,
     organisation_name: "Serenity Counselling Ltd",
     organisation_is_active: true,
     organisation_approval_status: "Approved",
@@ -61,18 +69,66 @@ beforeEach(() => {
   mocks.list.mockResolvedValue(page([makeAffiliation()]))
   mocks.setValidUntil.mockResolvedValue(makeAffiliation())
   mocks.create.mockResolvedValue(makeAffiliation())
+  mocks.listClauses.mockResolvedValue([])
+  mocks.getDeliveryStats.mockResolvedValue({
+    total_sessions: 0,
+    first_session_at: null,
+    last_session_at: null,
+    by_delivery_context: {},
+    by_organisation: [],
+  })
 })
 
 describe("practitioner affiliations", () => {
-  it("labels the interval as end-exclusive rather than as an end date", async () => {
-    renderWithProviders(<ProviderAffiliationsPanel providerId="prv-1" />)
-    expect(await screen.findByText(/2026-01-01 until 2026-07-01 exclusive/)).toBeInTheDocument()
+  it("shows the covered period and still discloses the exclusive end", async () => {
+    mocks.list.mockResolvedValue(page([makeAffiliation({ valid_until: "2026-07-01" })]))
+    renderWithProviders(<ProviderCommitmentsPanel providerId="prv-1" />)
+    // The reader gets the days actually covered; the stored boundary stays
+    // visible because attribution depends on it.
+    expect(await screen.findByText(/ends before 2026-07-01/)).toBeInTheDocument()
+    expect(screen.queryByText(/until 2026-07-01 exclusive/)).not.toBeInTheDocument()
   })
 
-  it("labels an open-ended affiliation as open ended", async () => {
+  it("labels an open-ended affiliation as running onwards", async () => {
     mocks.list.mockResolvedValue(page([makeAffiliation({ valid_until: null })]))
-    renderWithProviders(<ProviderAffiliationsPanel providerId="prv-1" />)
-    expect(await screen.findByText(/From 2026-01-01, open ended/)).toBeInTheDocument()
+    renderWithProviders(<ProviderCommitmentsPanel providerId="prv-1" />)
+    expect(await screen.findByText(/onwards/)).toBeInTheDocument()
+  })
+
+  it("separates ended affiliations from current ones", async () => {
+    mocks.list.mockResolvedValue(
+      page([
+        makeAffiliation({ id: "aff-past", valid_until: "2024-01-01" }),
+        makeAffiliation({ id: "aff-now", valid_until: null }),
+      ]),
+    )
+    renderWithProviders(<ProviderCommitmentsPanel providerId="prv-1" />)
+    expect(await screen.findByText("Current")).toBeInTheDocument()
+    expect(screen.getByText("Ended")).toBeInTheDocument()
+  })
+
+  it("shows what was delivered through an affiliation", async () => {
+    mocks.getDeliveryStats.mockResolvedValue({
+      total_sessions: 12,
+      first_session_at: null,
+      last_session_at: null,
+      by_delivery_context: {},
+      by_organisation: [
+        {
+          organisation_id: "org-1",
+          organisation_name: "Serenity Counselling Ltd",
+          session_count: 12,
+        },
+      ],
+    })
+    renderWithProviders(<ProviderCommitmentsPanel providerId="prv-1" />)
+    expect(await screen.findByText(/12 sessions attributed to this firm/)).toBeInTheDocument()
+  })
+
+  it("keeps non-compete clauses beside affiliations without implying they restrict a booking", async () => {
+    renderWithProviders(<ProviderCommitmentsPanel providerId="prv-1" />)
+    expect(await screen.findByText("Non-compete clauses")).toBeInTheDocument()
+    expect(screen.getByText(/does not currently restrict a booking/)).toBeInTheDocument()
   })
 
   it("lists concurrent affiliations with different firms without complaint", async () => {
@@ -86,7 +142,7 @@ describe("practitioner affiliations", () => {
         }),
       ]),
     )
-    renderWithProviders(<ProviderAffiliationsPanel providerId="prv-1" />)
+    renderWithProviders(<ProviderCommitmentsPanel providerId="prv-1" />)
     expect(await screen.findByText("Serenity Counselling Ltd")).toBeInTheDocument()
     expect(screen.getByText("Kampala Wellness Group")).toBeInTheDocument()
   })
@@ -95,12 +151,12 @@ describe("practitioner affiliations", () => {
     mocks.list.mockResolvedValue(
       page([makeAffiliation({ organisation_approval_status: "Suspended" } as never)]),
     )
-    renderWithProviders(<ProviderAffiliationsPanel providerId="prv-1" />)
+    renderWithProviders(<ProviderCommitmentsPanel providerId="prv-1" />)
     expect(await screen.findByText(/Supplier approval is Suspended/)).toBeInTheDocument()
   })
 
   it("includes ended affiliations, because past sessions still refer to them", async () => {
-    renderWithProviders(<ProviderAffiliationsPanel providerId="prv-1" />)
+    renderWithProviders(<ProviderCommitmentsPanel providerId="prv-1" />)
     await waitFor(() => expect(mocks.list).toHaveBeenCalled())
     expect(mocks.list).toHaveBeenCalledWith(
       expect.objectContaining({ provider_id: "prv-1", include_ended: true }),
@@ -108,7 +164,7 @@ describe("practitioner affiliations", () => {
   })
 
   it("edits only the end of an interval, and records why", async () => {
-    renderWithProviders(<ProviderAffiliationsPanel providerId="prv-1" />)
+    renderWithProviders(<ProviderCommitmentsPanel providerId="prv-1" />)
     fireEvent.click(await screen.findByRole("button", { name: /set end/i }))
     fireEvent.change(screen.getByLabelText(/ends before/i), { target: { value: "2026-09-01" } })
 

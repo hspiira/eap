@@ -212,6 +212,21 @@ Categorised services went from 7 to 8 of 20. Reopen this if a contract ever
 grants a cap on assessment or psychoeducation, which is the evidence that was
 missing.
 
+**Update 2026-09-08: reopened, mechanism changed, decision held.** Migration
+`7af2412c8b90` replaced the `ServiceCategory` enum with a `service_categories`
+table (see `docs/SERVICES_MODULE.md` §3.6's update of the same date), removing
+reason 2 above: a category is now a row, not a code deploy, so the enum can no
+longer "get less trustworthy" by growing. `Assessment` and `Psychoeducation`
+now exist as rows in that table. I initially assigned them to these 9 services
+directly; that was wrong, caught before it reached production, and reverted.
+Giving these services a real category, even a fitting one, removes the
+structural guarantee that they can never draw down an entitlement (a future
+programme cap on `Assessment` or `Psychoeducation` would apply to them),
+which is exactly the policy this decision protected. Reason 1, no evidence of
+demand, still holds, so the 9 stay `category: null` via `UNCAPPED`
+exactly as before. `Assessment` and `Psychoeducation` remain in the table for
+a future service that should genuinely be capped.
+
 ## 5. ~~`data/seed_data.json` cannot load against the current schema~~
 
 All ten rows under `services` carry a category the `service_category_check`

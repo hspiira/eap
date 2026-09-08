@@ -9,7 +9,6 @@ from abc import abstractmethod
 from collections.abc import Sequence
 
 from app.domain.entities.kpi import KPIAssignmentEntity, KPIEntity
-from app.domain.enums import KPICategory
 from app.domain.repositories.base_repository import BaseRepository
 from app.domain.value_objects.core import KPIAssignmentId, KPIId, TenantId
 
@@ -39,7 +38,7 @@ class KPIRepository(BaseRepository[KPIEntity, KPIId]):
     async def list_all(
         self,
         tenant_id: TenantId,
-        category: KPICategory | None = None,
+        category: str | None = None,
         is_active: bool | None = None,
         search: str | None = None,
         limit: int = 100,
@@ -68,7 +67,7 @@ class KPIRepository(BaseRepository[KPIEntity, KPIId]):
     async def count(
         self,
         tenant_id: TenantId,
-        category: KPICategory | None = None,
+        category: str | None = None,
         is_active: bool | None = None,
         search: str | None = None,
     ) -> int:

@@ -5,11 +5,11 @@ import { renderWithProviders } from "@/test/utils"
 
 import { ContractUtilisationPanel } from "./ContractUtilisationPanel"
 
-const mocks = vi.hoisted(() => ({ events: vi.fn(), service: vi.fn() }))
+const mocks = vi.hoisted(() => ({ events: vi.fn(), listServices: vi.fn() }))
 vi.mock("@/api/endpoints/utilisation", () => ({
   utilisationApi: { byContract: mocks.events },
 }))
-vi.mock("@/api/endpoints/services", () => ({ servicesApi: { getById: mocks.service } }))
+vi.mock("@/api/endpoints/services", () => ({ servicesApi: { list: mocks.listServices } }))
 
 const EVENTS = [
   {
@@ -33,7 +33,13 @@ const EVENTS = [
 beforeEach(() => {
   vi.clearAllMocks()
   mocks.events.mockResolvedValue(EVENTS)
-  mocks.service.mockResolvedValue({ id: "private-service-id", name: "Group Counselling" })
+  mocks.listServices.mockResolvedValue({
+    items: [{ id: "private-service-id", name: "Group Counselling" }],
+    total: 1,
+    page: 1,
+    limit: 100,
+    has_more: false,
+  })
 })
 
 describe("contract utilisation panel", () => {
@@ -42,12 +48,22 @@ describe("contract utilisation panel", () => {
     expect(await screen.findByText("2 events · 3 units")).toBeInTheDocument()
     expect(screen.getAllByText("Group Counselling")).toHaveLength(2)
     expect(screen.getAllByText("Session Delivered")).toHaveLength(2)
-    expect(mocks.service).toHaveBeenCalledTimes(1)
+    // One catalogue request for the whole table, not one per row, and within
+    // the limit the services endpoint accepts: asking for more is a 422, which
+    // reads on the page as every service being unknown.
+    expect(mocks.listServices).toHaveBeenCalledTimes(1)
+    expect(mocks.listServices).toHaveBeenCalledWith({ limit: 100 })
     expect(screen.queryByText("private-service-id")).not.toBeInTheDocument()
   })
 
   it("keeps an unresolvable service code off the page", async () => {
-    mocks.service.mockRejectedValue(new Error("gone"))
+    mocks.listServices.mockResolvedValue({
+      items: [],
+      total: 0,
+      page: 1,
+      limit: 100,
+      has_more: false,
+    })
     renderWithProviders(<ContractUtilisationPanel contractId="contract-1" />)
     expect(await screen.findByText("2 events · 3 units")).toBeInTheDocument()
     expect(screen.queryByText("private-service-id")).not.toBeInTheDocument()

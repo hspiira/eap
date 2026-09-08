@@ -1,20 +1,24 @@
-import { screen, waitFor } from "@testing-library/react"
+import { screen, waitFor, within } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { beforeEach, describe, expect, it, vi } from "vitest"
 
 import { makeMember } from "@/test/members"
 import { renderWithProviders } from "@/test/utils"
+import { MemberRelation } from "@/types/enums"
 
 const mocks = vi.hoisted(() => ({
   list: vi.fn(),
   exportCsv: vi.fn(),
   getImportTemplate: vi.fn(),
   scanDuplicates: vi.fn(),
+  getStats: vi.fn(),
+  listClients: vi.fn(),
   canWrite: true,
   role: "Admin",
   search: {} as Record<string, string>,
 }))
 vi.mock("@/api/endpoints/members", () => ({ membersApi: mocks }))
+vi.mock("@/api/endpoints/clients", () => ({ clientsApi: { list: mocks.listClients } }))
 vi.mock("@/hooks/useCanWrite", () => ({
   useCanWrite: () => mocks.canWrite,
   useCurrentRole: () => mocks.role,
@@ -73,6 +77,21 @@ beforeEach(() => {
     limit: 20,
     has_more: false,
   })
+  mocks.getStats.mockResolvedValue({
+    total: 1,
+    active: 1,
+    suspended: 0,
+    pending: 0,
+    terminated: 0,
+    with_account: 0,
+  })
+  mocks.listClients.mockResolvedValue({
+    items: [{ id: "client-1", name: "Acme Ltd" }],
+    total: 1,
+    page: 1,
+    limit: 100,
+    has_more: false,
+  })
   mocks.exportCsv.mockResolvedValue(new Blob(["id\nmember-1"]))
   mocks.getImportTemplate.mockResolvedValue(new Blob(["Company Code,Staff_ID\n"]))
   mocks.scanDuplicates.mockResolvedValue({ items: [], scanned: 1 })
@@ -104,14 +123,13 @@ describe("member roster", () => {
     )
   })
 
-  it("links the member name to their detail page, keeping other contact detail plain", async () => {
+  it("links the member to their profile and the client to theirs, keeping contact detail plain", async () => {
     mocks.list.mockResolvedValue({
       items: [
         makeMember({
           client_name: "Acme Ltd",
+          staff_number: "SN-9",
           work_email: "amina@acme.test",
-          personal_email: "amina@personal.test",
-          phone: "+256700000000",
         }),
       ],
       total: 1,
@@ -123,25 +141,79 @@ describe("member roster", () => {
 
     const name = await screen.findByText("Amina Namukasa")
     expect(name.closest("a")).not.toBeNull()
+    // The employer is a destination of its own, reached without a detour.
+    expect(screen.getByText("Acme Ltd").closest("a")).not.toBeNull()
 
-    for (const value of [
-      "Acme Ltd",
-      "HR-1",
-      "amina@acme.test",
-      "amina@personal.test",
-      "+256700000000",
-    ]) {
+    for (const value of ["HR-1", "SN-9", "amina@acme.test"]) {
       expect(screen.getByText(value).closest("a")).toBeNull()
     }
     // The client column shows the name, never the raw id.
     expect(screen.queryByText("client-1")).not.toBeInTheDocument()
   })
 
+  it("drops the near-empty contact columns and shows the staff number instead", async () => {
+    mocks.list.mockResolvedValue({
+      items: [
+        makeMember({
+          staff_number: "SN-9",
+          personal_email: "amina@personal.test",
+          phone: "+256700000000",
+        }),
+      ],
+      total: 1,
+      page: 1,
+      limit: 20,
+      has_more: false,
+    })
+    renderWithProviders(<Page />)
+    await screen.findByText("Amina Namukasa")
+
+    expect(screen.getByRole("columnheader", { name: "Staff number" })).toBeInTheDocument()
+    expect(screen.getByText("SN-9")).toBeInTheDocument()
+    // Filled on a handful of rows in a roster of thousands: the profile's job.
+    expect(screen.queryByText("amina@personal.test")).not.toBeInTheDocument()
+    expect(screen.queryByText("+256700000000")).not.toBeInTheDocument()
+  })
+
+  it("humanizes the relationship rather than showing the raw enum", async () => {
+    mocks.list.mockResolvedValue({
+      items: [makeMember({ relation: MemberRelation.DOMESTIC_PARTNER })],
+      total: 1,
+      page: 1,
+      limit: 20,
+      has_more: false,
+    })
+    renderWithProviders(<Page />)
+    expect(await screen.findByText("Domestic Partner")).toBeInTheDocument()
+    expect(screen.queryByText("DomesticPartner")).not.toBeInTheDocument()
+  })
+
+  it("shows roster counts for the current filter context", async () => {
+    mocks.getStats.mockResolvedValue({
+      total: 3305,
+      active: 3303,
+      suspended: 1,
+      pending: 0,
+      terminated: 1,
+      with_account: 0,
+    })
+    renderWithProviders(<Page />)
+    expect(await screen.findByText("3,305")).toBeInTheDocument()
+    expect(screen.getByText("On roster")).toBeInTheDocument()
+  })
+
+  it("offers the client filter as a visible control, not a silent URL parameter", async () => {
+    mocks.search = { client_id: "client-1" }
+    renderWithProviders(<Page />)
+    await screen.findByText("Amina Namukasa")
+    expect(await screen.findByText("Client: Acme Ltd")).toBeInTheDocument()
+  })
+
   it("shows status as an icon with an accessible label rather than a badge column", async () => {
     renderWithProviders(<Page />)
     // Visually an icon with the label on hover, not badge text in the cell.
     expect(await screen.findByRole("img", { name: "Active" })).toBeInTheDocument()
-    expect(screen.queryByText("Suspended")).not.toBeInTheDocument()
+    expect(within(screen.getByRole("table")).queryByText("Suspended")).not.toBeInTheDocument()
   })
 
   it("keeps row actions behind the ellipsis and offers a direct open icon", async () => {

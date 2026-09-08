@@ -5,9 +5,13 @@
 from app.domain.events.base import DomainEvent
 from app.domain.events.client import (
     ClientActivated,
+    ClientArchived,
+    ClientCreated,
     ClientDeactivated,
+    ClientRestored,
     ClientSuspended,
     ClientTerminated,
+    ClientUpdated,
     ClientVerified,
 )
 from app.domain.events.clinical import (
@@ -19,8 +23,13 @@ from app.domain.events.clinical import (
     CaseAssigned,
     CaseClosed,
     CaseOpened,
+    CaseUpdated,
+    ClinicalNoteAmended,
+    ClinicalNoteDraftEdited,
     ClinicalNoteLocked,
     ClinicalNoteSigned,
+    ClinicalSubjectDeactivated,
+    ClinicalSubjectUpdated,
     EAPProgrammeCreated,
 )
 from app.domain.events.consultancy import (
@@ -31,7 +40,17 @@ from app.domain.events.consultancy import (
     EngagementInvoiced,
     HoursLogged,
 )
-from app.domain.events.contract import ContractRenewed, ContractTerminated
+from app.domain.events.contract import (
+    ContractCreated,
+    ContractRenewed,
+    ContractSigned,
+    ContractStatusChanged,
+    ContractTerminated,
+    ContractUpdated,
+    ServiceAssignmentCreated,
+    ServiceAssignmentStatusChanged,
+    ServiceAssignmentUpdated,
+)
 from app.domain.events.crisis import (
     CaringContactCompleted,
     CaringContactScheduled,
@@ -49,11 +68,24 @@ from app.domain.events.crisis import (
     SafetyPlanSuperseded,
 )
 from app.domain.events.document import DocumentArchived, DocumentPublished, DocumentVersionCreated
+from app.domain.events.member import (
+    EligibleMemberAccountLinked,
+    EligibleMemberAccountUnlinked,
+    EligibleMemberCreated,
+    EligibleMemberMerged,
+    EligibleMemberMergedIntoMember,
+    EligibleMemberStatusChanged,
+    EligibleMemberUpdated,
+    MemberNextOfKinCreated,
+    MemberNextOfKinDeleted,
+    MemberNextOfKinUpdated,
+)
 from app.domain.events.outreach import (
     CareCallbackCampaignActivated,
     CareCallbackCampaignCompleted,
     CareCallbackCampaignCreated,
     OutreachAssigned,
+    OutreachAttemptRecorded,
     OutreachCompleted,
     SurveyCampaignActivated,
     SurveyCampaignClosed,
@@ -88,7 +120,13 @@ from app.domain.events.provider import (
     ProviderStatusChanged,
     ProviderTierChanged,
 )
-from app.domain.events.session import SessionCancelled, SessionCompleted, SessionRescheduled
+from app.domain.events.session import (
+    SessionCancelled,
+    SessionCompleted,
+    SessionRescheduled,
+    SessionStatusChanged,
+    SessionUpdated,
+)
 from app.domain.events.tenancy import TenantActivated, TenantSuspended, TenantTerminated
 from app.domain.events.user import (
     UserActivated,
@@ -103,6 +141,19 @@ from app.domain.events.user import (
 )
 
 __all__ = [
+    "CaseUpdated",
+    "ClinicalNoteAmended",
+    "ClinicalNoteDraftEdited",
+    "ClinicalSubjectDeactivated",
+    "ClinicalSubjectUpdated",
+    "OutreachAttemptRecorded",
+    "EligibleMemberAccountLinked",
+    "EligibleMemberAccountUnlinked",
+    "EligibleMemberMerged",
+    "EligibleMemberMergedIntoMember",
+    "MemberNextOfKinCreated",
+    "MemberNextOfKinDeleted",
+    "MemberNextOfKinUpdated",
     "DomainEvent",
     "AuthorizationConsumed",
     "AuthorizationExtended",
@@ -118,9 +169,13 @@ __all__ = [
     "CaseClosed",
     "CaseOpened",
     "ClientActivated",
+    "ClientArchived",
+    "ClientCreated",
     "ClientDeactivated",
+    "ClientRestored",
     "ClientSuspended",
     "ClientTerminated",
+    "ClientUpdated",
     "ClientVerified",
     "ClinicalNoteLocked",
     "ClinicalNoteSigned",
@@ -128,8 +183,18 @@ __all__ = [
     "ConsentGranted",
     "ConsentRequested",
     "ConsentRevoked",
+    "ContractCreated",
     "ContractRenewed",
+    "ContractSigned",
+    "ContractStatusChanged",
     "ContractTerminated",
+    "ContractUpdated",
+    "EligibleMemberCreated",
+    "EligibleMemberStatusChanged",
+    "EligibleMemberUpdated",
+    "ServiceAssignmentCreated",
+    "ServiceAssignmentStatusChanged",
+    "ServiceAssignmentUpdated",
     "CrisisContactClosed",
     "CrisisContactLogged",
     "CrisisFlagRaised",
@@ -175,6 +240,8 @@ __all__ = [
     "SessionCancelled",
     "SessionCompleted",
     "SessionRescheduled",
+    "SessionStatusChanged",
+    "SessionUpdated",
     "SurveyCampaignActivated",
     "SurveyCampaignClosed",
     "SurveyCampaignCreated",

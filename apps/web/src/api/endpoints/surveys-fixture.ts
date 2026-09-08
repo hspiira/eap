@@ -1,14 +1,23 @@
 /**
  * Survey campaign in-memory store. Replaced by BE Phase 3 #3 endpoints.
  *
- * The aggregate computation respects a k-anon floor (= 10, matching care-callbacks)
- * so the FE never has to hide rows itself; it just renders what the BE returns.
+ * Records carry the API's `SurveyCampaignResponse` shape, and listing goes
+ * through the shared fixture pager, so fixture mode answers the same envelope
+ * and applies the same filters as the API (MODULES_REPAIR_PLAN API-01).
+ *
+ * The aggregate computation respects a k-anon floor (= 10, matching
+ * care-callbacks) so the FE never has to hide rows itself.
  */
 
+import type { SurveyCampaignCreate } from "@/api/generated"
 import type { Survey, SurveyAggregate, SurveyQuestionSummary } from "@/types/entities"
-import { SurveySource, SurveyStatus } from "@/types/enums"
+import { SurveyCampaignStatus, SurveySource } from "@/types/enums"
+
+import { fixturePage, type FixturePageEnvelope } from "./fixture-page"
+import type { SurveyListParams } from "./surveys"
 
 const TENANT = "tenant-fixture"
+const CREATED_BY = "user-fixture"
 
 /** k-anon floor for survey aggregates. Mirrors care-callbacks. */
 export const SURVEY_K_FLOOR = 10
@@ -43,23 +52,38 @@ function buildResponses(n: number): SurveyResponse[] {
   return items
 }
 
+/**
+ * The questions a live campaign may report on. `nps_bucket` is deliberately
+ * absent: the fixture should exercise the rule that an answer outside the
+ * approved set is counted as unapproved and its text discarded, not quietly
+ * reported.
+ */
+const APPROVED_QUESTIONS = [
+  {
+    key: "satisfaction",
+    label: "How satisfied were you with the support you received?",
+    choices: ["1", "2", "3", "4", "5"],
+  },
+  { key: "recommend", label: "Would you recommend the service?", choices: ["yes", "no"] },
+]
+
 const SEED: Survey[] = [
   {
     id: "srv-001",
     tenant_id: TENANT,
     client_id: "fixture-stanbic",
     name: "Stanbic Q1 EAP satisfaction",
-    description:
-      "Anonymous post-engagement survey deployed via Google Forms. Response window covers the Q1 outreach wave.",
-    status: SurveyStatus.COLLECTING,
+    status: SurveyCampaignStatus.ACTIVE,
+    approved_questions: APPROVED_QUESTIONS,
     source: SurveySource.GOOGLE_FORMS,
-    webhook_url: "https://api.evexia.local/v1/surveys/srv-001/responses",
-    webhook_token: "sk-stanbic-q1-7f0c1a",
+    external_form_id: "1FAIpQLSf-stanbic-q1",
     period_start: "2026-04-15",
     period_end: "2026-05-31",
-    first_response_at: "2026-04-17T08:34:00Z",
+    anonymous: true,
+    activated_at: "2026-04-15T09:00:00Z",
     closed_at: null,
     response_count: RESPONSES["srv-001"].length,
+    created_by: CREATED_BY,
     created_at: "2026-04-12T10:00:00Z",
     updated_at: "2026-05-07T18:00:00Z",
   },
@@ -68,17 +92,17 @@ const SEED: Survey[] = [
     tenant_id: TENANT,
     client_id: "fixture-absa",
     name: "ABSA branch debrief: March cohort",
-    description:
-      "Short pulse survey for the post-CISM cohort. Webhook live but volume below the k-anon floor.",
-    status: SurveyStatus.COLLECTING,
+    status: SurveyCampaignStatus.ACTIVE,
+    approved_questions: APPROVED_QUESTIONS,
     source: SurveySource.GOOGLE_FORMS,
-    webhook_url: "https://api.evexia.local/v1/surveys/srv-002/responses",
-    webhook_token: "sk-absa-march-d0a31b",
+    external_form_id: "1FAIpQLSf-absa-march",
     period_start: "2026-04-01",
     period_end: "2026-05-15",
-    first_response_at: "2026-04-08T12:10:00Z",
+    anonymous: true,
+    activated_at: "2026-04-01T09:00:00Z",
     closed_at: null,
     response_count: RESPONSES["srv-002"].length,
+    created_by: CREATED_BY,
     created_at: "2026-04-01T09:00:00Z",
     updated_at: "2026-05-07T18:00:00Z",
   },
@@ -86,19 +110,15 @@ const SEED: Survey[] = [
 
 const surveyStore: Survey[] = [...SEED]
 
-export interface SurveyCreateInput {
-  client_id: string
-  name: string
-  description?: string | null
-  source: SurveySource
-  period_start: string
-  period_end: string
-}
+/** The API's own create shape. The secret is input only; it is never returned. */
+export type SurveyCreateInput = SurveyCampaignCreate
 
-export function fixtureListSurveys(): Survey[] {
-  return [...surveyStore].sort((a, b) =>
-    a.created_at < b.created_at ? 1 : a.created_at > b.created_at ? -1 : 0,
-  )
+export function fixtureListSurveys(params?: SurveyListParams): FixturePageEnvelope<Survey> {
+  return fixturePage(surveyStore, params, {
+    search: ["name", "client_id", "source"],
+    equals: ["status", "client_id"],
+    defaultSort: "created_at",
+  })
 }
 
 export function fixtureGetSurvey(id: string): Survey | undefined {
@@ -107,22 +127,22 @@ export function fixtureGetSurvey(id: string): Survey | undefined {
 
 export function fixtureCreateSurvey(input: SurveyCreateInput): Survey {
   const now = new Date().toISOString()
-  const id = `srv-${Math.random().toString(36).slice(2, 8)}`
   const survey: Survey = {
-    id,
+    id: `srv-${Math.random().toString(36).slice(2, 8)}`,
     tenant_id: TENANT,
     client_id: input.client_id,
     name: input.name,
-    description: input.description ?? null,
-    status: SurveyStatus.DRAFT,
+    status: SurveyCampaignStatus.DRAFT,
+    approved_questions: [],
     source: input.source,
-    webhook_url: `https://api.evexia.local/v1/surveys/${id}/responses`,
-    webhook_token: `sk-${Math.random().toString(36).slice(2, 10)}`,
-    period_start: input.period_start,
-    period_end: input.period_end,
-    first_response_at: null,
+    external_form_id: input.external_form_id,
+    period_start: input.period_start ?? null,
+    period_end: input.period_end ?? null,
+    anonymous: input.anonymous ?? true,
+    activated_at: null,
     closed_at: null,
     response_count: 0,
+    created_by: CREATED_BY,
     created_at: now,
     updated_at: now,
   }
@@ -130,21 +150,23 @@ export function fixtureCreateSurvey(input: SurveyCreateInput): Survey {
   return survey
 }
 
-export function fixtureCloseSurvey(id: string): Survey {
+function fixtureTransition(id: string, status: SurveyCampaignStatus): Survey {
   const target = surveyStore.find((s) => s.id === id)
   if (!target) throw new Error(`Survey ${id} not found`)
-  target.status = SurveyStatus.CLOSED
-  target.closed_at = new Date().toISOString()
-  target.updated_at = target.closed_at
+  const now = new Date().toISOString()
+  target.status = status
+  target.updated_at = now
+  if (status === SurveyCampaignStatus.ACTIVE) target.activated_at = now
+  if (status === SurveyCampaignStatus.CLOSED) target.closed_at = now
   return target
 }
 
-export function fixtureRotateWebhookToken(id: string): Survey {
-  const target = surveyStore.find((s) => s.id === id)
-  if (!target) throw new Error(`Survey ${id} not found`)
-  target.webhook_token = `sk-${Math.random().toString(36).slice(2, 10)}`
-  target.updated_at = new Date().toISOString()
-  return target
+export function fixtureActivateSurvey(id: string): Survey {
+  return fixtureTransition(id, SurveyCampaignStatus.ACTIVE)
+}
+
+export function fixtureCloseSurvey(id: string): Survey {
+  return fixtureTransition(id, SurveyCampaignStatus.CLOSED)
 }
 
 export function fixtureSurveyAggregate(id: string): SurveyAggregate {

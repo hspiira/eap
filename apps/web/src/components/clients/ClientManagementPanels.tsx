@@ -1,21 +1,20 @@
 import { useEffect, useState } from "react"
 
 import { useQuery, type UseQueryResult } from "@tanstack/react-query"
-import { Link } from "@tanstack/react-router"
-import { ExternalLink, Plus, RotateCw, User, Users, X } from "lucide-react"
+import { Plus, RotateCw, User, Users } from "lucide-react"
 import type { ReactNode } from "react"
 
 import { contactsApi } from "@/api/endpoints/contacts"
 import { documentsApi } from "@/api/endpoints/documents"
 import { membersApi } from "@/api/endpoints/members"
 import type { PaginatedResponse } from "@/api/types"
-import { DetailGrid, DetailRow, RailSection } from "@/components/common/DetailPrimitives"
 import { DocumentFileLink } from "@/components/common/DocumentFileLink"
 import { EmptyState } from "@/components/common/EmptyState"
 import { FilterBar, FilterSearch, FilterTrigger } from "@/components/common/FilterBar"
 import { TableSkeleton } from "@/components/common/PageSkeletons"
 import { StatusBadge } from "@/components/common/StatusBadge"
 import { ROW_BORDER, STICKY_TABLE_HEAD } from "@/components/common/tableStyles"
+import { MemberSummaryCard, MemberSummaryPlaceholder } from "@/components/members/MemberSummaryCard"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Pagination } from "@/components/ui/pagination"
@@ -29,7 +28,7 @@ import {
 } from "@/components/ui/table"
 import { useToast } from "@/contexts/ToastContext"
 import { useDebouncedValue } from "@/hooks/useDebouncedValue"
-import { memberLabel, nameInitials } from "@/lib/display"
+import { memberLabel } from "@/lib/display"
 import { normalizeErrorMessage } from "@/lib/errors"
 import { entityListKey } from "@/lib/queries"
 import { cn } from "@/lib/utils"
@@ -313,7 +312,7 @@ export function ClientRosterPanel({
         {selectedMember ? (
           <MemberSummaryCard member={selectedMember} onClose={() => setSelectedId(null)} />
         ) : (
-          <RosterDetailsPlaceholder />
+          <MemberSummaryPlaceholder />
         )}
       </div>
     </div>
@@ -460,83 +459,6 @@ function RosterRow({
         {member.phone ?? <span className="text-fg-subtle">-</span>}
       </TableCell>
     </TableRow>
-  )
-}
-
-function MemberSummaryCard({ member, onClose }: { member: Member; onClose: () => void }) {
-  const label = memberLabel(member)
-  const summary = [
-    getStatusLabel(member.relation),
-    getStatusLabel(member.status),
-    member.employer_member_id,
-  ]
-    .filter(Boolean)
-    .join(" · ")
-
-  return (
-    <div className="flex min-h-0 flex-1 flex-col border border-fg/10 bg-surface">
-      <header className="flex items-start gap-3 border-b border-fg/10 px-4 py-3">
-        <span
-          aria-hidden
-          className="grid size-9 shrink-0 place-items-center bg-primary/10 text-xs font-semibold text-primary"
-        >
-          {nameInitials(label)}
-        </span>
-        <div className="min-w-0 flex-1">
-          <h3 className="truncate text-sm font-semibold leading-tight text-fg">{label}</h3>
-          <p className="mt-1 truncate text-xs text-fg-muted">{summary}</p>
-        </div>
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          onClick={onClose}
-          aria-label="Close details"
-          className="size-7 shrink-0 p-0 text-fg-muted"
-        >
-          <X className="size-4" />
-        </Button>
-      </header>
-
-      <div className="flex min-h-0 flex-1 flex-col gap-5 overflow-y-auto p-4">
-        <RailSection title="Personal">
-          <DetailGrid>
-            <DetailRow label="Date of birth" value={member.date_of_birth} />
-            <DetailRow
-              label="Gender"
-              value={member.gender ? getStatusLabel(member.gender) : null}
-            />
-          </DetailGrid>
-        </RailSection>
-        <RailSection title="Contact" className="border-t border-fg/10 pt-4">
-          <DetailGrid>
-            <DetailRow label="Phone" value={member.phone} />
-            <DetailRow label="Work email" value={member.work_email} />
-            <DetailRow label="Personal email" value={member.personal_email} fullWidth />
-          </DetailGrid>
-        </RailSection>
-        <Link
-          to="/members/$memberId"
-          params={{ memberId: member.id }}
-          className="mt-auto inline-flex items-center gap-1.5 border-t border-fg/10 pt-4 text-sm font-medium text-primary hover:underline"
-        >
-          Open full profile
-          <ExternalLink className="size-3.5" />
-        </Link>
-      </div>
-    </div>
-  )
-}
-
-function RosterDetailsPlaceholder() {
-  return (
-    <div className="flex flex-1 flex-col items-center justify-center gap-1 border border-dashed border-fg/15 p-8 text-center">
-      <div className="mb-2 grid size-9 place-items-center bg-primary/10">
-        <Users className="size-4 text-primary" />
-      </div>
-      <h3 className="text-sm font-semibold text-fg">Pick a member</h3>
-      <p className="max-w-[24ch] text-xs text-fg/60">Select a row to view their summary.</p>
-    </div>
   )
 }
 

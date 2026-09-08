@@ -49,6 +49,8 @@ class CreateServiceAssignmentUseCase(BaseUseCase[ServiceAssignmentEntity, Servic
             updated_at=utc_now(),
         )
 
+        assignment.record_created()
+
         return await self._save_and_publish_events(assignment)
 
 

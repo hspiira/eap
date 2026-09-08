@@ -5,6 +5,7 @@ import { FormField } from "@/components/common/FormField"
 import { FormSection } from "@/components/common/FormSection"
 import { SheetForm } from "@/components/common/SheetForm"
 import { Input } from "@/components/ui/input"
+import { Textarea } from "@/components/ui/textarea"
 import { normalizeErrorMessage } from "@/lib/errors"
 import type { Diagnosis, DiagnosisType } from "@/types/entities"
 
@@ -104,8 +105,9 @@ export function DiagnosisFormSheet({
           <Input id="dx-name" value={name} onChange={(e) => setName(e.target.value)} />
         </FormField>
         <FormField label="Description" htmlFor="dx-desc">
-          <Input
+          <Textarea
             id="dx-desc"
+            rows={4}
             value={description}
             onChange={(e) => setDescription(e.target.value)}
           />

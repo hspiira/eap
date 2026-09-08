@@ -9,7 +9,7 @@ from app.application.use_cases.authorization_drawdown import (
     select_authorization,
 )
 from app.domain.entities.authorization import Authorization
-from app.domain.enums import AuthorizationStatus, ServiceCategory
+from app.domain.enums import AuthorizationStatus
 from app.domain.value_objects.core import (
     AuthorizationId,
     CaseId,
@@ -21,8 +21,8 @@ from app.shared.utils.datetime import utc_now
 
 TENANT = TenantId("t_1")
 CASE = CaseId("case_1")
-COUNSELLING = ServiceCategory.SHORT_TERM_COUNSELLING
-CRISIS = ServiceCategory.CRISIS_INTERVENTION
+COUNSELLING = "ShortTermCounselling"
+CRISIS = "CrisisIntervention"
 
 
 def _auth(

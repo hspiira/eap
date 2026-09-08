@@ -9,13 +9,12 @@ from app.domain.enums import (
     EligibilityStatus,
     MemberGender,
     MemberRelation,
-    NextOfKinRelationship,
 )
 
 
 class MemberNextOfKinCreate(BaseModel):
     name: SanitizedStr = Field(..., min_length=1, max_length=255)
-    relationship: NextOfKinRelationship
+    relationship: str
     phone: SanitizedStr | None = Field(None, max_length=50)
     email: EmailStr | None = None
     is_primary: bool = False
@@ -45,7 +44,7 @@ class MemberNextOfKinResponse(BaseModel):
     tenant_id: str
     member_id: str
     name: str
-    relationship: NextOfKinRelationship
+    relationship: str
     phone: str | None
     email: str | None
     is_primary: bool
@@ -144,6 +143,9 @@ class MemberResponse(BaseModel):
     relation: MemberRelation
     status: EligibilityStatus
     primary_employee_member_id: str | None
+    coverage_start: date | None = None
+    coverage_end: date | None = None
+    is_currently_eligible: bool
     work_email: str | None
     personal_email: str | None
     display_label: str | None
@@ -161,6 +163,15 @@ class MemberResponse(BaseModel):
     user_id: str | None = None
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class MemberStatsResponse(BaseModel):
+    total: int
+    active: int
+    suspended: int
+    pending: int
+    terminated: int
+    with_account: int
 
 
 class MemberListResponse(BaseModel):

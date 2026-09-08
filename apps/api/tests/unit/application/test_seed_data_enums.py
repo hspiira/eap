@@ -1,15 +1,19 @@
-"""The dev seed must satisfy the enum-backed columns it writes to.
+"""The dev seed must satisfy the enum-backed and taxonomy-backed columns it writes to.
 
 `data/seed_data.json` shipped ten `services` rows carrying categories that were
-never `ServiceCategory` values: Counseling, Workshop, Crisis, Referral,
-Training, Assessment, Webinar. `EnumValueType` raises on the way in and the
+never valid values: Counseling, Workshop, Crisis, Referral, Training,
+Assessment, Webinar. `EnumValueType` raises on the way in and the
 `service_category_check` constraint refuses them at the database, so
 `scripts/load_seed_data.py` failed on the services table against any schema at
 head. Typing the column in migration a5b8c1d4e7f0 is what made the seed
 invalid, and nothing caught it.
 
-These assert the seed against the enums rather than against a snapshot, so
-adding a row with a made-up value fails here rather than at load time.
+`services.category` moved from the `ServiceCategory` enum to a foreign key on
+`service_categories.code` (migration 7af2412c8b90), so a seeded row now needs
+a code that exists in the taxonomy rather than a value the Python enum
+recognised. These assert the seed against that taxonomy rather than against a
+snapshot, so adding a row with a made-up value fails here rather than at load
+time.
 """
 
 import json
@@ -17,7 +21,8 @@ from pathlib import Path
 
 import pytest
 
-from app.domain.enums import BaseStatus, ServiceCategory
+from app.domain.enums import BaseStatus
+from scripts.taxonomy_catalogue import SERVICE_CATEGORIES
 
 SEED = Path(__file__).resolve().parents[3] / "data/seed_data.json"
 
@@ -27,18 +32,26 @@ def seed() -> dict:
     return json.loads(SEED.read_text())
 
 
+@pytest.fixture(scope="module")
+def valid_categories() -> set[str]:
+    # Read from the catalogue module, not the extract under data/taxonomy: that
+    # directory is git-ignored because it holds employee personal data, so a
+    # test keyed on it cannot run anywhere but a machine that has loaded the
+    # workbooks.
+    return {code for code, _name, _description in SERVICE_CATEGORIES}
+
+
 def test_the_seed_file_is_where_the_loader_expects_it(seed):
     assert seed["services"], "no services to check; the loader reads this key"
 
 
-def test_every_seeded_service_category_is_a_service_category(seed):
-    valid = {e.value for e in ServiceCategory}
+def test_every_seeded_service_category_is_a_known_category(seed, valid_categories):
     offenders = [
         (s["id"], s["category"])
         for s in seed["services"]
-        if s["category"] is not None and s["category"] not in valid
+        if s["category"] is not None and s["category"] not in valid_categories
     ]
-    assert offenders == [], f"not ServiceCategory values: {offenders}"
+    assert offenders == [], f"not known service category codes: {offenders}"
 
 
 def test_every_seeded_service_status_is_a_base_status(seed):

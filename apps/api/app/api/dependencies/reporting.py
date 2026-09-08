@@ -11,6 +11,9 @@ from app.domain.repositories.report_repository import (
 from app.domain.repositories.utilisation_event_repository import (
     UtilisationEventRepository,
 )
+from app.domain.repositories.utilisation_event_type_repository import (
+    UtilisationEventTypeRepository,
+)
 
 
 async def get_report_template_repository(
@@ -53,3 +56,13 @@ async def get_utilisation_event_repository(
     )
 
     return UtilisationEventRepositoryImpl(db)
+
+
+async def get_utilisation_event_type_repository(
+    db: AsyncSession = Depends(get_db),
+) -> "UtilisationEventTypeRepository":
+    from app.infrastructure.repositories.utilisation_event_type_repository import (
+        UtilisationEventTypeRepositoryImpl,
+    )
+
+    return UtilisationEventTypeRepositoryImpl(db)

@@ -399,6 +399,31 @@ export enum ProviderIdentityProvenance {
 }
 
 /**
+ * The documents an engagement requires of a practitioner, mirrors BE
+ * `EngagementDocumentKind`. One checklist entry per kind, per practitioner.
+ */
+export enum EngagementDocumentKind {
+  CONTRACT = "Contract",
+  KYC = "KYC",
+  CERTIFICATE_OF_REGISTRATION = "CertificateOfRegistration",
+  MOA = "MoA",
+  UCA_LICENCE = "UcaLicence",
+  DECLARATION_FORM = "DeclarationForm",
+  LEAD_CONSULTANT_CV = "LeadConsultantCV",
+}
+
+/**
+ * Whether a required engagement document is held, mirrors BE
+ * `EngagementDocumentState`. `OPEN` is the source's own "still being decided",
+ * which is not the same as missing.
+ */
+export enum EngagementDocumentState {
+  PRESENT = "Present",
+  MISSING = "Missing",
+  OPEN = "Open",
+}
+
+/**
  * How a session was delivered: mirrors BE `SessionDeliveryContext`.
  *
  * `UNKNOWN` belongs to historical records whose source evidence does not say.
@@ -514,12 +539,16 @@ export enum QuestionnaireAdministration {
 /**
  * Lifecycle status of a Survey campaign (Phase 3 #2).
  * - DRAFT: webhook not yet wired; no responses accepted.
- * - COLLECTING: webhook live; responses streaming in.
+ * - ACTIVE: webhook live; responses streaming in.
  * - CLOSED: response window closed; aggregates finalised.
+ *
+ * Named for the API's `SurveyCampaignStatus` so the contract test compares it.
+ * Under its old name and its old `Collecting` member it was neither compared
+ * nor accepted by the API.
  */
-export enum SurveyStatus {
+export enum SurveyCampaignStatus {
   DRAFT = "Draft",
-  COLLECTING = "Collecting",
+  ACTIVE = "Active",
   CLOSED = "Closed",
 }
 
@@ -546,19 +575,6 @@ export enum EngagementStatus {
 }
 
 /**
- * Type of consultancy engagement. Drives default rate-card lookup BE-side and the
- * "kind" badge in the FE.
- */
-export enum EngagementType {
-  POLICY_DRAFT = "Policy Draft",
-  TRAINING = "Training",
-  ASSESSMENT = "Assessment",
-  ADVISORY = "Advisory",
-  AUDIT = "Audit",
-  OTHER = "Other",
-}
-
-/**
  * Engagement deliverable status: independent from the parent engagement's status.
  */
 export enum DeliverableStatus {
@@ -566,18 +582,6 @@ export enum DeliverableStatus {
   IN_PROGRESS = "InProgress",
   DELIVERED = "Delivered",
   ACCEPTED = "Accepted",
-}
-
-/**
- * Engagement timeline event kinds. Mirrors the IncidentTimeline pattern.
- */
-export enum EngagementTimelineEventKind {
-  CREATED = "Created",
-  STATUS_CHANGED = "Status Changed",
-  DELIVERABLE_ADDED = "Deliverable Added",
-  DELIVERABLE_UPDATED = "Deliverable Updated",
-  HOURS_LOGGED = "Hours Logged",
-  NOTE = "Note",
 }
 
 /**

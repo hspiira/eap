@@ -1,4 +1,4 @@
-import type { Member, MemberNextOfKin, ServiceSession } from "@/types/entities"
+import type { Member, MemberNextOfKin, MemberStats, ServiceSession } from "@/types/entities"
 import type {
   EligibilityStatus,
   MemberGender,
@@ -146,6 +146,11 @@ export const membersApi = {
 
   async list(params?: MemberListParams): Promise<PaginatedResponse<Member>> {
     return apiClient.get<PaginatedResponse<Member>>("/members", params)
+  },
+
+  /** Roster counts honouring the same filters as `list`. */
+  async getStats(params?: Omit<MemberListParams, "page" | "limit">): Promise<MemberStats> {
+    return apiClient.get<MemberStats>("/members/stats", params)
   },
 
   async getById(id: string): Promise<Member> {

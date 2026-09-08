@@ -2,17 +2,22 @@
 
 import json
 
-from fastapi import APIRouter, Depends, Header, HTTPException, Request, status
+from fastapi import APIRouter, Depends, Header, HTTPException, Query, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.dependencies import (
+    PageParams,
     get_audit_event_handler,
+    get_survey_answer_tally_reader,
     get_survey_campaign_repository,
     get_survey_response_repository,
+    pagination,
 )
 from app.api.schemas.survey_schemas import (
+    ApprovedQuestionInput,
     SurveyAggregateResponse,
     SurveyCampaignCreate,
+    SurveyCampaignListResponse,
     SurveyCampaignResponse,
     SurveyResponseAcceptedResponse,
     WebhookPayload,
@@ -29,11 +34,13 @@ from app.application.use_cases.transitions import (
 from app.core.authorization import assert_same_tenant
 from app.core.database import get_db
 from app.core.security import TokenData, get_current_user
-from app.domain.entities.survey_campaign import SurveyCampaign
+from app.domain.entities.survey_campaign import ApprovedQuestion, SurveyCampaign
+from app.domain.enums import SurveyCampaignStatus
 from app.domain.repositories.survey_repository import (
     SurveyCampaignRepository,
     SurveyResponseRepository,
 )
+from app.domain.services.survey_disclosure import SurveyAnswerTallyReader
 from app.domain.value_objects.core import (
     ClientId,
     SurveyCampaignId,
@@ -59,6 +66,10 @@ def _to_campaign_response(c: SurveyCampaign) -> SurveyCampaignResponse:
         period_start=c.period_start,
         period_end=c.period_end,
         anonymous=c.anonymous,
+        approved_questions=[
+            ApprovedQuestionInput(key=q.key, label=q.label, choices=list(q.choices))
+            for q in c.approved_questions
+        ],
         response_count=c.response_count,
         created_by=c.created_by.value,
         activated_at=c.activated_at,
@@ -96,6 +107,10 @@ async def create_survey_campaign(
         period_start=data.period_start,
         period_end=data.period_end,
         anonymous=data.anonymous,
+        approved_questions=[
+            ApprovedQuestion(key=q.key, label=q.label, choices=tuple(q.choices))
+            for q in data.approved_questions
+        ],
     )
     await audit_change(campaign, audit_handler, current_user, request)
     return _to_campaign_response(campaign)
@@ -103,17 +118,42 @@ async def create_survey_campaign(
 
 @router.get(
     "/survey-campaigns",
-    response_model=list[SurveyCampaignResponse],
+    response_model=SurveyCampaignListResponse,
     summary="List survey campaigns for the current tenant",
 )
 @readonly()
 async def list_survey_campaigns(
     current_user: TokenData = Depends(get_current_user),
+    client_id: str | None = Query(None),
+    campaign_status: SurveyCampaignStatus | None = Query(None, alias="status"),
+    search: str | None = Query(None),
+    pg: PageParams = Depends(pagination()),
     repo: SurveyCampaignRepository = Depends(get_survey_campaign_repository),
     db: AsyncSession = Depends(get_db),
 ):
-    rows = await repo.list_for_tenant(TenantId(current_user.tenant_id))
-    return [_to_campaign_response(c) for c in rows]
+    tenant = TenantId(current_user.tenant_id)
+    client = ClientId(client_id) if client_id else None
+    rows = await repo.list_all(
+        tenant,
+        client_id=client,
+        status=campaign_status,
+        search=search,
+        limit=pg.limit,
+        offset=pg.offset,
+    )
+    total = await repo.count(
+        tenant,
+        client_id=client,
+        status=campaign_status,
+        search=search,
+    )
+    return SurveyCampaignListResponse(
+        items=[_to_campaign_response(c) for c in rows],
+        total=total,
+        page=pg.page,
+        limit=pg.limit,
+        has_more=pg.offset + pg.limit < total,
+    )
 
 
 @router.get(
@@ -193,14 +233,14 @@ async def get_survey_aggregate(
     campaign_id: str,
     current_user: TokenData = Depends(get_current_user),
     campaign_repo: SurveyCampaignRepository = Depends(get_survey_campaign_repository),
-    response_repo: SurveyResponseRepository = Depends(get_survey_response_repository),
+    tally_reader: SurveyAnswerTallyReader = Depends(get_survey_answer_tally_reader),
     db: AsyncSession = Depends(get_db),
 ):
     campaign = await campaign_repo.get_by_id(SurveyCampaignId(campaign_id))
     if campaign is None:
         raise HTTPException(status_code=404, detail="Survey campaign not found")
     assert_same_tenant(current_user, campaign.tenant_id.value)
-    use_case = GetSurveyAggregateUseCase(campaign_repo, response_repo)
+    use_case = GetSurveyAggregateUseCase(campaign_repo, tally_reader)
     return SurveyAggregateResponse(**await use_case.execute(SurveyCampaignId(campaign_id)))
 
 

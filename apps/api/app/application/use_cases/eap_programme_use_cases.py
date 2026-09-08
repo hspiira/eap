@@ -10,7 +10,6 @@ from app.domain.entities.eap_programme import EAPProgramme
 from app.domain.enums import (
     AuthorizationStatus,
     RelationType,
-    ServiceCategory,
 )
 from app.domain.exceptions import DomainError, NotFoundError
 from app.domain.repositories.case_repository import CaseRepository
@@ -87,7 +86,7 @@ class AuthorizeCaseUseCase:
         *,
         case_id: CaseId,
         programme_id: EAPProgrammeId,
-        service_category: ServiceCategory,
+        service_category: str,
         expires_on: date | None = None,
     ) -> Authorization:
         case = await self._cases.get_by_id(case_id)
@@ -110,7 +109,7 @@ class AuthorizeCaseUseCase:
             raise DomainError("Programme is not currently effective")
         cap = programme.cap_for(service_category)
         if cap is None:
-            raise DomainError(f"Programme has no cap for {service_category.value}")
+            raise DomainError(f"Programme has no cap for {service_category}")
         now = utc_now()
         authorization = Authorization(
             id=AuthorizationId(generate_cuid()),

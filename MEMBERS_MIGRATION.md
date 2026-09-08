@@ -214,6 +214,26 @@ outcome; larger files go through the queued job instead. The client importer
 should get the same row-at-a-time treatment. Only the import table's font size
 was corrected in that dialog.
 
+## Coverage visibility in the member API (2026-09-08)
+
+Decision: the product owner reopened the closed decision that coverage is
+invisible in the member API. `MemberResponse` now returns `coverage_start`,
+`coverage_end`, and `is_currently_eligible`, the last computed by the existing
+domain method `EligibleMember.is_currently_eligible()`. Coverage stays
+read-only in the member API: `MemberCreate` and `MemberUpdate` accept no
+coverage dates, which remain set at the client/programme level and by
+`terminate()`.
+
+Consequence, verified against the dev database on 2026-09-08: of 3,305
+members, none has a `coverage_start` and one has a `coverage_end`, so
+`is_currently_eligible` currently reduces to "status is Active". The domain
+method treats a missing bound as open, so this is correct, not a defect.
+
+The same change made `staff_number` searchable in the member list (3,301 of
+3,305 dev members carry one) and added `GET /members/stats` for the roster
+summary strip, returning status and account-link counts for the list's filter
+set.
+
 ## Roster import reference
 
 The sample roster at `/Users/piira/Downloads/persons.csv` is handled by the
@@ -242,3 +262,26 @@ Number` is the client's canonical member ID.~~ The importer now provides all of
 those safeguards. `Staff_ID` is the required canonical identifier; rows with
 placeholders or blanks remain errors and `Staff Number` is retained only as
 reference data, never used as an identity fallback.
+
+## Open finding: next-of-kin relationship lookup returns a coroutine (2026-09-08)
+
+Found while verifying the members page redesign, in work that was uncommitted
+in the shared tree at the time and belongs to another agent. Not fixed here,
+because fixing another agent's in-flight file would collide with their work.
+
+`NextOfKinRelationshipRepository.get_by_code`
+(`apps/api/app/infrastructure/repositories/next_of_kin_relationship_repository.py:59`)
+passes an unawaited coroutine to `_to_entity`, so `_assert_known_relationship`
+(`apps/api/app/api/routes/members.py:240`) raises
+`AttributeError: 'coroutine' object has no attribute 'id'` and both next-of-kin
+write routes answer 500.
+
+Reproduced by `uv run pytest tests/ -k member` in the working tree:
+`test_contact_mutations_commit_with_audit[post-/members/m1/next-of-kin-payload0-CREATE]`
+and the `patch` case fail. The same selection passes on committed state
+(169 passed, 20 skipped) in a clean worktree at HEAD, which is what places the
+defect in the uncommitted change rather than in the members module.
+
+Fix: await the result before mapping it. Whoever owns the next-of-kin
+relationship taxonomy should confirm no other method in that repository has
+the same shape.

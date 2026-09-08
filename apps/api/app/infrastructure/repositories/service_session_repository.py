@@ -9,16 +9,19 @@ from collections.abc import Sequence
 from datetime import datetime
 from typing import Any
 
-from sqlalchemy import select
+from sqlalchemy import and_, func, select
 
 from app.domain.entities.service_session import ServiceSessionEntity
 from app.domain.enums import (
     SessionCategory,
     SessionClinicalStatus,
+    SessionDeliveryContext,
     SessionStatus,
     SessionType,
 )
 from app.domain.repositories.service_session_repository import (
+    ProviderDeliveryStats,
+    ProviderOrganisationSessionCount,
     ServiceSessionRepository,
 )
 from app.domain.value_objects.core import (
@@ -30,6 +33,8 @@ from app.domain.value_objects.core import (
     TenantId,
 )
 from app.infrastructure.mappers.service_session_mapper import ServiceSessionMapper
+from app.infrastructure.models.provider_affiliation_model import ProviderAffiliationModel
+from app.infrastructure.models.provider_organisation_model import ProviderOrganisationModel
 from app.infrastructure.models.service_session_model import ServiceSessionModel
 from app.infrastructure.repositories.base import TenantScopedRepositoryImpl
 
@@ -223,3 +228,84 @@ class ServiceSessionRepositoryImpl(
             search=None,
             search_fields=None,
         )
+
+    @staticmethod
+    def _provider_scope(tenant_id: TenantId, provider_id: ProviderId) -> list[Any]:
+        return [
+            ServiceSessionModel.tenant_id == tenant_id.value,
+            ServiceSessionModel.provider_id == provider_id.value,
+            ServiceSessionModel.deleted_at.is_(None),
+        ]
+
+    async def provider_delivery_stats(
+        self, tenant_id: TenantId, provider_id: ProviderId
+    ) -> ProviderDeliveryStats:
+        """Aggregate a practitioner's delivery record in two grouped queries."""
+        scope = self._provider_scope(tenant_id, provider_id)
+        rows = await self._context_rows(scope)
+        return ProviderDeliveryStats(
+            total_sessions=sum(count for _, count, _, _ in rows),
+            first_session_at=min((first for _, _, first, _ in rows), default=None),
+            last_session_at=max((last for _, _, _, last in rows), default=None),
+            by_delivery_context={context: count for context, count, _, _ in rows},
+            by_organisation=await self._organisation_totals(scope),
+        )
+
+    async def _context_rows(
+        self, scope: list[Any]
+    ) -> list[tuple[SessionDeliveryContext, int, datetime, datetime]]:
+        rows = (
+            await self.session.execute(
+                select(
+                    ServiceSessionModel.delivery_context,
+                    func.count(ServiceSessionModel.id),
+                    func.min(ServiceSessionModel.scheduled_at),
+                    func.max(ServiceSessionModel.scheduled_at),
+                )
+                .where(*scope)
+                .group_by(ServiceSessionModel.delivery_context)
+            )
+        ).all()
+        return [
+            (SessionDeliveryContext(context), int(count), first, last)
+            for context, count, first, last in rows
+        ]
+
+    async def _organisation_totals(
+        self, scope: list[Any]
+    ) -> list[ProviderOrganisationSessionCount]:
+        """Group by the organisation the session's own affiliation named.
+
+        A soft-deleted organisation is not excluded: the delivery still happened
+        under it, and dropping it would leave the breakdown short of the total.
+        """
+        count = func.count(ServiceSessionModel.id)
+        rows = (
+            await self.session.execute(
+                select(ProviderOrganisationModel.id, ProviderOrganisationModel.name, count)
+                .select_from(ServiceSessionModel)
+                .join(
+                    ProviderAffiliationModel,
+                    and_(
+                        ProviderAffiliationModel.tenant_id == ServiceSessionModel.tenant_id,
+                        ProviderAffiliationModel.id == ServiceSessionModel.provider_affiliation_id,
+                    ),
+                )
+                .join(
+                    ProviderOrganisationModel,
+                    and_(
+                        ProviderOrganisationModel.tenant_id == ProviderAffiliationModel.tenant_id,
+                        ProviderOrganisationModel.id == ProviderAffiliationModel.organisation_id,
+                    ),
+                )
+                .where(*scope)
+                .group_by(ProviderOrganisationModel.id, ProviderOrganisationModel.name)
+                .order_by(count.desc(), ProviderOrganisationModel.name)
+            )
+        ).all()
+        return [
+            ProviderOrganisationSessionCount(
+                organisation_id=row[0], organisation_name=row[1], session_count=int(row[2])
+            )
+            for row in rows
+        ]

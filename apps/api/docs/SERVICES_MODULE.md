@@ -241,6 +241,18 @@ typed (`eap` rendered as `Eap`). Corrected in `166f221`. Before treating a field
 as enum-backed, confirm it has a `$ref` in the contract and a CHECK constraint
 or enum column in the model; `service.category` has neither.
 
+**Update 2026-09-08.** Both claims above are now stale. Migration
+`a5b8c1d4e7f0` (2026-09-05, after this review was written) typed
+`services.category` against the `ServiceCategory` enum with a CHECK
+constraint, closing the free-text gap this section describes. Migration
+`7af2412c8b90` (2026-09-08) then replaced that enum entirely with a
+`service_categories` table: adding a category no longer needs a code deploy
+and a migration, the same reasoning `diagnosis_types` already used. `category`
+on both `services` and `authorizations` is now a foreign key onto
+`service_categories.code` rather than an enum column. `ServiceCategory` no
+longer exists anywhere in the codebase; do not cite
+`apps/api/app/domain/enums/session.py:51` for it.
+
 ## 4. Recommendation
 
 

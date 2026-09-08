@@ -102,3 +102,91 @@ async def test_handle_events_no_op_when_events_empty():
         tenant_id=TenantId("t-1"),
     )
     assert outbox.calls == []
+
+
+def _session():
+    """A completed session carrying the fields a note would live in."""
+    from app.domain.entities.service_session import ServiceSessionEntity
+    from app.domain.enums import SessionAttendance, SessionDeliveryContext, SessionStatus
+    from app.domain.value_objects.core import ClientId, ProviderId, ServiceId, SessionId
+
+    now = datetime.now(UTC)
+    return ServiceSessionEntity(
+        id=SessionId("s-1"),
+        tenant_id=TenantId("t-1"),
+        service_id=ServiceId("svc-1"),
+        provider_id=ProviderId("prv-1"),
+        client_id=ClientId("cli-1"),
+        member_id=None,
+        attendance=SessionAttendance.COMPANY_WIDE,
+        scheduled_at=now,
+        status=SessionStatus.SCHEDULED,
+        reschedule_count=0,
+        delivery_context=SessionDeliveryContext.DIRECT,
+        created_at=now,
+        updated_at=now,
+    )
+
+
+@pytest.mark.asyncio
+async def test_a_session_diff_records_the_field_and_not_its_content():
+    """The audit trail says a note was edited, never what the note says."""
+    from copy import deepcopy
+
+    session = _session()
+    before = deepcopy(session)
+    session.update_notes("Discussed bereavement and sleep")
+    outbox = _RecordingOutbox()
+
+    await AuditEventHandler(outbox).handle_events(
+        entity=session,
+        events=list(session.events),
+        tenant_id=TenantId("t-1"),
+        user_id=UserId("u-1"),
+        old_entity=before,
+    )
+
+    payload = outbox.calls[0]["payload"]
+    assert payload["is_special_category"] is True
+    changed = {c["field_name"]: c["new_value"] for c in payload["field_changes"]}
+    assert changed["notes"] == "[redacted]"
+    assert "Discussed bereavement and sleep" not in str(payload)
+
+
+@pytest.mark.asyncio
+async def test_an_ordinary_record_keeps_its_values():
+    """Redaction is for clinical records, not a blanket rule."""
+    from copy import deepcopy
+
+    from app.domain.entities.client import ClientEntity
+    from app.domain.enums import BaseStatus
+    from app.domain.value_objects.core import ClientId, ContactInfo
+
+    now = datetime.now(UTC)
+    client = ClientEntity(
+        id=ClientId("c-1"),
+        tenant_id=TenantId("t-1"),
+        name="Acme Corp",
+        code="ACME",
+        contact_info=ContactInfo(),
+        status=BaseStatus.ACTIVE,
+        is_verified=True,
+        created_at=now,
+        updated_at=now,
+    )
+    before = deepcopy(client)
+    client.update_name("Acme Holdings")
+    outbox = _RecordingOutbox()
+
+    await AuditEventHandler(outbox).handle_events(
+        entity=client,
+        events=list(client.events),
+        tenant_id=TenantId("t-1"),
+        user_id=UserId("u-1"),
+        old_entity=before,
+    )
+
+    payload = outbox.calls[0]["payload"]
+    assert payload["is_special_category"] is False
+    changed = {c["field_name"]: (c["old_value"], c["new_value"]) for c in payload["field_changes"]}
+    assert changed["name"] == ("Acme Corp", "Acme Holdings")

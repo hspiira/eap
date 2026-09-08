@@ -32,8 +32,10 @@ from app.infrastructure.models.eligible_member_model import (
     EligibleMemberModel,
 )
 from app.infrastructure.models.member_next_of_kin_model import MemberNextOfKinModel
+from app.infrastructure.models.next_of_kin_relationship_model import NextOfKinRelationshipModel
 from app.infrastructure.models.outbox_model import OutboxEventModel
 from app.infrastructure.models.tenant_model import TenantModel
+from app.shared.utils.generators import generate_cuid
 
 
 @pytest_asyncio.fixture
@@ -60,6 +62,7 @@ async def isolated_members_db():
             ClinicalSubjectModel,
             EligibleMemberClinicalLinkModel,
             MemberNextOfKinModel,
+            NextOfKinRelationshipModel,
             OutboxEventModel,
         )
     ]
@@ -67,6 +70,14 @@ async def isolated_members_db():
         async with engine.begin() as connection:
             await connection.execute(text("CREATE TABLE users (id varchar(25) PRIMARY KEY)"))
             await connection.run_sync(lambda sync: Base.metadata.create_all(sync, tables=tables))
+            for code in ("Spouse", "Child", "Parent", "Sibling", "Guardian", "Partner", "Other"):
+                await connection.execute(
+                    text(
+                        "INSERT INTO next_of_kin_relationships (id, code, name)"
+                        " VALUES (:id, :c, :c)"
+                    ),
+                    {"id": generate_cuid(), "c": code},
+                )
             for ddl in (
                 "CREATE TABLE service_sessions (id varchar(25) PRIMARY KEY, tenant_id varchar(25) NOT NULL, member_id varchar(25) NOT NULL REFERENCES eligible_members(id), updated_at timestamptz)",
                 "CREATE TABLE cases (id varchar(25) PRIMARY KEY, tenant_id varchar(25) NOT NULL, clinical_subject_id varchar(25) NOT NULL, updated_at timestamptz)",
@@ -503,6 +514,64 @@ async def test_export_csv_carries_the_identity_columns(member_http):
     assert rows[0]["national_id"] == "CM12345"
     assert rows[0]["passport_number"] == "B0987654"
     assert rows[0]["employer_member_id"] == "ACM-001"
+
+
+async def test_search_matches_staff_number(member_http):
+    http, _ = member_http
+    created = await http.post(
+        "/members",
+        json={
+            "client_id": "c1",
+            "display_label": "Amina",
+            "relation": "Employee",
+            "staff_number": "EMP-4321",
+        },
+    )
+    assert created.status_code == 201, created.text
+    await create_member(http, "HR-2", "Bosco")
+
+    listed = await http.get("/members", params={"search": "4321"})
+
+    assert listed.status_code == 200, listed.text
+    assert listed.json()["total"] == 1
+    assert listed.json()["items"][0]["id"] == created.json()["id"]
+
+
+async def test_stats_counts_the_filtered_roster(member_http):
+    http, _ = member_http
+    await create_member(http, "HR-1", "Keeps working")
+    leaver_id = await create_member(http, "HR-2", "Leaver")
+    assert (await http.post(f"/members/{leaver_id}/terminate")).status_code == 200
+
+    stats = await http.get("/members/stats")
+    assert stats.status_code == 200, stats.text
+    assert stats.json() == {
+        "total": 2,
+        "active": 1,
+        "suspended": 0,
+        "pending": 0,
+        "terminated": 1,
+        "with_account": 0,
+    }
+
+    filtered = await http.get("/members/stats", params={"status": "Active"})
+    assert filtered.status_code == 200, filtered.text
+    assert filtered.json()["total"] == 1
+    assert filtered.json()["terminated"] == 0
+
+
+async def test_active_member_without_coverage_dates_is_currently_eligible(member_http):
+    """Real rosters carry null coverage dates, so Active must read as eligible."""
+    http, _ = member_http
+    member_id = await create_member(http)
+
+    fetched = await http.get(f"/members/{member_id}")
+
+    assert fetched.status_code == 200, fetched.text
+    body = fetched.json()
+    assert body["coverage_start"] is None
+    assert body["coverage_end"] is None
+    assert body["is_currently_eligible"] is True
 
 
 async def test_concurrent_auto_issue_does_not_produce_duplicate_codes(

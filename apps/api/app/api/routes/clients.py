@@ -10,6 +10,7 @@ import csv
 import difflib
 import io
 import json
+from copy import deepcopy
 from datetime import timedelta
 
 from fastapi import (
@@ -104,7 +105,6 @@ from app.core.security import TokenData, get_current_user
 from app.domain.entities.client import ClientEntity
 from app.domain.enums import (
     BaseStatus,
-    ClientTier,
     ContractStatus,
     MemberRelation,
     TenantRole,
@@ -560,6 +560,8 @@ async def update_client(
         )
 
     fields = data.model_fields_set
+    # The use case mutates in place, so the audit diff needs the state first.
+    before = deepcopy(client)
     client = await UpdateClientUseCase(client_repo).execute(
         client.id,
         name=data.name,
@@ -574,7 +576,7 @@ async def update_client(
         else UNSET,
         industry_repository=industry_repo,
     )
-    await audit_change(client, audit_handler, current_user, request)
+    await audit_change(client, audit_handler, current_user, request, old_entity=before)
     if "contact_person_name" in fields and data.contact_person_name:
         contacts = await contact_repo.get_by_client_id(client.id.value, client.tenant_id)
         primary = next((contact for contact in contacts if contact.is_primary), None)
@@ -1069,7 +1071,7 @@ async def list_clients(
     tenant_id: str = Query(..., description="Tenant identifier"),
     status: BaseStatus | None = Query(None, description="Filter by client status"),
     is_verified: bool | None = Query(None, description="Filter by verification status"),
-    tier: ClientTier | None = Query(None, description="Filter by engagement tier (A/B/C)"),
+    tier: str | None = Query(None, description="Filter by engagement tier code"),
     parent_client_id: str | None = Query(None, description="Filter by parent client"),
     include_archived: bool = Query(False, description="Include archived clients"),
     search: str | None = Query(None, description="Search in client name"),
@@ -1166,7 +1168,7 @@ def _client_export_row(client: ClientEntity) -> dict[str, str | bool | None]:
         else None,
         "aliases": "; ".join(client.aliases),
         "status": client.status.value,
-        "tier": client.tier.value if client.tier else None,
+        "tier": client.tier,
         "is_verified": client.is_verified,
     }
 
@@ -1180,7 +1182,7 @@ async def export_clients(
     tenant_id: str = Query(..., description="Tenant identifier"),
     client_ids: list[str] | None = Query(None, description="Export only selected client IDs"),
     status: BaseStatus | None = Query(None, description="Filter by client status"),
-    tier: ClientTier | None = Query(None, description="Filter by engagement tier (A/B/C)"),
+    tier: str | None = Query(None, description="Filter by engagement tier code"),
     parent_client_id: str | None = Query(None, description="Filter by parent client"),
     include_archived: bool = Query(False, description="Include archived clients"),
     search: str | None = Query(None, description="Search in client name"),

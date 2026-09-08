@@ -18,8 +18,6 @@ from app.main import app
 PAGINATION_ONLY = {"tenant_id", "page", "limit", "sort_by", "sort_desc"}
 
 FIXTURE_BACKED = {
-    "/engagements": set(),
-    "/survey-campaigns": set(),
     "/care-callback-campaigns": PAGINATION_ONLY,
     "/critical-incidents": PAGINATION_ONLY,
 }
@@ -34,12 +32,6 @@ def _query_params(path: str) -> set[str]:
 
 
 class TestFixtureBackedEndpointsStillHaveNoFilters:
-    def test_engagements(self) -> None:
-        _assert_no_new_filters("/engagements")
-
-    def test_survey_campaigns(self) -> None:
-        _assert_no_new_filters("/survey-campaigns")
-
     def test_care_callback_campaigns(self) -> None:
         _assert_no_new_filters("/care-callback-campaigns")
 

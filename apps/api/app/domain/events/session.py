@@ -42,3 +42,25 @@ class SessionRescheduled(DomainEvent):
 
 
 # === Document Events ===
+
+
+@dataclass(frozen=True)
+class SessionStatusChanged(DomainEvent):
+    """Event raised when a session is marked no-show, archived or restored."""
+
+    session_id: SessionId
+    from_status: str
+    to_status: str
+
+
+@dataclass(frozen=True)
+class SessionUpdated(DomainEvent):
+    """Event raised when a session's own details change.
+
+    `field` names what was touched and nothing more. A session is
+    special-category, so the handler redacts the values before they reach
+    `entity_changes`.
+    """
+
+    session_id: SessionId
+    field: str

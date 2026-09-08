@@ -52,6 +52,23 @@ class ContractRepository(BaseRepository[ContractEntity, ContractId]):
         pass
 
     @abstractmethod
+    async def find_overlapping(
+        self,
+        tenant_id: TenantId,
+        client_id: ClientId,
+        *,
+        start_date: date,
+        end_date: date,
+        exclude_id: ContractId | None = None,
+    ) -> list[ContractEntity]:
+        """Terms for this client whose period intersects the given one.
+
+        Terminated terms do not conflict: the point of terminating one is to
+        replace it, often on a period that starts inside the old one.
+        """
+        pass
+
+    @abstractmethod
     async def get_active_by_client_id(
         self, tenant_id: TenantId, client_id: ClientId
     ) -> ContractEntity | None:

@@ -33,6 +33,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { Textarea } from "@/components/ui/textarea"
 import { useEntityFormSheet } from "@/hooks/useEntityFormSheet"
 import { memberLabel, nameInitials } from "@/lib/display"
 import { useEntityList } from "@/lib/queries"
@@ -611,7 +612,7 @@ export function ServiceSessionFormSheet({
             error={errors.notes?.message}
             htmlFor="ss-notes"
           >
-            <Input id="ss-notes" {...register("notes")} />
+            <Textarea id="ss-notes" rows={4} {...register("notes")} />
           </FormField>
         ) : null}
       </FormSection>

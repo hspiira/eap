@@ -11,7 +11,6 @@ from typing import Any
 from sqlalchemy import select
 
 from app.domain.entities.kpi import KPIAssignmentEntity, KPIEntity
-from app.domain.enums import KPICategory
 from app.domain.repositories.kpi_repository import (
     KPIAssignmentRepository,
     KPIRepository,
@@ -67,7 +66,7 @@ class KPIRepositoryImpl(TenantScopedRepositoryImpl[KPIEntity, KPIModel, KPIId], 
     async def list_all(
         self,
         tenant_id: TenantId,
-        category: KPICategory | None = None,
+        category: str | None = None,
         is_active: bool | None = None,
         search: str | None = None,
         limit: int = 100,
@@ -97,7 +96,7 @@ class KPIRepositoryImpl(TenantScopedRepositoryImpl[KPIEntity, KPIModel, KPIId], 
     async def count(
         self,
         tenant_id: TenantId,
-        category: KPICategory | None = None,
+        category: str | None = None,
         is_active: bool | None = None,
         search: str | None = None,
     ) -> int:

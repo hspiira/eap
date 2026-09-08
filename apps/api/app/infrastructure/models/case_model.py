@@ -2,15 +2,13 @@
 
 from datetime import datetime
 
-from sqlalchemy import DateTime, String, Text
+from sqlalchemy import DateTime, ForeignKey, String, Text
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.domain.enums import (
     CaseClosureReason,
-    CaseReferralSource,
     CaseStatus,
-    PresentingProblem,
 )
 from app.infrastructure.models.base import (
     Base,
@@ -26,11 +24,11 @@ class CaseModel(CuidMixin, TenantMixin, Base, TimestampMixin):
 
     clinical_subject_id: Mapped[str] = mapped_column(String(25), nullable=False, index=True)
     client_id: Mapped[str] = mapped_column(String(25), nullable=False, index=True)
-    presenting_problem: Mapped[PresentingProblem] = mapped_column(
-        EnumValueType(PresentingProblem), nullable=False, index=True
+    presenting_problem: Mapped[str] = mapped_column(
+        String(50), ForeignKey("presenting_problems.code"), nullable=False, index=True
     )
-    referral_source: Mapped[CaseReferralSource] = mapped_column(
-        EnumValueType(CaseReferralSource), nullable=False, index=True
+    referral_source: Mapped[str] = mapped_column(
+        String(50), ForeignKey("case_referral_sources.code"), nullable=False, index=True
     )
     status: Mapped[CaseStatus] = mapped_column(
         EnumValueType(CaseStatus),

@@ -42,7 +42,6 @@ import { addDaysToDay, daysBetweenDays, formatDay, todayDayKey, toDayKey } from 
 import { entityDetailKey, entityListKey, useEntityDetail } from "@/lib/queries"
 import { useAuthStore } from "@/store/slices/authSlice"
 import type { Client } from "@/types/entities"
-import type { ClientTier } from "@/types/enums"
 import type { LifecycleAction } from "@/utils/lifecycleConfig"
 
 export const Route = createFileRoute("/clients/$clientId")({
@@ -104,7 +103,6 @@ function ClientDetailPage() {
   const canWrite = useCanWrite()
   const userId = useAuthStore((s) => s.user_id)
   const [tab, setTab] = useTabSearchParam<TabValue>(TAB_VALUES, "overview")
-  const [tierLoading, setTierLoading] = useState(false)
   const [editOpen, setEditOpen] = useState(false)
   const [addContractOpen, setAddContractOpen] = useState(false)
   const [addMemberOpen, setAddMemberOpen] = useState(false)
@@ -207,22 +205,6 @@ function ClientDetailPage() {
       }
     },
     [queryClient, toast],
-  )
-
-  const handleTierChange = useCallback(
-    async (tier: ClientTier | null) => {
-      setTierLoading(true)
-      try {
-        const updated = await clientsApi.setTier(clientId, tier)
-        queryClient.setQueryData(entityDetailKey("clients", clientId), updated)
-        toast.showSuccess("Tier updated")
-      } catch (err) {
-        toast.showError(normalizeErrorMessage(err, "Tier update failed"))
-      } finally {
-        setTierLoading(false)
-      }
-    },
-    [clientId, queryClient, toast],
   )
 
   const handleVerify = useCallback(async () => {
@@ -426,22 +408,20 @@ function ClientDetailPage() {
             className={`col-span-12 min-w-0 ${tab === "overview" || tab === "setup" ? "lg:col-span-8" : ""}`}
           >
             <Tabs value={tab} onValueChange={(v) => setTab(v as TabValue)}>
-              <div className="sticky top-0 z-20 -mx-3 mb-4 bg-bg/95 px-3 backdrop-blur">
-                <TabsList className="px-0">
-                  <Tab value="overview">Overview</Tab>
-                  <Tab value="activity">Activity</Tab>
-                  <Tab value="contracts" count={contractsTotal}>
-                    Contracts
-                  </Tab>
-                  <Tab value="staff" count={rosterCount}>
-                    Members
-                  </Tab>
-                  <Tab value="documents">Documents</Tab>
-                  <Tab value="utilisation">Sessions</Tab>
-                  <Tab value="contacts">Contacts</Tab>
-                  <Tab value="setup">Setup</Tab>
-                </TabsList>
-              </div>
+              <TabsList className="mb-4 px-0">
+                <Tab value="overview">Overview</Tab>
+                <Tab value="activity">Activity</Tab>
+                <Tab value="contracts" count={contractsTotal}>
+                  Contracts
+                </Tab>
+                <Tab value="staff" count={rosterCount}>
+                  Members
+                </Tab>
+                <Tab value="documents">Documents</Tab>
+                <Tab value="utilisation">Sessions</Tab>
+                <Tab value="contacts">Contacts</Tab>
+                <Tab value="setup">Setup</Tab>
+              </TabsList>
 
               <TabPanel value="overview">
                 <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-2">
@@ -560,8 +540,6 @@ function ClientDetailPage() {
                 childrenLoading={childrenQuery.isPending}
                 onAction={handleAction}
                 actionLoading={actionLoading}
-                onTierChange={handleTierChange}
-                tierLoading={tierLoading}
                 onVerify={handleVerify}
               />
             </aside>

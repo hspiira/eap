@@ -1,9 +1,11 @@
 /**
  * Webhook setup helper for the Survey detail page (Phase 3 #2).
  *
- * Renders a copy-paste-friendly summary of the webhook URL + token plus a step-by-step
- * Google Forms instruction list. The secret is generated once on create; copy it
- * immediately. Token rotation has been removed (P2 #0).
+ * The URL is derived from the mounted route rather than read off the campaign:
+ * the API returns no webhook URL, and no secret either. The secret is set when
+ * the campaign is created and is deliberately never returned again, so this
+ * says so instead of rendering an undefined value (MODULES_REPAIR_PLAN API-01;
+ * SUR-01 adds the server-generated, copy-once secret).
  */
 
 import { useState } from "react"
@@ -15,26 +17,32 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { useToast } from "@/contexts/ToastContext"
 
 interface Props {
-  webhookUrl: string
-  webhookToken: string
-  /** Disables interactive controls when the survey is closed. */
-  readOnly?: boolean
+  campaignId: string
 }
 
-export function WebhookSetupHelper({ webhookUrl, webhookToken }: Props) {
+const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || "http://localhost:8000").replace(
+  /\/$/,
+  "",
+)
+
+export function WebhookSetupHelper({ campaignId }: Props) {
+  const webhookUrl = `${API_BASE_URL}/survey-campaigns/${campaignId}/webhook`
   return (
     <section className="space-y-4 rounded-sm border border-fg/10 bg-surface p-4">
       <header>
         <h2 className="text-sm font-semibold text-fg">Webhook setup</h2>
         <p className="mt-1 text-xs text-fg/60">
-          Configure your survey provider to POST each response to this endpoint with the shared
-          secret in the <code>X-Evexia-Token</code> header.
+          Configure your survey provider to POST each response to this endpoint, signed with the
+          campaign's secret in the <code>X-Webhook-Signature</code> header.
         </p>
       </header>
 
       <div className="space-y-3">
         <CopyRow label="Webhook URL" value={webhookUrl} />
-        <CopyRow label="X-Evexia-Token" value={webhookToken} mask />
+        <p className="rounded-sm border border-fg/10 bg-bg px-3 py-2 text-xs text-fg/65">
+          The signing secret was set when this campaign was created and is not retrievable. If it
+          has been lost, create a new campaign.
+        </p>
       </div>
 
       <Collapsible className="border-t border-fg/10 pt-3">
@@ -63,12 +71,13 @@ export function WebhookSetupHelper({ webhookUrl, webhookToken }: Props) {
               Configure the bridge to <strong>POST</strong> each response as JSON to the URL above.
             </li>
             <li>
-              Add a header <strong>X-Evexia-Token</strong> with the secret above. The BE rejects any
-              request missing or mismatching this token.
+              Sign each request body with the campaign's secret and send the digest in an{" "}
+              <strong>X-Webhook-Signature</strong> header. The BE rejects any request whose
+              signature is missing or does not match.
             </li>
             <li>
-              Submit a test response. The survey status flips from <em>Draft</em> to{" "}
-              <em>Collecting</em> as soon as the first response is accepted.
+              Activate the campaign, then submit a test response. Accepted deliveries increment the
+              response count on this page.
             </li>
           </ol>
         </CollapsibleContent>

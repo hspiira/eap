@@ -45,23 +45,3 @@ class AuditActionType(str, Enum):
     VIEW = "VIEW"  # Subject to filtering/sampling
     EXPORT = "EXPORT"
     IMPORT = "IMPORT"
-
-
-class KPICategory(str, Enum):
-    """Categories for KPIs."""
-
-    UTILIZATION = "Utilization"
-    SATISFACTION = "Satisfaction"
-    OUTCOME = "Outcome"
-    OPERATIONAL = "Operational"
-
-
-class KPIMeasurementUnit(str, Enum):
-    """Units for KPI measurements."""
-
-    PERCENTAGE = "Percentage"
-    COUNT = "Count"
-    RATE = "Rate"
-    SCORE = "Score"
-    TIME = "Time"
-    CURRENCY = "Currency"

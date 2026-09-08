@@ -20,7 +20,11 @@ directory.
   DOB, gender, and phone fields are current-roster profile data.
 - Coverage is configured at the client/company or programme level; it is not a
   member form field. The legacy `eligible_members` storage still contains
-  coverage columns for compatibility and import flows.
+  coverage columns for compatibility and import flows. Since 2026-09-08
+  (product owner decision) the member API exposes the eligibility window
+  read-only: `MemberResponse` carries `coverage_start`, `coverage_end`, and the
+  derived `is_currently_eligible`. `MemberCreate` and `MemberUpdate` still do
+  not accept coverage dates.
 - Government identifiers such as NIN or passport are not represented by a
   generic `external_id`. If they become operationally necessary, add a
   restricted identity model with an explicit identifier type, access policy,
@@ -36,6 +40,8 @@ The canonical tenant-facing API is `/members`:
 
 - `GET /members` — tenant-scoped, paginated roster with client, relation,
   status, and search filters
+- `GET /members/stats` — aggregate status and account-link counts for the
+  same filter set
 - `POST /members` — create an employee or beneficiary without creating a user
 - `GET/PATCH /members/{id}` — view/update current roster data
 - `POST /members/{id}/suspend`, `/reinstate`, `/terminate` - roster lifecycle

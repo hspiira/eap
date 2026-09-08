@@ -5,12 +5,13 @@ FastAPI routes for Service operations.
 Refactored to use @transactional decorator to eliminate try/except boilerplate.
 """
 
-from fastapi import APIRouter, Depends, Query, Request, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.dependencies import (
     PageParams,
     get_audit_event_handler,
+    get_service_category_repository,
     get_service_repository,
     pagination,
 )
@@ -37,8 +38,11 @@ from app.core.authorization import (
 from app.core.database import get_db
 from app.core.security import TokenData, get_current_user
 from app.domain.entities.service import ServiceEntity
-from app.domain.enums import BaseStatus, ServiceCategory
+from app.domain.enums import BaseStatus
 from app.domain.exceptions import NotFoundError
+from app.domain.repositories.service_category_repository import (
+    ServiceCategoryRepository,
+)
 from app.domain.repositories.service_repository import ServiceRepository
 from app.domain.value_objects.core import ServiceId, TenantId
 from app.shared.decorators import readonly, transactional
@@ -46,6 +50,21 @@ from app.shared.utils.generators import generate_cuid
 from app.shared.utils.route_audit_helper import audit_change
 
 router = APIRouter(prefix="/services", tags=["services"])
+
+
+async def _assert_known_category(repo: ServiceCategoryRepository, category: str | None) -> None:
+    """Reject a category code the taxonomy does not recognise.
+
+    ``services.category`` is a foreign key, so an unknown code would fail at
+    the database with an opaque integrity error; check it here for a clean
+    404 instead.
+    """
+    if category is None:
+        return
+    if await repo.get_by_code(category) is None:
+        raise HTTPException(
+            status.HTTP_404_NOT_FOUND, detail=f"Service category {category!r} not found"
+        )
 
 
 def _to_service_response(service: ServiceEntity) -> ServiceResponse:
@@ -80,10 +99,12 @@ async def create_service(
     tenant_id: str = Query(..., description="Tenant identifier"),
     current_user: TokenData = Depends(require_same_tenant),
     service_repo: ServiceRepository = Depends(get_service_repository),
+    category_repo: ServiceCategoryRepository = Depends(get_service_category_repository),
     audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
 ):
     """Create a new service."""
+    await _assert_known_category(category_repo, data.category)
     service = await CreateServiceUseCase(service_repo).execute(
         service_id=ServiceId(generate_cuid()),
         tenant_id=TenantId(tenant_id),
@@ -203,10 +224,13 @@ async def update_service(
     current_user: TokenData = Depends(get_current_user),
     service: ServiceEntity = Depends(get_service_for_current_tenant),
     service_repo: ServiceRepository = Depends(get_service_repository),
+    category_repo: ServiceCategoryRepository = Depends(get_service_category_repository),
     audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
 ):
     """Update service basic information."""
+    if "category" in data.model_fields_set:
+        await _assert_known_category(category_repo, data.category)
     service = await UpdateServiceUseCase(service_repo).execute(
         service.id, **data.model_dump(exclude_unset=True)
     )
@@ -253,7 +277,7 @@ async def list_services(
     current_user: TokenData = Depends(require_same_tenant),
     status: BaseStatus | None = Query(None, description="Filter by service status"),
     search: str | None = Query(None, description="Search in service name"),
-    category: ServiceCategory | None = Query(None, description="Filter by category"),
+    category: str | None = Query(None, description="Filter by category"),
     is_group_service: bool | None = Query(None, description="Filter by group service"),
     pg: PageParams = Depends(pagination()),
     sort_by: str = Query("created_at", description="Field to sort by"),

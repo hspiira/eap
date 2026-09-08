@@ -170,3 +170,23 @@ class EngagementDocumentResponse(BaseModel):
     note: str | None
     created_at: datetime
     updated_at: datetime
+
+
+class ProviderDeliveryOrganisationStat(BaseModel):
+    organisation_id: str
+    organisation_name: str
+    session_count: int
+
+
+class ProviderDeliveryStatsResponse(BaseModel):
+    """Counted over the whole delivery record, not over a fetched page."""
+
+    total_sessions: int
+    first_session_at: datetime | None
+    last_session_at: datetime | None
+    by_delivery_context: dict[str, int] = Field(
+        ..., description="SessionDeliveryContext value to count, zero counts omitted"
+    )
+    by_organisation: list[ProviderDeliveryOrganisationStat] = Field(
+        ..., description="Resolved through each session's stored affiliation, busiest first"
+    )

@@ -1,23 +1,19 @@
 import { useCallback, useState } from "react"
 
 import { useQuery, useQueryClient } from "@tanstack/react-query"
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router"
-import { ArrowLeft, CalendarClock, Pencil, Wrench } from "lucide-react"
+import { createFileRoute, useNavigate } from "@tanstack/react-router"
+import { ArrowLeft, CalendarClock, Pencil } from "lucide-react"
 
 import { diagnosesApi } from "@/api/endpoints/diagnoses"
 import { membersApi } from "@/api/endpoints/members"
 import { providersApi } from "@/api/endpoints/providers"
 import { serviceSessionsApi } from "@/api/endpoints/service-sessions"
 import { servicesApi } from "@/api/endpoints/services"
-import { DetailCard, DetailGrid, DetailRow } from "@/components/common/DetailPrimitives"
 import { renderDetailState } from "@/components/common/DetailStates"
-import { EmptyState } from "@/components/common/EmptyState"
+import { EntityActivityPanel } from "@/components/common/EntityActivityPanel"
 import { PageShell } from "@/components/common/PageShell"
-import { StatusBadge } from "@/components/common/StatusBadge"
 import { Tab, TabPanel, Tabs, TabsList } from "@/components/common/Tabs"
-import { CATEGORY_LABELS } from "@/components/ServiceFormSheet"
 import { ServiceSessionFormSheet } from "@/components/ServiceSessionFormSheet"
-import { SessionDeliveryLabel } from "@/components/sessions/SessionAttribution"
 import {
   CancelDialog,
   CompleteDialog,
@@ -26,16 +22,15 @@ import {
   Hero,
   RescheduleDialog,
 } from "@/components/sessions/SessionDetailWidgets"
+import { SessionOverviewCards } from "@/components/sessions/SessionOverviewCards"
 import { Button } from "@/components/ui/button"
 import { useToast } from "@/contexts/ToastContext"
 import { useTabSearchParam } from "@/hooks/useTabSearchParam"
-import { memberLabel, nameInitials } from "@/lib/display"
 import { normalizeErrorMessage } from "@/lib/errors"
 import { formatDateTime } from "@/lib/format"
 import { entityDetailKey, useEntityDetail } from "@/lib/queries"
 import type { ServiceSession } from "@/types/entities"
 import type { LifecycleAction } from "@/utils/lifecycleConfig"
-import { getStatusLabel } from "@/utils/statusColors"
 
 export const Route = createFileRoute("/service-sessions/$sessionId")({
   component: ServiceSessionDetailPage,
@@ -88,6 +83,14 @@ function ServiceSessionDetailPage() {
     queryFn: () => providersApi.getById(providerId as string),
     enabled: !!providerId,
   })
+
+  const diagnosisLabel = (() => {
+    if (!session?.diagnosis_id) return null
+    const all = (diagnosisTreeQuery.data?.types ?? []).flatMap((t) => t.diagnoses)
+    const found = all.find((d) => d.id === session.diagnosis_id)
+    if (found) return `${found.code}: ${found.name}`
+    return diagnosisTreeQuery.isPending ? "Loading…" : session.diagnosis_id
+  })()
 
   const handleAction = useCallback(
     async (id: string, action: LifecycleAction) => {
@@ -262,140 +265,13 @@ function ServiceSessionDetailPage() {
               </TabsList>
 
               <TabPanel value="overview">
-                <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-                  <DetailCard title="Schedule">
-                    <DetailGrid>
-                      <DetailRow
-                        label="Scheduled at"
-                        value={formatDateTime(session.scheduled_at)}
-                        fullWidth
-                      />
-                      <DetailRow
-                        label="Completed at"
-                        value={session.completed_at ? formatDateTime(session.completed_at) : null}
-                        fullWidth
-                      />
-                      <DetailRow label="Status" value={<StatusBadge status={session.status} />} />
-                      <DetailRow label="Location" value={session.location} />
-                    </DetailGrid>
-                  </DetailCard>
-
-                  <DetailCard title="Notes" phiLabel="PHI · access logged">
-                    {session.notes ? (
-                      <p className="text-sm text-fg whitespace-pre-wrap">{session.notes}</p>
-                    ) : (
-                      <p className="text-xs text-fg-muted">No notes recorded.</p>
-                    )}
-                  </DetailCard>
-
-                  <DetailCard title="Subject">
-                    {member ? (
-                      <Link
-                        to="/members/$memberId"
-                        params={{ memberId: member.id }}
-                        className="flex items-center gap-2.5 rounded-sm border border-fg/10 bg-bg px-3 py-2 transition-colors hover:border-fg/25"
-                      >
-                        <span
-                          aria-hidden
-                          className="grid size-7 shrink-0 place-items-center bg-primary/10 text-[10px] font-semibold text-primary"
-                        >
-                          {nameInitials(memberLabel(member))}
-                        </span>
-                        <div className="min-w-0 flex-1">
-                          <p className="truncate text-sm font-medium text-fg">
-                            {memberLabel(member)}
-                          </p>
-                          <p className="truncate text-[11px] text-fg-muted">
-                            {getStatusLabel(member.relation)}
-                          </p>
-                        </div>
-                      </Link>
-                    ) : (
-                      <p className="text-xs text-fg-muted">Loading member…</p>
-                    )}
-                  </DetailCard>
-
-                  <DetailCard title="Service & practitioner">
-                    {service ? (
-                      <Link
-                        to="/services/$serviceId"
-                        params={{ serviceId: service.id }}
-                        className="mb-2 flex items-center gap-2.5 rounded-sm border border-fg/10 bg-bg px-3 py-2 transition-colors hover:border-fg/25"
-                      >
-                        <span
-                          aria-hidden
-                          className="grid size-7 shrink-0 place-items-center bg-primary/10 text-primary"
-                        >
-                          <Wrench className="size-3.5" />
-                        </span>
-                        <div className="min-w-0 flex-1">
-                          <p className="truncate text-sm font-medium text-fg">{service.name}</p>
-                          <p className="truncate text-[11px] text-fg-muted">
-                            {service.category ? CATEGORY_LABELS[service.category] : "-"}
-                          </p>
-                        </div>
-                      </Link>
-                    ) : null}
-                    {provider ? (
-                      <Link
-                        to="/providers/$providerId"
-                        params={{ providerId: provider.id }}
-                        className="flex items-center gap-2.5 rounded-sm border border-fg/10 bg-bg px-3 py-2 transition-colors hover:border-fg/25"
-                      >
-                        <span
-                          aria-hidden
-                          className="grid size-7 shrink-0 place-items-center bg-primary/10 text-[10px] font-semibold text-primary"
-                        >
-                          PR
-                        </span>
-                        <div className="min-w-0 flex-1">
-                          <p className="truncate text-sm font-medium text-fg">
-                            {provider.display_name}
-                          </p>
-                          <p className="truncate text-[11px] text-fg-muted">
-                            {provider.provider_profile.tier} · {provider.provider_profile.region}
-                          </p>
-                        </div>
-                      </Link>
-                    ) : session.provider_id ? (
-                      <p className="text-xs text-fg-muted">Loading practitioner…</p>
-                    ) : (
-                      <p className="text-xs text-fg-muted">No practitioner assigned.</p>
-                    )}
-                    <div className="mt-2 border-t border-fg/10 pt-2">
-                      <p className="text-[11px] font-medium tracking-wide text-fg-muted">
-                        Delivered through
-                      </p>
-                      <div className="mt-0.5">
-                        <SessionDeliveryLabel session={session} />
-                      </div>
-                    </div>
-                  </DetailCard>
-
-                  <DetailCard title="Clinical">
-                    <DetailGrid>
-                      <DetailRow
-                        label="Diagnosis"
-                        value={
-                          session.diagnosis_id
-                            ? (() => {
-                                const all = (diagnosisTreeQuery.data?.types ?? []).flatMap(
-                                  (t) => t.diagnoses,
-                                )
-                                const dx = all.find((d) => d.id === session.diagnosis_id)
-                                return dx
-                                  ? `${dx.code}: ${dx.name}`
-                                  : diagnosisTreeQuery.isPending
-                                    ? "Loading…"
-                                    : session.diagnosis_id
-                              })()
-                            : null
-                        }
-                        fullWidth
-                      />
-                    </DetailGrid>
-                  </DetailCard>
-                </div>
+                <SessionOverviewCards
+                  session={session}
+                  service={service}
+                  member={member}
+                  provider={provider}
+                  diagnosisLabel={diagnosisLabel}
+                />
               </TabPanel>
 
               <TabPanel value="feedback">
@@ -403,15 +279,16 @@ function ServiceSessionDetailPage() {
               </TabPanel>
 
               <TabPanel value="history">
-                <EmptyState
-                  title="No activity yet"
-                  description="Reschedule and lifecycle events will appear here once the audit feed is wired up."
+                <EntityActivityPanel
+                  resourceType="ServiceSession"
+                  resourceId={session.id}
+                  emptyDescription="Reschedules, completions and cancellations appear here. Clinical values are redacted from the trail."
                 />
               </TabPanel>
             </Tabs>
           </div>
 
-          <aside className="col-span-12 min-w-0 lg:col-span-4 lg:pt-14">
+          <aside className="col-span-12 min-w-0 lg:sticky lg:top-3 lg:col-span-4 lg:max-h-[80vh] lg:overflow-y-auto lg:pt-14">
             <DetailRail
               session={session}
               service={service}

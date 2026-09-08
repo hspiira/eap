@@ -8,6 +8,7 @@ from app.api.dependencies import (
     get_authorization_repository,
     get_case_repository,
     get_eap_programme_repository,
+    get_service_category_repository,
 )
 from app.api.schemas.eap_programme_schemas import (
     AuthorizationResponse,
@@ -34,6 +35,9 @@ from app.domain.repositories.eap_programme_repository import (
     AuthorizationRepository,
     EAPProgrammeRepository,
 )
+from app.domain.repositories.service_category_repository import (
+    ServiceCategoryRepository,
+)
 from app.domain.value_objects.core import (
     AuthorizationId,
     CaseId,
@@ -48,6 +52,19 @@ from app.shared.utils.generators import generate_cuid
 from app.shared.utils.route_audit_helper import audit_change
 
 router = APIRouter(tags=["eap-programmes"])
+
+
+async def _assert_known_category(repo: ServiceCategoryRepository, category: str) -> None:
+    """Reject a category code the taxonomy does not recognise.
+
+    Both ``caps`` (JSONB, unconstrained) and ``authorizations.service_category``
+    (a foreign key) would otherwise fail late: silently for the former, as an
+    opaque integrity error for the latter.
+    """
+    if await repo.get_by_code(category) is None:
+        raise HTTPException(
+            status.HTTP_404_NOT_FOUND, detail=f"Service category {category!r} not found"
+        )
 
 
 def _to_programme(p: EAPProgramme) -> EAPProgrammeResponse:
@@ -102,9 +119,12 @@ async def create_programme(
     request: Request,
     current_user: TokenData = Depends(require_clinical_scope),
     repo: EAPProgrammeRepository = Depends(get_eap_programme_repository),
+    category_repo: ServiceCategoryRepository = Depends(get_service_category_repository),
     audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
 ):
+    for cap in data.caps:
+        await _assert_known_category(category_repo, cap.service_category)
     use_case = CreateEAPProgrammeUseCase(repo)
     programme = await use_case.execute(
         programme_id=EAPProgrammeId(generate_cuid()),
@@ -180,9 +200,11 @@ async def authorize_case(
     programme_repo: EAPProgrammeRepository = Depends(get_eap_programme_repository),
     auth_repo: AuthorizationRepository = Depends(get_authorization_repository),
     case_repo: CaseRepository = Depends(get_case_repository),
+    category_repo: ServiceCategoryRepository = Depends(get_service_category_repository),
     audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
 ):
+    await _assert_known_category(category_repo, data.service_category)
     use_case = AuthorizeCaseUseCase(programme_repo, auth_repo, case_repo)
     auth = await use_case.execute(
         case_id=CaseId(case_id),

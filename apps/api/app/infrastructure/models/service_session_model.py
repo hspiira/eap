@@ -142,6 +142,11 @@ class ServiceSessionModel(CuidMixin, TenantMixin, Base, TimestampMixin, SoftDele
         String(25), nullable=True, index=True
     )
     client_id: Mapped[str] = mapped_column(String(25), nullable=False, index=True)
+    # Nullable: a session delivered outside any term, or for a client with no
+    # contract on file, still happened and is still attributed to the client.
+    contract_id: Mapped[str | None] = mapped_column(
+        ForeignKey("contracts.id"), nullable=True, index=True
+    )
     attendance: Mapped[SessionAttendance] = mapped_column(
         EnumValueType(SessionAttendance),
         nullable=False,

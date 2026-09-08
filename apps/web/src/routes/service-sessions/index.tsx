@@ -388,11 +388,11 @@ function ServiceSessionsListPage() {
                     </TableHead>
                     <TableHead className="text-fg/65">Time</TableHead>
                     <TableHead className="text-fg/65">Client</TableHead>
-                    <TableHead className="text-fg/65">Counsellor</TableHead>
-                    <TableHead className="text-fg/65">Intervention</TableHead>
+                    <TableHead className="text-fg/65">Practitioner</TableHead>
+                    <TableHead className="text-fg/65">Service</TableHead>
                     <TableHead>
                       <SortHeader field="session_type" sort={sort} onToggle={toggleSort}>
-                        Mode
+                        Mode of delivery
                       </SortHeader>
                     </TableHead>
                     <TableHead>

@@ -76,6 +76,14 @@ class EngagementResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
+class EngagementListResponse(BaseModel):
+    items: list[EngagementResponse]
+    total: int
+    page: int
+    limit: int
+    has_more: bool
+
+
 class EngagementSummaryResponse(BaseModel):
     engagement_id: str
     client_id: str

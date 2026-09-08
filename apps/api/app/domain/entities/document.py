@@ -8,7 +8,7 @@ Documents can be files or URLs, and support versioning.
 from dataclasses import dataclass, field
 from datetime import datetime
 
-from app.domain.enums import DocumentStatus, DocumentType
+from app.domain.enums import DocumentStatus
 from app.domain.events import (
     DocumentArchived,
     DocumentPublished,
@@ -26,7 +26,7 @@ class DocumentEntity:
     id: DocumentId
     tenant_id: TenantId
     name: str
-    document_type: DocumentType
+    document_type: str
     status: DocumentStatus
     version: int
     is_latest: bool

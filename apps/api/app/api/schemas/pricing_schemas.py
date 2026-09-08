@@ -7,7 +7,7 @@ from decimal import Decimal
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from app.domain.enums import PricingModel, UtilisationEventType
+from app.domain.enums import PricingModel
 
 
 class MoneySchema(BaseModel):
@@ -59,7 +59,7 @@ class InvoicePreviewResponse(BaseModel):
 
 class UtilisationEventCreate(BaseModel):
     contract_id: str
-    event_type: UtilisationEventType
+    event_type: str
     occurred_on: date
     units: int = Field(default=1, gt=0)
     service_code: str | None = None
@@ -71,7 +71,7 @@ class UtilisationEventResponse(BaseModel):
     id: str
     tenant_id: str
     contract_id: str
-    event_type: UtilisationEventType
+    event_type: str
     occurred_on: date
     units: int
     service_code: str | None

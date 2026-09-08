@@ -14,6 +14,7 @@ from app.domain.repositories.eligible_member_repository import (
     EligibleMemberClinicalLinkRepository,
     EligibleMemberRepository,
     MemberMergeResult,
+    MemberRosterStats,
 )
 from app.domain.value_objects.core import (
     ClientId,
@@ -156,6 +157,7 @@ class EligibleMemberRepositoryImpl(EligibleMemberRepository):
                     EligibleMemberModel.work_email.ilike(pattern),
                     EligibleMemberModel.personal_email.ilike(pattern),
                     EligibleMemberModel.phone.ilike(pattern),
+                    EligibleMemberModel.staff_number.ilike(pattern),
                 )
             )
         return stmt
@@ -222,6 +224,41 @@ class EligibleMemberRepositoryImpl(EligibleMemberRepository):
             search=search,
         )
         return int((await self._session.execute(stmt)).scalar_one())
+
+    async def count_by_status(
+        self,
+        tenant_id: TenantId,
+        *,
+        client_id: ClientId | None = None,
+        status: EligibilityStatus | None = None,
+        relation: MemberRelation | None = None,
+        search: str | None = None,
+    ) -> MemberRosterStats:
+        filters = {
+            "tenant_id": tenant_id,
+            "client_id": client_id,
+            "status": status,
+            "relation": relation,
+            "search": search,
+        }
+        grouped = self._filters(
+            select(EligibleMemberModel.status, func.count(EligibleMemberModel.id)).group_by(
+                EligibleMemberModel.status
+            ),
+            **filters,
+        )
+        by_status = {
+            EligibilityStatus(value): int(count)
+            for value, count in (await self._session.execute(grouped)).all()
+        }
+        with_account_stmt = self._filters(
+            select(func.count(EligibleMemberModel.id)).where(
+                EligibleMemberModel.user_id.is_not(None)
+            ),
+            **filters,
+        )
+        with_account = int((await self._session.execute(with_account_stmt)).scalar_one())
+        return MemberRosterStats(by_status=by_status, with_account=with_account)
 
     async def next_member_sequence(
         self,

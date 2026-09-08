@@ -1,16 +1,6 @@
 from enum import Enum
 
 
-class UtilisationEventType(str, Enum):
-    """Kinds of billable activity tracked against a contract."""
-
-    SESSION_DELIVERED = "SessionDelivered"
-    CARE_CALLBACK = "CareCallback"
-    SURVEY = "Survey"
-    INCIDENT_RESPONSE = "IncidentResponse"
-    CONSULTANCY_HOURS = "ConsultancyHours"
-
-
 class CareCallbackCampaignStatus(str, Enum):
     """Lifecycle of a Counsellor-Initiated Care Call campaign."""
 
@@ -38,14 +28,6 @@ class SurveyCampaignStatus(str, Enum):
     DRAFT = "Draft"
     ACTIVE = "Active"
     CLOSED = "Closed"
-
-
-class SurveySource(str, Enum):
-    """Upstream survey provider (extensible)."""
-
-    GOOGLE_FORMS = "GoogleForms"
-    TYPEFORM = "Typeform"
-    MICROSOFT_FORMS = "MicrosoftForms"
 
 
 class CaringContactChannel(str, Enum):

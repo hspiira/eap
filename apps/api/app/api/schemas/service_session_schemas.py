@@ -196,8 +196,11 @@ class ServiceSessionResponse(BaseModel):
     attendance: SessionAttendance = Field(..., description="Individual or CompanyWide")
     member_id: str | None = Field(None, description="Absent on a company-wide session")
     client_id: str = Field(..., description="The client the session is attributed to")
-    # Display names, resolved in bulk on the list path so the UI does not fetch
-    # one member per row. Absent means unresolved, not nameless.
+    contract_id: str | None = Field(
+        None, description="The contract term this session was delivered under, if any"
+    )
+    # Display names, resolved in bulk so the UI does not fetch one member per
+    # row. Absent means unresolved, not nameless.
     client_name: str | None = Field(None, description="Resolved client name")
     member_display_label: str | None = Field(None, description="Resolved member name")
     provider_display_name: str | None = Field(None, description="Resolved practitioner name")

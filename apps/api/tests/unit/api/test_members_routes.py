@@ -1,5 +1,6 @@
 import csv
 import io
+from datetime import date
 from types import SimpleNamespace
 from unittest.mock import AsyncMock
 
@@ -14,6 +15,7 @@ from app.api.dependencies import (
     get_eligible_member_clinical_link_repository,
     get_eligible_member_repository,
     get_member_next_of_kin_repository,
+    get_next_of_kin_relationship_repository,
     get_outbox_repository,
     get_service_session_repository,
     get_user_repository,
@@ -24,7 +26,8 @@ from app.core.exception_handlers import register_exception_handlers
 from app.core.security import TokenData, get_current_user
 from app.domain.entities.eligible_member import EligibleMember
 from app.domain.entities.member_next_of_kin import MemberNextOfKin
-from app.domain.enums import EligibilityStatus, MemberRelation, NextOfKinRelationship, TenantRole
+from app.domain.enums import EligibilityStatus, MemberRelation, TenantRole
+from app.domain.repositories.eligible_member_repository import MemberRosterStats
 from app.domain.value_objects.core import (
     ClientId,
     EligibleMemberId,
@@ -66,6 +69,7 @@ async def api():
         subjects=AsyncMock(),
         links=AsyncMock(),
         contacts=AsyncMock(),
+        relationships=AsyncMock(),
         outbox=AsyncMock(),
         users=AsyncMock(),
         sessions=AsyncMock(),
@@ -81,6 +85,7 @@ async def api():
         tenant_id=TenantId("t1"), name="Acme", code="ACM"
     )
     state.contacts.list_for_member.return_value = []
+    state.relationships.get_by_code.return_value = SimpleNamespace(code="Spouse")
     state.sessions.list_all.return_value = []
     state.sessions.count.return_value = 0
     state.users.get_by_id.side_effect = lambda user_id: SimpleNamespace(
@@ -95,6 +100,7 @@ async def api():
         get_clinical_subject_repository: state.subjects,
         get_eligible_member_clinical_link_repository: state.links,
         get_member_next_of_kin_repository: state.contacts,
+        get_next_of_kin_relationship_repository: state.relationships,
         get_outbox_repository: state.outbox,
         get_user_repository: state.users,
         get_service_session_repository: state.sessions,
@@ -629,6 +635,77 @@ async def test_export_fetches_every_page(api):
     assert api.members.list_all.call_args.kwargs["client_id"] == ClientId("c1")
 
 
+async def test_member_response_reports_coverage_and_eligibility(api):
+    response = await api.http.get("/members/m1")
+    assert response.status_code == 200, response.text
+    body = response.json()
+    assert body["coverage_start"] is None
+    assert body["coverage_end"] is None
+    assert body["is_currently_eligible"] is True
+
+
+@pytest.mark.parametrize(
+    "changes",
+    [
+        {"status": EligibilityStatus.TERMINATED},
+        {"coverage_end": date(2020, 1, 1)},
+        {"coverage_start": date(2999, 1, 1)},
+    ],
+)
+async def test_member_outside_coverage_or_lifecycle_is_not_eligible(api, changes):
+    api.members.get_by_id.return_value = member(**changes)
+    response = await api.http.get("/members/m1")
+    assert response.status_code == 200, response.text
+    assert response.json()["is_currently_eligible"] is False
+
+
+async def test_stats_route_is_not_swallowed_by_the_member_id_route(api):
+    api.members.count_by_status.return_value = MemberRosterStats(by_status={}, with_account=0)
+    response = await api.http.get("/members/stats")
+    assert response.status_code == 200, response.text
+    assert response.json() == {
+        "total": 0,
+        "active": 0,
+        "suspended": 0,
+        "pending": 0,
+        "terminated": 0,
+        "with_account": 0,
+    }
+    api.members.get_by_id.assert_not_awaited()
+
+
+async def test_stats_maps_counts_and_passes_the_list_filters(api):
+    api.members.count_by_status.return_value = MemberRosterStats(
+        by_status={
+            EligibilityStatus.ACTIVE: 3,
+            EligibilityStatus.SUSPENDED: 2,
+            EligibilityStatus.PENDING: 1,
+            EligibilityStatus.TERMINATED: 4,
+        },
+        with_account=5,
+    )
+    response = await api.http.get(
+        "/members/stats",
+        params={"client_id": "c1", "status": "Active", "relation": "Child", "search": "amina"},
+    )
+    assert response.status_code == 200, response.text
+    assert response.json() == {
+        "total": 10,
+        "active": 3,
+        "suspended": 2,
+        "pending": 1,
+        "terminated": 4,
+        "with_account": 5,
+    }
+    api.members.count_by_status.assert_awaited_once_with(
+        TenantId("t1"),
+        client_id=ClientId("c1"),
+        status=EligibilityStatus.ACTIVE,
+        relation=MemberRelation.CHILD,
+        search="amina",
+    )
+
+
 async def test_list_scopes_filters_and_rejects_unknown_sort(api):
     response = await api.http.get("/members", params={"client_id": "c1", "relation": "Child"})
     assert response.status_code == 200
@@ -653,7 +730,7 @@ async def test_contact_mutations_commit_with_audit(api, method, path, payload, a
         TenantId("t1"),
         EligibleMemberId("m1"),
         "Grace",
-        NextOfKinRelationship.SPOUSE,
+        "Spouse",
         "123",
         None,
         False,
@@ -677,7 +754,7 @@ async def test_contact_cannot_be_accessed_through_another_member(api, method):
         TenantId("t1"),
         EligibleMemberId("m2"),
         "Grace",
-        NextOfKinRelationship.SPOUSE,
+        "Spouse",
         "123",
         None,
         False,

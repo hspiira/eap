@@ -18,6 +18,7 @@ import {
   Users,
 } from "lucide-react"
 
+import { clientsApi } from "@/api/endpoints/clients"
 import { type MemberDuplicateCandidate, membersApi } from "@/api/endpoints/members"
 import { BulkAction } from "@/components/common/BulkAction"
 import { EmptyState } from "@/components/common/EmptyState"
@@ -54,8 +55,9 @@ import { useTableSelection } from "@/hooks/useTableSelection"
 import { normalizeErrorMessage } from "@/lib/errors"
 import { useEntityList } from "@/lib/queries"
 import { enumParam, listSearchSchema } from "@/lib/search-params"
-import type { Member } from "@/types/entities"
+import type { Member, MemberStats } from "@/types/entities"
 import { EligibilityStatus, MemberRelation } from "@/types/enums"
+import { getStatusLabel } from "@/utils/statusColors"
 
 export const Route = createFileRoute("/members/")({
   component: MembersListPage,
@@ -66,6 +68,12 @@ export const Route = createFileRoute("/members/")({
   }),
 })
 
+/**
+ * Ranked by how much of the roster actually carries the field. Phone, personal
+ * email and date of birth are filled on a handful of rows in a roster of
+ * thousands, so they live on the member's own page instead of spending a column
+ * on empty cells. Staff number earns one: it is the number an HR team quotes.
+ */
 const COLUMNS: ListColumn[] = [
   { header: "Member", sortField: "display_label" },
   {
@@ -74,11 +82,10 @@ const COLUMNS: ListColumn[] = [
     className: "text-center",
   },
   { header: "Member code", className: "text-fg/65" },
-  { header: "Relationship", sortField: "relation", className: "text-fg/65" },
+  { header: "Staff number", className: "text-fg/65" },
   { header: "Client", className: "text-fg/65" },
+  { header: "Relationship", sortField: "relation", className: "text-fg/65" },
   { header: "Work email", className: "text-fg/65" },
-  { header: "Personal email", className: "text-fg/65" },
-  { header: "Phone", className: "text-fg/65" },
 ]
 
 const RELATION_OPTIONS = [
@@ -135,6 +142,30 @@ function MembersListPage() {
     queryFn: membersApi.scanDuplicates,
     enabled: false,
   })
+  const statsFilters = {
+    search: list.activeSearch,
+    relation: searchParams.relation,
+    status: searchParams.status,
+    client_id: searchParams.client_id,
+  }
+  const statsQuery = useQuery({
+    queryKey: ["members", "stats", statsFilters],
+    queryFn: () => membersApi.getStats(statsFilters),
+  })
+  const clientsQuery = useQuery({
+    queryKey: ["clients", "roster-filter"],
+    queryFn: () => clientsApi.list({ limit: 100 }),
+  })
+  const clientOptions = [
+    { value: "all", label: "All clients" },
+    ...(clientsQuery.data?.items ?? []).map((client) => ({
+      value: client.id,
+      label: client.name,
+    })),
+  ]
+  const clientLabel =
+    clientsQuery.data?.items.find((client) => client.id === searchParams.client_id)?.name ??
+    searchParams.client_id
   const items = query.data?.items ?? []
   const selection = useTableSelection(items)
   const mergeMembers = items.filter((member) => selection.selectedIds.has(member.id))
@@ -170,6 +201,10 @@ function MembersListPage() {
   const hasFilters = Boolean(
     list.activeSearch || searchParams.relation || searchParams.status || searchParams.client_id,
   )
+  const clearFilters = () => {
+    list.setSearchInput("")
+    navigate({ search: {}, replace: true })
+  }
 
   return (
     <PageShell
@@ -222,15 +257,30 @@ function MembersListPage() {
       }
     >
       <FilterBar>
+        {searchParams.client_id ? (
+          <FilterChip
+            label={`Client: ${clientLabel}`}
+            onRemove={() => list.setFilter("client_id", undefined)}
+          />
+        ) : null}
         {searchParams.relation ? (
           <FilterChip
-            label={`Relationship: ${searchParams.relation}`}
+            label={`Relationship: ${getStatusLabel(searchParams.relation)}`}
             onRemove={() => setRelation("all")}
           />
         ) : null}
         {searchParams.status ? (
-          <FilterChip label={`Status: ${searchParams.status}`} onRemove={() => setStatus("all")} />
+          <FilterChip
+            label={`Status: ${getStatusLabel(searchParams.status)}`}
+            onRemove={() => setStatus("all")}
+          />
         ) : null}
+        <FilterTrigger
+          label="All clients"
+          value={searchParams.client_id ?? "all"}
+          options={clientOptions}
+          onChange={(value) => list.setFilter("client_id", value === "all" ? undefined : value)}
+        />
         <FilterTrigger
           label="All relationships"
           value={(searchParams.relation ?? "all") as RelationFilter}
@@ -243,13 +293,26 @@ function MembersListPage() {
           options={STATUS_OPTIONS}
           onChange={setStatus}
         />
+        {hasFilters ? (
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="h-8 shrink-0 rounded-sm px-2 text-sm text-fg-muted"
+            onClick={clearFilters}
+          >
+            Clear filters
+          </Button>
+        ) : null}
         <div className="ml-auto" />
         <FilterSearch
           value={list.searchInput}
           onChange={list.setSearchInput}
-          placeholder="Search members…"
+          placeholder="Search name, member code or staff number…"
         />
       </FilterBar>
+
+      <MemberRosterSummary stats={statsQuery.data} loading={statsQuery.isPending} />
 
       <MemberImportDialog
         open={importOpen}
@@ -401,6 +464,35 @@ function MembersListPage() {
   )
 }
 
+/** Roster counts for the current filter context, above the table. */
+function MemberRosterSummary({ stats, loading }: { stats?: MemberStats; loading: boolean }) {
+  if (loading || !stats) return null
+  // A roster of thousands is mostly one status. Counts that are zero say
+  // nothing and crowd out the ones that do.
+  const cells = [
+    { label: "On roster", value: stats.total, emphasis: true },
+    { label: "Active", value: stats.active },
+    { label: "Suspended", value: stats.suspended },
+    { label: "Pending", value: stats.pending },
+    { label: "Terminated", value: stats.terminated },
+    { label: "Portal accounts", value: stats.with_account },
+  ].filter((cell) => cell.emphasis || cell.value > 0)
+  return (
+    <div className="flex shrink-0 flex-wrap items-center gap-x-6 gap-y-1 border-b border-fg/10 bg-surface px-3 py-2">
+      {cells.map((cell) => (
+        <span key={cell.label} className="flex items-baseline gap-1.5">
+          <span
+            className={`text-sm tabular-nums ${cell.emphasis ? "font-semibold text-fg" : "font-medium text-fg/80"}`}
+          >
+            {cell.value.toLocaleString()}
+          </span>
+          <span className="text-xs text-fg-muted">{cell.label}</span>
+        </span>
+      ))}
+    </div>
+  )
+}
+
 function MemberDuplicateScanDialog({
   open,
   onOpenChange,
@@ -499,18 +591,25 @@ function MemberRow({
         <StatusBadge status={member.status} iconOnly />
       </TableCell>
       <TableCell className="py-1.5 text-xs text-fg/70">{member.employer_member_id}</TableCell>
-      <TableCell className="py-1.5 text-xs text-fg/70">{member.relation}</TableCell>
-      <TableCell className="max-w-[12rem] truncate py-1.5 text-xs text-fg/70">
-        {member.client_name ?? "-"}
+      <TableCell className="whitespace-nowrap py-1.5 text-xs text-fg/70">
+        {member.staff_number ?? "-"}
       </TableCell>
+      <TableCell className="max-w-[12rem] truncate py-1.5 text-xs text-fg/70">
+        {member.client_name ? (
+          <Link
+            to="/clients/$clientId"
+            params={{ clientId: member.client_id }}
+            className="hover:text-primary hover:underline"
+          >
+            {member.client_name}
+          </Link>
+        ) : (
+          "-"
+        )}
+      </TableCell>
+      <TableCell className="py-1.5 text-xs text-fg/70">{getStatusLabel(member.relation)}</TableCell>
       <TableCell className="max-w-[14rem] truncate py-1.5 text-xs text-fg/70">
         {member.work_email ?? "-"}
-      </TableCell>
-      <TableCell className="max-w-[14rem] truncate py-1.5 text-xs text-fg/70">
-        {member.personal_email ?? "-"}
-      </TableCell>
-      <TableCell className="whitespace-nowrap py-1.5 text-xs text-fg/70">
-        {member.phone ?? "-"}
       </TableCell>
       <TableCell className="py-1.5 text-right">
         <div className="flex items-center justify-end gap-0.5 opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100">

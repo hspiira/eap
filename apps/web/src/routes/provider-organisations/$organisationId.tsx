@@ -7,14 +7,18 @@ import { Building, Pencil } from "lucide-react"
 import { providerOrganisationsApi } from "@/api/endpoints/provider-organisations"
 import { DetailCard, DetailGrid, DetailRow } from "@/components/common/DetailPrimitives"
 import { renderDetailState } from "@/components/common/DetailStates"
+import { EntityActivityPanel } from "@/components/common/EntityActivityPanel"
 import { PageShell } from "@/components/common/PageShell"
 import { StatusBadge } from "@/components/common/StatusBadge"
+import { Tab, TabPanel, Tabs, TabsList } from "@/components/common/Tabs"
 import { OrganisationAffiliationsPanel } from "@/components/providers/OrganisationAffiliationsPanel"
+import { OrganisationReadinessRail } from "@/components/providers/OrganisationReadinessRail"
 import { ProviderOrganisationFormSheet } from "@/components/providers/ProviderOrganisationFormSheet"
 import { ReasonDialog } from "@/components/providers/ReasonDialog"
 import { Button } from "@/components/ui/button"
 import { useToast } from "@/contexts/ToastContext"
 import { useCanWrite, useCurrentRole } from "@/hooks/useCanWrite"
+import { useTabSearchParam } from "@/hooks/useTabSearchParam"
 import { normalizeErrorMessage } from "@/lib/errors"
 import { entityDetailKey, useEntityDetail } from "@/lib/queries"
 import type { ProviderOrganisation } from "@/types/entities"
@@ -23,6 +27,9 @@ import { OrganisationApprovalStatus, TenantRole } from "@/types/enums"
 export const Route = createFileRoute("/provider-organisations/$organisationId")({
   component: ProviderOrganisationDetailPage,
 })
+
+const TAB_VALUES = ["overview", "practitioners", "activity"] as const
+type TabValue = (typeof TAB_VALUES)[number]
 
 type Command = "approve" | "suspend" | "revoke" | "deactivate" | "reactivate"
 
@@ -98,6 +105,7 @@ function ProviderOrganisationDetailPage() {
   const isAdmin = useCurrentRole() === TenantRole.ADMIN
   const [editOpen, setEditOpen] = useState(false)
   const [command, setCommand] = useState<Command | null>(null)
+  const [tab, setTab] = useTabSearchParam<TabValue>(TAB_VALUES, "overview")
 
   const query = useEntityDetail<ProviderOrganisation>({
     resource: "provider-organisations",
@@ -171,46 +179,75 @@ function ProviderOrganisationDetailPage() {
         organisation={organisation}
       />
 
-      <div className="min-h-0 flex-1 overflow-auto p-5">
-        <div className="mx-auto grid max-w-5xl gap-4 lg:grid-cols-2">
-          <DetailCard title="Organisation">
-            <DetailGrid>
-              <DetailRow label="Name" value={organisation.name} />
-              <DetailRow
-                label="Registration number"
-                value={organisation.registration_number ?? ""}
-              />
-              <DetailRow label="Contact email" value={organisation.contact_email ?? ""} />
-              <DetailRow label="Contact phone" value={organisation.contact_phone ?? ""} />
-            </DetailGrid>
-          </DetailCard>
+      <div className="flex min-h-0 flex-1 overflow-y-auto bg-bg">
+        <div className="grid w-full grid-cols-12 gap-5 px-5 py-5">
+          <div className="col-span-12 min-w-0 lg:col-span-8">
+            <Tabs value={tab} onValueChange={(value) => setTab(value as TabValue)}>
+              <TabsList className="mb-5 px-0">
+                <Tab value="overview">Overview</Tab>
+                <Tab value="practitioners">Practitioners</Tab>
+                <Tab value="activity">Activity</Tab>
+              </TabsList>
 
-          <DetailCard title="Supplier approval">
-            <DetailGrid>
-              <DetailRow
-                label="Approval"
-                value={<StatusBadge status={organisation.approval_status} size="sm" />}
-              />
-              <DetailRow label="Record" value={organisation.is_active ? "Active" : "Inactive"} />
-            </DetailGrid>
-            <p className="mt-3 text-xs text-fg-muted">
-              Approval of a firm is not accreditation of a person. Each practitioner is assessed
-              independently.
-            </p>
-            <div className="mt-4 border-t border-fg/10 pt-4">
-              {isAdmin ? (
-                <ApprovalCommands organisation={organisation} onSelect={setCommand} />
-              ) : (
-                <p className="text-sm text-fg-muted">
-                  Approval and active state are changed by a tenant admin.
-                </p>
-              )}
-            </div>
-          </DetailCard>
+              <TabPanel value="overview">
+                <div className="grid gap-4 lg:grid-cols-2">
+                  <DetailCard title="Organisation">
+                    <DetailGrid>
+                      <DetailRow label="Name" value={organisation.name} />
+                      <DetailRow
+                        label="Registration number"
+                        value={organisation.registration_number ?? ""}
+                      />
+                      <DetailRow label="Contact email" value={organisation.contact_email ?? ""} />
+                      <DetailRow label="Contact phone" value={organisation.contact_phone ?? ""} />
+                    </DetailGrid>
+                  </DetailCard>
 
-          <div className="lg:col-span-2">
-            <OrganisationAffiliationsPanel organisationId={organisation.id} />
+                  <DetailCard title="Supplier approval">
+                    <DetailGrid>
+                      <DetailRow
+                        label="Approval"
+                        value={<StatusBadge status={organisation.approval_status} size="sm" />}
+                      />
+                      <DetailRow
+                        label="Record"
+                        value={organisation.is_active ? "Active" : "Inactive"}
+                      />
+                    </DetailGrid>
+                    <p className="mt-3 text-xs text-fg-muted">
+                      Approval of a firm is not accreditation of a person. Each practitioner is
+                      assessed independently.
+                    </p>
+                    <div className="mt-4 border-t border-fg/10 pt-4">
+                      {isAdmin ? (
+                        <ApprovalCommands organisation={organisation} onSelect={setCommand} />
+                      ) : (
+                        <p className="text-sm text-fg-muted">
+                          Approval and active state are changed by a tenant admin.
+                        </p>
+                      )}
+                    </div>
+                  </DetailCard>
+                </div>
+              </TabPanel>
+
+              <TabPanel value="practitioners">
+                <OrganisationAffiliationsPanel organisationId={organisation.id} />
+              </TabPanel>
+
+              <TabPanel value="activity">
+                <EntityActivityPanel
+                  resourceType="ProviderOrganisation"
+                  resourceId={organisation.id}
+                  emptyDescription="Approval changes and edits appear here once they happen."
+                />
+              </TabPanel>
+            </Tabs>
           </div>
+
+          <aside className="col-span-12 min-w-0 space-y-5 lg:sticky lg:top-3 lg:col-span-4 lg:max-h-[80vh] lg:overflow-y-auto lg:pt-14">
+            <OrganisationReadinessRail organisation={organisation} />
+          </aside>
         </div>
       </div>
 

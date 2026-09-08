@@ -7,9 +7,7 @@ import pytest
 from app.domain.entities.case import Case
 from app.domain.enums import (
     CaseClosureReason,
-    CaseReferralSource,
     CaseStatus,
-    PresentingProblem,
 )
 from app.domain.events import (
     CaseAdvanced,
@@ -39,8 +37,8 @@ def _case(
         tenant_id=TenantId("t-1"),
         clinical_subject_id=ClinicalSubjectId("cs_aaaaaaaa11111111"),
         client_id=ClientId("client-1"),
-        presenting_problem=PresentingProblem.STRESS,
-        referral_source=CaseReferralSource.SELF,
+        presenting_problem="Stress",
+        referral_source="Self",
         status=status,
         opened_at=now,
         assigned_counsellor_id=counsellor,

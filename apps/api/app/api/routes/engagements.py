@@ -1,17 +1,20 @@
 """Engagement routes (Phase 4 #D-Engagement / SAD §5.2.8)."""
 
-from fastapi import APIRouter, Depends, HTTPException, Request, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.dependencies import (
+    PageParams,
     get_audit_event_handler,
     get_engagement_repository,
+    pagination,
 )
 from app.api.schemas.engagement_schemas import (
     DeliverableCreate,
     DeliverableResponse,
     DeliverableStatusUpdate,
     EngagementCreate,
+    EngagementListResponse,
     EngagementResponse,
     EngagementSummaryResponse,
     HoursLogCreate,
@@ -32,6 +35,7 @@ from app.core.authorization import assert_same_tenant
 from app.core.database import get_db
 from app.core.security import TokenData, get_current_user
 from app.domain.entities.engagement import Deliverable, Engagement, HoursLogEntry
+from app.domain.enums import EngagementStatus
 from app.domain.repositories.engagement_repository import EngagementRepository
 from app.domain.value_objects.core import (
     ClientId,
@@ -122,17 +126,42 @@ async def create_engagement(
 
 @router.get(
     "/engagements",
-    response_model=list[EngagementResponse],
+    response_model=EngagementListResponse,
     summary="List engagements for the current tenant",
 )
 @readonly()
 async def list_engagements(
     current_user: TokenData = Depends(get_current_user),
+    client_id: str | None = Query(None),
+    engagement_status: EngagementStatus | None = Query(None, alias="status"),
+    search: str | None = Query(None),
+    pg: PageParams = Depends(pagination()),
     repo: EngagementRepository = Depends(get_engagement_repository),
     db: AsyncSession = Depends(get_db),
 ):
-    rows = await repo.list_for_tenant(TenantId(current_user.tenant_id))
-    return [_to_engagement_response(e) for e in rows]
+    tenant = TenantId(current_user.tenant_id)
+    client = ClientId(client_id) if client_id else None
+    rows = await repo.list_all(
+        tenant,
+        client_id=client,
+        status=engagement_status,
+        search=search,
+        limit=pg.limit,
+        offset=pg.offset,
+    )
+    total = await repo.count(
+        tenant,
+        client_id=client,
+        status=engagement_status,
+        search=search,
+    )
+    return EngagementListResponse(
+        items=[_to_engagement_response(e) for e in rows],
+        total=total,
+        page=pg.page,
+        limit=pg.limit,
+        has_more=pg.offset + pg.limit < total,
+    )
 
 
 @router.get(

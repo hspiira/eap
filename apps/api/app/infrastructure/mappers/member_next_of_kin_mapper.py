@@ -1,7 +1,6 @@
 """Mapper for restricted member next-of-kin contacts."""
 
 from app.domain.entities.member_next_of_kin import MemberNextOfKin
-from app.domain.enums import NextOfKinRelationship
 from app.domain.value_objects.core import EligibleMemberId, Email, MemberNextOfKinId, TenantId
 from app.infrastructure.models.member_next_of_kin_model import MemberNextOfKinModel
 from app.shared.utils.datetime import ensure_utc
@@ -15,7 +14,7 @@ class MemberNextOfKinMapper:
             tenant_id=TenantId(model.tenant_id),
             member_id=EligibleMemberId(model.member_id),
             name=model.name,
-            relationship=NextOfKinRelationship(model.relationship),
+            relationship=model.relationship,
             phone=model.phone,
             email=Email(model.email) if model.email else None,
             is_primary=model.is_primary,

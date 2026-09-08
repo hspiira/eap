@@ -7,6 +7,7 @@ import { AlertTriangle, ArrowRight, Briefcase, Clock, Plus } from "lucide-react"
 import { engagementsApi } from "@/api/endpoints/engagements"
 import { DetailCard, RailSection, Stat } from "@/components/common/DetailPrimitives"
 import { EmptyState } from "@/components/common/EmptyState"
+import { ErrorState } from "@/components/common/ErrorState"
 import { FormField } from "@/components/common/FormField"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -28,19 +29,21 @@ import {
 import { useToast } from "@/contexts/ToastContext"
 import { nameInitials } from "@/lib/display"
 import { defaultErrorMessage } from "@/lib/errors"
-import { formatDate, formatDateTime, formatDay } from "@/lib/format"
+import { formatDate, formatDay } from "@/lib/format"
 import { useEntityMutation } from "@/lib/queries"
 import { EngagementStatusPill } from "@/routes/engagements/index"
 import { useAuthStore } from "@/store/slices/authSlice"
 import type {
   Client,
+  DeliverableStatusValue,
   Engagement,
   EngagementDeliverable,
+  EngagementStatusValue,
+  EngagementSummary,
   EngagementTimeEntry,
-  EngagementTimelineEvent,
 } from "@/types/entities"
-import type { EngagementTimelineEventKind } from "@/types/enums"
-import { DeliverableStatus, type EngagementStatus } from "@/types/enums"
+import { engagementHours } from "@/types/entities"
+import { DeliverableStatus } from "@/types/enums"
 import { getStatusLabel } from "@/utils/statusColors"
 
 export function Hero({
@@ -73,7 +76,6 @@ export function Hero({
           <span className="ml-1.5 text-fg-subtle">{client.code}</span>
         </Link>
       ) : null}
-      <span className="text-xs text-fg-muted">{engagement.engagement_type}</span>
       <span className="h-4 w-px shrink-0 bg-fg/15" aria-hidden />
       <EngagementStatusPill status={engagement.status} />
       {overdue ? (
@@ -86,7 +88,12 @@ export function Hero({
   )
 }
 
-const DELIVERABLE_STATUS_OPTIONS: DeliverableStatus[] = [
+/** Query key for an engagement's summary, which every child mutation changes. */
+function summaryKey(engagementId: string): QueryKey[] {
+  return [["engagements", "summary", engagementId]]
+}
+
+const DELIVERABLE_STATUS_OPTIONS: DeliverableStatusValue[] = [
   DeliverableStatus.PENDING,
   DeliverableStatus.IN_PROGRESS,
   DeliverableStatus.DELIVERED,
@@ -96,32 +103,25 @@ const DELIVERABLE_STATUS_OPTIONS: DeliverableStatus[] = [
 export function DeliverablesPanel({
   engagementId,
   deliverables,
-  loading,
 }: {
   engagementId: string
   deliverables: EngagementDeliverable[]
-  loading: boolean
 }) {
   const { showError } = useToast()
   const [open, setOpen] = useState(false)
   const [title, setTitle] = useState("")
   const [dueDate, setDueDate] = useState("")
 
-  const deliverableInvalidateKeys: QueryKey[] = [
-    ["engagements", "deliverables", engagementId],
-    ["engagements", "timeline", engagementId],
-  ]
-
   const createMutation = useEntityMutation({
     resource: "engagements",
     mutationFn: () =>
-      engagementsApi.createDeliverable({
-        engagement_id: engagementId,
+      engagementsApi.createDeliverable(engagementId, {
         title: title.trim(),
         due_date: dueDate || null,
       }),
+    detailId: engagementId,
     skipListInvalidation: true,
-    invalidateKeys: deliverableInvalidateKeys,
+    invalidateKeys: summaryKey(engagementId),
     onSuccess: () => {
       setTitle("")
       setDueDate("")
@@ -132,10 +132,11 @@ export function DeliverablesPanel({
 
   const updateMutation = useEntityMutation({
     resource: "engagements",
-    mutationFn: ({ id, status }: { id: string; status: DeliverableStatus }) =>
+    mutationFn: ({ id, status }: { id: string; status: DeliverableStatusValue }) =>
       engagementsApi.updateDeliverableStatus(engagementId, id, status),
+    detailId: engagementId,
     skipListInvalidation: true,
-    invalidateKeys: deliverableInvalidateKeys,
+    invalidateKeys: summaryKey(engagementId),
     onError: (err) => showError(defaultErrorMessage(err)),
   })
 
@@ -190,9 +191,7 @@ export function DeliverablesPanel({
         </div>
       ) : null}
 
-      {loading ? (
-        <p className="text-sm text-fg/65">Loading…</p>
-      ) : deliverables.length === 0 ? (
+      {deliverables.length === 0 ? (
         <EmptyState
           title="No deliverables yet"
           description="Add deliverables so each artefact has its own status and can be tied to time entries."
@@ -205,7 +204,7 @@ export function DeliverablesPanel({
                 <p className="truncate text-sm font-medium text-fg">{d.title}</p>
                 <p className="truncate text-xs text-fg-muted">
                   {d.due_date ? `Due ${formatDate(d.due_date)}` : "No due date"}
-                  {d.submitted_at ? ` · submitted ${formatDate(d.submitted_at)}` : ""}
+                  {d.delivered_at ? ` · delivered ${formatDate(d.delivered_at)}` : ""}
                 </p>
               </div>
               <Select
@@ -214,7 +213,7 @@ export function DeliverablesPanel({
                 onValueChange={(v) =>
                   updateMutation.mutate({
                     id: d.id,
-                    status: v as DeliverableStatus,
+                    status: v as DeliverableStatusValue,
                   })
                 }
               >
@@ -240,11 +239,9 @@ export function DeliverablesPanel({
 export function HoursPanel({
   engagementId,
   entries,
-  loading,
 }: {
   engagementId: string
   entries: EngagementTimeEntry[]
-  loading: boolean
 }) {
   const { showError } = useToast()
   const userId = useAuthStore((s) => s.user_id) ?? "user-helen"
@@ -256,8 +253,7 @@ export function HoursPanel({
   const logMutation = useEntityMutation({
     resource: "engagements",
     mutationFn: () =>
-      engagementsApi.logTime({
-        engagement_id: engagementId,
+      engagementsApi.logTime(engagementId, {
         user_id: userId,
         logged_on: loggedOn,
         hours: Number(hours),
@@ -265,10 +261,7 @@ export function HoursPanel({
       }),
     detailId: engagementId,
     skipListInvalidation: true,
-    invalidateKeys: [
-      ["engagements", "time", engagementId],
-      ["engagements", "timeline", engagementId],
-    ],
+    invalidateKeys: summaryKey(engagementId),
     onSuccess: () => {
       setHours("")
       setNote("")
@@ -310,9 +303,7 @@ export function HoursPanel({
         </Button>
       </div>
 
-      {loading ? (
-        <p className="text-sm text-fg/65">Loading…</p>
-      ) : entries.length === 0 ? (
+      {entries.length === 0 ? (
         <EmptyState
           title="No time logged yet"
           description="Once you start logging hours, they'll roll up here and into the engagement totals."
@@ -357,87 +348,101 @@ export function HoursPanel({
   )
 }
 
-export function TimelinePanel({
-  timeline,
+/**
+ * `GET /engagements/{id}/summary` returns totals, a deliverable mix and hours
+ * by user. It is not a chronological feed, and it used to be rendered as one:
+ * the adapter cast the summary object to an event array and mapped over it
+ * (MODULES_REPAIR_PLAN ENG-01).
+ */
+export function SummaryPanel({
+  summary,
   loading,
+  error,
+  onRetry,
 }: {
-  timeline: EngagementTimelineEvent[]
+  summary: EngagementSummary | null
   loading: boolean
+  error: string | null
+  onRetry: () => void
 }) {
-  if (loading) return <p className="text-sm text-fg/65">Loading timeline…</p>
-  if (timeline.length === 0) {
+  if (loading) return <p className="text-sm text-fg/65">Computing summary…</p>
+  if (error) return <ErrorState message={error} onRetry={onRetry} />
+  if (!summary) {
     return (
       <EmptyState
-        title="No events yet"
-        description="Lifecycle changes, deliverable updates, and hours-logged events will appear here."
+        title="Summary unavailable"
+        description="The engagement summary could not be loaded."
       />
     )
   }
-  return (
-    <DetailCard title="Timeline">
-      <ul className="space-y-3">
-        {timeline.map((e) => (
-          <li key={e.id} className="flex gap-2.5 border-l-2 border-primary/40 pl-3">
-            <span
-              aria-hidden
-              className="mt-1.5 inline-block size-1.5 -translate-x-[7.5px] rounded-full bg-primary"
-            />
-            <div className="min-w-0 flex-1">
-              <p className="text-[11px] font-medium text-fg-muted">
-                {formatDateTime(e.at)} · <span>{e.actor}</span> · <TimelineKindPill kind={e.kind} />
-              </p>
-              <p className="mt-0.5 text-sm text-fg">{e.message}</p>
-            </div>
-          </li>
-        ))}
-      </ul>
-    </DetailCard>
-  )
-}
 
-export function TimelineKindPill({ kind }: { kind: EngagementTimelineEventKind }) {
+  const mix = Object.entries(summary.deliverable_mix)
+  const byUser = Object.entries(summary.hours_by_user)
   return (
-    <span className="inline-flex items-center rounded-sm border border-fg/15 bg-bg px-1 py-0 text-[10px] font-medium text-fg/75">
-      {kind}
-    </span>
+    <div className="space-y-4">
+      <DetailCard title="Totals">
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+          <Stat truncate label="Deliverables" value={String(summary.deliverable_count)} />
+          <Stat truncate label="Hours" value={summary.total_hours.toFixed(1)} />
+          <Stat truncate label="Start" value={formatDate(summary.period_start)} />
+          <Stat truncate label="End" value={formatDate(summary.period_end)} />
+        </div>
+      </DetailCard>
+
+      <DetailCard title="Deliverable mix">
+        {mix.length === 0 ? (
+          <p className="text-xs text-fg-muted">No deliverables yet.</p>
+        ) : (
+          <ul className="divide-y divide-fg/8">
+            {mix.map(([status, count]) => (
+              <li key={status} className="flex items-center justify-between gap-3 py-2 text-sm">
+                <span className="text-fg/80">{getStatusLabel(status)}</span>
+                <span className="tabular-nums text-fg">{count}</span>
+              </li>
+            ))}
+          </ul>
+        )}
+      </DetailCard>
+
+      <DetailCard title="Hours by user">
+        {byUser.length === 0 ? (
+          <p className="text-xs text-fg-muted">No time logged yet.</p>
+        ) : (
+          <ul className="divide-y divide-fg/8">
+            {byUser.map(([userId, hours]) => (
+              <li key={userId} className="flex items-center justify-between gap-3 py-2 text-sm">
+                <span className="truncate font-mono text-xs text-fg/75">{userId}</span>
+                <span className="tabular-nums text-fg">{hours.toFixed(2)}</span>
+              </li>
+            ))}
+          </ul>
+        )}
+      </DetailCard>
+    </div>
   )
 }
 
 export function DetailRail({
   engagement,
   client,
-  budgetPct,
   allowedTransitions,
   transitioning,
   onTransition,
 }: {
   engagement: Engagement
   client: Client | null
-  budgetPct: number | null
-  allowedTransitions: EngagementStatus[]
+  allowedTransitions: EngagementStatusValue[]
   transitioning: boolean
-  onTransition: (to: EngagementStatus) => void
+  onTransition: (to: EngagementStatusValue) => void
 }) {
   return (
     <div className="space-y-5">
       <RailSection title="At a glance">
         <div className="grid grid-cols-2 gap-3">
-          <Stat truncate label="Hours" value={engagement.hours_logged.toFixed(1)} />
-          <Stat
-            truncate
-            label="Budget"
-            value={engagement.budget_hours ? `${engagement.budget_hours}h` : "Open"}
-          />
-          <Stat truncate label="Util" value={budgetPct !== null ? `${budgetPct}%` : "-"} />
-          <Stat
-            truncate
-            label="Rate"
-            value={
-              engagement.hourly_rate != null
-                ? `${engagement.hourly_rate}${engagement.currency ? ` ${engagement.currency}` : ""}`
-                : "-"
-            }
-          />
+          <Stat truncate label="Hours" value={engagementHours(engagement).toFixed(1)} />
+          <Stat truncate label="Deliverables" value={String(engagement.deliverables.length)} />
+          <Stat truncate label="Start" value={formatDate(engagement.period_start)} />
+          <Stat truncate label="End" value={formatDate(engagement.period_end)} />
         </div>
       </RailSection>
 

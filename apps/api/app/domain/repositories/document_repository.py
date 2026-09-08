@@ -9,7 +9,7 @@ from abc import abstractmethod
 from collections.abc import Sequence
 
 from app.domain.entities.document import DocumentEntity
-from app.domain.enums import DocumentStatus, DocumentType
+from app.domain.enums import DocumentStatus
 from app.domain.repositories.base_repository import BaseRepository
 from app.domain.value_objects.core import DocumentId, TenantId
 
@@ -56,7 +56,7 @@ class DocumentRepository(BaseRepository[DocumentEntity, DocumentId]):
     async def list_all(
         self,
         tenant_id: TenantId,
-        document_type: DocumentType | None = None,
+        document_type: str | None = None,
         status: DocumentStatus | None = None,
         client_id: str | None = None,
         contract_id: str | None = None,
@@ -93,7 +93,7 @@ class DocumentRepository(BaseRepository[DocumentEntity, DocumentId]):
     async def count(
         self,
         tenant_id: TenantId,
-        document_type: DocumentType | None = None,
+        document_type: str | None = None,
         status: DocumentStatus | None = None,
         client_id: str | None = None,
         contract_id: str | None = None,

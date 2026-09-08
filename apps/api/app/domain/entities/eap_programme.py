@@ -9,7 +9,7 @@ runtime ledger of those caps against an open ``Case``.
 from dataclasses import dataclass, field
 from datetime import date, datetime
 
-from app.domain.enums import RelationType, ServiceCategory
+from app.domain.enums import RelationType
 from app.domain.events import DomainEvent, EAPProgrammeCreated
 from app.domain.exceptions import DomainError
 from app.domain.value_objects.core import (
@@ -47,10 +47,10 @@ class EAPProgramme:
             raise DomainError("EAPProgramme requires at least one session cap")
         if self.effective_until and self.effective_until < self.effective_from:
             raise DomainError("effective_until must be on or after effective_from")
-        seen: set[ServiceCategory] = set()
+        seen: set[str] = set()
         for cap in self.caps:
             if cap.service_category in seen:
-                raise DomainError(f"Duplicate cap for {cap.service_category.value}")
+                raise DomainError(f"Duplicate cap for {cap.service_category}")
             seen.add(cap.service_category)
         if self.created_at == self.updated_at and not self.events:
             self.events.append(
@@ -62,7 +62,7 @@ class EAPProgramme:
                 )
             )
 
-    def cap_for(self, service_category: ServiceCategory) -> ProgrammeSessionCap | None:
+    def cap_for(self, service_category: str) -> ProgrammeSessionCap | None:
         for cap in self.caps:
             if cap.service_category == service_category:
                 return cap

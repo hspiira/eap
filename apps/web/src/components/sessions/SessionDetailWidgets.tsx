@@ -18,7 +18,7 @@ import { useEffect, useMemo, useState } from "react"
 
 import { useQuery } from "@tanstack/react-query"
 import { Link } from "@tanstack/react-router"
-import { CalendarClock, CalendarRange, Lock, Users, Wrench } from "lucide-react"
+import { Building, CalendarClock, CalendarRange, Lock, Users, Wrench } from "lucide-react"
 
 import { casesApi } from "@/api/endpoints/cases"
 import { DetailCard, RailSection, Stat } from "@/components/common/DetailPrimitives"
@@ -54,10 +54,17 @@ import { normalizeErrorMessage } from "@/lib/errors"
 import { formatDateTime } from "@/lib/format"
 import type { ErrorDetail } from "@/types/api"
 import type { Member, Service, ServiceSession } from "@/types/entities"
-import { CaseStatus } from "@/types/enums"
+import { CaseStatus, SessionAttendance } from "@/types/enums"
 import type { LifecycleAction } from "@/utils/lifecycleConfig"
 import { getStatusLabel } from "@/utils/statusColors"
 
+/**
+ * The session's identity, which is not the same for both kinds of session.
+ *
+ * A company-wide session has no member to name, so it is identified by what was
+ * delivered and to which client. Naming it by date alone, and hunting for a
+ * member that does not exist, is what the page used to do.
+ */
 export function Hero({
   session,
   service,
@@ -67,58 +74,99 @@ export function Hero({
   service: Service | null
   member: Member | null
 }) {
+  const companyWide = session.attendance === SessionAttendance.COMPANY_WIDE
+  const serviceName = service?.name ?? session.service_name
+  const subject = companyWide
+    ? session.client_name
+    : member
+      ? memberLabel(member)
+      : session.member_display_label
+  const title = companyWide && serviceName && subject ? `${serviceName} at ${subject}` : serviceName
+
   return (
-    <div className="flex shrink-0 items-center gap-3 border-b border-fg/10 bg-surface px-5 py-3">
+    <div className="flex shrink-0 flex-wrap items-center gap-x-3 gap-y-1 border-b border-fg/10 bg-surface px-5 py-3">
       <span
         aria-hidden
         className="grid size-9 shrink-0 place-items-center rounded-sm bg-primary/10 text-primary"
       >
-        <CalendarClock className="size-4" />
+        {companyWide ? <Users className="size-4" /> : <CalendarClock className="size-4" />}
       </span>
       <h1 className="shrink truncate text-base font-semibold leading-tight text-fg">
-        {formatDateTime(session.scheduled_at)}
+        {title ?? formatDateTime(session.scheduled_at)}
       </h1>
-      {service ? (
-        <Link
-          to="/services/$serviceId"
-          params={{ serviceId: service.id }}
-          className="text-xs text-fg/65 hover:text-primary"
-        >
-          {service.name}
-        </Link>
+      {title ? (
+        <span className="text-xs text-fg/65">{formatDateTime(session.scheduled_at)}</span>
       ) : null}
-      {member ? (
-        <Link
-          to="/members/$memberId"
-          params={{ memberId: member.id }}
-          className="text-xs text-fg/65 hover:text-primary"
-        >
-          · {memberLabel(member)}
-        </Link>
+      {!companyWide && subject ? (
+        session.member_id ? (
+          <Link
+            to="/members/$memberId"
+            params={{ memberId: session.member_id }}
+            className="text-xs text-fg/65 hover:text-primary"
+          >
+            · {subject}
+          </Link>
+        ) : (
+          <span className="text-xs text-fg/65">· {subject}</span>
+        )
+      ) : null}
+      {session.session_type ? (
+        <span className="shrink-0 rounded-sm border border-fg/15 px-1.5 py-0.5 text-[10px] text-fg-muted">
+          {getStatusLabel(session.session_type)}
+        </span>
+      ) : null}
+      {session.category ? (
+        <span className="shrink-0 rounded-sm border border-fg/15 px-1.5 py-0.5 text-[10px] text-fg-muted">
+          {getStatusLabel(session.category)}
+        </span>
       ) : null}
       <span className="h-4 w-px shrink-0 bg-fg/15" aria-hidden />
       <StatusBadge status={session.status} />
       <span
-        title="Notes and feedback are encrypted at rest"
+        title="Notes, feedback, issue topic and partner name are encrypted at rest"
         className="ml-auto inline-flex shrink-0 items-center gap-1 rounded-sm border border-fg/15 bg-surface px-1.5 py-0.5 text-[10px] text-fg-muted"
       >
         <Lock className="size-2.5" aria-hidden />
-        Encrypted record
+        Encrypted at rest
       </span>
     </div>
   )
 }
 
+/**
+ * What this session records about itself.
+ *
+ * Duration is the session's own recorded minutes. The rail used to show the
+ * service's nominal duration, which is what a session of this kind is meant to
+ * take, not what this one took.
+ */
 export function DetailRail({ session, service, member, onAction, actionLoading }: DetailRailProps) {
+  const companyWide = session.attendance === SessionAttendance.COMPANY_WIDE
   return (
     <div className="space-y-5">
       <RailSection title="At a glance">
         <div className="grid grid-cols-2 gap-3">
+          <Stat label="Duration" value={session.duration != null ? `${session.duration}m` : "-"} />
           <Stat
-            label="Duration"
-            value={service?.duration_minutes != null ? `${service.duration_minutes}m` : "-"}
+            label={companyWide ? "Attended" : "Session no."}
+            value={
+              companyWide
+                ? session.headcount != null
+                  ? String(session.headcount)
+                  : "-"
+                : session.session_number != null
+                  ? `#${session.session_number}`
+                  : "-"
+            }
           />
-          <Stat label="Feedback" value={session.feedback ? "Received" : "-"} />
+          <Stat
+            label="Rate"
+            value={session.rate_ugx != null ? `UGX ${session.rate_ugx.toLocaleString()}` : "-"}
+          />
+          <Stat
+            label="Reschedules"
+            value={session.reschedule_count != null ? String(session.reschedule_count) : "0"}
+          />
         </div>
       </RailSection>
 
@@ -144,6 +192,24 @@ export function DetailRail({ session, service, member, onAction, actionLoading }
               </div>
             </Link>
           ) : null}
+          <Link
+            to="/clients/$clientId"
+            params={{ clientId: session.client_id }}
+            className="flex items-center gap-2.5 rounded-sm border border-fg/10 bg-surface px-3 py-2 transition-colors hover:border-fg/25"
+          >
+            <span
+              aria-hidden
+              className="grid size-7 shrink-0 place-items-center bg-primary/10 text-primary"
+            >
+              <Building className="size-3.5" />
+            </span>
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-sm font-medium text-fg">
+                {session.client_name ?? "Open client"}
+              </p>
+              <p className="truncate text-[11px] text-fg-muted">Client</p>
+            </div>
+          </Link>
           {member ? (
             <Link
               to="/members/$memberId"

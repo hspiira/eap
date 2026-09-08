@@ -12,6 +12,8 @@ from app.domain.repositories.survey_repository import (
     SurveyCampaignRepository,
     SurveyResponseRepository,
 )
+from app.domain.repositories.survey_source_repository import SurveySourceRepository
+from app.domain.services.survey_disclosure import SurveyAnswerTallyReader
 
 
 async def get_care_callback_campaign_repository(
@@ -44,6 +46,16 @@ async def get_survey_campaign_repository(
     return SurveyCampaignRepositoryImpl(db)
 
 
+async def get_survey_source_repository(
+    db: AsyncSession = Depends(get_db),
+) -> "SurveySourceRepository":
+    from app.infrastructure.repositories.survey_source_repository import (
+        SurveySourceRepositoryImpl,
+    )
+
+    return SurveySourceRepositoryImpl(db)
+
+
 async def get_survey_response_repository(
     db: AsyncSession = Depends(get_db),
 ) -> "SurveyResponseRepository":
@@ -52,6 +64,16 @@ async def get_survey_response_repository(
     )
 
     return SurveyResponseRepositoryImpl(db)
+
+
+async def get_survey_answer_tally_reader(
+    db: AsyncSession = Depends(get_db),
+) -> "SurveyAnswerTallyReader":
+    from app.infrastructure.services.survey_aggregation import (
+        SurveyAnswerTallyReaderImpl,
+    )
+
+    return SurveyAnswerTallyReaderImpl(db)
 
 
 # =============================================================================

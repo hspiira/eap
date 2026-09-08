@@ -30,7 +30,8 @@ export type ClientStatsResponse = Schemas["ClientStatsResponse"]
 export type AddressCreate = Schemas["AddressCreate"]
 export type ContactInfoCreate = Schemas["ContactInfoCreate"]
 export type ContactMethod = Schemas["ContactMethod"]
-export type ClientTier = Schemas["ClientTier"]
+/** Now a taxonomy code (service_categories-style table on the backend), not a fixed enum. */
+export type ClientTier = string
 
 // ----- Legacy person form types ---------------------------------------------
 // The Persons API is retired. These local shapes keep the dormant compatibility

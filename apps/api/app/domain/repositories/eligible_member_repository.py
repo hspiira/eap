@@ -1,5 +1,7 @@
 """Eligible-member + clinical-subject repository ports."""
 
+from dataclasses import dataclass
+
 from app.domain.entities.clinical_subject import ClinicalSubject
 from app.domain.entities.eligible_member import EligibleMember
 from app.domain.enums import EligibilityStatus, MemberRelation
@@ -13,6 +15,14 @@ from app.domain.value_objects.core import (
 )
 
 type MemberMergeResult = dict[str, int]
+
+
+@dataclass(frozen=True)
+class MemberRosterStats:
+    """Aggregate roster counts for one filtered view of the member list."""
+
+    by_status: dict[EligibilityStatus, int]
+    with_account: int
 
 
 class EligibleMemberRepository(BaseRepository[EligibleMember, EligibleMemberId]):
@@ -57,6 +67,16 @@ class EligibleMemberRepository(BaseRepository[EligibleMember, EligibleMemberId])
         relation: MemberRelation | None = None,
         search: str | None = None,
     ) -> int: ...
+
+    async def count_by_status(
+        self,
+        tenant_id: TenantId,
+        *,
+        client_id: ClientId | None = None,
+        status: EligibilityStatus | None = None,
+        relation: MemberRelation | None = None,
+        search: str | None = None,
+    ) -> MemberRosterStats: ...
 
     async def find_by_employer_member_id(
         self,

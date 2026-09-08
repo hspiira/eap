@@ -26,15 +26,27 @@ from typing import Sequence, Union
 
 from alembic import op
 
-from app.domain.enums import ServiceCategory
-
-
 revision: str = "a5b8c1d4e7f0"
 down_revision: Union[str, Sequence[str], None] = "g1h3j5l7n9p1"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
-_ALLOWED = ", ".join(f"'{e.value}'" for e in ServiceCategory)
+# Inlined rather than imported: the ServiceCategory enum this migration once
+# read no longer exists (superseded by the service_categories table in
+# migration 7af2412c8b90), and a historical migration's emitted SQL must not
+# change after the fact. These are exactly the seven values it always emitted.
+_ALLOWED = ", ".join(
+    f"'{v}'"
+    for v in (
+        "ShortTermCounselling",
+        "CrisisIntervention",
+        "SubstanceUse",
+        "ManagerConsult",
+        "WorkLifeReferral",
+        "CISMResponse",
+        "WellnessCoaching",
+    )
+)
 
 
 def upgrade() -> None:

@@ -13,10 +13,8 @@ from app.domain.entities.clinical_note import ClinicalNote
 from app.domain.entities.user import UserEntity
 from app.domain.enums import (
     AccessScope,
-    CaseReferralSource,
     CaseStatus,
     ClinicalNoteType,
-    PresentingProblem,
     UserStatus,
 )
 from app.domain.exceptions import DomainError, InvalidStateError, NotFoundError
@@ -43,8 +41,8 @@ def _case(
         tenant_id=TenantId(tenant_id),
         clinical_subject_id=ClinicalSubjectId("cs_aaaaaaaa11111111"),
         client_id=ClientId("client-1"),
-        presenting_problem=PresentingProblem.STRESS,
-        referral_source=CaseReferralSource.SELF,
+        presenting_problem="Stress",
+        referral_source="Self",
         status=status,
         opened_at=now,
         referral_notes=referral_notes,

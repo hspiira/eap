@@ -10,7 +10,7 @@ from typing import Literal
 from pydantic import BaseModel, ConfigDict, Field
 
 from app.api.schemas.base import OptionalSanitizedStr, SanitizedStr
-from app.domain.enums import BaseStatus, ClientTier, ContactMethod
+from app.domain.enums import BaseStatus, ContactMethod
 
 # === Value Object Schemas ===
 
@@ -101,7 +101,7 @@ class ClientUpdate(BaseModel):
     preferred_contact_method: ContactMethod | None = Field(
         None, description="Preferred contact method"
     )
-    tier: ClientTier | None = Field(None, description="Engagement tier (A/B/C)")
+    tier: str | None = Field(None, description="Engagement tier code")
     contact_info: ContactInfoCreate | None = Field(None, description="Contact information")
     contact_person_name: OptionalSanitizedStr = Field(
         None, description="Name of the main contact person"
@@ -113,7 +113,7 @@ class ClientUpdate(BaseModel):
 class ClientUpdateTier(BaseModel):
     """Request schema for updating client engagement tier."""
 
-    tier: ClientTier | None = Field(..., description="Engagement tier; null clears it")
+    tier: str | None = Field(..., description="Engagement tier code; null clears it")
 
 
 class ClientUpdateAliases(BaseModel):
@@ -174,7 +174,7 @@ class ClientResponse(BaseModel):
     preferred_contact_method: ContactMethod | None = Field(
         None, description="Preferred contact method"
     )
-    tier: ClientTier | None = Field(None, description="Engagement tier (A/B/C)")
+    tier: str | None = Field(None, description="Engagement tier code")
     suspension_reason: str | None = Field(None, description="Reason for suspension")
     aliases: list[str] = Field(default_factory=list, description="Alternative client names")
     is_active: bool = Field(..., description="Whether client is active")
@@ -200,7 +200,7 @@ class ClientSavedViewFilters(BaseModel):
     """Filters captured by a client list view."""
 
     search: OptionalSanitizedStr = None
-    tier: ClientTier | None = None
+    tier: str | None = None
     archived: bool = False
     parent_client_id: str | None = Field(None, max_length=25)
 

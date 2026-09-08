@@ -10,7 +10,7 @@ from datetime import datetime
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from app.api.schemas.base import OptionalSanitizedStr, SanitizedStr
-from app.domain.enums import DocumentStatus, DocumentType
+from app.domain.enums import DocumentStatus
 from app.shared.utils.document_validation import (
     validate_document_file_path,
     validate_document_file_url,
@@ -38,7 +38,7 @@ class DocumentCreate(BaseModel):
 
     name: SanitizedStr = Field(..., min_length=1, max_length=255, description="Document name")
     description: OptionalSanitizedStr = Field(None, description="Document description")
-    document_type: DocumentType = Field(..., description="Document type")
+    document_type: str = Field(..., description="Document type")
     file_path: str | None = Field(None, max_length=500, description="Path to uploaded file")
     file_url: str | None = Field(None, max_length=500, description="External URL to document")
     file_size: int | None = Field(None, ge=0, description="File size in bytes")
@@ -142,7 +142,7 @@ class DocumentResponse(BaseModel):
     tenant_id: str = Field(..., description="Tenant identifier")
     name: str = Field(..., description="Document name")
     description: str | None = Field(None, description="Document description")
-    document_type: DocumentType = Field(..., description="Document type")
+    document_type: str = Field(..., description="Document type")
     status: DocumentStatus = Field(..., description="Document status")
     version: int = Field(..., description="Version number")
     is_latest: bool = Field(..., description="Whether this is the latest version")

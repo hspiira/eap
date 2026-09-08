@@ -9,7 +9,7 @@ from abc import abstractmethod
 from collections.abc import Sequence
 
 from app.domain.entities.client import ClientEntity
-from app.domain.enums import BaseStatus, ClientTier
+from app.domain.enums import BaseStatus
 from app.domain.repositories.base_repository import BaseRepository
 from app.domain.value_objects.core import ClientId, TenantId
 
@@ -49,7 +49,7 @@ class ClientRepository(BaseRepository[ClientEntity, ClientId]):
         tenant_id: TenantId,
         status: BaseStatus | None = None,
         is_verified: bool | None = None,
-        tier: "ClientTier | None" = None,
+        tier: str | None = None,
         parent_client_id: ClientId | None = None,
         include_archived: bool = False,
         search: str | None = None,
@@ -66,7 +66,7 @@ class ClientRepository(BaseRepository[ClientEntity, ClientId]):
         tenant_id: TenantId,
         status: BaseStatus | None = None,
         is_verified: bool | None = None,
-        tier: "ClientTier | None" = None,
+        tier: str | None = None,
         parent_client_id: ClientId | None = None,
         include_archived: bool = False,
         search: str | None = None,

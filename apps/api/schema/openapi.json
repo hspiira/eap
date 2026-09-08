@@ -474,10 +474,11 @@
         "type": "object"
       },
       "AliasConfidence": {
-        "description": "How much weight a legacy alias mapping carries.\n\n``INFERRED`` is a reading of the label that nobody has signed off, so it\nstays filterable: a reviewer can list exactly the mappings still awaiting\na clinical owner without re-deriving which ones those were.",
+        "description": "How much weight a legacy alias mapping carries.\n\n``INFERRED`` is a reading of the label that nobody has signed off, so it\nstays filterable: a reviewer can list exactly the mappings still awaiting\na clinical owner without re-deriving which ones those were.\n\n``REJECTED`` records that a reviewer read the mapping and refused it. It is\nkept rather than deleted so the same spelling is not inferred again by the\nnext import: a deleted row and a row nobody has seen are indistinguishable.\nA rejected alias maps nothing, so its legacy values stay unresolved, which\nis the honest outcome when the only reading on offer is wrong.",
         "enum": [
           "confirmed",
-          "inferred"
+          "inferred",
+          "rejected"
         ],
         "title": "AliasConfidence",
         "type": "string"
@@ -513,6 +514,39 @@
           "reason"
         ],
         "title": "AmendClinicalNoteRequest",
+        "type": "object"
+      },
+      "ApprovedQuestionInput": {
+        "description": "A question whose answers may be counted in an employer-facing aggregate.\n\nAggregates report these questions and these choices only, so free text\nstays out of every employer-facing surface.",
+        "properties": {
+          "choices": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 50,
+            "minItems": 1,
+            "title": "Choices",
+            "type": "array"
+          },
+          "key": {
+            "maxLength": 255,
+            "minLength": 1,
+            "title": "Key",
+            "type": "string"
+          },
+          "label": {
+            "maxLength": 255,
+            "minLength": 1,
+            "title": "Label",
+            "type": "string"
+          }
+        },
+        "required": [
+          "key",
+          "label",
+          "choices"
+        ],
+        "title": "ApprovedQuestionInput",
         "type": "object"
       },
       "AssignCounsellorRequest": {
@@ -785,7 +819,8 @@
             "type": "string"
           },
           "service_category": {
-            "$ref": "#/components/schemas/ServiceCategory"
+            "title": "Service Category",
+            "type": "string"
           },
           "sessions_granted": {
             "title": "Sessions Granted",
@@ -866,7 +901,8 @@
             "type": "string"
           },
           "service_category": {
-            "$ref": "#/components/schemas/ServiceCategory"
+            "title": "Service Category",
+            "type": "string"
           }
         },
         "required": [
@@ -1510,18 +1546,132 @@
         "title": "CaseClosureReason",
         "type": "string"
       },
-      "CaseReferralSource": {
-        "description": "Origin of a case, drives downstream disclosure and reporting rules.",
-        "enum": [
-          "Self",
-          "InformalManager",
-          "FormalMandatory",
-          "HR",
-          "CISMFollowUp",
-          "EmployerProactive"
+      "CaseReferralSourceCreate": {
+        "properties": {
+          "code": {
+            "description": "Stable code",
+            "maxLength": 50,
+            "minLength": 1,
+            "title": "Code",
+            "type": "string"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Optional description",
+            "title": "Description"
+          },
+          "name": {
+            "description": "Display name",
+            "maxLength": 255,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          },
+          "sort_order": {
+            "default": 0,
+            "description": "Sort order",
+            "title": "Sort Order",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "code",
+          "name"
         ],
-        "title": "CaseReferralSource",
-        "type": "string"
+        "title": "CaseReferralSourceCreate",
+        "type": "object"
+      },
+      "CaseReferralSourceResponse": {
+        "properties": {
+          "code": {
+            "description": "Stable code",
+            "title": "Code",
+            "type": "string"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Optional description",
+            "title": "Description"
+          },
+          "id": {
+            "description": "Referral source identifier",
+            "title": "Id",
+            "type": "string"
+          },
+          "name": {
+            "description": "Display name",
+            "title": "Name",
+            "type": "string"
+          },
+          "sort_order": {
+            "description": "Sort order",
+            "title": "Sort Order",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "code",
+          "name",
+          "sort_order"
+        ],
+        "title": "CaseReferralSourceResponse",
+        "type": "object"
+      },
+      "CaseReferralSourceUpdate": {
+        "properties": {
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "maxLength": 255,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "sort_order": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sort Order"
+          }
+        },
+        "title": "CaseReferralSourceUpdate",
+        "type": "object"
       },
       "CaseResponse": {
         "properties": {
@@ -1617,7 +1767,8 @@
             "type": "string"
           },
           "presenting_problem": {
-            "$ref": "#/components/schemas/PresentingProblem"
+            "title": "Presenting Problem",
+            "type": "string"
           },
           "referral_notes": {
             "anyOf": [
@@ -1631,7 +1782,8 @@
             "title": "Referral Notes"
           },
           "referral_source": {
-            "$ref": "#/components/schemas/CaseReferralSource"
+            "title": "Referral Source",
+            "type": "string"
           },
           "referred_by_user_id": {
             "anyOf": [
@@ -2531,13 +2683,14 @@
           "tier": {
             "anyOf": [
               {
-                "$ref": "#/components/schemas/ClientTier"
+                "type": "string"
               },
               {
                 "type": "null"
               }
             ],
-            "description": "Engagement tier (A/B/C)"
+            "description": "Engagement tier code",
+            "title": "Tier"
           }
         },
         "required": [
@@ -2612,12 +2765,13 @@
           "tier": {
             "anyOf": [
               {
-                "$ref": "#/components/schemas/ClientTier"
+                "type": "string"
               },
               {
                 "type": "null"
               }
-            ]
+            ],
+            "title": "Tier"
           }
         },
         "title": "ClientSavedViewFilters",
@@ -3046,15 +3200,132 @@
         "title": "ClientTerminateRequest",
         "type": "object"
       },
-      "ClientTier": {
-        "description": "Joseph's A/B/C clustering for client engagement tiering.\n\nA: strategic / large account, full service mix.\nB: mid-tier, consultancy-extension candidates.\nC: long-tail / small account, lower-touch service model.",
-        "enum": [
-          "A",
-          "B",
-          "C"
+      "ClientTierCreate": {
+        "properties": {
+          "code": {
+            "description": "Stable code",
+            "maxLength": 50,
+            "minLength": 1,
+            "title": "Code",
+            "type": "string"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Optional description",
+            "title": "Description"
+          },
+          "name": {
+            "description": "Display name",
+            "maxLength": 255,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          },
+          "sort_order": {
+            "default": 0,
+            "description": "Sort order",
+            "title": "Sort Order",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "code",
+          "name"
         ],
-        "title": "ClientTier",
-        "type": "string"
+        "title": "ClientTierCreate",
+        "type": "object"
+      },
+      "ClientTierResponse": {
+        "properties": {
+          "code": {
+            "description": "Stable code",
+            "title": "Code",
+            "type": "string"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Optional description",
+            "title": "Description"
+          },
+          "id": {
+            "description": "Client tier identifier",
+            "title": "Id",
+            "type": "string"
+          },
+          "name": {
+            "description": "Display name",
+            "title": "Name",
+            "type": "string"
+          },
+          "sort_order": {
+            "description": "Sort order",
+            "title": "Sort Order",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "code",
+          "name",
+          "sort_order"
+        ],
+        "title": "ClientTierResponse",
+        "type": "object"
+      },
+      "ClientTierUpdate": {
+        "properties": {
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "maxLength": 255,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "sort_order": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sort Order"
+          }
+        },
+        "title": "ClientTierUpdate",
+        "type": "object"
       },
       "ClientType": {
         "enum": [
@@ -3141,13 +3412,14 @@
           "tier": {
             "anyOf": [
               {
-                "$ref": "#/components/schemas/ClientTier"
+                "type": "string"
               },
               {
                 "type": "null"
               }
             ],
-            "description": "Engagement tier (A/B/C)"
+            "description": "Engagement tier code",
+            "title": "Tier"
           }
         },
         "title": "ClientUpdate",
@@ -3206,13 +3478,14 @@
           "tier": {
             "anyOf": [
               {
-                "$ref": "#/components/schemas/ClientTier"
+                "type": "string"
               },
               {
                 "type": "null"
               }
             ],
-            "description": "Engagement tier; null clears it"
+            "description": "Engagement tier code; null clears it",
+            "title": "Tier"
           }
         },
         "required": [
@@ -4055,7 +4328,7 @@
         "description": "Request schema for renewing a contract.",
         "properties": {
           "new_end_date": {
-            "description": "New contract end date",
+            "description": "End date of the new term",
             "format": "date",
             "title": "New End Date",
             "type": "string"
@@ -4070,6 +4343,18 @@
               }
             ],
             "description": "New billing rate (optional)"
+          },
+          "reference": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Reference for the new term",
+            "title": "Reference"
           }
         },
         "required": [
@@ -4082,8 +4367,15 @@
         "description": "Response schema for contract.",
         "properties": {
           "billing_rate": {
-            "$ref": "#/components/schemas/app__api__schemas__contract_schemas__MoneySchema",
-            "description": "Billing rate"
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/app__api__schemas__contract_schemas__MoneySchema"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The standing charge, read from the contract's pricing. Absent on a model priced only by rate card, where no single figure stands for it."
           },
           "client_id": {
             "description": "Client identifier",
@@ -4148,6 +4440,45 @@
             "$ref": "#/components/schemas/DateRangeSchema",
             "description": "Contract period"
           },
+          "pricing_model": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PricingModel"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "How this contract is priced"
+          },
+          "recorded_status": {
+            "$ref": "#/components/schemas/ContractStatus",
+            "description": "The status stored on the row, before the lapse is derived"
+          },
+          "reference": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Human reference for the term",
+            "title": "Reference"
+          },
+          "renewed_from_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The term this one renewed",
+            "title": "Renewed From Id"
+          },
           "signed_at": {
             "anyOf": [
               {
@@ -4175,7 +4506,7 @@
           },
           "status": {
             "$ref": "#/components/schemas/ContractStatus",
-            "description": "Contract status"
+            "description": "Status as at today. A term past its end date reads Expired whether or not anybody wrote that down."
           },
           "tenant_id": {
             "description": "Tenant identifier",
@@ -4200,10 +4531,10 @@
           "tenant_id",
           "client_id",
           "period",
-          "billing_rate",
           "payment_frequency",
           "payment_status",
           "status",
+          "recorded_status",
           "is_auto_renew",
           "is_active",
           "days_remaining"
@@ -5725,8 +6056,9 @@
             "title": "Description"
           },
           "document_type": {
-            "$ref": "#/components/schemas/DocumentType",
-            "description": "Document type"
+            "description": "Document type",
+            "title": "Document Type",
+            "type": "string"
           },
           "expires_at": {
             "anyOf": [
@@ -6013,8 +6345,9 @@
             "title": "Description"
           },
           "document_type": {
-            "$ref": "#/components/schemas/DocumentType",
-            "description": "Document type"
+            "description": "Document type",
+            "title": "Document Type",
+            "type": "string"
           },
           "expires_at": {
             "anyOf": [
@@ -6234,19 +6567,132 @@
         "title": "DocumentStatus",
         "type": "string"
       },
-      "DocumentType": {
-        "description": "Types of documents in the system.",
-        "enum": [
-          "Contract",
-          "Certification",
-          "KPI Report",
-          "Feedback Summary",
-          "Billing Report",
-          "Utilization Report",
-          "Other"
+      "DocumentTypeCreate": {
+        "properties": {
+          "code": {
+            "description": "Stable type code",
+            "maxLength": 50,
+            "minLength": 1,
+            "title": "Code",
+            "type": "string"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Optional description",
+            "title": "Description"
+          },
+          "name": {
+            "description": "Display name",
+            "maxLength": 255,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          },
+          "sort_order": {
+            "default": 0,
+            "description": "Sort order",
+            "title": "Sort Order",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "code",
+          "name"
         ],
-        "title": "DocumentType",
-        "type": "string"
+        "title": "DocumentTypeCreate",
+        "type": "object"
+      },
+      "DocumentTypeResponse": {
+        "properties": {
+          "code": {
+            "description": "Stable type code",
+            "title": "Code",
+            "type": "string"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Optional description",
+            "title": "Description"
+          },
+          "id": {
+            "description": "Document type identifier",
+            "title": "Id",
+            "type": "string"
+          },
+          "name": {
+            "description": "Display name",
+            "title": "Name",
+            "type": "string"
+          },
+          "sort_order": {
+            "description": "Sort order",
+            "title": "Sort Order",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "code",
+          "name",
+          "sort_order"
+        ],
+        "title": "DocumentTypeResponse",
+        "type": "object"
+      },
+      "DocumentTypeUpdate": {
+        "properties": {
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "maxLength": 255,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "sort_order": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sort Order"
+          }
+        },
+        "title": "DocumentTypeUpdate",
+        "type": "object"
       },
       "DocumentUpdate": {
         "description": "Request schema for updating document metadata.",
@@ -6827,6 +7273,42 @@
           "state"
         ],
         "title": "EngagementDocumentUpsert",
+        "type": "object"
+      },
+      "EngagementListResponse": {
+        "properties": {
+          "has_more": {
+            "title": "Has More",
+            "type": "boolean"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/EngagementResponse"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "limit": {
+            "title": "Limit",
+            "type": "integer"
+          },
+          "page": {
+            "title": "Page",
+            "type": "integer"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "items",
+          "total",
+          "page",
+          "limit",
+          "has_more"
+        ],
+        "title": "EngagementListResponse",
         "type": "object"
       },
       "EngagementResponse": {
@@ -8114,23 +8596,140 @@
         "title": "KPIAssignmentUpdate",
         "type": "object"
       },
-      "KPICategory": {
-        "description": "Categories for KPIs.",
-        "enum": [
-          "Utilization",
-          "Satisfaction",
-          "Outcome",
-          "Operational"
+      "KPICategoryCreate": {
+        "properties": {
+          "code": {
+            "description": "Stable category code",
+            "maxLength": 50,
+            "minLength": 1,
+            "title": "Code",
+            "type": "string"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Optional description",
+            "title": "Description"
+          },
+          "name": {
+            "description": "Display name",
+            "maxLength": 255,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          },
+          "sort_order": {
+            "default": 0,
+            "description": "Sort order",
+            "title": "Sort Order",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "code",
+          "name"
         ],
-        "title": "KPICategory",
-        "type": "string"
+        "title": "KPICategoryCreate",
+        "type": "object"
+      },
+      "KPICategoryResponse": {
+        "properties": {
+          "code": {
+            "description": "Stable category code",
+            "title": "Code",
+            "type": "string"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Optional description",
+            "title": "Description"
+          },
+          "id": {
+            "description": "KPI category identifier",
+            "title": "Id",
+            "type": "string"
+          },
+          "name": {
+            "description": "Display name",
+            "title": "Name",
+            "type": "string"
+          },
+          "sort_order": {
+            "description": "Sort order",
+            "title": "Sort Order",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "code",
+          "name",
+          "sort_order"
+        ],
+        "title": "KPICategoryResponse",
+        "type": "object"
+      },
+      "KPICategoryUpdate": {
+        "properties": {
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "maxLength": 255,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "sort_order": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sort Order"
+          }
+        },
+        "title": "KPICategoryUpdate",
+        "type": "object"
       },
       "KPICreate": {
         "description": "Request schema for creating a KPI.",
         "properties": {
           "category": {
-            "$ref": "#/components/schemas/KPICategory",
-            "description": "KPI category"
+            "description": "KPI category",
+            "title": "Category",
+            "type": "string"
           },
           "description": {
             "anyOf": [
@@ -8157,8 +8756,9 @@
             "title": "Formula"
           },
           "measurement_unit": {
-            "$ref": "#/components/schemas/KPIMeasurementUnit",
-            "description": "Measurement unit"
+            "description": "Measurement unit",
+            "title": "Measurement Unit",
+            "type": "string"
           },
           "name": {
             "description": "KPI name",
@@ -8266,25 +8866,140 @@
         "title": "KPIListResponse",
         "type": "object"
       },
-      "KPIMeasurementUnit": {
-        "description": "Units for KPI measurements.",
-        "enum": [
-          "Percentage",
-          "Count",
-          "Rate",
-          "Score",
-          "Time",
-          "Currency"
+      "KPIMeasurementUnitCreate": {
+        "properties": {
+          "code": {
+            "description": "Stable code",
+            "maxLength": 50,
+            "minLength": 1,
+            "title": "Code",
+            "type": "string"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Optional description",
+            "title": "Description"
+          },
+          "name": {
+            "description": "Display name",
+            "maxLength": 255,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          },
+          "sort_order": {
+            "default": 0,
+            "description": "Sort order",
+            "title": "Sort Order",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "code",
+          "name"
         ],
-        "title": "KPIMeasurementUnit",
-        "type": "string"
+        "title": "KPIMeasurementUnitCreate",
+        "type": "object"
+      },
+      "KPIMeasurementUnitResponse": {
+        "properties": {
+          "code": {
+            "description": "Stable code",
+            "title": "Code",
+            "type": "string"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Optional description",
+            "title": "Description"
+          },
+          "id": {
+            "description": "KPI measurement unit identifier",
+            "title": "Id",
+            "type": "string"
+          },
+          "name": {
+            "description": "Display name",
+            "title": "Name",
+            "type": "string"
+          },
+          "sort_order": {
+            "description": "Sort order",
+            "title": "Sort Order",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "code",
+          "name",
+          "sort_order"
+        ],
+        "title": "KPIMeasurementUnitResponse",
+        "type": "object"
+      },
+      "KPIMeasurementUnitUpdate": {
+        "properties": {
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "maxLength": 255,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "sort_order": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sort Order"
+          }
+        },
+        "title": "KPIMeasurementUnitUpdate",
+        "type": "object"
       },
       "KPIResponse": {
         "description": "Response schema for KPI.",
         "properties": {
           "category": {
-            "$ref": "#/components/schemas/KPICategory",
-            "description": "KPI category"
+            "description": "KPI category",
+            "title": "Category",
+            "type": "string"
           },
           "created_at": {
             "description": "Creation timestamp",
@@ -8327,8 +9042,9 @@
             "type": "boolean"
           },
           "measurement_unit": {
-            "$ref": "#/components/schemas/KPIMeasurementUnit",
-            "description": "Measurement unit"
+            "description": "Measurement unit",
+            "title": "Measurement Unit",
+            "type": "string"
           },
           "name": {
             "description": "KPI name",
@@ -9457,7 +10173,8 @@
             "title": "Phone"
           },
           "relationship": {
-            "$ref": "#/components/schemas/NextOfKinRelationship"
+            "title": "Relationship",
+            "type": "string"
           }
         },
         "required": [
@@ -9513,7 +10230,8 @@
             "title": "Phone"
           },
           "relationship": {
-            "$ref": "#/components/schemas/NextOfKinRelationship"
+            "title": "Relationship",
+            "type": "string"
           },
           "tenant_id": {
             "title": "Tenant Id",
@@ -9579,7 +10297,8 @@
             "title": "Phone"
           },
           "relationship": {
-            "$ref": "#/components/schemas/NextOfKinRelationship"
+            "title": "Relationship",
+            "type": "string"
           }
         },
         "required": [
@@ -9617,6 +10336,30 @@
               }
             ],
             "title": "Client Name"
+          },
+          "coverage_end": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Coverage End"
+          },
+          "coverage_start": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Coverage Start"
           },
           "created_at": {
             "format": "date-time",
@@ -9663,6 +10406,10 @@
           "id": {
             "title": "Id",
             "type": "string"
+          },
+          "is_currently_eligible": {
+            "title": "Is Currently Eligible",
+            "type": "boolean"
           },
           "last_imported_at": {
             "anyOf": [
@@ -9812,6 +10559,7 @@
           "relation",
           "status",
           "primary_employee_member_id",
+          "is_currently_eligible",
           "work_email",
           "personal_email",
           "display_label",
@@ -9825,6 +10573,44 @@
           "updated_at"
         ],
         "title": "MemberResponse",
+        "type": "object"
+      },
+      "MemberStatsResponse": {
+        "properties": {
+          "active": {
+            "title": "Active",
+            "type": "integer"
+          },
+          "pending": {
+            "title": "Pending",
+            "type": "integer"
+          },
+          "suspended": {
+            "title": "Suspended",
+            "type": "integer"
+          },
+          "terminated": {
+            "title": "Terminated",
+            "type": "integer"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          },
+          "with_account": {
+            "title": "With Account",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "total",
+          "active",
+          "suspended",
+          "pending",
+          "terminated",
+          "with_account"
+        ],
+        "title": "MemberStatsResponse",
         "type": "object"
       },
       "MemberUpdate": {
@@ -9997,19 +10783,132 @@
         "title": "MoneyCreate",
         "type": "object"
       },
-      "NextOfKinRelationship": {
-        "description": "Relationship of a restricted emergency contact to a member.",
-        "enum": [
-          "Spouse",
-          "Child",
-          "Parent",
-          "Sibling",
-          "Guardian",
-          "Partner",
-          "Other"
+      "NextOfKinRelationshipCreate": {
+        "properties": {
+          "code": {
+            "description": "Stable code",
+            "maxLength": 50,
+            "minLength": 1,
+            "title": "Code",
+            "type": "string"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Optional description",
+            "title": "Description"
+          },
+          "name": {
+            "description": "Display name",
+            "maxLength": 255,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          },
+          "sort_order": {
+            "default": 0,
+            "description": "Sort order",
+            "title": "Sort Order",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "code",
+          "name"
         ],
-        "title": "NextOfKinRelationship",
-        "type": "string"
+        "title": "NextOfKinRelationshipCreate",
+        "type": "object"
+      },
+      "NextOfKinRelationshipResponse": {
+        "properties": {
+          "code": {
+            "description": "Stable code",
+            "title": "Code",
+            "type": "string"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Optional description",
+            "title": "Description"
+          },
+          "id": {
+            "description": "Relationship identifier",
+            "title": "Id",
+            "type": "string"
+          },
+          "name": {
+            "description": "Display name",
+            "title": "Name",
+            "type": "string"
+          },
+          "sort_order": {
+            "description": "Sort order",
+            "title": "Sort Order",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "code",
+          "name",
+          "sort_order"
+        ],
+        "title": "NextOfKinRelationshipResponse",
+        "type": "object"
+      },
+      "NextOfKinRelationshipUpdate": {
+        "properties": {
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "maxLength": 255,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "sort_order": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sort Order"
+          }
+        },
+        "title": "NextOfKinRelationshipUpdate",
+        "type": "object"
       },
       "NonCompeteCreate": {
         "properties": {
@@ -10275,7 +11174,8 @@
             "type": "string"
           },
           "presenting_problem": {
-            "$ref": "#/components/schemas/PresentingProblem"
+            "title": "Presenting Problem",
+            "type": "string"
           },
           "referral_notes": {
             "anyOf": [
@@ -10289,7 +11189,8 @@
             "title": "Referral Notes"
           },
           "referral_source": {
-            "$ref": "#/components/schemas/CaseReferralSource"
+            "title": "Referral Source",
+            "type": "string"
           }
         },
         "required": [
@@ -10941,22 +11842,132 @@
         "title": "PractitionerImportRowPreview",
         "type": "object"
       },
-      "PresentingProblem": {
-        "description": "Top-level category of the presenting concern at intake.",
-        "enum": [
-          "MentalHealth",
-          "Stress",
-          "Relationship",
-          "Work",
-          "Financial",
-          "Substance",
-          "Bereavement",
-          "Trauma",
-          "FamilyChild",
-          "Other"
+      "PresentingProblemCreate": {
+        "properties": {
+          "code": {
+            "description": "Stable code",
+            "maxLength": 50,
+            "minLength": 1,
+            "title": "Code",
+            "type": "string"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Optional description",
+            "title": "Description"
+          },
+          "name": {
+            "description": "Display name",
+            "maxLength": 255,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          },
+          "sort_order": {
+            "default": 0,
+            "description": "Sort order",
+            "title": "Sort Order",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "code",
+          "name"
         ],
-        "title": "PresentingProblem",
-        "type": "string"
+        "title": "PresentingProblemCreate",
+        "type": "object"
+      },
+      "PresentingProblemResponse": {
+        "properties": {
+          "code": {
+            "description": "Stable code",
+            "title": "Code",
+            "type": "string"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Optional description",
+            "title": "Description"
+          },
+          "id": {
+            "description": "Presenting problem identifier",
+            "title": "Id",
+            "type": "string"
+          },
+          "name": {
+            "description": "Display name",
+            "title": "Name",
+            "type": "string"
+          },
+          "sort_order": {
+            "description": "Sort order",
+            "title": "Sort Order",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "code",
+          "name",
+          "sort_order"
+        ],
+        "title": "PresentingProblemResponse",
+        "type": "object"
+      },
+      "PresentingProblemUpdate": {
+        "properties": {
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "maxLength": 255,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "sort_order": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sort Order"
+          }
+        },
+        "title": "PresentingProblemUpdate",
+        "type": "object"
       },
       "PricingModel": {
         "description": "Joseph's five contract pricing strategies (SAD \u00a75.2.3 / Meeting \u00a73).\n\nRETAINER: fixed periodic fee (e.g. monthly).\nFRAMEWORK: pre-paid deposit drawn down per session.\nFEE_FOR_SERVICE: pay per session at a rate card.\nADMIN_UTILISATION: admin-fee floor + per-session usage charges above the floor.\nVALUE_ADD: bundled into a broader Minet relationship (no per-EAP invoice).",
@@ -11002,7 +12013,8 @@
             "title": "Per Year"
           },
           "service_category": {
-            "$ref": "#/components/schemas/ServiceCategory"
+            "title": "Service Category",
+            "type": "string"
           }
         },
         "required": [
@@ -11431,6 +12443,87 @@
           "region"
         ],
         "title": "ProviderCreate",
+        "type": "object"
+      },
+      "ProviderDeliveryOrganisationStat": {
+        "properties": {
+          "organisation_id": {
+            "title": "Organisation Id",
+            "type": "string"
+          },
+          "organisation_name": {
+            "title": "Organisation Name",
+            "type": "string"
+          },
+          "session_count": {
+            "title": "Session Count",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "organisation_id",
+          "organisation_name",
+          "session_count"
+        ],
+        "title": "ProviderDeliveryOrganisationStat",
+        "type": "object"
+      },
+      "ProviderDeliveryStatsResponse": {
+        "description": "Counted over the whole delivery record, not over a fetched page.",
+        "properties": {
+          "by_delivery_context": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "description": "SessionDeliveryContext value to count, zero counts omitted",
+            "title": "By Delivery Context",
+            "type": "object"
+          },
+          "by_organisation": {
+            "description": "Resolved through each session's stored affiliation, busiest first",
+            "items": {
+              "$ref": "#/components/schemas/ProviderDeliveryOrganisationStat"
+            },
+            "title": "By Organisation",
+            "type": "array"
+          },
+          "first_session_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "First Session At"
+          },
+          "last_session_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Session At"
+          },
+          "total_sessions": {
+            "title": "Total Sessions",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "total_sessions",
+          "first_session_at",
+          "last_session_at",
+          "by_delivery_context",
+          "by_organisation"
+        ],
+        "title": "ProviderDeliveryStatsResponse",
         "type": "object"
       },
       "ProviderEligibilityResponse": {
@@ -12911,19 +14004,132 @@
         "title": "ServiceAssignmentUpdate",
         "type": "object"
       },
-      "ServiceCategory": {
-        "description": "Coarse grouping used by EAP programme caps and authorization rules.",
-        "enum": [
-          "ShortTermCounselling",
-          "CrisisIntervention",
-          "SubstanceUse",
-          "ManagerConsult",
-          "WorkLifeReferral",
-          "CISMResponse",
-          "WellnessCoaching"
+      "ServiceCategoryCreate": {
+        "properties": {
+          "code": {
+            "description": "Stable category code",
+            "maxLength": 50,
+            "minLength": 1,
+            "title": "Code",
+            "type": "string"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Optional description",
+            "title": "Description"
+          },
+          "name": {
+            "description": "Display name",
+            "maxLength": 255,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          },
+          "sort_order": {
+            "default": 0,
+            "description": "Sort order",
+            "title": "Sort Order",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "code",
+          "name"
         ],
-        "title": "ServiceCategory",
-        "type": "string"
+        "title": "ServiceCategoryCreate",
+        "type": "object"
+      },
+      "ServiceCategoryResponse": {
+        "properties": {
+          "code": {
+            "description": "Stable category code",
+            "title": "Code",
+            "type": "string"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Optional description",
+            "title": "Description"
+          },
+          "id": {
+            "description": "Service category identifier",
+            "title": "Id",
+            "type": "string"
+          },
+          "name": {
+            "description": "Display name",
+            "title": "Name",
+            "type": "string"
+          },
+          "sort_order": {
+            "description": "Sort order",
+            "title": "Sort Order",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "code",
+          "name",
+          "sort_order"
+        ],
+        "title": "ServiceCategoryResponse",
+        "type": "object"
+      },
+      "ServiceCategoryUpdate": {
+        "properties": {
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "maxLength": 255,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "sort_order": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sort Order"
+          }
+        },
+        "title": "ServiceCategoryUpdate",
+        "type": "object"
       },
       "ServiceCreate": {
         "description": "Request schema for creating a service.",
@@ -12931,13 +14137,14 @@
           "category": {
             "anyOf": [
               {
-                "$ref": "#/components/schemas/ServiceCategory"
+                "type": "string"
               },
               {
                 "type": "null"
               }
             ],
-            "description": "Programme category this service is delivered under"
+            "description": "Programme category this service is delivered under",
+            "title": "Category"
           },
           "description": {
             "anyOf": [
@@ -13046,13 +14253,14 @@
           "category": {
             "anyOf": [
               {
-                "$ref": "#/components/schemas/ServiceCategory"
+                "type": "string"
               },
               {
                 "type": "null"
               }
             ],
-            "description": "Programme category this service is delivered under"
+            "description": "Programme category this service is delivered under",
+            "title": "Category"
           },
           "description": {
             "anyOf": [
@@ -13592,6 +14800,18 @@
             "description": "Completion date and time",
             "title": "Completed At"
           },
+          "contract_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The contract term this session was delivered under, if any",
+            "title": "Contract Id"
+          },
           "delivery_context": {
             "$ref": "#/components/schemas/SessionDeliveryContext",
             "description": "How this was delivered"
@@ -14116,13 +15336,14 @@
           "category": {
             "anyOf": [
               {
-                "$ref": "#/components/schemas/ServiceCategory"
+                "type": "string"
               },
               {
                 "type": "null"
               }
             ],
-            "description": "Programme category this service is delivered under"
+            "description": "Programme category this service is delivered under",
+            "title": "Category"
           },
           "description": {
             "anyOf": [
@@ -14623,6 +15844,7 @@
         "type": "object"
       },
       "SurveyAggregateResponse": {
+        "description": "Employer-facing aggregate: approved questions only, every cell suppressed.\n\nA count below ``min_cell_size`` is returned as the ``\"<n\"`` token rather\nthan a number, including ``response_total``.",
         "properties": {
           "anonymous": {
             "title": "Anonymous",
@@ -14631,7 +15853,14 @@
           "answer_frequencies": {
             "additionalProperties": {
               "additionalProperties": {
-                "type": "integer"
+                "anyOf": [
+                  {
+                    "type": "integer"
+                  },
+                  {
+                    "type": "string"
+                  }
+                ]
               },
               "type": "object"
             },
@@ -14646,23 +15875,60 @@
             "title": "Client Id",
             "type": "string"
           },
+          "disclosure_status": {
+            "title": "Disclosure Status",
+            "type": "string"
+          },
           "generated_at": {
             "title": "Generated At",
             "type": "string"
+          },
+          "min_cell_size": {
+            "title": "Min Cell Size",
+            "type": "integer"
           },
           "name": {
             "title": "Name",
             "type": "string"
           },
+          "question_labels": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "title": "Question Labels",
+            "type": "object"
+          },
           "response_total": {
-            "title": "Response Total",
-            "type": "integer"
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "string"
+              }
+            ],
+            "title": "Response Total"
           },
           "source": {
-            "$ref": "#/components/schemas/SurveySource"
+            "title": "Source",
+            "type": "string"
           },
           "status": {
             "$ref": "#/components/schemas/SurveyCampaignStatus"
+          },
+          "unapproved_answers": {
+            "additionalProperties": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "string"
+                }
+              ]
+            },
+            "title": "Unapproved Answers",
+            "type": "object"
           }
         },
         "required": [
@@ -14672,8 +15938,12 @@
           "status",
           "source",
           "anonymous",
-          "response_total",
+          "disclosure_status",
+          "question_labels",
           "answer_frequencies",
+          "unapproved_answers",
+          "response_total",
+          "min_cell_size",
           "generated_at"
         ],
         "title": "SurveyAggregateResponse",
@@ -14685,6 +15955,13 @@
             "default": true,
             "title": "Anonymous",
             "type": "boolean"
+          },
+          "approved_questions": {
+            "items": {
+              "$ref": "#/components/schemas/ApprovedQuestionInput"
+            },
+            "title": "Approved Questions",
+            "type": "array"
           },
           "client_id": {
             "title": "Client Id",
@@ -14727,7 +16004,8 @@
             "title": "Period Start"
           },
           "source": {
-            "$ref": "#/components/schemas/SurveySource"
+            "title": "Source",
+            "type": "string"
           },
           "webhook_secret": {
             "maxLength": 255,
@@ -14744,6 +16022,42 @@
           "webhook_secret"
         ],
         "title": "SurveyCampaignCreate",
+        "type": "object"
+      },
+      "SurveyCampaignListResponse": {
+        "properties": {
+          "has_more": {
+            "title": "Has More",
+            "type": "boolean"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/SurveyCampaignResponse"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "limit": {
+            "title": "Limit",
+            "type": "integer"
+          },
+          "page": {
+            "title": "Page",
+            "type": "integer"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "items",
+          "total",
+          "page",
+          "limit",
+          "has_more"
+        ],
+        "title": "SurveyCampaignListResponse",
         "type": "object"
       },
       "SurveyCampaignResponse": {
@@ -14763,6 +16077,13 @@
           "anonymous": {
             "title": "Anonymous",
             "type": "boolean"
+          },
+          "approved_questions": {
+            "items": {
+              "$ref": "#/components/schemas/ApprovedQuestionInput"
+            },
+            "title": "Approved Questions",
+            "type": "array"
           },
           "client_id": {
             "title": "Client Id",
@@ -14830,7 +16151,8 @@
             "type": "integer"
           },
           "source": {
-            "$ref": "#/components/schemas/SurveySource"
+            "title": "Source",
+            "type": "string"
           },
           "status": {
             "$ref": "#/components/schemas/SurveyCampaignStatus"
@@ -14856,6 +16178,7 @@
           "period_start",
           "period_end",
           "anonymous",
+          "approved_questions",
           "response_count",
           "created_by",
           "activated_at",
@@ -14900,15 +16223,132 @@
         "title": "SurveyResponseAcceptedResponse",
         "type": "object"
       },
-      "SurveySource": {
-        "description": "Upstream survey provider (extensible).",
-        "enum": [
-          "GoogleForms",
-          "Typeform",
-          "MicrosoftForms"
+      "SurveySourceCreate": {
+        "properties": {
+          "code": {
+            "description": "Stable code",
+            "maxLength": 50,
+            "minLength": 1,
+            "title": "Code",
+            "type": "string"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Optional description",
+            "title": "Description"
+          },
+          "name": {
+            "description": "Display name",
+            "maxLength": 255,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          },
+          "sort_order": {
+            "default": 0,
+            "description": "Sort order",
+            "title": "Sort Order",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "code",
+          "name"
         ],
-        "title": "SurveySource",
-        "type": "string"
+        "title": "SurveySourceCreate",
+        "type": "object"
+      },
+      "SurveySourceResponse": {
+        "properties": {
+          "code": {
+            "description": "Stable code",
+            "title": "Code",
+            "type": "string"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Optional description",
+            "title": "Description"
+          },
+          "id": {
+            "description": "Survey source identifier",
+            "title": "Id",
+            "type": "string"
+          },
+          "name": {
+            "description": "Display name",
+            "title": "Name",
+            "type": "string"
+          },
+          "sort_order": {
+            "description": "Sort order",
+            "title": "Sort Order",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "code",
+          "name",
+          "sort_order"
+        ],
+        "title": "SurveySourceResponse",
+        "type": "object"
+      },
+      "SurveySourceUpdate": {
+        "properties": {
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "maxLength": 255,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "sort_order": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sort Order"
+          }
+        },
+        "title": "SurveySourceUpdate",
+        "type": "object"
       },
       "TemplateSectionInput": {
         "properties": {
@@ -16170,7 +17610,8 @@
             "type": "string"
           },
           "event_type": {
-            "$ref": "#/components/schemas/UtilisationEventType"
+            "title": "Event Type",
+            "type": "string"
           },
           "notes": {
             "anyOf": [
@@ -16268,7 +17709,8 @@
             "type": "string"
           },
           "event_type": {
-            "$ref": "#/components/schemas/UtilisationEventType"
+            "title": "Event Type",
+            "type": "string"
           },
           "id": {
             "title": "Id",
@@ -16335,17 +17777,132 @@
         "title": "UtilisationEventResponse",
         "type": "object"
       },
-      "UtilisationEventType": {
-        "description": "Kinds of billable activity tracked against a contract.",
-        "enum": [
-          "SessionDelivered",
-          "CareCallback",
-          "Survey",
-          "IncidentResponse",
-          "ConsultancyHours"
+      "UtilisationEventTypeCreate": {
+        "properties": {
+          "code": {
+            "description": "Stable code",
+            "maxLength": 50,
+            "minLength": 1,
+            "title": "Code",
+            "type": "string"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Optional description",
+            "title": "Description"
+          },
+          "name": {
+            "description": "Display name",
+            "maxLength": 255,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          },
+          "sort_order": {
+            "default": 0,
+            "description": "Sort order",
+            "title": "Sort Order",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "code",
+          "name"
         ],
-        "title": "UtilisationEventType",
-        "type": "string"
+        "title": "UtilisationEventTypeCreate",
+        "type": "object"
+      },
+      "UtilisationEventTypeResponse": {
+        "properties": {
+          "code": {
+            "description": "Stable code",
+            "title": "Code",
+            "type": "string"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Optional description",
+            "title": "Description"
+          },
+          "id": {
+            "description": "Utilisation event type identifier",
+            "title": "Id",
+            "type": "string"
+          },
+          "name": {
+            "description": "Display name",
+            "title": "Name",
+            "type": "string"
+          },
+          "sort_order": {
+            "description": "Sort order",
+            "title": "Sort Order",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "code",
+          "name",
+          "sort_order"
+        ],
+        "title": "UtilisationEventTypeResponse",
+        "type": "object"
+      },
+      "UtilisationEventTypeUpdate": {
+        "properties": {
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "maxLength": 255,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "sort_order": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sort Order"
+          }
+        },
+        "title": "UtilisationEventTypeUpdate",
+        "type": "object"
       },
       "UtilisationTierSchema": {
         "properties": {
@@ -18625,6 +20182,219 @@
         ]
       }
     },
+    "/case-referral-sources": {
+      "get": {
+        "operationId": "list_case_referral_sources_case_referral_sources_get",
+        "parameters": [
+          {
+            "description": "Return only active rows",
+            "in": "query",
+            "name": "active_only",
+            "required": false,
+            "schema": {
+              "default": true,
+              "description": "Return only active rows",
+              "title": "Active Only",
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/CaseReferralSourceResponse"
+                  },
+                  "title": "Response List Case Referral Sources Case Referral Sources Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "List case referral sources",
+        "tags": [
+          "case-referral-sources"
+        ]
+      },
+      "post": {
+        "operationId": "create_case_referral_source_case_referral_sources_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CaseReferralSourceCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CaseReferralSourceResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Create Case Referral Source",
+        "tags": [
+          "case-referral-sources"
+        ]
+      }
+    },
+    "/case-referral-sources/{source_id}": {
+      "patch": {
+        "operationId": "update_case_referral_source_case_referral_sources__source_id__patch",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "source_id",
+            "required": true,
+            "schema": {
+              "title": "Source Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CaseReferralSourceUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CaseReferralSourceResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Update Case Referral Source",
+        "tags": [
+          "case-referral-sources"
+        ]
+      }
+    },
+    "/case-referral-sources/{source_id}/active": {
+      "post": {
+        "operationId": "set_case_referral_source_active_case_referral_sources__source_id__active_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "source_id",
+            "required": true,
+            "schema": {
+              "title": "Source Id",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Activate or retire the row",
+            "in": "query",
+            "name": "is_active",
+            "required": true,
+            "schema": {
+              "description": "Activate or retire the row",
+              "title": "Is Active",
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CaseReferralSourceResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Set Case Referral Source Active",
+        "tags": [
+          "case-referral-sources"
+        ]
+      }
+    },
     "/cases": {
       "get": {
         "operationId": "list_cases_cases_get",
@@ -19504,6 +21274,219 @@
         ]
       }
     },
+    "/client-tiers": {
+      "get": {
+        "operationId": "list_client_tiers_client_tiers_get",
+        "parameters": [
+          {
+            "description": "Return only active rows",
+            "in": "query",
+            "name": "active_only",
+            "required": false,
+            "schema": {
+              "default": true,
+              "description": "Return only active rows",
+              "title": "Active Only",
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/ClientTierResponse"
+                  },
+                  "title": "Response List Client Tiers Client Tiers Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "List client tiers",
+        "tags": [
+          "client-tiers"
+        ]
+      },
+      "post": {
+        "operationId": "create_client_tier_client_tiers_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ClientTierCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClientTierResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Create Client Tier",
+        "tags": [
+          "client-tiers"
+        ]
+      }
+    },
+    "/client-tiers/{tier_id}": {
+      "patch": {
+        "operationId": "update_client_tier_client_tiers__tier_id__patch",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "tier_id",
+            "required": true,
+            "schema": {
+              "title": "Tier Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ClientTierUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClientTierResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Update Client Tier",
+        "tags": [
+          "client-tiers"
+        ]
+      }
+    },
+    "/client-tiers/{tier_id}/active": {
+      "post": {
+        "operationId": "set_client_tier_active_client_tiers__tier_id__active_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "tier_id",
+            "required": true,
+            "schema": {
+              "title": "Tier Id",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Activate or retire the row",
+            "in": "query",
+            "name": "is_active",
+            "required": true,
+            "schema": {
+              "description": "Activate or retire the row",
+              "title": "Is Active",
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClientTierResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Set Client Tier Active",
+        "tags": [
+          "client-tiers"
+        ]
+      }
+    },
     "/clients/": {
       "get": {
         "description": "List clients with filtering, searching, and pagination.",
@@ -19555,20 +21538,20 @@
             }
           },
           {
-            "description": "Filter by engagement tier (A/B/C)",
+            "description": "Filter by engagement tier code",
             "in": "query",
             "name": "tier",
             "required": false,
             "schema": {
               "anyOf": [
                 {
-                  "$ref": "#/components/schemas/ClientTier"
+                  "type": "string"
                 },
                 {
                   "type": "null"
                 }
               ],
-              "description": "Filter by engagement tier (A/B/C)",
+              "description": "Filter by engagement tier code",
               "title": "Tier"
             }
           },
@@ -19980,20 +21963,20 @@
             }
           },
           {
-            "description": "Filter by engagement tier (A/B/C)",
+            "description": "Filter by engagement tier code",
             "in": "query",
             "name": "tier",
             "required": false,
             "schema": {
               "anyOf": [
                 {
-                  "$ref": "#/components/schemas/ClientTier"
+                  "type": "string"
                 },
                 {
                   "type": "null"
                 }
               ],
-              "description": "Filter by engagement tier (A/B/C)",
+              "description": "Filter by engagement tier code",
               "title": "Tier"
             }
           },
@@ -24745,6 +26728,219 @@
         ]
       }
     },
+    "/document-types": {
+      "get": {
+        "operationId": "list_document_types_document_types_get",
+        "parameters": [
+          {
+            "description": "Return only active types",
+            "in": "query",
+            "name": "active_only",
+            "required": false,
+            "schema": {
+              "default": true,
+              "description": "Return only active types",
+              "title": "Active Only",
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/DocumentTypeResponse"
+                  },
+                  "title": "Response List Document Types Document Types Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "List document types",
+        "tags": [
+          "document-types"
+        ]
+      },
+      "post": {
+        "operationId": "create_document_type_document_types_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DocumentTypeCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DocumentTypeResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Create Document Type",
+        "tags": [
+          "document-types"
+        ]
+      }
+    },
+    "/document-types/{type_id}": {
+      "patch": {
+        "operationId": "update_document_type_document_types__type_id__patch",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "type_id",
+            "required": true,
+            "schema": {
+              "title": "Type Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DocumentTypeUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DocumentTypeResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Update Document Type",
+        "tags": [
+          "document-types"
+        ]
+      }
+    },
+    "/document-types/{type_id}/active": {
+      "post": {
+        "operationId": "set_document_type_active_document_types__type_id__active_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "type_id",
+            "required": true,
+            "schema": {
+              "title": "Type Id",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Activate or retire the type",
+            "in": "query",
+            "name": "is_active",
+            "required": true,
+            "schema": {
+              "description": "Activate or retire the type",
+              "title": "Is Active",
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DocumentTypeResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Set Document Type Active",
+        "tags": [
+          "document-types"
+        ]
+      }
+    },
     "/documents/": {
       "get": {
         "description": "List documents with filtering, searching, and pagination.",
@@ -24767,7 +26963,7 @@
             "schema": {
               "anyOf": [
                 {
-                  "$ref": "#/components/schemas/DocumentType"
+                  "type": "string"
                 },
                 {
                   "type": "null"
@@ -26233,20 +28429,103 @@
     "/engagements": {
       "get": {
         "operationId": "list_engagements_engagements_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "client_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Client Id"
+            }
+          },
+          {
+            "in": "query",
+            "name": "status",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/EngagementStatus"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Status"
+            }
+          },
+          {
+            "in": "query",
+            "name": "search",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Search"
+            }
+          },
+          {
+            "description": "Page number",
+            "in": "query",
+            "name": "page",
+            "required": false,
+            "schema": {
+              "default": 1,
+              "description": "Page number",
+              "minimum": 1,
+              "title": "Page",
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Items per page",
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 20,
+              "description": "Items per page",
+              "maximum": 100,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "content": {
               "application/json": {
                 "schema": {
-                  "items": {
-                    "$ref": "#/components/schemas/EngagementResponse"
-                  },
-                  "title": "Response List Engagements Engagements Get",
-                  "type": "array"
+                  "$ref": "#/components/schemas/EngagementListResponse"
                 }
               }
             },
             "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
           }
         },
         "security": [
@@ -27285,6 +29564,432 @@
         ]
       }
     },
+    "/kpi-categories": {
+      "get": {
+        "operationId": "list_kpi_categories_kpi_categories_get",
+        "parameters": [
+          {
+            "description": "Return only active categories",
+            "in": "query",
+            "name": "active_only",
+            "required": false,
+            "schema": {
+              "default": true,
+              "description": "Return only active categories",
+              "title": "Active Only",
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/KPICategoryResponse"
+                  },
+                  "title": "Response List Kpi Categories Kpi Categories Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "List KPI categories",
+        "tags": [
+          "kpi-categories"
+        ]
+      },
+      "post": {
+        "operationId": "create_kpi_category_kpi_categories_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/KPICategoryCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KPICategoryResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Create Kpi Category",
+        "tags": [
+          "kpi-categories"
+        ]
+      }
+    },
+    "/kpi-categories/{category_id}": {
+      "patch": {
+        "operationId": "update_kpi_category_kpi_categories__category_id__patch",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "category_id",
+            "required": true,
+            "schema": {
+              "title": "Category Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/KPICategoryUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KPICategoryResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Update Kpi Category",
+        "tags": [
+          "kpi-categories"
+        ]
+      }
+    },
+    "/kpi-categories/{category_id}/active": {
+      "post": {
+        "operationId": "set_kpi_category_active_kpi_categories__category_id__active_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "category_id",
+            "required": true,
+            "schema": {
+              "title": "Category Id",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Activate or retire the category",
+            "in": "query",
+            "name": "is_active",
+            "required": true,
+            "schema": {
+              "description": "Activate or retire the category",
+              "title": "Is Active",
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KPICategoryResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Set Kpi Category Active",
+        "tags": [
+          "kpi-categories"
+        ]
+      }
+    },
+    "/kpi-measurement-units": {
+      "get": {
+        "operationId": "list_kpi_measurement_units_kpi_measurement_units_get",
+        "parameters": [
+          {
+            "description": "Return only active rows",
+            "in": "query",
+            "name": "active_only",
+            "required": false,
+            "schema": {
+              "default": true,
+              "description": "Return only active rows",
+              "title": "Active Only",
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/KPIMeasurementUnitResponse"
+                  },
+                  "title": "Response List Kpi Measurement Units Kpi Measurement Units Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "List KPI measurement units",
+        "tags": [
+          "kpi-measurement-units"
+        ]
+      },
+      "post": {
+        "operationId": "create_kpi_measurement_unit_kpi_measurement_units_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/KPIMeasurementUnitCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KPIMeasurementUnitResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Create Kpi Measurement Unit",
+        "tags": [
+          "kpi-measurement-units"
+        ]
+      }
+    },
+    "/kpi-measurement-units/{unit_id}": {
+      "patch": {
+        "operationId": "update_kpi_measurement_unit_kpi_measurement_units__unit_id__patch",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "unit_id",
+            "required": true,
+            "schema": {
+              "title": "Unit Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/KPIMeasurementUnitUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KPIMeasurementUnitResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Update Kpi Measurement Unit",
+        "tags": [
+          "kpi-measurement-units"
+        ]
+      }
+    },
+    "/kpi-measurement-units/{unit_id}/active": {
+      "post": {
+        "operationId": "set_kpi_measurement_unit_active_kpi_measurement_units__unit_id__active_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "unit_id",
+            "required": true,
+            "schema": {
+              "title": "Unit Id",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Activate or retire the row",
+            "in": "query",
+            "name": "is_active",
+            "required": true,
+            "schema": {
+              "description": "Activate or retire the row",
+              "title": "Is Active",
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KPIMeasurementUnitResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Set Kpi Measurement Unit Active",
+        "tags": [
+          "kpi-measurement-units"
+        ]
+      }
+    },
     "/kpis/": {
       "get": {
         "description": "List KPIs with filtering, searching, and pagination.",
@@ -27307,7 +30012,7 @@
             "schema": {
               "anyOf": [
                 {
-                  "$ref": "#/components/schemas/KPICategory"
+                  "type": "string"
                 },
                 {
                   "type": "null"
@@ -28822,6 +31527,109 @@
         ]
       }
     },
+    "/members/stats": {
+      "get": {
+        "description": "Aggregate counts for the roster summary strip, honouring the list filters.",
+        "operationId": "member_stats_members_stats_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "client_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Client Id"
+            }
+          },
+          {
+            "in": "query",
+            "name": "status",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/EligibilityStatus"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Status"
+            }
+          },
+          {
+            "in": "query",
+            "name": "relation",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/MemberRelation"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Relation"
+            }
+          },
+          {
+            "in": "query",
+            "name": "search",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Search"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MemberStatsResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Member Stats",
+        "tags": [
+          "members"
+        ]
+      }
+    },
     "/members/{member_id}": {
       "get": {
         "operationId": "get_member_members__member_id__get",
@@ -29565,6 +32373,219 @@
         "summary": "Terminate Member",
         "tags": [
           "members"
+        ]
+      }
+    },
+    "/next-of-kin-relationships": {
+      "get": {
+        "operationId": "list_next_of_kin_relationships_next_of_kin_relationships_get",
+        "parameters": [
+          {
+            "description": "Return only active rows",
+            "in": "query",
+            "name": "active_only",
+            "required": false,
+            "schema": {
+              "default": true,
+              "description": "Return only active rows",
+              "title": "Active Only",
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/NextOfKinRelationshipResponse"
+                  },
+                  "title": "Response List Next Of Kin Relationships Next Of Kin Relationships Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "List NOK relationships",
+        "tags": [
+          "next-of-kin-relationships"
+        ]
+      },
+      "post": {
+        "operationId": "create_next_of_kin_relationship_next_of_kin_relationships_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NextOfKinRelationshipCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NextOfKinRelationshipResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Create Next Of Kin Relationship",
+        "tags": [
+          "next-of-kin-relationships"
+        ]
+      }
+    },
+    "/next-of-kin-relationships/{relationship_id}": {
+      "patch": {
+        "operationId": "update_next_of_kin_relationship_next_of_kin_relationships__relationship_id__patch",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "relationship_id",
+            "required": true,
+            "schema": {
+              "title": "Relationship Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NextOfKinRelationshipUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NextOfKinRelationshipResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Update Next Of Kin Relationship",
+        "tags": [
+          "next-of-kin-relationships"
+        ]
+      }
+    },
+    "/next-of-kin-relationships/{relationship_id}/active": {
+      "post": {
+        "operationId": "set_next_of_kin_relationship_active_next_of_kin_relationships__relationship_id__active_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "relationship_id",
+            "required": true,
+            "schema": {
+              "title": "Relationship Id",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Activate or retire the row",
+            "in": "query",
+            "name": "is_active",
+            "required": true,
+            "schema": {
+              "description": "Activate or retire the row",
+              "title": "Is Active",
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NextOfKinRelationshipResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Set Next Of Kin Relationship Active",
+        "tags": [
+          "next-of-kin-relationships"
         ]
       }
     },
@@ -30796,6 +33817,219 @@
         "summary": "List Rows",
         "tags": [
           "practitioner-imports"
+        ]
+      }
+    },
+    "/presenting-problems": {
+      "get": {
+        "operationId": "list_presenting_problems_presenting_problems_get",
+        "parameters": [
+          {
+            "description": "Return only active rows",
+            "in": "query",
+            "name": "active_only",
+            "required": false,
+            "schema": {
+              "default": true,
+              "description": "Return only active rows",
+              "title": "Active Only",
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/PresentingProblemResponse"
+                  },
+                  "title": "Response List Presenting Problems Presenting Problems Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "List presenting problems",
+        "tags": [
+          "presenting-problems"
+        ]
+      },
+      "post": {
+        "operationId": "create_presenting_problem_presenting_problems_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PresentingProblemCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PresentingProblemResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Create Presenting Problem",
+        "tags": [
+          "presenting-problems"
+        ]
+      }
+    },
+    "/presenting-problems/{problem_id}": {
+      "patch": {
+        "operationId": "update_presenting_problem_presenting_problems__problem_id__patch",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "problem_id",
+            "required": true,
+            "schema": {
+              "title": "Problem Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PresentingProblemUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PresentingProblemResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Update Presenting Problem",
+        "tags": [
+          "presenting-problems"
+        ]
+      }
+    },
+    "/presenting-problems/{problem_id}/active": {
+      "post": {
+        "operationId": "set_presenting_problem_active_presenting_problems__problem_id__active_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "problem_id",
+            "required": true,
+            "schema": {
+              "title": "Problem Id",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Activate or retire the row",
+            "in": "query",
+            "name": "is_active",
+            "required": true,
+            "schema": {
+              "description": "Activate or retire the row",
+              "title": "Is Active",
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PresentingProblemResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Set Presenting Problem Active",
+        "tags": [
+          "presenting-problems"
         ]
       }
     },
@@ -32592,6 +35826,54 @@
         ]
       }
     },
+    "/providers/{provider_id}/delivery-stats": {
+      "get": {
+        "description": "The organisation breakdown follows each session's stored affiliation.\n\nA practitioner who moves between organisations keeps the attribution their\npast sessions were delivered under (decision 2).",
+        "operationId": "get_delivery_stats_providers__provider_id__delivery_stats_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "provider_id",
+            "required": true,
+            "schema": {
+              "title": "Provider Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProviderDeliveryStatsResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Counts over one practitioner's whole delivery record",
+        "tags": [
+          "providers"
+        ]
+      }
+    },
     "/providers/{provider_id}/engagement-documents": {
       "get": {
         "operationId": "list_engagement_documents_providers__provider_id__engagement_documents_get",
@@ -33797,6 +37079,219 @@
         ]
       }
     },
+    "/service-categories": {
+      "get": {
+        "operationId": "list_service_categories_service_categories_get",
+        "parameters": [
+          {
+            "description": "Return only active categories",
+            "in": "query",
+            "name": "active_only",
+            "required": false,
+            "schema": {
+              "default": true,
+              "description": "Return only active categories",
+              "title": "Active Only",
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/ServiceCategoryResponse"
+                  },
+                  "title": "Response List Service Categories Service Categories Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "List service categories",
+        "tags": [
+          "service-categories"
+        ]
+      },
+      "post": {
+        "operationId": "create_service_category_service_categories_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ServiceCategoryCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ServiceCategoryResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Create Service Category",
+        "tags": [
+          "service-categories"
+        ]
+      }
+    },
+    "/service-categories/{category_id}": {
+      "patch": {
+        "operationId": "update_service_category_service_categories__category_id__patch",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "category_id",
+            "required": true,
+            "schema": {
+              "title": "Category Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ServiceCategoryUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ServiceCategoryResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Update Service Category",
+        "tags": [
+          "service-categories"
+        ]
+      }
+    },
+    "/service-categories/{category_id}/active": {
+      "post": {
+        "operationId": "set_service_category_active_service_categories__category_id__active_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "category_id",
+            "required": true,
+            "schema": {
+              "title": "Category Id",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Activate or retire the category",
+            "in": "query",
+            "name": "is_active",
+            "required": true,
+            "schema": {
+              "description": "Activate or retire the category",
+              "title": "Is Active",
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ServiceCategoryResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Set Service Category Active",
+        "tags": [
+          "service-categories"
+        ]
+      }
+    },
     "/service-sessions/": {
       "get": {
         "description": "List service sessions with filtering, searching, and pagination.",
@@ -34855,7 +38350,7 @@
             "schema": {
               "anyOf": [
                 {
-                  "$ref": "#/components/schemas/ServiceCategory"
+                  "type": "string"
                 },
                 {
                   "type": "null"
@@ -35879,20 +39374,103 @@
     "/survey-campaigns": {
       "get": {
         "operationId": "list_survey_campaigns_survey_campaigns_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "client_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Client Id"
+            }
+          },
+          {
+            "in": "query",
+            "name": "status",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/SurveyCampaignStatus"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Status"
+            }
+          },
+          {
+            "in": "query",
+            "name": "search",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Search"
+            }
+          },
+          {
+            "description": "Page number",
+            "in": "query",
+            "name": "page",
+            "required": false,
+            "schema": {
+              "default": 1,
+              "description": "Page number",
+              "minimum": 1,
+              "title": "Page",
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Items per page",
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 20,
+              "description": "Items per page",
+              "maximum": 100,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "content": {
               "application/json": {
                 "schema": {
-                  "items": {
-                    "$ref": "#/components/schemas/SurveyCampaignResponse"
-                  },
-                  "title": "Response List Survey Campaigns Survey Campaigns Get",
-                  "type": "array"
+                  "$ref": "#/components/schemas/SurveyCampaignListResponse"
                 }
               }
             },
             "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
           }
         },
         "security": [
@@ -36198,6 +39776,219 @@
         "summary": "Public webhook ingestion (HMAC-verified, idempotent)",
         "tags": [
           "surveys"
+        ]
+      }
+    },
+    "/survey-sources": {
+      "get": {
+        "operationId": "list_survey_sources_survey_sources_get",
+        "parameters": [
+          {
+            "description": "Return only active rows",
+            "in": "query",
+            "name": "active_only",
+            "required": false,
+            "schema": {
+              "default": true,
+              "description": "Return only active rows",
+              "title": "Active Only",
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/SurveySourceResponse"
+                  },
+                  "title": "Response List Survey Sources Survey Sources Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "List survey sources",
+        "tags": [
+          "survey-sources"
+        ]
+      },
+      "post": {
+        "operationId": "create_survey_source_survey_sources_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SurveySourceCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SurveySourceResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Create Survey Source",
+        "tags": [
+          "survey-sources"
+        ]
+      }
+    },
+    "/survey-sources/{source_id}": {
+      "patch": {
+        "operationId": "update_survey_source_survey_sources__source_id__patch",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "source_id",
+            "required": true,
+            "schema": {
+              "title": "Source Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SurveySourceUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SurveySourceResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Update Survey Source",
+        "tags": [
+          "survey-sources"
+        ]
+      }
+    },
+    "/survey-sources/{source_id}/active": {
+      "post": {
+        "operationId": "set_survey_source_active_survey_sources__source_id__active_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "source_id",
+            "required": true,
+            "schema": {
+              "title": "Source Id",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Activate or retire the row",
+            "in": "query",
+            "name": "is_active",
+            "required": true,
+            "schema": {
+              "description": "Activate or retire the row",
+              "title": "Is Active",
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SurveySourceResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Set Survey Source Active",
+        "tags": [
+          "survey-sources"
         ]
       }
     },
@@ -38204,6 +41995,219 @@
         "summary": "Verify user email",
         "tags": [
           "users"
+        ]
+      }
+    },
+    "/utilisation-event-types": {
+      "get": {
+        "operationId": "list_utilisation_event_types_utilisation_event_types_get",
+        "parameters": [
+          {
+            "description": "Return only active rows",
+            "in": "query",
+            "name": "active_only",
+            "required": false,
+            "schema": {
+              "default": true,
+              "description": "Return only active rows",
+              "title": "Active Only",
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/UtilisationEventTypeResponse"
+                  },
+                  "title": "Response List Utilisation Event Types Utilisation Event Types Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "List utilisation event types",
+        "tags": [
+          "utilisation-event-types"
+        ]
+      },
+      "post": {
+        "operationId": "create_utilisation_event_type_utilisation_event_types_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UtilisationEventTypeCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UtilisationEventTypeResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Create Utilisation Event Type",
+        "tags": [
+          "utilisation-event-types"
+        ]
+      }
+    },
+    "/utilisation-event-types/{event_type_id}": {
+      "patch": {
+        "operationId": "update_utilisation_event_type_utilisation_event_types__event_type_id__patch",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "event_type_id",
+            "required": true,
+            "schema": {
+              "title": "Event Type Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UtilisationEventTypeUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UtilisationEventTypeResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Update Utilisation Event Type",
+        "tags": [
+          "utilisation-event-types"
+        ]
+      }
+    },
+    "/utilisation-event-types/{event_type_id}/active": {
+      "post": {
+        "operationId": "set_utilisation_event_type_active_utilisation_event_types__event_type_id__active_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "event_type_id",
+            "required": true,
+            "schema": {
+              "title": "Event Type Id",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Activate or retire the row",
+            "in": "query",
+            "name": "is_active",
+            "required": true,
+            "schema": {
+              "description": "Activate or retire the row",
+              "title": "Is Active",
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UtilisationEventTypeResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Set Utilisation Event Type Active",
+        "tags": [
+          "utilisation-event-types"
         ]
       }
     },

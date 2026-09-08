@@ -14,6 +14,7 @@ from app.domain.events import (
     CrisisFlagRaised,
     DomainEvent,
     OutreachAssigned,
+    OutreachAttemptRecorded,
     OutreachCompleted,
 )
 from app.domain.exceptions import DomainError, InvalidStateError
@@ -108,6 +109,11 @@ class OutreachRecord:
         if self.status == OutreachStatus.ASSIGNED:
             self.status = OutreachStatus.CONTACTED
         self.updated_at = now
+        self.events.append(
+            OutreachAttemptRecorded(
+                occurred_at=now, outreach_id=self.id, attempt_number=self.contact_attempts
+            )
+        )
 
     def record_triage(
         self,

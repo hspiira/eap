@@ -1,15 +1,17 @@
 """SQLAlchemy implementations of the Survey repositories (Phase 3 #D-Survey)."""
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.domain.entities.survey_campaign import SurveyCampaign
 from app.domain.entities.survey_response import SurveyResponse
+from app.domain.enums import SurveyCampaignStatus
 from app.domain.repositories.survey_repository import (
     SurveyCampaignRepository,
     SurveyResponseRepository,
 )
 from app.domain.value_objects.core import (
+    ClientId,
     SurveyCampaignId,
     SurveyResponseId,
     TenantId,
@@ -17,6 +19,7 @@ from app.domain.value_objects.core import (
 from app.infrastructure.mappers.survey_mapper import (
     SurveyCampaignMapper,
     SurveyResponseMapper,
+    approved_questions_to_json,
 )
 from app.infrastructure.models.survey_model import (
     SurveyCampaignModel,
@@ -45,6 +48,7 @@ class SurveyCampaignRepositoryImpl(SurveyCampaignRepository):
             existing.period_start = entity.period_start
             existing.period_end = entity.period_end
             existing.anonymous = entity.anonymous
+            existing.approved_questions = approved_questions_to_json(entity.approved_questions)
             existing.response_count = entity.response_count
             existing.activated_at = entity.activated_at
             existing.closed_at = entity.closed_at
@@ -73,6 +77,66 @@ class SurveyCampaignRepositoryImpl(SurveyCampaignRepository):
         )
         rows = (await self._session.execute(stmt)).scalars().all()
         return [SurveyCampaignMapper.to_entity(r) for r in rows]
+
+    @staticmethod
+    def _filters(
+        stmt,
+        *,
+        tenant_id: TenantId,
+        client_id: ClientId | None,
+        status: SurveyCampaignStatus | None,
+        search: str | None,
+    ):
+        stmt = stmt.where(SurveyCampaignModel.tenant_id == tenant_id.value)
+        if client_id:
+            stmt = stmt.where(SurveyCampaignModel.client_id == client_id.value)
+        if status:
+            stmt = stmt.where(SurveyCampaignModel.status == status)
+        if search and search.strip():
+            stmt = stmt.where(SurveyCampaignModel.name.ilike(f"%{search.strip()}%"))
+        return stmt
+
+    async def list_all(
+        self,
+        tenant_id: TenantId,
+        *,
+        client_id: ClientId | None = None,
+        status: SurveyCampaignStatus | None = None,
+        search: str | None = None,
+        limit: int = 100,
+        offset: int = 0,
+    ) -> list[SurveyCampaign]:
+        stmt = self._filters(
+            select(SurveyCampaignModel),
+            tenant_id=tenant_id,
+            client_id=client_id,
+            status=status,
+            search=search,
+        )
+        stmt = (
+            stmt.order_by(SurveyCampaignModel.created_at.desc(), SurveyCampaignModel.id.asc())
+            .limit(limit)
+            .offset(offset)
+        )
+        rows = (await self._session.execute(stmt)).scalars().all()
+        return [SurveyCampaignMapper.to_entity(r) for r in rows]
+
+    async def count(
+        self,
+        tenant_id: TenantId,
+        *,
+        client_id: ClientId | None = None,
+        status: SurveyCampaignStatus | None = None,
+        search: str | None = None,
+    ) -> int:
+        stmt = self._filters(
+            select(func.count(SurveyCampaignModel.id)),
+            tenant_id=tenant_id,
+            client_id=client_id,
+            status=status,
+            search=search,
+        )
+        return int((await self._session.execute(stmt)).scalar() or 0)
 
 
 class SurveyResponseRepositoryImpl(SurveyResponseRepository):

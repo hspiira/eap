@@ -6,6 +6,7 @@ Refactored to use @transactional decorator to eliminate try/except boilerplate.
 """
 
 import decimal
+from copy import deepcopy
 from datetime import date
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
@@ -34,6 +35,7 @@ from app.api.schemas.contract_schemas import (
 from app.application.use_cases.contract_use_cases import (
     CreateContractUseCase,
     GetContractUseCase,
+    RenewContractUseCase,
     UpdateContractUseCase,
 )
 from app.application.use_cases.transitions import (
@@ -71,20 +73,24 @@ def _to_contract_response(contract: ContractEntity) -> ContractResponse:
         end_date=contract.period.end_date,
     )
 
-    billing_rate = MoneySchema(
-        amount=str(contract.billing_rate.amount),
-        currency=contract.billing_rate.currency,
-    )
-
+    headline = contract.headline_rate()
     return ContractResponse(
         id=contract.id.value,
         tenant_id=contract.tenant_id.value,
         client_id=contract.client_id.value,
+        reference=contract.reference,
+        renewed_from_id=contract.renewed_from_id.value if contract.renewed_from_id else None,
         period=period,
-        billing_rate=billing_rate,
+        billing_rate=(
+            MoneySchema(amount=str(headline.amount), currency=headline.currency)
+            if headline
+            else None
+        ),
+        pricing_model=contract.pricing_model,
         payment_frequency=contract.payment_frequency,
         payment_status=contract.payment_status,
-        status=contract.status,
+        status=contract.effective_status(),
+        recorded_status=contract.status,
         is_auto_renew=contract.is_auto_renew,
         last_billing_date=contract.last_billing_date,
         next_billing_date=contract.next_billing_date,
@@ -208,16 +214,17 @@ async def renew_contract(
             currency=body.new_rate.currency,
         )
 
-    use_case = TransitionUseCase(contract_repo, "Contract")
-    contract = await use_case.execute(
+    # Returns the successor: the caller asked for the next term and needs its
+    # id. The predecessor is reachable through the response's renewed_from_id.
+    successor = await RenewContractUseCase(contract_repo).execute(
         contract.id,
-        ContractTransition.RENEW,
+        successor_id=ContractId(generate_cuid()),
         new_end_date=body.new_end_date,
         new_rate=new_rate,
-        tenant_id=current_user.tenant_id,
+        reference=body.reference,
     )
-    await audit_change(contract, audit_handler, current_user, request)
-    return _to_contract_response(contract)
+    await audit_change(successor, audit_handler, current_user, request)
+    return _to_contract_response(successor)
 
 
 @router.post(
@@ -316,13 +323,15 @@ async def update_contract(
             currency=data.billing_rate.currency,
         )
 
+    # The use case mutates in place, so the audit diff needs the state first.
+    before = deepcopy(contract)
     contract = await UpdateContractUseCase(contract_repo).execute(
         contract.id,
         billing_rate=billing_rate,
         payment_frequency=data.payment_frequency,
         is_auto_renew=data.is_auto_renew,
     )
-    await audit_change(contract, audit_handler, current_user, request)
+    await audit_change(contract, audit_handler, current_user, request, old_entity=before)
     return _to_contract_response(contract)
 
 

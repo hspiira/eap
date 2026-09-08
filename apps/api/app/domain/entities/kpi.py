@@ -9,7 +9,6 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from decimal import Decimal
 
-from app.domain.enums import KPICategory, KPIMeasurementUnit
 from app.domain.events import DomainEvent
 from app.domain.exceptions import ConflictError, DomainError, InvariantViolation
 from app.domain.value_objects.core import ClientId, ContractId, KPIAssignmentId, KPIId, TenantId
@@ -22,8 +21,8 @@ class KPIEntity:
     id: KPIId
     tenant_id: TenantId
     name: str
-    category: KPICategory
-    measurement_unit: KPIMeasurementUnit
+    category: str
+    measurement_unit: str
     created_at: datetime
     updated_at: datetime
 

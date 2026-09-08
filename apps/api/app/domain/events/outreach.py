@@ -47,6 +47,14 @@ class OutreachAssigned(DomainEvent):
 
 
 @dataclass(frozen=True)
+class OutreachAttemptRecorded(DomainEvent):
+    """Raised when a counsellor records an attempt to reach the person."""
+
+    outreach_id: "OutreachRecordId"
+    attempt_number: int
+
+
+@dataclass(frozen=True)
 class OutreachCompleted(DomainEvent):
     """Raised when an outreach is concluded (any terminal status)."""
 

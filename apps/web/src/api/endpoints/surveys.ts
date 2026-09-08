@@ -1,19 +1,21 @@
 /**
  * Survey campaign API (Phase 3 #3).
  *
- * BE base path is `/survey-campaigns` (confirmed via openapi.json).
- * Fixture is DEV-only.
+ * BE base path is `/survey-campaigns`. The list envelope, filters, sort and
+ * paging are the API's; the fixture applies the same ones to its own store so
+ * both modes answer the same contract (MODULES_REPAIR_PLAN API-01).
  *
- * Note: `rotateWebhookToken` has been removed; BE has no such route.
- * The webhook secret is returned once on create; display it immediately.
+ * The webhook secret is supplied on create and never returned afterwards, so
+ * no adapter here reads one back.
  */
 
 import { useFixtures } from "@/lib/fixtures"
-import { SurveyStatus } from "@/types/enums"
+import type { SurveyStatusValue } from "@/types/entities"
 
 import apiClient from "../client"
-import type { PaginatedResponse, Survey, SurveyAggregate } from "../types"
+import type { ListParams, Survey, SurveyAggregate, SurveyList } from "../types"
 import {
+  fixtureActivateSurvey,
   fixtureCloseSurvey,
   fixtureCreateSurvey,
   fixtureGetSurvey,
@@ -22,14 +24,16 @@ import {
   type SurveyCreateInput,
 } from "./surveys-fixture"
 
-function paginate<T>(items: T[]): PaginatedResponse<T> {
-  return { items, total: items.length, page: 1, limit: items.length, has_more: false }
+/** Mirrors the query params on `GET /survey-campaigns` in the BE OpenAPI schema. */
+export interface SurveyListParams extends ListParams {
+  status?: SurveyStatusValue
+  client_id?: string
 }
 
 export const surveysApi = {
-  async list(): Promise<PaginatedResponse<Survey>> {
-    if (useFixtures()) return Promise.resolve(paginate(fixtureListSurveys()))
-    return apiClient.get<PaginatedResponse<Survey>>("/survey-campaigns")
+  async list(params?: SurveyListParams): Promise<SurveyList> {
+    if (useFixtures()) return Promise.resolve(fixtureListSurveys(params))
+    return apiClient.get<SurveyList>("/survey-campaigns", params)
   },
 
   async getById(id: string): Promise<Survey> {
@@ -47,11 +51,7 @@ export const surveysApi = {
   },
 
   async activate(id: string): Promise<Survey> {
-    if (useFixtures()) {
-      const found = fixtureGetSurvey(id)
-      if (!found) throw new Error(`Survey ${id} not found`)
-      return Promise.resolve({ ...found, status: SurveyStatus.COLLECTING })
-    }
+    if (useFixtures()) return Promise.resolve(fixtureActivateSurvey(id))
     return apiClient.post<Survey>(`/survey-campaigns/${id}/activate`, {})
   },
 

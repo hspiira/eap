@@ -5,7 +5,7 @@ Converts between ClientEntity (domain) and ClientModel (persistence).
 """
 
 from app.domain.entities.client import ClientEntity
-from app.domain.enums import BaseStatus, ClientTier, ContactMethod
+from app.domain.enums import BaseStatus, ContactMethod
 from app.domain.value_objects.core import (
     Address,
     ClientId,
@@ -67,7 +67,7 @@ class ClientMapper:
             if model.preferred_contact_method
             else None
         )
-        tier = ClientTier(model.tier) if getattr(model, "tier", None) else None
+        tier = model.tier if getattr(model, "tier", None) else None
 
         # Create entity
         return ClientEntity(

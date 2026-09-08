@@ -4,7 +4,7 @@ import pytest
 from pydantic import ValidationError
 
 from app.api.schemas.member_schemas import MemberCreate, MemberNextOfKinCreate, MemberUpdate
-from app.domain.enums import MemberGender, MemberRelation, NextOfKinRelationship
+from app.domain.enums import MemberGender, MemberRelation
 
 
 def test_member_name_is_required():
@@ -50,13 +50,13 @@ def test_next_of_kin_requires_name_and_contact_method():
     with pytest.raises(ValidationError, match="phone or email"):
         MemberNextOfKinCreate(
             name="Jane Doe",
-            relationship=NextOfKinRelationship.SPOUSE,
+            relationship="Spouse",
         )
 
     with pytest.raises(ValidationError, match="name"):
         MemberNextOfKinCreate(
             name=" ",
-            relationship=NextOfKinRelationship.SPOUSE,
+            relationship="Spouse",
             phone="+256700000000",
         )
 
@@ -64,7 +64,7 @@ def test_next_of_kin_requires_name_and_contact_method():
 def test_next_of_kin_accepts_phone_or_email():
     contact = MemberNextOfKinCreate(
         name="Jane Doe",
-        relationship=NextOfKinRelationship.SPOUSE,
+        relationship="Spouse",
         email="jane@example.com",
         is_primary=True,
     )

@@ -11,9 +11,10 @@ from decimal import Decimal
 import pytest
 
 from app.domain.entities.contract import ContractEntity
-from app.domain.enums import ContractStatus, PaymentFrequency, PaymentStatus
+from app.domain.enums import ContractStatus, PaymentFrequency, PaymentStatus, PricingModel
 from app.domain.value_objects.core import ClientId, ContractId, Money, TenantId
 from app.domain.value_objects.dates import DateRange
+from app.domain.value_objects.pricing import ContractPricing, RateCard
 from app.shared.utils.datetime import utc_now
 
 
@@ -85,3 +86,123 @@ class TestRestore:
         contract = _contract(start_offset_days=-30, end_offset_days=30)
         with pytest.raises(Exception, match="already active"):
             contract.restore()
+
+
+class TestRenewalAsSuccession:
+    """Renewal opens a term rather than stretching the one that ran out."""
+
+    def test_the_successor_starts_the_day_the_predecessor_ends(self):
+        contract = _contract(start_offset_days=-365, end_offset_days=0)
+        successor = contract.renew(
+            successor_id=ContractId("contract-successor"),
+            new_end_date=contract.period.end_date + timedelta(days=365),
+        )
+        assert successor.period.start_date == contract.period.end_date + timedelta(days=1)
+        assert successor.renewed_from_id == contract.id
+        assert successor.status == ContractStatus.DRAFT
+
+    def test_the_predecessor_keeps_its_own_dates_and_rate(self):
+        contract = _contract(start_offset_days=-365, end_offset_days=0)
+        original_period = contract.period
+        original_rate = contract.billing_rate
+        contract.renew(
+            successor_id=ContractId("contract-successor"),
+            new_end_date=contract.period.end_date + timedelta(days=365),
+            new_rate=Money(amount=Decimal("999"), currency="UGX"),
+        )
+        assert contract.period == original_period
+        assert contract.billing_rate == original_rate
+        assert contract.status == ContractStatus.RENEWED
+
+    def test_the_successor_carries_the_pricing_forward(self):
+        contract = _contract(start_offset_days=-365, end_offset_days=0)
+        successor = contract.renew(
+            successor_id=ContractId("contract-successor"),
+            new_end_date=contract.period.end_date + timedelta(days=365),
+        )
+        assert successor.pricing == contract.pricing
+        assert successor.is_auto_renew == contract.is_auto_renew
+
+    def test_a_terminated_contract_cannot_be_renewed(self):
+        contract = _contract(start_offset_days=-365, end_offset_days=30)
+        contract.terminate("Client left")
+        with pytest.raises(Exception, match="terminated"):
+            contract.renew(
+                successor_id=ContractId("contract-successor"),
+                new_end_date=contract.period.end_date + timedelta(days=365),
+            )
+
+
+class TestEffectiveStatus:
+    """A term that has run out reads expired without anybody writing it down."""
+
+    def test_a_lapsed_active_term_reads_expired(self):
+        contract = _contract(start_offset_days=-400, end_offset_days=-1)
+        assert contract.status == ContractStatus.ACTIVE
+        assert contract.effective_status() == ContractStatus.EXPIRED
+
+    def test_a_current_term_reads_as_stored(self):
+        contract = _contract(start_offset_days=-30, end_offset_days=30)
+        assert contract.effective_status() == ContractStatus.ACTIVE
+
+    def test_a_termination_is_not_overwritten_by_the_clock(self):
+        contract = _contract(start_offset_days=-400, end_offset_days=-1)
+        contract.terminate("Client left")
+        assert contract.effective_status() == ContractStatus.TERMINATED
+
+    def test_terminating_does_not_delete_the_record(self):
+        contract = _contract(start_offset_days=-30, end_offset_days=30)
+        contract.terminate("Client left")
+        assert contract.deleted_at is None, "a terminated contract is evidence, not a deleted row"
+
+
+class TestHeadlineRate:
+    """`billing_rate` is a reading of the pricing, not a second source."""
+
+    def _priced(self, pricing):
+        contract = _contract(start_offset_days=-30, end_offset_days=30)
+        contract.pricing = pricing
+        return contract
+
+    def test_a_retainer_reads_its_standing_charge(self):
+        contract = self._priced(
+            ContractPricing(
+                model=PricingModel.RETAINER,
+                retainer_amount=Money(amount=Decimal("500"), currency="UGX"),
+            )
+        )
+        assert contract.headline_rate() == Money(amount=Decimal("500"), currency="UGX")
+
+    def test_fee_for_service_has_no_single_figure(self):
+        contract = self._priced(
+            ContractPricing(
+                model=PricingModel.FEE_FOR_SERVICE,
+                rate_card=RateCard(
+                    rates=(("counselling", Money(amount=Decimal("50"), currency="UGX")),)
+                ),
+            )
+        )
+        assert contract.headline_rate() is None, "a rate card is not one number"
+
+    def test_changing_the_rate_moves_it_in_the_pricing(self):
+        contract = self._priced(
+            ContractPricing(
+                model=PricingModel.RETAINER,
+                retainer_amount=Money(amount=Decimal("500"), currency="UGX"),
+            )
+        )
+        contract.update_billing_rate(Money(amount=Decimal("900"), currency="UGX"))
+        assert contract.pricing.retainer_amount == Money(amount=Decimal("900"), currency="UGX")
+        assert contract.headline_rate() == Money(amount=Decimal("900"), currency="UGX")
+
+    def test_a_model_without_a_standing_charge_refuses_a_flat_rate(self):
+        contract = self._priced(
+            ContractPricing(
+                model=PricingModel.FEE_FOR_SERVICE,
+                rate_card=RateCard(
+                    rates=(("counselling", Money(amount=Decimal("50"), currency="UGX")),)
+                ),
+            )
+        )
+        with pytest.raises(Exception, match="rate card"):
+            contract.update_billing_rate(Money(amount=Decimal("900"), currency="UGX"))

@@ -11,7 +11,7 @@ from typing import Any
 from sqlalchemy import func, or_, select
 
 from app.domain.entities.client import ClientEntity
-from app.domain.enums import BaseStatus, ClientTier
+from app.domain.enums import BaseStatus
 from app.domain.repositories.client_repository import ClientRepository
 from app.domain.value_objects.core import ClientId, TenantId
 from app.infrastructure.mappers.client_mapper import ClientMapper
@@ -112,7 +112,7 @@ class ClientRepositoryImpl(
         tenant_id: TenantId,
         status: BaseStatus | None = None,
         is_verified: bool | None = None,
-        tier: "ClientTier | None" = None,
+        tier: str | None = None,
         parent_client_id: ClientId | None = None,
         include_archived: bool = False,
         search: str | None = None,
@@ -165,7 +165,7 @@ class ClientRepositoryImpl(
         tenant_id: TenantId,
         status: BaseStatus | None = None,
         is_verified: bool | None = None,
-        tier: "ClientTier | None" = None,
+        tier: str | None = None,
         parent_client_id: ClientId | None = None,
         include_archived: bool = False,
         search: str | None = None,

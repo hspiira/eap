@@ -1,8 +1,8 @@
 /**
  * Clients API Endpoints
  *
- * Client profile updates are atomic. `setTier()` remains available for inline
- * tier changes from the detail rail, where the dedicated audit action matters.
+ * Client profile updates are atomic. `setTier()` stays a separate call because
+ * the dedicated audit action matters; the client form invokes it after saving.
  */
 
 import type { ClientCreate, ClientStatsResponse, ClientUpdate, Schemas } from "@/api/generated"
