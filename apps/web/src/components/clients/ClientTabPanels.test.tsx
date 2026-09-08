@@ -69,7 +69,7 @@ describe("client detail tab records", () => {
       ],
       total: 2,
     })
-    renderWithProviders(<ContractServicesCard contract={contract} onClose={() => {}} />)
+    renderWithProviders(<ContractServicesCard contract={contract} />)
     expect((await screen.findAllByRole("link", { name: "Counselling" }))[0]).toHaveAttribute(
       "href",
       "/services/private-service-id",

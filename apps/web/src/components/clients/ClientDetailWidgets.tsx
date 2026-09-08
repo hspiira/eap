@@ -28,7 +28,7 @@ const ROW_BORDER = "border-fg/8"
 import { useState } from "react"
 
 import { Link } from "@tanstack/react-router"
-import { ArrowLeft, BadgeCheck, ChevronRight, Layers, Plus } from "lucide-react"
+import { ArrowLeft, BadgeCheck, ChevronRight, Plus } from "lucide-react"
 
 import { ContractServicesCard } from "@/components/clients/ContractServicesCard"
 import { DetailGrid, DetailRow, RailSection, Stat } from "@/components/common/DetailPrimitives"
@@ -119,7 +119,7 @@ export function ContractsPanel({
     if (field === "end_date") return row.period.end_date
     return fieldValue(row, field)
   })
-  const selected = contracts.find((c) => c.id === selectedId) ?? null
+  const selected = contracts.find((c) => c.id === selectedId) ?? defaultContract(sorted)
 
   if (error)
     return (
@@ -208,7 +208,7 @@ export function ContractsPanel({
                 <ContractRow
                   key={c.id}
                   contract={c}
-                  selected={selectedId === c.id}
+                  selected={selected?.id === c.id}
                   onSelect={() => setSelectedId(c.id)}
                 />
               ))}
@@ -218,14 +218,15 @@ export function ContractsPanel({
       </div>
 
       <div className="col-span-12 flex min-w-0 flex-col lg:sticky lg:top-3 lg:col-span-4 lg:self-start">
-        {selected ? (
-          <ContractServicesCard contract={selected} onClose={() => setSelectedId(null)} />
-        ) : (
-          <ContractDetailsPlaceholder />
-        )}
+        {selected && <ContractServicesCard contract={selected} />}
       </div>
     </div>
   )
+}
+
+/** The term in force, else the row at the top of the table as it is sorted. */
+function defaultContract(sorted: Contract[]): Contract | null {
+  return sorted.find((c) => c.is_active) ?? sorted[0] ?? null
 }
 
 function ContractRow({
@@ -264,18 +265,6 @@ function ContractRow({
         </Link>
       </TableCell>
     </TableRow>
-  )
-}
-
-function ContractDetailsPlaceholder() {
-  return (
-    <div className="flex flex-1 flex-col items-center justify-center gap-1 border border-dashed border-fg/15 p-8 text-center">
-      <div className="mb-2 grid size-9 place-items-center bg-primary/10">
-        <Layers className="size-4 text-primary" />
-      </div>
-      <h3 className="text-sm font-semibold text-fg">Pick a contract</h3>
-      <p className="max-w-[24ch] text-xs text-fg/60">Select a row to see the services it covers.</p>
-    </div>
   )
 }
 

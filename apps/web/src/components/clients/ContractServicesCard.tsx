@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query"
 import { Link } from "@tanstack/react-router"
-import { ExternalLink, Layers, RotateCw, X } from "lucide-react"
+import { ExternalLink, Layers, RotateCw } from "lucide-react"
 
 import { serviceAssignmentsApi } from "@/api/endpoints/service-assignments"
 import { servicesApi } from "@/api/endpoints/services"
@@ -41,13 +41,7 @@ function useContractServices(contractId: string) {
   })
 }
 
-export function ContractServicesCard({
-  contract,
-  onClose,
-}: {
-  contract: Contract
-  onClose: () => void
-}) {
+export function ContractServicesCard({ contract }: { contract: Contract }) {
   const query = useContractServices(contract.id)
   return (
     <div className="flex min-h-0 flex-col overflow-hidden border border-fg/10 bg-surface lg:max-h-[calc(100dvh-8rem)]">
@@ -67,16 +61,6 @@ export function ContractServicesCard({
           </p>
         </div>
         <StatusBadge status={contract.status} size="sm" />
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          onClick={onClose}
-          aria-label="Close services"
-          className="size-7 shrink-0 p-0 text-fg-muted"
-        >
-          <X className="size-4" />
-        </Button>
       </header>
 
       <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto overscroll-contain p-4">
