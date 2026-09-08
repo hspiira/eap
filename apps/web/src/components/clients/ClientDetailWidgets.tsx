@@ -27,12 +27,15 @@ const ROW_BORDER = "border-fg/8"
 
 import { useState } from "react"
 
+import { useQueries } from "@tanstack/react-query"
 import { Link } from "@tanstack/react-router"
 import { ArrowLeft, BadgeCheck, ChevronRight, Plus } from "lucide-react"
 
+import { serviceAssignmentsApi } from "@/api/endpoints/service-assignments"
 import { ContractServicesCard } from "@/components/clients/ContractServicesCard"
 import { DetailGrid, DetailRow, RailSection, Stat } from "@/components/common/DetailPrimitives"
 import { EmptyState } from "@/components/common/EmptyState"
+import { FilterBar } from "@/components/common/FilterBar"
 import { LifecycleActions } from "@/components/common/LifecycleActions"
 import {
   compareSort,
@@ -42,7 +45,7 @@ import {
   type SortState,
 } from "@/components/common/SortHeader"
 import { StatusBadge } from "@/components/common/StatusBadge"
-import { TABLE_HEAD } from "@/components/common/tableStyles"
+import { STICKY_TABLE_HEAD } from "@/components/common/tableStyles"
 import { TierBadge } from "@/components/common/TierBadge"
 import { Button } from "@/components/ui/button"
 import {
@@ -62,6 +65,7 @@ import {
 } from "@/components/ui/table"
 import { contractLabel, nameInitials } from "@/lib/display"
 import { formatDay } from "@/lib/format"
+import { entityListKey } from "@/lib/queries"
 import { cn } from "@/lib/utils"
 import type { Client, ClientTag, Contract } from "@/types/entities"
 import { ClientTier } from "@/types/enums"
@@ -120,6 +124,7 @@ export function ContractsPanel({
     return fieldValue(row, field)
   })
   const selected = contracts.find((c) => c.id === selectedId) ?? defaultContract(sorted)
+  const serviceCounts = useServiceCounts(contracts)
 
   if (error)
     return (
@@ -147,14 +152,15 @@ export function ContractsPanel({
     )
   }
   return (
-    <div className="grid grid-cols-12 gap-3">
-      <div className="col-span-12 min-w-0 space-y-3 lg:col-span-8">
-        <div className="flex items-center justify-between">
+    <div className="grid grid-cols-12 gap-3 lg:h-[70vh]">
+      <div className="col-span-12 flex min-h-0 min-w-0 flex-col border border-fg/10 bg-surface lg:col-span-8 lg:h-full">
+        <FilterBar>
           <p className="text-xs text-fg-muted">
             {total != null && total > contracts.length
               ? `Showing ${contracts.length} of ${total} contracts`
               : `${contracts.length} contract${contracts.length === 1 ? "" : "s"}`}
           </p>
+          <div className="ml-auto" />
           <div className="flex items-center gap-2">
             {total != null && total > contracts.length ? (
               <Link
@@ -167,16 +173,16 @@ export function ContractsPanel({
               </Link>
             ) : null}
             {onAdd && (
-              <Button size="sm" variant="outline" className="h-7 gap-1.5 px-2.5" onClick={onAdd}>
+              <Button size="sm" className="h-8 shrink-0 gap-1.5 px-2.5" onClick={onAdd}>
                 <Plus className="size-3.5" />
                 Add contract
               </Button>
             )}
           </div>
-        </div>
-        <div className="overflow-hidden border border-fg/10 bg-surface">
-          <Table className="w-full caption-bottom text-sm">
-            <TableHeader className={TABLE_HEAD}>
+        </FilterBar>
+        <div className="min-h-0 flex-1 overflow-y-auto">
+          <Table className="w-full caption-bottom text-sm" scrollable={false}>
+            <TableHeader className={STICKY_TABLE_HEAD}>
               <TableRow className={`hover:bg-transparent ${ROW_BORDER}`}>
                 <TableHead>
                   <SortHeader field="number" sort={sort} onToggle={toggleSort}>
@@ -198,6 +204,7 @@ export function ContractsPanel({
                     End
                   </SortHeader>
                 </TableHead>
+                <TableHead className="text-right text-fg/65">Services</TableHead>
                 <TableHead className="w-10 text-right text-fg/65">
                   <span className="sr-only">Open</span>
                 </TableHead>
@@ -208,6 +215,7 @@ export function ContractsPanel({
                 <ContractRow
                   key={c.id}
                   contract={c}
+                  services={serviceCounts.get(c.id)}
                   selected={selected?.id === c.id}
                   onSelect={() => setSelectedId(c.id)}
                 />
@@ -217,11 +225,27 @@ export function ContractsPanel({
         </div>
       </div>
 
-      <div className="col-span-12 flex min-w-0 flex-col lg:sticky lg:top-3 lg:col-span-4 lg:self-start">
+      <div className="col-span-12 flex min-h-0 min-w-0 flex-col lg:col-span-4 lg:h-full">
         {selected && <ContractServicesCard contract={selected} />}
       </div>
     </div>
   )
+}
+
+/**
+ * How many services each contract covers, keyed by contract id.
+ *
+ * The list endpoint reports the total alongside the page, so a one-row page is
+ * enough to count with and nothing larger is fetched.
+ */
+function useServiceCounts(contracts: Contract[]): Map<string, number | undefined> {
+  const results = useQueries({
+    queries: contracts.map((contract) => ({
+      queryKey: entityListKey("service-assignments", { contract_id: contract.id, limit: 1 }),
+      queryFn: () => serviceAssignmentsApi.list({ contract_id: contract.id, limit: 1 }),
+    })),
+  })
+  return new Map(contracts.map((contract, index) => [contract.id, results[index]?.data?.total]))
 }
 
 /** The term in force, else the row at the top of the table as it is sorted. */
@@ -231,10 +255,13 @@ function defaultContract(sorted: Contract[]): Contract | null {
 
 function ContractRow({
   contract,
+  services,
   selected,
   onSelect,
 }: {
   contract: Contract
+  /** Undefined until the count lands. */
+  services: number | undefined
   selected: boolean
   onSelect: () => void
 }) {
@@ -260,6 +287,9 @@ function ContractRow({
       </TableCell>
       <TableCell className="whitespace-nowrap text-xs text-fg/70">
         {formatDay(contract.period.end_date)}
+      </TableCell>
+      <TableCell className="text-right tabular-nums text-xs text-fg/70">
+        {services ?? <span className="text-fg-subtle">…</span>}
       </TableCell>
       <TableCell className="text-right">
         <Link

@@ -44,7 +44,7 @@ function useContractServices(contractId: string) {
 export function ContractServicesCard({ contract }: { contract: Contract }) {
   const query = useContractServices(contract.id)
   return (
-    <div className="flex min-h-0 flex-col overflow-hidden border border-fg/10 bg-surface lg:max-h-[calc(100dvh-8rem)]">
+    <div className="flex min-h-0 flex-col overflow-hidden border border-fg/10 bg-surface">
       <header className="flex items-start gap-3 border-b border-fg/10 px-4 py-3">
         <span
           aria-hidden

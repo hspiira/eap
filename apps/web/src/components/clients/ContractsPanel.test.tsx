@@ -50,17 +50,20 @@ beforeEach(() => {
     name: id === "counselling-id" ? "Counselling" : "Health Talk",
     status: "Active",
   }))
-  mocks.assignments.mockImplementation(async ({ contract_id }: { contract_id: string }) => ({
-    items: [
-      {
-        id: `${contract_id}-assignment`,
-        contract_id,
-        service_id: contract_id === CURRENT.id ? "counselling-id" : "health-talk-id",
-        status: "Active",
-      },
-    ],
-    total: 1,
-  }))
+  mocks.assignments.mockImplementation(
+    async ({ contract_id, limit }: { contract_id: string; limit?: number }) => ({
+      items: [
+        {
+          id: `${contract_id}-assignment`,
+          contract_id,
+          service_id: contract_id === CURRENT.id ? "counselling-id" : "health-talk-id",
+          status: "Active",
+        },
+      ],
+      // The count column asks for one row and reads the total off it.
+      total: limit === 1 && contract_id === CURRENT.id ? 14 : 1,
+    }),
+  )
 })
 
 describe("contracts panel", () => {
@@ -70,6 +73,14 @@ describe("contracts panel", () => {
     )
     expect(await screen.findByRole("link", { name: "Counselling" })).toBeInTheDocument()
     expect(screen.queryByRole("link", { name: "Health Talk" })).not.toBeInTheDocument()
+  })
+
+  it("counts the services each term covers without fetching them all", async () => {
+    renderWithProviders(
+      <ContractsPanel contracts={[EXPIRED, CURRENT]} loading={false} clientId="client-1" />,
+    )
+    expect(await screen.findByText("14")).toBeInTheDocument()
+    expect(mocks.assignments).toHaveBeenCalledWith({ contract_id: CURRENT.id, limit: 1 })
   })
 
   it("falls back to the top row when no term is in force", async () => {
