@@ -1,4 +1,4 @@
-import { Check, Rocket } from "lucide-react"
+import { ArrowRight, Check, Rocket } from "lucide-react"
 
 import { Panel } from "@/components/common/Panel"
 import { Button } from "@/components/ui/button"
@@ -94,12 +94,14 @@ export function ClientOnboardingCard({
                   </span>
                   {!step.done && onStep && (
                     <Button
-                      variant="link"
+                      type="button"
+                      variant="ghost"
                       size="sm"
-                      className="h-auto p-0 text-xs"
+                      aria-label={`Continue: ${step.label}`}
                       onClick={() => onStep(step.id)}
+                      className="size-6 shrink-0 p-0 text-fg-muted hover:text-primary"
                     >
-                      Continue
+                      <ArrowRight className="size-3.5" />
                     </Button>
                   )}
                 </li>

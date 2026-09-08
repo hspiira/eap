@@ -168,7 +168,7 @@ describe("client members integration", () => {
     await screen.findByText("No members yet")
     await user.click(screen.getByRole("tab", { name: "Overview" }))
     expect(await screen.findByRole("progressbar")).toHaveAttribute("aria-valuenow", "0")
-    await user.click(screen.getAllByRole("button", { name: "Continue" })[1])
+    await user.click(screen.getByRole("button", { name: "Continue: At least one contract" }))
     expect(screen.getByRole("tab", { name: /^Contracts/ })).toHaveAttribute("aria-selected", "true")
   })
 
