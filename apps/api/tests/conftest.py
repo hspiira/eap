@@ -82,6 +82,58 @@ _SERVICE_CATEGORY_CODES = (
     "Assessment",
 )
 
+#: ``documents.document_type`` is a foreign key onto this table (migration
+#: b8a183a81c8a), for the same reason as service categories above.
+_DOCUMENT_TYPE_CODES = (
+    "Contract",
+    "Certification",
+    "KPI Report",
+    "Feedback Summary",
+    "Billing Report",
+    "Utilization Report",
+    "Other",
+)
+
+#: ``kpis.category`` is a foreign key onto this table (migration 3ca112aa6972),
+#: for the same reason as service categories above.
+_KPI_CATEGORY_CODES = ("Utilization", "Satisfaction", "Outcome", "Operational")
+
+#: ``cases.presenting_problem`` / ``cases.referral_source`` are foreign keys
+#: onto these tables (migration 3969757e8cd0), for the same reason as service
+#: categories above.
+_PRESENTING_PROBLEM_CODES = (
+    "MentalHealth",
+    "Stress",
+    "Relationship",
+    "Work",
+    "Financial",
+    "Substance",
+    "Bereavement",
+    "Trauma",
+    "FamilyChild",
+    "Other",
+)
+_CASE_REFERRAL_SOURCE_CODES = (
+    "Self",
+    "InformalManager",
+    "FormalMandatory",
+    "HR",
+    "CISMFollowUp",
+    "EmployerProactive",
+)
+
+#: ``member_next_of_kin.relationship`` is a foreign key onto this table
+#: (migration d1d7ce4bf753), for the same reason as service categories above.
+_NEXT_OF_KIN_RELATIONSHIP_CODES = (
+    "Spouse",
+    "Child",
+    "Parent",
+    "Sibling",
+    "Guardian",
+    "Partner",
+    "Other",
+)
+
 
 @pytest_asyncio.fixture(scope="function")
 async def db_session() -> AsyncGenerator[AsyncSession, None]:
@@ -95,12 +147,33 @@ async def db_session() -> AsyncGenerator[AsyncSession, None]:
         await conn.run_sync(Base.metadata.create_all)
 
     async with TestAsyncSessionLocal() as session:
+        from app.infrastructure.models.case_referral_source_model import (
+            CaseReferralSourceModel,
+        )
+        from app.infrastructure.models.document_type_model import DocumentTypeModel
+        from app.infrastructure.models.kpi_category_model import KPICategoryModel
+        from app.infrastructure.models.next_of_kin_relationship_model import (
+            NextOfKinRelationshipModel,
+        )
+        from app.infrastructure.models.presenting_problem_model import (
+            PresentingProblemModel,
+        )
         from app.infrastructure.models.service_category_model import (
             ServiceCategoryModel,
         )
 
         for code in _SERVICE_CATEGORY_CODES:
             session.add(ServiceCategoryModel(code=code, name=code))
+        for code in _DOCUMENT_TYPE_CODES:
+            session.add(DocumentTypeModel(code=code, name=code))
+        for code in _KPI_CATEGORY_CODES:
+            session.add(KPICategoryModel(code=code, name=code))
+        for code in _PRESENTING_PROBLEM_CODES:
+            session.add(PresentingProblemModel(code=code, name=code))
+        for code in _CASE_REFERRAL_SOURCE_CODES:
+            session.add(CaseReferralSourceModel(code=code, name=code))
+        for code in _NEXT_OF_KIN_RELATIONSHIP_CODES:
+            session.add(NextOfKinRelationshipModel(code=code, name=code))
         await session.commit()
         yield session
 
@@ -857,8 +930,29 @@ async def test_contract(
 
 
 @pytest_asyncio.fixture
+async def contract_test_client_3(client: AsyncClient, contract_test_tenant: dict) -> dict[str, Any]:
+    """A third client, so an active contract does not overlap `test_contract`.
+
+    One client holds one term at a time now, and both fixtures start today.
+    """
+    tenant_id = contract_test_tenant["id"]
+    created = await client.post(
+        f"/clients/?tenant_id={tenant_id}",
+        json={
+            "name": "Third Contract Client",
+            "code": "CTR3",
+            "contact_info": {"phone": "+1-555-CONTRACT3", "email": "contracts3@testclient.com"},
+        },
+    )
+    assert created.status_code == 201
+    activated = await client.post(f"/clients/{created.json()['id']}/activate")
+    assert activated.status_code == 200
+    return activated.json()
+
+
+@pytest_asyncio.fixture
 async def test_contract_active(
-    client: AsyncClient, contract_test_tenant: dict, contract_test_client: dict
+    client: AsyncClient, contract_test_tenant: dict, contract_test_client_3: dict
 ) -> dict[str, Any]:
     """Create and activate a test contract."""
     from datetime import datetime, timedelta
@@ -871,7 +965,7 @@ async def test_contract_active(
     create_response = await client.post(
         f"/contracts/?tenant_id={tenant_id}",
         json={
-            "client_id": contract_test_client["id"],
+            "client_id": contract_test_client_3["id"],
             "start_date": start_date,
             "end_date": end_date,
             "billing_rate": {

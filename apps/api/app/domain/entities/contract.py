@@ -22,7 +22,7 @@ Design Notes:
 """
 
 from dataclasses import dataclass, field
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 
 from app.domain.enums import ContractStatus, PaymentFrequency, PaymentStatus, PricingModel
 from app.domain.events import (
@@ -58,6 +58,8 @@ class ContractEntity:
     # Optional fields (with defaults)
     last_billing_date: date | None = None
     next_billing_date: date | None = None
+    reference: str | None = None
+    renewed_from_id: ContractId | None = None
     signed_by: str | None = None
     signed_at: datetime | None = None
     termination_reason: str | None = None
@@ -81,18 +83,50 @@ class ContractEntity:
     def pricing_model(self) -> PricingModel | None:
         return self.pricing.model if self.pricing else None
 
-    def renew(self, new_end_date: date, new_rate: Money | None = None) -> None:
+    def renew(
+        self,
+        *,
+        successor_id: ContractId,
+        new_end_date: date,
+        new_rate: Money | None = None,
+        reference: str | None = None,
+    ) -> "ContractEntity":
+        """Close this term and return the one that follows it.
+
+        Renewal used to move this term's end date and overwrite its rate, so a
+        contract renewed three times was one row at one price and the earlier
+        terms were gone. The successor starts the day after this one ends and
+        points back through `renewed_from_id`, which is what makes the history
+        readable as a chain.
+        """
         if new_end_date <= self.period.end_date:
             raise DomainError("New end date must be after current")
-        self.period = DateRange(self.period.start_date, new_end_date)
-        if new_rate:
-            self.billing_rate = new_rate
-        self.status = ContractStatus.RENEWED
+        if self.status == ContractStatus.TERMINATED:
+            raise DomainError("Cannot renew a terminated contract")
         now = utc_now()
+        successor = ContractEntity(
+            id=successor_id,
+            tenant_id=self.tenant_id,
+            client_id=self.client_id,
+            period=DateRange(self.period.end_date + timedelta(days=1), new_end_date),
+            billing_rate=new_rate or self.billing_rate,
+            payment_frequency=self.payment_frequency,
+            payment_status=PaymentStatus.PENDING,
+            status=ContractStatus.DRAFT,
+            is_auto_renew=self.is_auto_renew,
+            reference=reference,
+            renewed_from_id=self.id,
+            pricing=self.pricing,
+            created_at=now,
+            updated_at=now,
+        )
+        successor.record_created()
+        self.status = ContractStatus.RENEWED
         self.updated_at = now
         self.events.append(
             ContractRenewed(occurred_at=now, contract_id=self.id, new_end_date=new_end_date)
         )
+        return successor
 
     def activate(self) -> None:
         """Activate a draft or pending contract"""
@@ -132,7 +166,12 @@ class ContractEntity:
         self._record_status_change(previous)
 
     def terminate(self, reason: str) -> None:
-        """Terminate a contract"""
+        """End a contract for cause, keeping the record of it.
+
+        Termination does not soft-delete. It is a commercial fact about a real
+        agreement, and the row is where a dispute is argued from; deleting it
+        removes the contract from every list somebody would look in.
+        """
         if not reason:
             raise DomainError("Termination requires reason")
         if self.deleted_at:
@@ -143,14 +182,17 @@ class ContractEntity:
         self.termination_reason = reason
         now = utc_now()
         self.updated_at = now
-        self.deleted_at = now
         self.events.append(ContractTerminated(occurred_at=now, contract_id=self.id, reason=reason))
 
     def archive(self) -> None:
-        """Archive a contract (mark as expired if past end date)"""
+        """Write down the lapse that `effective_status` already derives.
+
+        Redundant now that lapsing is derived, and kept because its callers and
+        the meaning of "archive" for a contract are a separate question: the
+        status enum has no ARCHIVED member, which is why this overloads EXPIRED.
+        """
         if self.deleted_at:
             raise DomainError("Cannot archive deleted contract")
-        # Archive is a soft operation - mark expired contracts
         previous = self.status
         if self.period.end_date < utc_now().date() and self.status == ContractStatus.ACTIVE:
             self.status = ContractStatus.EXPIRED
@@ -238,6 +280,20 @@ class ContractEntity:
                 to_status=self.status.value,
             )
         )
+
+    def effective_status(self) -> ContractStatus:
+        """The status as at today, rather than the one last written down.
+
+        Nothing sweeps contracts when a term runs out, so a live contract keeps
+        its ACTIVE row for years after it ended and the screens showed a green
+        badge beside a red "Ended". Lapsing is a fact about the dates and is
+        derived here; the decisions a person makes, draft, active, terminated,
+        stay stored.
+        """
+        lapsable = (ContractStatus.ACTIVE, ContractStatus.RENEWED, ContractStatus.PENDING)
+        if self.status in lapsable and self.period.end_date < utc_now().date():
+            return ContractStatus.EXPIRED
+        return self.status
 
     def is_active(self) -> bool:
         """Check if contract is active. Returns True for ACTIVE or RENEWED status."""

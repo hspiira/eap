@@ -193,12 +193,11 @@ class TestGetActiveContractByClient:
         self,
         client: AsyncClient,
         contract_test_tenant: dict,
-        contract_test_client: dict,
         test_contract_active: dict,
     ):
         """Test getting active contract for a client."""
         tenant_id = contract_test_tenant["id"]
-        client_id = contract_test_client["id"]
+        client_id = test_contract_active["client_id"]
 
         response = await client.get(f"/contracts/client/{client_id}/active?tenant_id={tenant_id}")
 
@@ -428,7 +427,10 @@ class TestRenewContract:
 
         assert response.status_code == 200
         data = response.json()
-        assert data["status"] == "Renewed"
+        # The response is the successor: a new term that has not been signed.
+        assert data["status"] == "Draft"
+        assert data["renewed_from_id"] == contract_id
+        assert data["period"]["end_date"] == new_end_date
 
     async def test_renew_contract_with_new_rate(
         self, client: AsyncClient, test_contract_active: dict
@@ -683,8 +685,14 @@ class TestContractLifecycleFlow:
                 "new_rate": {"amount": "6000.00", "currency": "USD"},
             },
         )
-        assert renew_response.json()["status"] == "Renewed"
-        assert renew_response.json()["billing_rate"]["amount"] == "6000.00"
+        # Renewal returns the successor, and the term it renewed is closed.
+        successor = renew_response.json()
+        assert successor["status"] == "Draft"
+        assert successor["renewed_from_id"] == contract_id
+        assert successor["billing_rate"]["amount"] == "6000.00"
+
+        predecessor = await client.get(f"/contracts/{contract_id}")
+        assert predecessor.json()["status"] == "Renewed"
 
     async def test_full_lifecycle_activate_to_terminate(
         self, client: AsyncClient, contract_test_tenant: dict, contract_test_client: dict
@@ -945,3 +953,46 @@ class TestContractMetrics:
         assert items[0]["services"] == 0
         assert items[0]["sessions"] == 0
         assert items[0]["spent"]["amount"] == "0"
+
+
+class TestOneTermAtATime:
+    """Two live terms over the same days make every question about that period
+    ambiguous, starting with which one a session belongs to."""
+
+    async def test_an_overlapping_term_is_refused(
+        self, client: AsyncClient, contract_test_tenant: dict, test_contract: dict
+    ):
+        tenant_id = contract_test_tenant["id"]
+        overlapping = dict(
+            client_id=test_contract["client_id"],
+            start_date=test_contract["period"]["start_date"],
+            end_date=test_contract["period"]["end_date"],
+            billing_rate={"amount": "1000.00", "currency": "USD"},
+            payment_frequency="Monthly",
+            is_auto_renew=False,
+        )
+
+        response = await client.post(f"/contracts/?tenant_id={tenant_id}", json=overlapping)
+
+        assert response.status_code == 409, response.text
+        assert "already has a contract" in response.text
+
+    async def test_a_term_after_the_last_one_is_allowed(
+        self, client: AsyncClient, contract_test_tenant: dict, test_contract: dict
+    ):
+        tenant_id = contract_test_tenant["id"]
+        end = date.fromisoformat(test_contract["period"]["end_date"])
+
+        response = await client.post(
+            f"/contracts/?tenant_id={tenant_id}",
+            json={
+                "client_id": test_contract["client_id"],
+                "start_date": (end + timedelta(days=1)).isoformat(),
+                "end_date": (end + timedelta(days=366)).isoformat(),
+                "billing_rate": {"amount": "1000.00", "currency": "USD"},
+                "payment_frequency": "Monthly",
+                "is_auto_renew": False,
+            },
+        )
+
+        assert response.status_code == 201, response.text

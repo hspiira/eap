@@ -5,11 +5,12 @@ Application services for Contract aggregate operations.
 Refactored to use base use case classes.
 """
 
-from datetime import date
+from datetime import date, timedelta
 
 from app.application.use_cases.base import BaseUseCase
 from app.domain.entities.contract import ContractEntity
 from app.domain.enums import ContractStatus, PaymentFrequency, PaymentStatus
+from app.domain.exceptions import ConflictError, NotFoundError
 from app.domain.repositories.contract_repository import ContractRepository
 from app.domain.value_objects.core import (
     ClientId,
@@ -41,8 +42,8 @@ class CreateContractUseCase(BaseUseCase[ContractEntity, ContractId]):
         is_auto_renew: bool = False,
     ) -> ContractEntity:
         """Create a new contract."""
-        # Create DateRange value object
         period = DateRange(start_date=start_date, end_date=end_date)
+        await _reject_overlap(self.repository, tenant_id, client_id, period)
 
         # Create contract entity
         contract = ContractEntity(
@@ -67,6 +68,80 @@ class CreateContractUseCase(BaseUseCase[ContractEntity, ContractId]):
         contract.record_created()
 
         return await self._save_and_publish_events(contract)
+
+
+async def _reject_overlap(
+    repository: ContractRepository,
+    tenant_id: TenantId,
+    client_id: ClientId,
+    period: DateRange,
+    *,
+    exclude_id: ContractId | None = None,
+) -> None:
+    """One client, one term at a time.
+
+    Two live terms over the same days make every question about that period
+    ambiguous, starting with which one a session belongs to: sessions carry a
+    client and a date, not a contract.
+    """
+    conflicts = await repository.find_overlapping(
+        tenant_id,
+        client_id,
+        start_date=period.start_date,
+        end_date=period.end_date,
+        exclude_id=exclude_id,
+    )
+    if conflicts:
+        clash = conflicts[0]
+        raise ConflictError(
+            f"This client already has a contract running "
+            f"{clash.period.start_date} to {clash.period.end_date}"
+        )
+
+
+class RenewContractUseCase(BaseUseCase[ContractEntity, ContractId]):
+    """Close a term and open the one that follows it.
+
+    Not a TransitionUseCase: renewal produces a second aggregate, and that use
+    case loads, mutates and saves exactly one.
+    """
+
+    def __init__(self, contract_repository: ContractRepository):
+        super().__init__(contract_repository)
+        self.contract_repository = contract_repository
+
+    async def execute(
+        self,
+        contract_id: ContractId,
+        *,
+        successor_id: ContractId,
+        new_end_date: date,
+        new_rate: Money | None = None,
+        reference: str | None = None,
+    ) -> ContractEntity:
+        contract = await self.contract_repository.get_by_id(contract_id)
+        if contract is None:
+            raise NotFoundError(
+                f"Contract not found: {contract_id.value}", "Contract", contract_id.value
+            )
+        successor_period = DateRange(
+            start_date=contract.period.end_date + timedelta(days=1), end_date=new_end_date
+        )
+        await _reject_overlap(
+            self.contract_repository,
+            contract.tenant_id,
+            contract.client_id,
+            successor_period,
+            exclude_id=contract.id,
+        )
+        successor = contract.renew(
+            successor_id=successor_id,
+            new_end_date=new_end_date,
+            new_rate=new_rate,
+            reference=reference,
+        )
+        await self._save_and_publish_events(contract)
+        return await self._save_and_publish_events(successor)
 
 
 class UpdateContractUseCase(BaseUseCase[ContractEntity, ContractId]):

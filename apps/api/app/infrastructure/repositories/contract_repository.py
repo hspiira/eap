@@ -61,6 +61,29 @@ class ContractRepositoryImpl(
 
         return [self._to_entity(model) for model in models]
 
+    async def find_overlapping(
+        self,
+        tenant_id: TenantId,
+        client_id: ClientId,
+        *,
+        start_date: date,
+        end_date: date,
+        exclude_id: ContractId | None = None,
+    ) -> list[ContractEntity]:
+        """Terms for this client whose period intersects the given one."""
+        stmt = select(ContractModel).where(
+            ContractModel.tenant_id == tenant_id.value,
+            ContractModel.client_id == client_id.value,
+            ContractModel.deleted_at.is_(None),
+            ContractModel.status != ContractStatus.TERMINATED,
+            ContractModel.start_date <= end_date,
+            ContractModel.end_date >= start_date,
+        )
+        if exclude_id is not None:
+            stmt = stmt.where(ContractModel.id != exclude_id.value)
+        result = await self.session.execute(stmt)
+        return [self._to_entity(model) for model in result.scalars().all()]
+
     async def get_active_by_client_id(
         self, tenant_id: TenantId, client_id: ClientId
     ) -> ContractEntity | None:

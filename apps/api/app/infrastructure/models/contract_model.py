@@ -104,6 +104,10 @@ class ContractModel(CuidMixin, TenantMixin, Base, TimestampMixin, SoftDeleteMixi
     next_billing_date: Mapped[date | None] = mapped_column(Date, nullable=True)
 
     # Signing
+    reference: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    renewed_from_id: Mapped[str | None] = mapped_column(
+        ForeignKey("contracts.id"), nullable=True, index=True
+    )
     signed_by: Mapped[str | None] = mapped_column(String(255), nullable=True)
     signed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 

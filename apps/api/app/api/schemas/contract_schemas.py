@@ -53,8 +53,9 @@ class ContractCreate(BaseModel):
 class ContractRenewRequest(BaseModel):
     """Request schema for renewing a contract."""
 
-    new_end_date: date = Field(..., description="New contract end date")
+    new_end_date: date = Field(..., description="End date of the new term")
     new_rate: MoneyCreate | None = Field(None, description="New billing rate (optional)")
+    reference: SanitizedStr | None = Field(None, description="Reference for the new term")
 
 
 class ContractTerminateRequest(BaseModel):
@@ -92,11 +93,22 @@ class ContractResponse(BaseModel):
     id: str = Field(..., description="Contract identifier")
     tenant_id: str = Field(..., description="Tenant identifier")
     client_id: str = Field(..., description="Client identifier")
+    reference: str | None = Field(None, description="Human reference for the term")
+    renewed_from_id: str | None = Field(None, description="The term this one renewed")
     period: DateRangeSchema = Field(..., description="Contract period")
     billing_rate: MoneySchema = Field(..., description="Billing rate")
     payment_frequency: PaymentFrequency = Field(..., description="Payment frequency")
     payment_status: PaymentStatus = Field(..., description="Payment status")
-    status: ContractStatus = Field(..., description="Contract status")
+    status: ContractStatus = Field(
+        ...,
+        description=(
+            "Status as at today. A term past its end date reads Expired whether or "
+            "not anybody wrote that down."
+        ),
+    )
+    recorded_status: ContractStatus = Field(
+        ..., description="The status stored on the row, before the lapse is derived"
+    )
     is_auto_renew: bool = Field(..., description="Whether contract auto-renews")
     last_billing_date: date | None = Field(None, description="Last billing date")
     next_billing_date: date | None = Field(None, description="Next billing date")
