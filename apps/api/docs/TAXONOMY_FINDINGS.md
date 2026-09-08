@@ -459,6 +459,8 @@ Not mine to fix: the panel rewrite is another session's in-flight work and the
 test has to be updated to match whatever that session settles on. Recorded so
 whoever commits the roster panel updates the test in the same change.
 
+Closed. That session landed both in `64abbba`, and the file's eight tests pass.
+
 ## Uncommitted: `ClientServicesPanel` is deleted in the working tree
 
 Removing the client Services tab left `ClientServicesPanel` in
@@ -467,3 +469,5 @@ working tree but not committed, because that file also carries the roster
 rewrite above and staging it would drag another session's unfinished work in.
 Nothing depends on the deletion: the committed tree still compiles with the
 panel present, just unused. It will land with whoever commits that file.
+
+Closed. It landed in `64abbba` with the roster panel; the symbol is gone.
