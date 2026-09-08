@@ -80,21 +80,25 @@ function IndustriesPage() {
   }, [])
 
   /**
-   * Navigates to a specific industry: makes its row visible in the table by
-   * resetting filters/search to the target's name (so it lands on page 1)
-   * unless it's already in the visible items, then highlights + scrolls.
+   * Go to a row wherever it is: select it, and page the table to it.
+   *
+   * This used to put the target's code in the search box, which the server
+   * matches against the name only, so following a child left the table empty
+   * and the row it was pointing at unreachable. Paging there costs a scan, but
+   * it lands on the row rather than on a search that cannot match.
    */
   const navigateToIndustry = useCallback(
     (id: string, hint?: Industry) => {
-      const visibleItems = query.data?.items ?? []
-      const inVisible = visibleItems.some((i) => i.id === id)
-      if (!inVisible && hint) {
-        setSearchInput(hint.code ?? hint.name)
-        setPage(1)
-      }
       selectIndustry(id, hint)
+      if ((query.data?.items ?? []).some((i) => i.id === id)) return
+      void pageOf(id, sort, limit).then((target) => {
+        if (target == null) return
+        // The row's position is its position in the unfiltered list.
+        setSearchInput("")
+        setPage(target)
+      })
     },
-    [query.data?.items, selectIndustry],
+    [query.data?.items, selectIndustry, sort],
   )
 
   const loadDetails = useCallback(async (id: string, rowHint?: Industry | null) => {
@@ -291,6 +295,28 @@ function IndustriesPage() {
       </PageShell>
     </AppLayout>
   )
+}
+
+/**
+ * Which page a row sits on, in the order the table is paging through.
+ *
+ * The list endpoint has no "where is this row" call, so this walks it in
+ * hundreds under the same sort and divides the position by the page size.
+ * A few hundred rows is one or two requests, and only on a click.
+ */
+async function pageOf(id: string, sort: SortState, limit: number): Promise<number | null> {
+  const SCAN = 100
+  for (let page = 1; ; page++) {
+    const result = await industriesApi.list({
+      page,
+      limit: SCAN,
+      sort_by: sort.field,
+      sort_desc: sort.field ? sort.desc : undefined,
+    })
+    const index = result.items.findIndex((row) => row.id === id)
+    if (index >= 0) return Math.floor(((page - 1) * SCAN + index) / limit) + 1
+    if (!result.has_more || result.items.length === 0) return null
+  }
 }
 
 function DetailsPlaceholder() {
