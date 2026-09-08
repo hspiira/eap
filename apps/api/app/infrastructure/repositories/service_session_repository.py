@@ -22,6 +22,7 @@ from app.domain.repositories.service_session_repository import (
     ServiceSessionRepository,
 )
 from app.domain.value_objects.core import (
+    ClientId,
     EligibleMemberId,
     ProviderId,
     ServiceId,
@@ -112,8 +113,11 @@ class ServiceSessionRepositoryImpl(
         session_type: SessionType | None = None,
         category: SessionCategory | None = None,
         clinical_outcome: SessionClinicalStatus | None = None,
+        client_id: ClientId | None = None,
     ) -> dict[str, Any]:
         filters: dict[str, Any] = {}
+        if client_id:
+            filters["client_id"] = client_id.value
         if member_id:
             filters["member_id"] = member_id.value
         if provider_id:
@@ -158,6 +162,7 @@ class ServiceSessionRepositoryImpl(
         session_type: SessionType | None = None,
         category: SessionCategory | None = None,
         clinical_outcome: SessionClinicalStatus | None = None,
+        client_id: ClientId | None = None,
         scheduled_from: datetime | None = None,
         scheduled_to: datetime | None = None,
         limit: int = 100,
@@ -180,6 +185,7 @@ class ServiceSessionRepositoryImpl(
                 session_type,
                 category,
                 clinical_outcome,
+                client_id,
             ),
             search=None,
             search_fields=None,
@@ -196,6 +202,7 @@ class ServiceSessionRepositoryImpl(
         session_type: SessionType | None = None,
         category: SessionCategory | None = None,
         clinical_outcome: SessionClinicalStatus | None = None,
+        client_id: ClientId | None = None,
         scheduled_from: datetime | None = None,
         scheduled_to: datetime | None = None,
     ) -> int:
@@ -210,6 +217,7 @@ class ServiceSessionRepositoryImpl(
                 session_type,
                 category,
                 clinical_outcome,
+                client_id,
             ),
             extra_conditions=self._scheduled_conditions(scheduled_from, scheduled_to),
             search=None,

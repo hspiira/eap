@@ -1462,6 +1462,26 @@ export interface paths {
         patch: operations["update_client_tier_clients__client_id__tier_patch"];
         trace?: never;
     };
+    "/clients/{client_id}/utilisation-events": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List utilisation events recorded across a client's contracts
+         * @description Page through utilisation events for every contract owned by this client.
+         */
+        get: operations["list_client_utilisation_events_clients__client_id__utilisation_events_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/clients/{client_id}/verify": {
         parameters: {
             query?: never;
@@ -13213,6 +13233,19 @@ export interface components {
              */
             units: number;
         };
+        /** UtilisationEventListResponse */
+        UtilisationEventListResponse: {
+            /** Has More */
+            has_more: boolean;
+            /** Items */
+            items: components["schemas"]["UtilisationEventResponse"][];
+            /** Limit */
+            limit: number;
+            /** Page */
+            page: number;
+            /** Total */
+            total: number;
+        };
         /** UtilisationEventResponse */
         UtilisationEventResponse: {
             /** Contract Id */
@@ -16098,6 +16131,42 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ClientResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_client_utilisation_events_clients__client_id__utilisation_events_get: {
+        parameters: {
+            query?: {
+                /** @description Page number */
+                page?: number;
+                /** @description Items per page */
+                limit?: number;
+            };
+            header?: never;
+            path: {
+                client_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UtilisationEventListResponse"];
                 };
             };
             /** @description Validation Error */
@@ -22828,6 +22897,8 @@ export interface operations {
         parameters: {
             query: {
                 tenant_id: string;
+                /** @description Filter by client identifier */
+                client_id?: string | null;
                 /** @description Filter by member identifier */
                 member_id?: string | null;
                 /** @description Filter by provider identifier */

@@ -728,6 +728,7 @@ SESSION_SORT_COLUMNS = frozenset(
 async def list_service_sessions(
     tenant_id: str = Query(..., description="Tenant identifier"),
     current_user: TokenData = Depends(require_same_tenant),
+    client_id: str | None = Query(None, description="Filter by client identifier"),
     member_id: str | None = Query(None, description="Filter by member identifier"),
     provider_id: str | None = Query(None, description="Filter by provider identifier"),
     service_id: str | None = Query(None, description="Filter by service identifier"),
@@ -759,6 +760,7 @@ async def list_service_sessions(
 
     sessions = await session_repo.list_all(
         tenant_id=TenantId(tenant_id),
+        client_id=ClientId(client_id) if client_id else None,
         member_id=EligibleMemberId(member_id) if member_id else None,
         provider_id=ProviderId(provider_id) if provider_id else None,
         service_id=ServiceId(service_id) if service_id else None,
@@ -776,6 +778,7 @@ async def list_service_sessions(
 
     total = await session_repo.count(
         tenant_id=TenantId(tenant_id),
+        client_id=ClientId(client_id) if client_id else None,
         member_id=EligibleMemberId(member_id) if member_id else None,
         provider_id=ProviderId(provider_id) if provider_id else None,
         service_id=ServiceId(service_id) if service_id else None,
