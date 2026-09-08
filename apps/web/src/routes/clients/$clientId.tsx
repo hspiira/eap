@@ -461,35 +461,6 @@ function ClientDetailPage() {
                   <div className="space-y-4">
                     <ClientUpcomingCard items={upcomingItems} />
                     {todaysTodoItems.length > 0 && <ClientTodaysTodoCard items={todaysTodoItems} />}
-                    <section className="border border-fg/10 bg-surface p-4">
-                      <h2 className="text-sm font-semibold">Manage this client</h2>
-                      <p className="mt-1 text-sm text-fg-muted">
-                        People, coverage and records in one place.
-                      </p>
-                      <div className="mt-3 flex flex-wrap gap-2">
-                        <Button
-                          variant="outline"
-                          className="rounded-none"
-                          onClick={() => setTab("staff")}
-                        >
-                          Members
-                        </Button>
-                        <Button
-                          variant="outline"
-                          className="rounded-none"
-                          onClick={() => setTab("contracts")}
-                        >
-                          Contracts
-                        </Button>
-                        <Button
-                          variant="outline"
-                          className="rounded-none"
-                          onClick={() => setTab("contacts")}
-                        >
-                          Contacts
-                        </Button>
-                      </div>
-                    </section>
                   </div>
                 </div>
               </TabPanel>
