@@ -28,19 +28,11 @@ function useContractUtilisation(contractId: string) {
   return useQuery({
     queryKey: ["contracts", contractId, "utilisation"],
     queryFn: async () => {
-      const events = await utilisationApi.byContract(contractId)
-      const codes = [...new Set(events.map((event) => event.service_code).filter(Boolean))]
-      const names = new Map(
-        await Promise.all(
-          codes.map(
-            async (code) =>
-              [
-                code,
-                (await servicesApi.getById(code as string).catch(() => null))?.name ?? null,
-              ] as const,
-          ),
-        ),
-      )
+      const [events, services] = await Promise.all([
+        utilisationApi.byContract(contractId),
+        servicesApi.list({ limit: 200 }),
+      ])
+      const names = new Map((services.items ?? []).map((service) => [service.id, service.name]))
       return events.map((event) => ({
         event,
         serviceName: event.service_code ? (names.get(event.service_code) ?? null) : null,

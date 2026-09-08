@@ -117,7 +117,45 @@ function previewLocally(
   }
 }
 
+/** A money amount as the API returns it. */
+export interface Money {
+  amount: string
+  currency: string
+}
+
+export interface InvoiceLine {
+  description: string
+  quantity: number
+  unit_amount: Money
+  total: Money
+}
+
+/**
+ * What a contract owes for one billing window, computed by the server's pricing
+ * engine from the contract's own pricing and the usage recorded in that window.
+ *
+ * Distinct from `preview` below, which is a what-if projection used while
+ * configuring pricing and never reflects recorded usage.
+ */
+export interface InvoicePreview {
+  contract_id: string
+  period_from: string
+  period_to: string
+  pricing_model: PricingModel
+  currency: string
+  lines: InvoiceLine[]
+  subtotal: Money
+  notes: string[]
+}
+
 export const pricingApi = {
+  async invoicePreview(
+    contractId: string,
+    params: { period_from: string; period_to: string },
+  ): Promise<InvoicePreview> {
+    return apiClient.get<InvoicePreview>(`/contracts/${contractId}/invoice-preview`, params)
+  },
+
   /** Preview invoice lines for a contract pricing config.
    *  Live BE path (P2 #4): GET /contracts/{contractId}/invoice-preview
    */

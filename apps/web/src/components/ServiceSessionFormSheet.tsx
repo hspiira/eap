@@ -26,7 +26,6 @@ import {
 import { StoredAttribution } from "@/components/sessions/SessionAttribution"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Input } from "@/components/ui/input"
-import { Textarea } from "@/components/ui/textarea"
 import {
   Select,
   SelectContent,
@@ -34,6 +33,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { Textarea } from "@/components/ui/textarea"
 import { useEntityFormSheet } from "@/hooks/useEntityFormSheet"
 import { memberLabel, nameInitials } from "@/lib/display"
 import { useEntityList } from "@/lib/queries"

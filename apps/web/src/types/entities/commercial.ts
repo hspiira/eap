@@ -36,6 +36,11 @@ export interface Contract extends BaseEntity {
   /** The contract term. Use `period.start_date` / `period.end_date`. */
   period: ContractPeriod
   billing_rate: ContractMoney
+  /**
+   * How the contract is priced. Null means no pricing is configured, and a
+   * billing window cannot be priced until it is.
+   */
+  pricing_model?: PricingModel | null
   payment_frequency: PaymentFrequency
   payment_status: PaymentStatus
   is_auto_renew: boolean

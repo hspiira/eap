@@ -13,7 +13,6 @@ import { renderDetailState } from "@/components/common/DetailStates"
 import { EntityActivityPanel } from "@/components/common/EntityActivityPanel"
 import { PageShell } from "@/components/common/PageShell"
 import { Tab, TabPanel, Tabs, TabsList } from "@/components/common/Tabs"
-import { SessionOverviewCards } from "@/components/sessions/SessionOverviewCards"
 import { ServiceSessionFormSheet } from "@/components/ServiceSessionFormSheet"
 import {
   CancelDialog,
@@ -23,6 +22,7 @@ import {
   Hero,
   RescheduleDialog,
 } from "@/components/sessions/SessionDetailWidgets"
+import { SessionOverviewCards } from "@/components/sessions/SessionOverviewCards"
 import { Button } from "@/components/ui/button"
 import { useToast } from "@/contexts/ToastContext"
 import { useTabSearchParam } from "@/hooks/useTabSearchParam"
