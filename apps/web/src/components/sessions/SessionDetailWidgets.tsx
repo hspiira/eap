@@ -78,7 +78,9 @@ export function Hero({
   const serviceName = service?.name ?? session.service_name
   const subject = companyWide
     ? session.client_name
-    : (member ? memberLabel(member) : session.member_display_label)
+    : member
+      ? memberLabel(member)
+      : session.member_display_label
   const title = companyWide && serviceName && subject ? `${serviceName} at ${subject}` : serviceName
 
   return (
@@ -144,16 +146,17 @@ export function DetailRail({ session, service, member, onAction, actionLoading }
     <div className="space-y-5">
       <RailSection title="At a glance">
         <div className="grid grid-cols-2 gap-3">
-          <Stat
-            label="Duration"
-            value={session.duration != null ? `${session.duration}m` : "-"}
-          />
+          <Stat label="Duration" value={session.duration != null ? `${session.duration}m` : "-"} />
           <Stat
             label={companyWide ? "Attended" : "Session no."}
             value={
               companyWide
-                ? (session.headcount != null ? String(session.headcount) : "-")
-                : (session.session_number != null ? `#${session.session_number}` : "-")
+                ? session.headcount != null
+                  ? String(session.headcount)
+                  : "-"
+                : session.session_number != null
+                  ? `#${session.session_number}`
+                  : "-"
             }
           />
           <Stat

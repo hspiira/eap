@@ -51,7 +51,10 @@ export function EntityActivityPanel({
   const fieldsByLog = new Map<string, string[]>()
   for (const change of changes.data ?? []) {
     const names = change.field_changes.map((field: FieldChange) => field.field_name)
-    fieldsByLog.set(change.audit_log_id, [...(fieldsByLog.get(change.audit_log_id) ?? []), ...names])
+    fieldsByLog.set(change.audit_log_id, [
+      ...(fieldsByLog.get(change.audit_log_id) ?? []),
+      ...names,
+    ])
   }
 
   return (

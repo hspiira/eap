@@ -26,15 +26,7 @@ const FAILURE_ACTIONS: Record<string, string> = {
   affiliation_not_permitted_for_direct: "Direct delivery cannot carry an affiliation.",
 }
 
-function CheckRow({
-  ok,
-  label,
-  detail,
-}: {
-  ok: boolean
-  label: string
-  detail?: string | null
-}) {
+function CheckRow({ ok, label, detail }: { ok: boolean; label: string; detail?: string | null }) {
   const Icon = ok ? CheckCircle2 : AlertCircle
   return (
     <li className="flex items-start gap-2">
@@ -78,7 +70,11 @@ export function ProviderReadinessRail({ provider }: { provider: Provider }) {
   const eligible = eligibility.data?.eligible ?? false
 
   const gateChecks = [
-    { code: "provider_not_active", label: "Record active", ok: provider.status === BaseStatus.ACTIVE },
+    {
+      code: "provider_not_active",
+      label: "Record active",
+      ok: provider.status === BaseStatus.ACTIVE,
+    },
     {
       code: "panel_not_active",
       label: "On the active panel",

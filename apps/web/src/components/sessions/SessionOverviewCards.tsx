@@ -45,7 +45,11 @@ function ScheduleCard({ session }: { session: ServiceSession }) {
 }
 
 /** Service and practitioner, plus how the delivery was attributed. */
-function DeliveryCard({ session, service, provider }: Omit<CardProps, "member" | "diagnosisLabel">) {
+function DeliveryCard({
+  session,
+  service,
+  provider,
+}: Omit<CardProps, "member" | "diagnosisLabel">) {
   const serviceName = service?.name ?? session.service_name
   const practitionerName = provider?.display_name ?? session.provider_display_name
   return (
@@ -210,9 +214,7 @@ function ClinicalCard({
   if (!hasScope) {
     return (
       <DetailCard title="Clinical">
-        <p className="text-xs text-fg-muted">
-          Clinical detail needs the clinical access scope.
-        </p>
+        <p className="text-xs text-fg-muted">Clinical detail needs the clinical access scope.</p>
       </DetailCard>
     )
   }
@@ -265,10 +267,7 @@ export function SessionOverviewCards({
 }: CardProps) {
   const companyWide = session.attendance === SessionAttendance.COMPANY_WIDE
   const hasClinicalContent = Boolean(
-    session.clinical_outcome ||
-      session.issue_topic ||
-      session.diagnosis_id ||
-      session.partner_name,
+    session.clinical_outcome || session.issue_topic || session.diagnosis_id || session.partner_name,
   )
 
   return (

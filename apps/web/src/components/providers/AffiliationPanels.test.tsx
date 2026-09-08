@@ -114,7 +114,11 @@ describe("practitioner affiliations", () => {
       last_session_at: null,
       by_delivery_context: {},
       by_organisation: [
-        { organisation_id: "org-1", organisation_name: "Serenity Counselling Ltd", session_count: 12 },
+        {
+          organisation_id: "org-1",
+          organisation_name: "Serenity Counselling Ltd",
+          session_count: 12,
+        },
       ],
     })
     renderWithProviders(<ProviderCommitmentsPanel providerId="prv-1" />)

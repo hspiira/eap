@@ -249,7 +249,11 @@ describe("practitioner dossier", () => {
       last_session_at: "2026-08-28T00:00:00Z",
       by_delivery_context: { Unknown: 85, Direct: 1 },
       by_organisation: [
-        { organisation_id: "org-1", organisation_name: "African Retreat Centre", session_count: 12 },
+        {
+          organisation_id: "org-1",
+          organisation_name: "African Retreat Centre",
+          session_count: 12,
+        },
       ],
     })
     renderWithProviders(<Page />)
@@ -297,7 +301,8 @@ describe("practitioner dossier", () => {
     )
     renderWithProviders(<Page />)
     const rail = await screen.findByText("Record origin")
-    expect(within(rail.closest("section") as HTMLElement).getByText(/Backfilled from a user/))
-      .toBeInTheDocument()
+    expect(
+      within(rail.closest("section") as HTMLElement).getByText(/Backfilled from a user/),
+    ).toBeInTheDocument()
   })
 })

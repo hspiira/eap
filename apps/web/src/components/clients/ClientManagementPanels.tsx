@@ -14,10 +14,7 @@ import { FilterBar, FilterSearch, FilterTrigger } from "@/components/common/Filt
 import { TableSkeleton } from "@/components/common/PageSkeletons"
 import { StatusBadge } from "@/components/common/StatusBadge"
 import { ROW_BORDER, STICKY_TABLE_HEAD } from "@/components/common/tableStyles"
-import {
-  MemberSummaryCard,
-  MemberSummaryPlaceholder,
-} from "@/components/members/MemberSummaryCard"
+import { MemberSummaryCard, MemberSummaryPlaceholder } from "@/components/members/MemberSummaryCard"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Pagination } from "@/components/ui/pagination"

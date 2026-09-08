@@ -169,10 +169,7 @@ export const providersApi = {
     kind: EngagementDocumentKind,
     data: EngagementDocumentUpsert,
   ): Promise<EngagementDocument> {
-    return apiClient.put<EngagementDocument>(
-      `/providers/${id}/engagement-documents/${kind}`,
-      data,
-    )
+    return apiClient.put<EngagementDocument>(`/providers/${id}/engagement-documents/${kind}`, data)
   },
 
   async getDeliveryStats(id: string): Promise<ProviderDeliveryStats> {

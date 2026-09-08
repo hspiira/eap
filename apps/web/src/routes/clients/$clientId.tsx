@@ -408,20 +408,20 @@ function ClientDetailPage() {
             className={`col-span-12 min-w-0 ${tab === "overview" || tab === "setup" ? "lg:col-span-8" : ""}`}
           >
             <Tabs value={tab} onValueChange={(v) => setTab(v as TabValue)}>
-                <TabsList className="mb-4 px-0">
-                  <Tab value="overview">Overview</Tab>
-                  <Tab value="activity">Activity</Tab>
-                  <Tab value="contracts" count={contractsTotal}>
-                    Contracts
-                  </Tab>
-                  <Tab value="staff" count={rosterCount}>
-                    Members
-                  </Tab>
-                  <Tab value="documents">Documents</Tab>
-                  <Tab value="utilisation">Sessions</Tab>
-                  <Tab value="contacts">Contacts</Tab>
-                  <Tab value="setup">Setup</Tab>
-                </TabsList>
+              <TabsList className="mb-4 px-0">
+                <Tab value="overview">Overview</Tab>
+                <Tab value="activity">Activity</Tab>
+                <Tab value="contracts" count={contractsTotal}>
+                  Contracts
+                </Tab>
+                <Tab value="staff" count={rosterCount}>
+                  Members
+                </Tab>
+                <Tab value="documents">Documents</Tab>
+                <Tab value="utilisation">Sessions</Tab>
+                <Tab value="contacts">Contacts</Tab>
+                <Tab value="setup">Setup</Tab>
+              </TabsList>
 
               <TabPanel value="overview">
                 <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-2">

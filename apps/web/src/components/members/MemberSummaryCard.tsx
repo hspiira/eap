@@ -50,7 +50,10 @@ export function MemberSummaryCard({ member, onClose }: { member: Member; onClose
         <RailSection title="Personal">
           <DetailGrid>
             <DetailRow label="Date of birth" value={member.date_of_birth} />
-            <DetailRow label="Gender" value={member.gender ? getStatusLabel(member.gender) : null} />
+            <DetailRow
+              label="Gender"
+              value={member.gender ? getStatusLabel(member.gender) : null}
+            />
           </DetailGrid>
         </RailSection>
         <RailSection title="Contact" className="border-t border-fg/10 pt-4">

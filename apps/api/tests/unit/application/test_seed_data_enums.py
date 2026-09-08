@@ -22,9 +22,9 @@ from pathlib import Path
 import pytest
 
 from app.domain.enums import BaseStatus
+from scripts.taxonomy_catalogue import SERVICE_CATEGORIES
 
 SEED = Path(__file__).resolve().parents[3] / "data/seed_data.json"
-SERVICE_CATEGORIES = Path(__file__).resolve().parents[3] / "data/taxonomy/service_categories.json"
 
 
 @pytest.fixture(scope="module")
@@ -34,7 +34,11 @@ def seed() -> dict:
 
 @pytest.fixture(scope="module")
 def valid_categories() -> set[str]:
-    return {c["code"] for c in json.loads(SERVICE_CATEGORIES.read_text())}
+    # Read from the catalogue module, not the extract under data/taxonomy: that
+    # directory is git-ignored because it holds employee personal data, so a
+    # test keyed on it cannot run anywhere but a machine that has loaded the
+    # workbooks.
+    return {code for code, _name, _description in SERVICE_CATEGORIES}
 
 
 def test_the_seed_file_is_where_the_loader_expects_it(seed):

@@ -23,7 +23,6 @@ import { isApiError, normalizeErrorMessage } from "@/lib/errors"
 import { addDaysToDay, formatDay } from "@/lib/format"
 import type { ProviderAffiliation } from "@/types/entities"
 
-
 function coverageLabel(affiliation: ProviderAffiliation): string {
   const from = formatDay(affiliation.valid_from)
   if (!affiliation.valid_until) return `${from} onwards`

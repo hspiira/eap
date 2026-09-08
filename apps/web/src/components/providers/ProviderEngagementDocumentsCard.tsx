@@ -99,7 +99,10 @@ export function ProviderEngagementDocumentsCard({ providerId }: { providerId: st
     if (!editing) return
     setSaving(true)
     try {
-      await providersApi.upsertEngagementDocument(providerId, editing, { state, note: note || null })
+      await providersApi.upsertEngagementDocument(providerId, editing, {
+        state,
+        note: note || null,
+      })
       await queryClient.invalidateQueries({
         queryKey: ["providers", providerId, "engagement-documents"],
       })
@@ -174,24 +177,24 @@ export function ProviderEngagementDocumentsCard({ providerId }: { providerId: st
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-3">
-          <label className="block space-y-1">
-            <span className="text-xs font-medium text-fg">State</span>
-            <Select
-              value={state}
-              onValueChange={(value) => setState(value as EngagementDocumentState)}
-            >
-              <SelectTrigger className="h-8 rounded-none">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {Object.values(EngagementDocumentState).map((value) => (
-                  <SelectItem key={value} value={value}>
-                    {value}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </label>
+            <label className="block space-y-1">
+              <span className="text-xs font-medium text-fg">State</span>
+              <Select
+                value={state}
+                onValueChange={(value) => setState(value as EngagementDocumentState)}
+              >
+                <SelectTrigger className="h-8 rounded-none">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {Object.values(EngagementDocumentState).map((value) => (
+                    <SelectItem key={value} value={value}>
+                      {value}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </label>
             <label className="block space-y-1">
               <span className="text-xs font-medium text-fg">Note</span>
               <Input

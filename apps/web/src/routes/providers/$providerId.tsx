@@ -188,7 +188,8 @@ function ProviderDetailPage() {
  * record's name is the source's spelling until a person confirms it.
  */
 function ProviderProvenanceSection({ provider }: { provider: Provider }) {
-  const backfilled = provider.identity_provenance === ProviderIdentityProvenance.BACKFILLED_FROM_USER
+  const backfilled =
+    provider.identity_provenance === ProviderIdentityProvenance.BACKFILLED_FROM_USER
   return (
     <RailSection title="Record origin" className="border-t border-fg/10 pt-4">
       <DetailGrid>
