@@ -43,6 +43,30 @@ CLINICAL_EVENT_PATTERNS: tuple[str, ...] = (
 )
 
 
+# Personal data the DPO reports on alongside the clinical set. A roster row is
+# not clinical, and whether it belongs under "special category" at all is the
+# DPO's call: the flag is preserved here because members carried it before the
+# audit paths converged, not because this file decided it.
+SPECIAL_CATEGORY_RESOURCE_TYPES: frozenset[str] = CLINICAL_RESOURCE_TYPES | frozenset(
+    {"EligibleMember", "MemberNextOfKin"}
+)
+
+
+# A next of kin never consented to being on the system: they are named by
+# somebody else. The roster row is the member's own record and keeps its diff.
+REDACTED_RESOURCE_TYPES: frozenset[str] = CLINICAL_RESOURCE_TYPES | frozenset({"MemberNextOfKin"})
+
+
+def redacts_content(resource_type: str | None) -> bool:
+    """Whether a field diff on this resource must drop its values.
+
+    Redaction follows content, not the reporting flag. A roster row is reported
+    to the DPO and still records what changed: a member's own name and coverage
+    dates are the point of auditing a roster edit.
+    """
+    return bool(resource_type) and resource_type in REDACTED_RESOURCE_TYPES
+
+
 def is_clinical_resource(resource_type: str | None) -> bool:
     if not resource_type:
         return False
@@ -56,5 +80,6 @@ def is_clinical_event(event_type: str | None) -> bool:
 
 
 def is_special_category(*, resource_type: str | None = None, event_type: str | None = None) -> bool:
-    """True when either the resource type or event name flags clinical data."""
-    return is_clinical_resource(resource_type) or is_clinical_event(event_type)
+    """True when either the resource type or event name flags reportable data."""
+    reportable = bool(resource_type) and resource_type in SPECIAL_CATEGORY_RESOURCE_TYPES
+    return reportable or is_clinical_event(event_type)

@@ -89,18 +89,38 @@ into this. Recorded here as open.
   `name: Acme Corp -> Acme Holdings`, a creation is filed as CREATE, and a
   contract activation is filed as UPDATE rather than CREATE.
 
-## Members are audited twice over, by two mechanisms
+## The roster's own audit path is gone
 
-`members.py` records every roster mutation through `record_member_change`,
-which enqueues an outbox row directly with `is_special_category` set and
-`field_changes` always empty. `eligible_members.py`, the employer-side router
-for the same aggregate, uses `audit_change` instead. Neither calls the other,
-so nothing is recorded twice, but the two paths disagree about what an audit
-row contains: only the second carries a diff.
+`members.py` used to enqueue its outbox rows by hand through
+`record_member_change`. That path could not carry a field diff, a caller
+address or a user agent, and it hardcoded `is_special_category` to true. All
+twelve call sites and the bulk importer now go through `audit_change`, and
+`member_audit.py` is deleted.
 
-Converging `members.py` onto `audit_change` would give roster edits the same
-field-level detail the rest now has. It is ten call sites in a route file with
-its own tests, so it is named here rather than folded into this pass.
+Three things had to be decided to make that safe:
+
+**The event vocabulary is preserved where it existed.** The old path built
+event names as `f"{resource_type}{operation}"`, so the trail already contains
+`EligibleMemberMerged`, `EligibleMemberMergedIntoMember`, `MemberNextOfKinCreated`
+and the rest. The new domain events carry those exact names so a query written
+against the old trail still matches. The one deliberate change: suspend,
+reinstate and terminate now emit `EligibleMemberStatusChanged` with `from_status`
+and `to_status`, rather than three separately named events, which matches how
+contracts, sessions and assignments already record a lifecycle move.
+
+**Next of kin is redacted; the member is not.** A member's roster row is their
+own record and the point of auditing an edit is seeing that a coverage date or
+a member code moved, so it keeps its values. A next of kin never consented to
+being on the system, so `MemberNextOfKin` joins the redaction set. A test in
+`test_members_routes.py` already asserted the contact's name never reaches the
+payload, which is how the rule was found rather than assumed.
+
+**The special-category flag is preserved, not re-decided.** Whether a roster
+row belongs in the DPO's special-category report is that office's call. The
+old path said yes; `SPECIAL_CATEGORY_RESOURCE_TYPES` keeps saying yes. What
+changed is that reporting and redaction are now separate: `redacts_content`
+follows clinical content, `is_special_category` follows what the DPO reports
+on. Flagged for the DPO to confirm rather than quietly narrowed.
 
 ## Special-category records are audited without their content
 
@@ -126,7 +146,6 @@ before-and-after is the point of auditing it.
 ## Still open
 
 - The other 93 silent mutators, pending the scope call above.
-- `members.py` on its own audit path, above.
 - The remaining 93 sit on `UserEntity`, `ServiceEntity`, `PersonEntity`,
   `TenantEntity` and the smaller reference aggregates. None of them holds
   client or clinical data, which is why they are last rather than next.

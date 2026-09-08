@@ -1,9 +1,10 @@
 """Restricted next-of-kin contact for a covered member."""
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime
 
 from app.domain.enums import NextOfKinRelationship
+from app.domain.events import DomainEvent
 from app.domain.exceptions import DomainError
 from app.domain.value_objects.core import EligibleMemberId, Email, MemberNextOfKinId, TenantId
 
@@ -20,6 +21,7 @@ class MemberNextOfKin:
     is_primary: bool
     created_at: datetime
     updated_at: datetime
+    events: list[DomainEvent] = field(default_factory=list["DomainEvent"])
 
     def __post_init__(self) -> None:
         if not self.name.strip():

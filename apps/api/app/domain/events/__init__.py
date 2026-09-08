@@ -69,9 +69,16 @@ from app.domain.events.crisis import (
 )
 from app.domain.events.document import DocumentArchived, DocumentPublished, DocumentVersionCreated
 from app.domain.events.member import (
+    EligibleMemberAccountLinked,
+    EligibleMemberAccountUnlinked,
     EligibleMemberCreated,
+    EligibleMemberMerged,
+    EligibleMemberMergedIntoMember,
     EligibleMemberStatusChanged,
     EligibleMemberUpdated,
+    MemberNextOfKinCreated,
+    MemberNextOfKinDeleted,
+    MemberNextOfKinUpdated,
 )
 from app.domain.events.outreach import (
     CareCallbackCampaignActivated,
@@ -140,6 +147,13 @@ __all__ = [
     "ClinicalSubjectDeactivated",
     "ClinicalSubjectUpdated",
     "OutreachAttemptRecorded",
+    "EligibleMemberAccountLinked",
+    "EligibleMemberAccountUnlinked",
+    "EligibleMemberMerged",
+    "EligibleMemberMergedIntoMember",
+    "MemberNextOfKinCreated",
+    "MemberNextOfKinDeleted",
+    "MemberNextOfKinUpdated",
     "DomainEvent",
     "AuthorizationConsumed",
     "AuthorizationExtended",

@@ -9,9 +9,20 @@ import csv
 import io
 import json
 from collections.abc import Sequence
+from copy import deepcopy
 from typing import Literal
 
-from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, UploadFile, status
+from fastapi import (
+    APIRouter,
+    Depends,
+    File,
+    Form,
+    HTTPException,
+    Query,
+    Request,
+    UploadFile,
+    status,
+)
 from pydantic import ValidationError
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -58,7 +69,6 @@ from app.api.services.member_import import (
     csv_row,
     row_values,
 )
-from app.application.services.member_audit import record_member_change
 from app.application.use_cases.eligible_member_use_cases import EnrolEligibleMemberUseCase
 from app.core.authorization import require_clinical_scope, require_not_viewer, require_tenant_role
 from app.core.database import get_db
@@ -67,6 +77,15 @@ from app.domain.entities.client import ClientEntity
 from app.domain.entities.eligible_member import EligibleMember
 from app.domain.entities.member_next_of_kin import MemberNextOfKin
 from app.domain.enums import EligibilityStatus, MemberRelation, TenantRole
+from app.domain.events import (
+    EligibleMemberAccountLinked,
+    EligibleMemberAccountUnlinked,
+    EligibleMemberMerged,
+    EligibleMemberMergedIntoMember,
+    MemberNextOfKinCreated,
+    MemberNextOfKinDeleted,
+    MemberNextOfKinUpdated,
+)
 from app.domain.exceptions import EvexiaException
 from app.domain.repositories.client_repository import ClientRepository
 from app.domain.repositories.eligible_member_repository import (
@@ -87,9 +106,11 @@ from app.domain.value_objects.core import (
     UserId,
 )
 from app.shared.decorators import readonly, transactional
+from app.shared.handlers.audit_event_handler import AuditEventHandler
 from app.shared.utils.datetime import utc_now
 from app.shared.utils.generators import generate_cuid
 from app.shared.utils.member_csv import MemberCsvRow, parse_member_csv
+from app.shared.utils.route_audit_helper import audit_change
 
 router = APIRouter(prefix="/members", tags=["members"])
 
@@ -284,9 +305,32 @@ async def _validate_primary(
         raise HTTPException(status_code=422, detail="Primary employee is not valid for this client")
 
 
+async def _audit(
+    entity,
+    *,
+    outbox: OutboxRepository,
+    current_user: TokenData,
+    request: Request,
+    old_entity=None,
+) -> None:
+    """Audit a roster write through the same path as every other aggregate.
+
+    These routes used to enqueue their own outbox rows, which meant no field
+    diff, no client address and no user agent on a roster change.
+    """
+    await audit_change(
+        entity,
+        AuditEventHandler(outbox),
+        current_user,
+        request,
+        old_entity=old_entity,
+    )
+
+
 @router.post("", response_model=MemberResponse, status_code=status.HTTP_201_CREATED)
 @transactional()
 async def create_member(
+    request: Request,
     data: MemberCreate,
     current_user: TokenData = Depends(require_not_viewer),
     member_repo: EligibleMemberRepository = Depends(get_eligible_member_repository),
@@ -328,13 +372,11 @@ async def create_member(
         raise HTTPException(
             status_code=409, detail="Member code already exists for this client"
         ) from error
-    await record_member_change(
-        outbox,
-        tenant_id=current_user.tenant_id,
-        user_id=current_user.user_id,
-        resource_id=member.id.value,
-        action="CREATE",
-        operation="Created",
+    await _audit(
+        member,
+        outbox=outbox,
+        current_user=current_user,
+        request=request,
     )
     return _response(member)
 
@@ -782,6 +824,7 @@ def _csv_cell(value: str | None) -> str | None:
 @router.patch("/{member_id}", response_model=MemberResponse)
 @transactional()
 async def update_member(
+    request: Request,
     member_id: str,
     data: MemberUpdate,
     current_user: TokenData = Depends(require_not_viewer),
@@ -800,6 +843,8 @@ async def update_member(
             detail="Member update must retain a valid name, member code and beneficiary relationship",
         ) from error
     await _validate_roster_update(member, updated, member_repo)
+    # update_roster_details mutates in place, so the diff needs the state first.
+    before = deepcopy(member)
     details = updated.model_dump(exclude={"client_id"})
     details["primary_employee_member_id"] = (
         EligibleMemberId(updated.primary_employee_member_id)
@@ -815,13 +860,12 @@ async def update_member(
         **details, coverage_start=member.coverage_start, coverage_end=member.coverage_end
     )
     await member_repo.save(member)
-    await record_member_change(
-        outbox,
-        tenant_id=current_user.tenant_id,
-        user_id=current_user.user_id,
-        resource_id=member.id.value,
-        action="UPDATE",
-        operation="Updated",
+    await _audit(
+        member,
+        outbox=outbox,
+        current_user=current_user,
+        request=request,
+        old_entity=before,
     )
     return _response(member)
 
@@ -841,6 +885,7 @@ async def _transition_member(
 @router.put("/{member_id}/account", response_model=MemberResponse)
 @transactional()
 async def link_member_account(
+    request: Request,
     member_id: str,
     data: MemberAccountLinkRequest,
     current_user: TokenData = Depends(get_current_user),
@@ -859,13 +904,18 @@ async def link_member_account(
         raise HTTPException(status_code=409, detail="User account is linked to another member")
     member.link_account(user.id)
     await member_repo.save(member)
-    await record_member_change(
-        outbox,
-        tenant_id=current_user.tenant_id,
-        user_id=current_user.user_id,
-        resource_id=member.id.value,
-        action="UPDATE",
-        operation="AccountLinked",
+    # Linkage is an association between two aggregates, so the route names it
+    # rather than the member's own methods.
+    member.events.append(
+        EligibleMemberAccountLinked(
+            occurred_at=utc_now(), member_id=member.id, user_id=str(member.user_id)
+        )
+    )
+    await _audit(
+        member,
+        outbox=outbox,
+        current_user=current_user,
+        request=request,
     )
     return _response(member)
 
@@ -873,6 +923,7 @@ async def link_member_account(
 @router.delete("/{member_id}/account", response_model=MemberResponse)
 @transactional()
 async def unlink_member_account(
+    request: Request,
     member_id: str,
     current_user: TokenData = Depends(get_current_user),
     _admin=Depends(require_tenant_role(TenantRole.ADMIN)),
@@ -883,13 +934,14 @@ async def unlink_member_account(
     member = await _get_member(member_id, current_user.tenant_id, member_repo)
     member.unlink_account()
     await member_repo.save(member)
-    await record_member_change(
-        outbox,
-        tenant_id=current_user.tenant_id,
-        user_id=current_user.user_id,
-        resource_id=member.id.value,
-        action="UPDATE",
-        operation="AccountUnlinked",
+    # Linkage is an association between two aggregates, so the route names it
+    # rather than the member's own methods.
+    member.events.append(EligibleMemberAccountUnlinked(occurred_at=utc_now(), member_id=member.id))
+    await _audit(
+        member,
+        outbox=outbox,
+        current_user=current_user,
+        request=request,
     )
     return _response(member)
 
@@ -897,6 +949,7 @@ async def unlink_member_account(
 @router.post("/{member_id}/merge", response_model=MemberMergeResponse)
 @transactional()
 async def merge_members(
+    request: Request,
     member_id: str,
     data: MemberMergeRequest,
     current_user: TokenData = Depends(get_current_user),
@@ -912,21 +965,27 @@ async def merge_members(
     if target.client_id != source.client_id:
         raise HTTPException(status_code=409, detail="Members must belong to the same client")
     transferred = await member_repo.merge_into(target.tenant_id, source.id, target.id)
-    await record_member_change(
-        outbox,
-        tenant_id=current_user.tenant_id,
-        user_id=current_user.user_id,
-        resource_id=target.id.value,
-        action="UPDATE",
-        operation="Merged",
+    target.events.append(
+        EligibleMemberMerged(
+            occurred_at=utc_now(), member_id=target.id, merged_from=source.id.value
+        )
     )
-    await record_member_change(
-        outbox,
-        tenant_id=current_user.tenant_id,
-        user_id=current_user.user_id,
-        resource_id=source.id.value,
-        action="DELETE",
-        operation="MergedIntoMember",
+    source.events.append(
+        EligibleMemberMergedIntoMember(
+            occurred_at=utc_now(), member_id=source.id, merged_into=target.id.value
+        )
+    )
+    await _audit(
+        target,
+        outbox=outbox,
+        current_user=current_user,
+        request=request,
+    )
+    await _audit(
+        source,
+        outbox=outbox,
+        current_user=current_user,
+        request=request,
     )
     return MemberMergeResponse(
         member=_response(await _get_member(member_id, current_user.tenant_id, member_repo)),
@@ -938,6 +997,7 @@ async def merge_members(
 @router.post("/{member_id}/suspend", response_model=MemberResponse)
 @transactional()
 async def suspend_member(
+    request: Request,
     member_id: str,
     current_user: TokenData = Depends(require_not_viewer),
     member_repo: EligibleMemberRepository = Depends(get_eligible_member_repository),
@@ -945,13 +1005,11 @@ async def suspend_member(
     db: AsyncSession = Depends(get_db),
 ):
     member = await _transition_member(member_id, "suspend", current_user, member_repo)
-    await record_member_change(
-        outbox,
-        tenant_id=current_user.tenant_id,
-        user_id=current_user.user_id,
-        resource_id=member.id.value,
-        action="UPDATE",
-        operation="Suspended",
+    await _audit(
+        member,
+        outbox=outbox,
+        current_user=current_user,
+        request=request,
     )
     return _response(member)
 
@@ -959,6 +1017,7 @@ async def suspend_member(
 @router.post("/{member_id}/reinstate", response_model=MemberResponse)
 @transactional()
 async def reinstate_member(
+    request: Request,
     member_id: str,
     current_user: TokenData = Depends(require_not_viewer),
     member_repo: EligibleMemberRepository = Depends(get_eligible_member_repository),
@@ -966,13 +1025,11 @@ async def reinstate_member(
     db: AsyncSession = Depends(get_db),
 ):
     member = await _transition_member(member_id, "reinstate", current_user, member_repo)
-    await record_member_change(
-        outbox,
-        tenant_id=current_user.tenant_id,
-        user_id=current_user.user_id,
-        resource_id=member.id.value,
-        action="UPDATE",
-        operation="Reinstated",
+    await _audit(
+        member,
+        outbox=outbox,
+        current_user=current_user,
+        request=request,
     )
     return _response(member)
 
@@ -980,6 +1037,7 @@ async def reinstate_member(
 @router.post("/{member_id}/terminate", response_model=MemberResponse)
 @transactional()
 async def terminate_member(
+    request: Request,
     member_id: str,
     current_user: TokenData = Depends(require_not_viewer),
     member_repo: EligibleMemberRepository = Depends(get_eligible_member_repository),
@@ -987,13 +1045,11 @@ async def terminate_member(
     db: AsyncSession = Depends(get_db),
 ):
     member = await _transition_member(member_id, "terminate", current_user, member_repo)
-    await record_member_change(
-        outbox,
-        tenant_id=current_user.tenant_id,
-        user_id=current_user.user_id,
-        resource_id=member.id.value,
-        action="UPDATE",
-        operation="Terminated",
+    await _audit(
+        member,
+        outbox=outbox,
+        current_user=current_user,
+        request=request,
     )
     return _response(member)
 
@@ -1065,6 +1121,7 @@ async def list_member_next_of_kin(
 )
 @transactional()
 async def create_member_next_of_kin(
+    request: Request,
     member_id: str,
     data: MemberNextOfKinCreate,
     current_user: TokenData = Depends(require_not_viewer),
@@ -1088,14 +1145,14 @@ async def create_member_next_of_kin(
         updated_at=now,
     )
     await next_of_kin_repo.save(contact)
-    await record_member_change(
-        outbox,
-        tenant_id=current_user.tenant_id,
-        user_id=current_user.user_id,
-        resource_id=contact.id.value,
-        member_id=contact.member_id.value,
-        action="CREATE",
-        operation="Created",
+    contact.events.append(
+        MemberNextOfKinCreated(occurred_at=utc_now(), member_id=contact.member_id)
+    )
+    await _audit(
+        contact,
+        outbox=outbox,
+        current_user=current_user,
+        request=request,
     )
     return _next_of_kin_response(contact)
 
@@ -1103,6 +1160,7 @@ async def create_member_next_of_kin(
 @router.patch("/{member_id}/next-of-kin/{contact_id}", response_model=MemberNextOfKinResponse)
 @transactional()
 async def update_member_next_of_kin(
+    request: Request,
     member_id: str,
     contact_id: str,
     data: MemberNextOfKinUpdate,
@@ -1115,6 +1173,7 @@ async def update_member_next_of_kin(
     contact = await _get_contact(
         member_id, contact_id, current_user.tenant_id, member_repo, next_of_kin_repo
     )
+    before = deepcopy(contact)
     contact.update(
         name=data.name.strip(),
         relationship=data.relationship,
@@ -1124,14 +1183,15 @@ async def update_member_next_of_kin(
         now=utc_now(),
     )
     await next_of_kin_repo.save(contact)
-    await record_member_change(
-        outbox,
-        tenant_id=current_user.tenant_id,
-        user_id=current_user.user_id,
-        resource_id=contact.id.value,
-        member_id=contact.member_id.value,
-        action="UPDATE",
-        operation="Updated",
+    contact.events.append(
+        MemberNextOfKinUpdated(occurred_at=utc_now(), member_id=contact.member_id)
+    )
+    await _audit(
+        contact,
+        outbox=outbox,
+        current_user=current_user,
+        request=request,
+        old_entity=before,
     )
     return _next_of_kin_response(contact)
 
@@ -1139,6 +1199,7 @@ async def update_member_next_of_kin(
 @router.delete("/{member_id}/next-of-kin/{contact_id}", status_code=status.HTTP_204_NO_CONTENT)
 @transactional()
 async def delete_member_next_of_kin(
+    request: Request,
     member_id: str,
     contact_id: str,
     current_user: TokenData = Depends(require_not_viewer),
@@ -1151,14 +1212,14 @@ async def delete_member_next_of_kin(
         member_id, contact_id, current_user.tenant_id, member_repo, next_of_kin_repo
     )
     await next_of_kin_repo.delete(contact.id)
-    await record_member_change(
-        outbox,
-        tenant_id=current_user.tenant_id,
-        user_id=current_user.user_id,
-        resource_id=contact.id.value,
-        member_id=contact.member_id.value,
-        action="DELETE",
-        operation="Deleted",
+    contact.events.append(
+        MemberNextOfKinDeleted(occurred_at=utc_now(), member_id=contact.member_id)
+    )
+    await _audit(
+        contact,
+        outbox=outbox,
+        current_user=current_user,
+        request=request,
     )
     return None
 

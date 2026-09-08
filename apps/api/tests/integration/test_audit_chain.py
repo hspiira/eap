@@ -22,6 +22,7 @@ from sqlalchemy.schema import CreateSchema, DropSchema
 
 from app.api.routes.clients import router as clients_router
 from app.api.routes.contracts import router as contracts_router
+from app.api.routes.members import router as members_router
 from app.api.routes.service_assignments import router as assignments_router
 from app.application.services.outbox_consumers import make_audit_consumer
 from app.application.services.outbox_dispatcher import OutboxDispatcher
@@ -119,6 +120,7 @@ async def api(chain_db):
     app.include_router(clients_router)
     app.include_router(contracts_router)
     app.include_router(assignments_router)
+    app.include_router(members_router)
 
     async def override_db():
         async with chain_db() as session:
@@ -312,3 +314,51 @@ class TestAuditChain:
             recorded = {log.extra_metadata["event_type"]: log.action_type for log in logs}
             assert recorded["ServiceAssignmentCreated"] == AuditActionType.CREATE
             assert recorded["ServiceAssignmentStatusChanged"] == AuditActionType.UPDATE
+
+    async def test_a_roster_edit_carries_its_diff_and_the_caller_address(self, api, chain_db):
+        """What the roster's own audit path could not record.
+
+        record_member_change enqueued its rows by hand with field_changes
+        always empty and no request to read an address from.
+        """
+        created = await api.post(
+            "/members",
+            params={"tenant_id": TENANT_ID},
+            json={
+                "client_id": CLIENT_ID,
+                "employer_member_id": "EMP-1",
+                "relation": "Employee",
+                "display_label": "Test Member",
+            },
+            headers={"user-agent": "chain-test", "x-forwarded-for": "203.0.113.9"},
+        )
+        assert created.status_code == 201, created.text
+        member_id = created.json()["id"]
+        assert await _drain(chain_db) == 1
+
+        renamed = await api.patch(
+            f"/members/{member_id}",
+            json={"display_label": "Renamed Member"},
+            headers={"user-agent": "chain-test", "x-forwarded-for": "203.0.113.9"},
+        )
+        assert renamed.status_code == 200, renamed.text
+        assert await _drain(chain_db) == 1
+
+        async with chain_db() as session:
+            logs = (await session.execute(select(AuditLogModel))).scalars().all()
+            updates = [log for log in logs if log.action_type == AuditActionType.UPDATE]
+            assert len(updates) == 1
+            assert updates[0].resource_type == "EligibleMember"
+            assert updates[0].ip_address == "203.0.113.9"
+            assert updates[0].user_agent == "chain-test"
+            # A roster row is reported to the DPO and still records what moved:
+            # redaction follows clinical content, not the reporting flag.
+            assert updates[0].is_special_category is True
+
+            changes = (await session.execute(select(EntityChangeModel))).scalars().all()
+            edited = {
+                field["field_name"]: (field["old_value"], field["new_value"])
+                for change in changes
+                for field in change.field_changes
+            }
+            assert edited["display_label"] == ("Test Member", "Renamed Member")

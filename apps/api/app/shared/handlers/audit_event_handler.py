@@ -18,7 +18,10 @@ from app.shared.utils.audit_helper import (
     map_domain_event_to_audit_action,
     redact_values,
 )
-from app.shared.utils.clinical_data_classification import is_special_category
+from app.shared.utils.clinical_data_classification import (
+    is_special_category,
+    redacts_content,
+)
 
 
 class AuditEventHandler:
@@ -55,7 +58,7 @@ class AuditEventHandler:
             special_category = is_special_category(
                 resource_type=resource_type, event_type=event_type_name
             )
-            if special_category:
+            if redacts_content(resource_type):
                 field_changes = redact_values(field_changes)
             payload = {
                 "action_type": action_type.value,
