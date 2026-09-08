@@ -471,3 +471,36 @@ Nothing depends on the deletion: the committed tree still compiles with the
 panel present, just unused. It will land with whoever commits that file.
 
 Closed. It landed in `64abbba` with the roster panel; the symbol is gone.
+
+## Discovered: a session never becomes a utilisation event
+
+The client detail Sessions tab reads `utilisation_events`. Nothing in the API
+writes one from a session: `UtilisationEventEntity` is constructed in exactly
+one place, `POST /utilisation-events` in `app/api/routes/pricing.py`, so the
+only way a row appears is somebody calling that endpoint by hand.
+
+The result is a contradiction a user can see. The dashboard counts
+`service_sessions` (`dashboard_query_runner.py`), so it reports that clients
+have delivered sessions, while each client's own Sessions tab is empty. Before
+this change dev held 369 sessions across 35 clients and 0 utilisation events.
+
+`scripts/seed_stanbic_contracts.py` now writes the events for Stanbic Bank, 59
+of them, attributing each session to the term its date falls in and carrying
+the session id in `source_id` so a rerun skips it. That fills one client's tab
+for the demo. It is not the fix: the other 34 clients with sessions still show
+nothing, and a session completed in the app tomorrow still records no usage.
+
+The real decision belongs with whoever owns pricing, since it is a billing
+question, not a display one:
+
+- does completing a session emit a utilisation event, and is a cancelled or
+  no-show session excluded;
+- how a session is attributed to a contract, given `service_sessions` carries
+  `client_id` and `scheduled_at` but no `contract_id`, and terms can overlap;
+- what happens to the 369 sessions already imported;
+- what makes the write idempotent, since `utilisation_events.source_id` has no
+  unique index.
+
+Left for that work rather than fixed here: `clients.py`,
+`utilisation_event_repository.py` and `ClientManagementPanels.tsx` were all
+being edited in another session's working tree while this was written.

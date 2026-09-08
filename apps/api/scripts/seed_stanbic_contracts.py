@@ -137,7 +137,7 @@ async def run(tenant_id: str, apply: bool) -> int:
     app.dependency_overrides[get_current_user] = lambda: actor
     app.dependency_overrides[get_current_user_optional] = lambda: actor
 
-    contracts_plan, assignments_plan = Plan(), Plan()
+    contracts_plan, assignments_plan, events_plan = Plan(), Plan(), Plan()
     async with AsyncClient(
         transport=ASGITransport(app=app), base_url="http://seed", timeout=120
     ) as http:
@@ -158,8 +158,17 @@ async def run(tenant_id: str, apply: bool) -> int:
                 assignments_plan,
                 apply,
             )
+        terms = await _contracts(http, tenant_id, client["id"])
+        await _utilisation(http, tenant_id, client["id"], terms, events_plan, apply)
 
-    return report(apply, [("contracts", contracts_plan), ("assignments", assignments_plan)])
+    return report(
+        apply,
+        [
+            ("contracts", contracts_plan),
+            ("assignments", assignments_plan),
+            ("utilisation", events_plan),
+        ],
+    )
 
 
 async def _paged(http, path: str, tenant_id: str, extra: str = "") -> list[dict]:
@@ -280,6 +289,74 @@ async def _assignments(http, tenant_id, contract_id, term, services, label, plan
             plan.failed.append(f"{label} {name}: {response.status_code} {response.text[:120]}")
             continue
         await _activate(http, response.json()["id"], f"{label} {name}", plan)
+
+
+async def _utilisation(http, tenant_id, client_id, terms, plan, apply) -> None:
+    """Record each delivered session as billable usage on the term it falls in.
+
+    The client's Sessions tab reads `utilisation_events`, and nothing in the
+    API writes one: a session is delivery, an event is billing, and no code
+    joins them. Until something does, the tab is empty however many sessions a
+    client has, so the demo data has to carry the events too.
+
+    A session names a client and a date but no contract, so it is attributed to
+    the term its date falls inside. The session id goes in `source_id`, which
+    is what makes a rerun skip what it already wrote.
+    """
+    recorded = set()
+    for contract_id in (row["id"] for row in terms.values()):
+        response = await send(
+            http, "GET", f"/contracts/{contract_id}/utilisation-events?tenant_id={tenant_id}"
+        )
+        if response.status_code == 200:
+            recorded.update(event["source_id"] for event in response.json() if event["source_id"])
+
+    for session in await _sessions(http, tenant_id, client_id):
+        day = session["scheduled_at"][:10]
+        contract_id = _term_for(terms, day)
+        label = f"{day} {session['id']}"
+        if contract_id is None:
+            plan.skipped.append(f"{label}: no contract term covers this date")
+            continue
+        if session["id"] in recorded:
+            plan.unchanged.append(label)
+            continue
+        if not apply:
+            plan.created.append(label)
+            continue
+        created = await send(
+            http,
+            "POST",
+            f"/utilisation-events?tenant_id={tenant_id}",
+            json={
+                "contract_id": contract_id,
+                "event_type": "SessionDelivered",
+                "occurred_on": day,
+                "units": 1,
+                "service_code": session["service_id"],
+                "source_id": session["id"],
+            },
+        )
+        if created.status_code != 201:
+            plan.failed.append(f"{label}: {created.status_code} {created.text[:120]}")
+        else:
+            plan.created.append(label)
+
+
+async def _sessions(http, tenant_id: str, client_id: str) -> list[dict]:
+    """The client's delivered sessions. The list endpoint has no client filter."""
+    return [
+        row
+        for row in await _paged(http, "/service-sessions/", tenant_id, "&status=Completed")
+        if row["client_id"] == client_id
+    ]
+
+
+def _term_for(terms: dict, day: str) -> str | None:
+    for (start, end), row in terms.items():
+        if start <= day <= end:
+            return row["id"]
+    return None
 
 
 async def _activate(http, assignment_id: str, label: str, plan) -> None:
