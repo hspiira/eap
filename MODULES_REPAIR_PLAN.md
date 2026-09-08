@@ -757,3 +757,30 @@ agents' in-flight work or regenerate contracts from a stale backend. The reviewe
 must check the combined branch and reproduce corrected boundaries before closing
 findings. Production migrations, real data import and deployment are separate
 from implementing this plan.
+
+## Alembic has two heads, blocking every DB-backed test (found 2026-09-08)
+
+Found while implementing the practitioner detail redesign. Not caused by that
+work, and not fixed by it: both branches belong to other agents, and a second
+agent adding a merge concurrently would make the history worse rather than
+better.
+
+`cd apps/api && uv run alembic heads` returns two:
+
+| Head | Migration | Commit |
+| --- | --- | --- |
+| `6e23da00f089` | `..._add_survey_sources_client_tiers_kpi_units_utilisation_event_types.py` | `8e5acec0` taxonomy reference tables |
+| `c7x0y2z4t6v9` | `c7x0y2z4t6v9_session_contract_id.py` | `da8eb76d` session contract id |
+
+Consequence: any test run with a database configured fails at upgrade with
+`alembic.util.exc.CommandError: Multiple head revisions are present`. Observed
+in `test_provider_reference_migration.py`,
+`test_provider_engagement_documents_migration.py` and
+`test_members_persistence.py`. Suites that skip without a database still pass,
+so this is invisible unless a database is configured, which is how it reached
+`main` unnoticed.
+
+Fix: one merge revision, `uv run alembic merge heads -m "merge taxonomy and
+session contract branches"`. Either branch owner should do it, once. Whoever
+takes it should confirm afterwards that `alembic heads` returns a single
+revision and that the three named test modules upgrade cleanly.
