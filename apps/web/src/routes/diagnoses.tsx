@@ -196,7 +196,7 @@ function DiagnosesPage() {
           <ErrorState message={error} onRetry={() => void reload()} />
         ) : (
           <div className="grid min-h-0 flex-1 grid-cols-12 gap-3 overflow-hidden bg-bg p-3">
-            <div className="col-span-12 flex min-h-0 min-w-0 flex-col overflow-hidden border border-fg/10 bg-surface lg:col-span-8">
+            <div className="col-span-12 flex min-h-0 min-w-0 flex-col overflow-hidden border border-fg/10 bg-surface lg:col-span-6">
               {types.length === 0 ? (
                 <EmptyState
                   icon={Stethoscope}
@@ -244,7 +244,7 @@ function DiagnosesPage() {
               )}
             </div>
 
-            <div className="col-span-12 flex min-h-0 min-w-0 flex-col lg:col-span-4">
+            <div className="col-span-12 flex min-h-0 min-w-0 flex-col lg:col-span-6">
               {selected ? (
                 <TypeDetailsCard
                   type={selected}
