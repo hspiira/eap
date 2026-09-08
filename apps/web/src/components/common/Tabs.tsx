@@ -37,6 +37,11 @@ export function Tabs({ value, onValueChange, children, className }: TabsProps) {
   )
 }
 
+/**
+ * The tab strip. Sticks to the top of whatever scrolls beneath it, so the tabs
+ * stay reachable in a long panel, and wraps rather than scrolling sideways: a
+ * tab hidden off the edge of its own strip is a tab nobody finds.
+ */
 export function TabsList({
   children,
   className,
@@ -48,7 +53,7 @@ export function TabsList({
     <div
       role="tablist"
       className={cn(
-        "flex h-10 shrink-0 items-end gap-0.5 overflow-x-auto border-b border-fg/10 px-3",
+        "sticky top-0 z-20 flex min-h-10 shrink-0 flex-wrap items-end gap-0.5 border-b border-fg/10 bg-bg/95 px-3 backdrop-blur",
         className,
       )}
     >
