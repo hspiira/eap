@@ -744,6 +744,45 @@ class TestGetClientStats:
         data = response.json()
         assert data["child_clients_count"] >= 1
 
+    async def test_get_client_stats_reports_member_relation_breakdown(
+        self, client: AsyncClient, client_test_tenant: dict, test_client: dict
+    ):
+        """Members are counted per relation; domestic partners and other dependents fold into "other"."""
+        tenant_id = client_test_tenant["id"]
+        client_id = test_client["id"]
+
+        employee = await client.post(
+            "/members",
+            json={
+                "client_id": client_id,
+                "relation": "Employee",
+                "display_label": "Employee One",
+            },
+        )
+        assert employee.status_code == 201, employee.text
+        employee_id = employee.json()["id"]
+
+        for relation in ("Spouse", "Child", "DomesticPartner", "DependentOther"):
+            dependent = await client.post(
+                "/members",
+                json={
+                    "client_id": client_id,
+                    "relation": relation,
+                    "display_label": f"{relation} dependent",
+                    "primary_employee_member_id": employee_id,
+                },
+            )
+            assert dependent.status_code == 201, dependent.text
+
+        response = await client.get(f"/clients/{client_id}/stats?tenant_id={tenant_id}")
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["employee_members_count"] == 1
+        assert data["spouse_members_count"] == 1
+        assert data["child_members_count"] == 1
+        assert data["other_members_count"] == 2
+
     async def test_get_client_stats_not_found(self, client: AsyncClient, client_test_tenant: dict):
         """Test getting stats for non-existent client."""
         tenant_id = client_test_tenant["id"]

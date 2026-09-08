@@ -1367,7 +1367,7 @@ export interface paths {
         };
         /**
          * Get client statistics
-         * @description Get client statistics including child clients and contracts.
+         * @description Get client statistics including child clients, contracts and roster mix.
          */
         get: operations["get_client_stats_clients__client_id__stats_get"];
         put?: never;
@@ -7192,15 +7192,35 @@ export interface components {
              */
             child_clients_count: number;
             /**
+             * Child Members Count
+             * @description Members with the Child relation
+             */
+            child_members_count: number;
+            /**
              * Client Id
              * @description Client identifier
              */
             client_id: string;
             /**
+             * Employee Members Count
+             * @description Members with the Employee relation
+             */
+            employee_members_count: number;
+            /**
              * Is Verified
              * @description Whether client is verified
              */
             is_verified: boolean;
+            /**
+             * Other Members Count
+             * @description Members with any other relation (domestic partner, other dependent)
+             */
+            other_members_count: number;
+            /**
+             * Spouse Members Count
+             * @description Members with the Spouse relation
+             */
+            spouse_members_count: number;
             /** @description Client status */
             status: components["schemas"]["BaseStatus"];
             /**

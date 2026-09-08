@@ -343,5 +343,11 @@ class ClientStatsResponse(BaseModel):
     child_clients_count: int = Field(..., description="Number of child clients")
     total_contracts_count: int = Field(..., description="Total number of contracts")
     active_contracts_count: int = Field(..., description="Number of active contracts")
+    employee_members_count: int = Field(..., description="Members with the Employee relation")
+    spouse_members_count: int = Field(..., description="Members with the Spouse relation")
+    child_members_count: int = Field(..., description="Members with the Child relation")
+    other_members_count: int = Field(
+        ..., description="Members with any other relation (domestic partner, other dependent)"
+    )
     is_verified: bool = Field(..., description="Whether client is verified")
     status: BaseStatus = Field(..., description="Client status")

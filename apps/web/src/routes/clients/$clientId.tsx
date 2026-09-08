@@ -545,12 +545,11 @@ function ClientDetailPage() {
           </div>
 
           {(tab === "overview" || tab === "setup") && (
-            <aside className="col-span-12 min-w-0 lg:col-span-4 lg:pt-14">
+            <aside className="col-span-12 min-w-0 lg:sticky lg:top-3 lg:col-span-4 lg:max-h-[80vh] lg:overflow-y-auto lg:pt-14">
               <DetailRail
                 client={client}
                 stats={stats}
                 statsLoading={statsQuery.isPending}
-                memberCount={rosterCount}
                 nextRenewal={upcomingItems[0]?.date}
                 milestonesState={
                   endingQuery.isPending ? "loading" : endingQuery.isError ? "error" : "ready"

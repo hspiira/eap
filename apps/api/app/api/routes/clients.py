@@ -35,6 +35,7 @@ from app.api.dependencies import (
     get_client_repository,
     get_contact_repository,
     get_contract_repository,
+    get_eligible_member_repository,
     get_industry_repository,
     get_tenant_repository,
     get_user_repository,
@@ -113,6 +114,7 @@ from app.domain.repositories.client_alias_repository import ClientAliasRepositor
 from app.domain.repositories.client_repository import ClientRepository
 from app.domain.repositories.contact_repository import ContactRepository
 from app.domain.repositories.contract_repository import ContractRepository
+from app.domain.repositories.eligible_member_repository import EligibleMemberRepository
 from app.domain.repositories.industry_repository import IndustryRepository
 from app.domain.repositories.tenant_repository import TenantRepository
 from app.domain.repositories.user_repository import UserRepository
@@ -1844,9 +1846,10 @@ async def get_client_stats(
     client: ClientEntity = Depends(get_client_for_current_tenant),
     client_repo: ClientRepository = Depends(get_client_repository),
     contract_repo: ContractRepository = Depends(get_contract_repository),
+    member_repo: EligibleMemberRepository = Depends(get_eligible_member_repository),
     db: AsyncSession = Depends(get_db),
 ):
-    """Get client statistics including child clients and contracts."""
+    """Get client statistics including child clients, contracts and roster mix."""
     tenant_id = client.tenant_id.value
     client_id = client.id.value
 
@@ -1873,11 +1876,30 @@ async def get_client_stats(
         status=ContractStatus.RENEWED,
     )
 
+    employee_members_count = await member_repo.count(
+        client.tenant_id, client_id=client.id, relation=MemberRelation.EMPLOYEE
+    )
+    spouse_members_count = await member_repo.count(
+        client.tenant_id, client_id=client.id, relation=MemberRelation.SPOUSE
+    )
+    child_members_count = await member_repo.count(
+        client.tenant_id, client_id=client.id, relation=MemberRelation.CHILD
+    )
+    other_members_count = await member_repo.count(
+        client.tenant_id, client_id=client.id, relation=MemberRelation.DOMESTIC_PARTNER
+    ) + await member_repo.count(
+        client.tenant_id, client_id=client.id, relation=MemberRelation.DEPENDENT_OTHER
+    )
+
     return ClientStatsResponse(
         client_id=client_id,
         child_clients_count=child_clients_count,
         total_contracts_count=total_contracts_count,
         active_contracts_count=active_contracts_count,
+        employee_members_count=employee_members_count,
+        spouse_members_count=spouse_members_count,
+        child_members_count=child_members_count,
+        other_members_count=other_members_count,
         is_verified=client.is_verified,
         status=client.status,
     )

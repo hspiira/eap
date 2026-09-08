@@ -2729,15 +2729,35 @@
             "title": "Child Clients Count",
             "type": "integer"
           },
+          "child_members_count": {
+            "description": "Members with the Child relation",
+            "title": "Child Members Count",
+            "type": "integer"
+          },
           "client_id": {
             "description": "Client identifier",
             "title": "Client Id",
             "type": "string"
           },
+          "employee_members_count": {
+            "description": "Members with the Employee relation",
+            "title": "Employee Members Count",
+            "type": "integer"
+          },
           "is_verified": {
             "description": "Whether client is verified",
             "title": "Is Verified",
             "type": "boolean"
+          },
+          "other_members_count": {
+            "description": "Members with any other relation (domestic partner, other dependent)",
+            "title": "Other Members Count",
+            "type": "integer"
+          },
+          "spouse_members_count": {
+            "description": "Members with the Spouse relation",
+            "title": "Spouse Members Count",
+            "type": "integer"
           },
           "status": {
             "$ref": "#/components/schemas/BaseStatus",
@@ -2754,6 +2774,10 @@
           "child_clients_count",
           "total_contracts_count",
           "active_contracts_count",
+          "employee_members_count",
+          "spouse_members_count",
+          "child_members_count",
+          "other_members_count",
           "is_verified",
           "status"
         ],
@@ -21284,7 +21308,7 @@
     },
     "/clients/{client_id}/stats": {
       "get": {
-        "description": "Get client statistics including child clients and contracts.",
+        "description": "Get client statistics including child clients, contracts and roster mix.",
         "operationId": "get_client_stats_clients__client_id__stats_get",
         "parameters": [
           {
