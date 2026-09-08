@@ -45,31 +45,31 @@ export function ContractServicesCard({ contract }: { contract: Contract }) {
   const query = useContractServices(contract.id)
   return (
     <div className="flex min-h-0 flex-col overflow-hidden border border-fg/10 bg-surface">
-      <header className="flex items-start gap-3 border-b border-fg/10 px-4 py-3">
+      <header className="flex items-start gap-2.5 border-b border-fg/10 px-3 py-2.5">
         <span
           aria-hidden
-          className="grid size-8 shrink-0 place-items-center bg-primary/10 text-primary"
+          className="grid size-7 shrink-0 place-items-center bg-primary/10 text-primary"
         >
-          <FileCheck className="size-4" />
+          <FileCheck className="size-3.5" />
         </span>
         <div className="min-w-0 flex-1">
           <h3 className="truncate text-sm font-semibold leading-tight text-fg">
             {contractLabel(contract)}
           </h3>
-          <p className="mt-1 text-[11px] text-fg-muted">
+          <p className="mt-0.5 text-[11px] text-fg-muted">
             {query.data ? `${query.data.length} services` : "Services in this contract"}
           </p>
         </div>
         <StatusBadge status={contract.status} size="sm" />
       </header>
 
-      <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto overscroll-contain p-4">
+      <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto overscroll-contain p-3">
         <ContractServicesList query={query} />
         <Link
           to="/contracts/$contractId"
           params={{ contractId: contract.id }}
           search={{ tab: "services" }}
-          className="inline-flex items-center gap-1.5 text-sm font-medium text-primary hover:underline"
+          className="inline-flex items-center gap-1.5 text-xs font-medium text-primary hover:underline"
         >
           Manage services
           <ExternalLink className="size-3.5" />
@@ -106,15 +106,11 @@ function ContractServicesList({ query }: { query: ReturnType<typeof useContractS
       </div>
     )
   if (!query.data.length)
-    return (
-      <p className="border border-dashed border-fg/15 p-6 text-center text-sm text-fg-muted">
-        No services assigned to this contract yet.
-      </p>
-    )
+    return <p className="text-sm text-fg-muted">No services assigned to this contract yet.</p>
   return (
-    <ul className="divide-y divide-fg/10 border border-fg/10">
+    <ul className="space-y-1.5">
       {query.data.map(({ assignment, service }) => (
-        <li key={assignment.id} className="px-3 py-2">
+        <li key={assignment.id} className="leading-snug">
           <Link
             to="/services/$serviceId"
             params={{ serviceId: service.id }}
@@ -123,7 +119,7 @@ function ContractServicesList({ query }: { query: ReturnType<typeof useContractS
             {service.name}
           </Link>
           {assignment.notes && (
-            <span className="ml-2 text-xs text-fg-muted">{assignment.notes}</span>
+            <span className="ml-1.5 text-xs text-fg-muted">{assignment.notes}</span>
           )}
         </li>
       ))}
