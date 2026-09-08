@@ -6,14 +6,14 @@
  * a percentage, because a rise from zero has no percentage to state.
  */
 
-import { Minus, TrendingDown, TrendingUp } from "lucide-react"
+import { Minus, PackageSearch, TrendingDown, TrendingUp } from "lucide-react"
 
 import type { ServiceTrend } from "@/api/generated"
 import { Card, CardContent } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
 import { cn } from "@/lib/utils"
 
-import { CardBar, CardStat } from "./CardBar"
+import { CardBar, CardEmptyState, CardStat } from "./CardBar"
 
 interface TrendingServicesCardProps {
   services: ReadonlyArray<ServiceTrend>
@@ -33,7 +33,13 @@ export function TrendingServicesCard({ services, loading }: TrendingServicesCard
             <Skeleton className="h-32 w-full" />
           </div>
         ) : services.length === 0 ? (
-          <p className="p-6 text-center text-sm text-fg-muted">No services used in this window.</p>
+          <div className="p-3">
+            <CardEmptyState
+              icon={PackageSearch}
+              title="No services used yet"
+              description="Demand will rank here once sessions are logged in this window."
+            />
+          </div>
         ) : (
           <ul>
             {services.map((service, i) => (

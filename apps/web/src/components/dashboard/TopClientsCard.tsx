@@ -4,12 +4,13 @@
  */
 
 import { Link } from "@tanstack/react-router"
+import { Building2 } from "lucide-react"
 
 import type { ClientSessions } from "@/api/generated"
 import { Card, CardContent } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
 
-import { CardBar, CardStat } from "./CardBar"
+import { CardBar, CardEmptyState, CardStat } from "./CardBar"
 
 interface TopClientsCardProps {
   clients: ReadonlyArray<ClientSessions>
@@ -28,7 +29,11 @@ export function TopClientsCard({ clients, loading }: TopClientsCardProps) {
         {loading ? (
           <Skeleton className="h-32 w-full" />
         ) : clients.length === 0 ? (
-          <p className="py-6 text-center text-sm text-fg-muted">No sessions in this window.</p>
+          <CardEmptyState
+            icon={Building2}
+            title="No sessions yet"
+            description="Client rankings will appear once sessions are logged in this window."
+          />
         ) : (
           <ul className="grid gap-2.5">
             {clients.map((client) => (
