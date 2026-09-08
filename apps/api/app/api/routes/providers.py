@@ -13,6 +13,7 @@ from app.api.dependencies import (
     get_audit_event_handler,
     get_provider_engagement_document_repository,
     get_provider_repository,
+    get_service_session_repository,
 )
 from app.api.schemas.provider_schemas import (
     AccountLinkCommand,
@@ -22,6 +23,8 @@ from app.api.schemas.provider_schemas import (
     EngagementDocumentUpsert,
     PanelStatusCommand,
     ProviderCreate,
+    ProviderDeliveryOrganisationStat,
+    ProviderDeliveryStatsResponse,
     ProviderListResponse,
     ProviderResponse,
     ProviderUpdate,
@@ -47,6 +50,10 @@ from app.domain.repositories.provider_engagement_document_repository import (
     ProviderEngagementDocumentRepository,
 )
 from app.domain.repositories.provider_repository import ProviderListQuery, ProviderRepository
+from app.domain.repositories.service_session_repository import (
+    ProviderDeliveryStats,
+    ServiceSessionRepository,
+)
 from app.domain.value_objects.core import ProviderId, ProviderProfile, TenantId, UserId
 from app.domain.value_objects.ids import ProviderEngagementDocumentId
 from app.shared.decorators import readonly, transactional
@@ -456,3 +463,46 @@ async def upsert_engagement_document(
         await documents.save(document)
         await audit_change(document, audit_handler, current_user, request)
     return _document_response(document)
+
+
+def _delivery_stats_response(stats: ProviderDeliveryStats) -> ProviderDeliveryStatsResponse:
+    return ProviderDeliveryStatsResponse(
+        total_sessions=stats.total_sessions,
+        first_session_at=stats.first_session_at,
+        last_session_at=stats.last_session_at,
+        by_delivery_context={
+            context.value: count for context, count in stats.by_delivery_context.items()
+        },
+        by_organisation=[
+            ProviderDeliveryOrganisationStat(
+                organisation_id=row.organisation_id,
+                organisation_name=row.organisation_name,
+                session_count=row.session_count,
+            )
+            for row in stats.by_organisation
+        ],
+    )
+
+
+@router.get(
+    "/{provider_id}/delivery-stats",
+    response_model=ProviderDeliveryStatsResponse,
+    summary="Counts over one practitioner's whole delivery record",
+)
+@readonly()
+async def get_delivery_stats(
+    provider_id: str,
+    current_user: TokenData = Depends(get_current_user),
+    repo: ProviderRepository = Depends(get_provider_repository),
+    sessions: ServiceSessionRepository = Depends(get_service_session_repository),
+    db: AsyncSession = Depends(get_db),
+):
+    """The organisation breakdown follows each session's stored affiliation.
+
+    A practitioner who moves between organisations keeps the attribution their
+    past sessions were delivered under (decision 2).
+    """
+    provider = await _load(provider_id, current_user, repo)
+    return _delivery_stats_response(
+        await sessions.provider_delivery_stats(provider.tenant_id, provider.id)
+    )

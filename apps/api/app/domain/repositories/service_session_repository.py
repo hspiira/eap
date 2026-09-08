@@ -7,12 +7,14 @@ Implementation lives in infrastructure layer.
 
 from abc import abstractmethod
 from collections.abc import Sequence
+from dataclasses import dataclass
 from datetime import datetime
 
 from app.domain.entities.service_session import ServiceSessionEntity
 from app.domain.enums import (
     SessionCategory,
     SessionClinicalStatus,
+    SessionDeliveryContext,
     SessionStatus,
     SessionType,
 )
@@ -24,6 +26,26 @@ from app.domain.value_objects.core import (
     SessionId,
     TenantId,
 )
+
+
+@dataclass(frozen=True)
+class ProviderOrganisationSessionCount:
+    """Sessions one practitioner delivered under one organisation."""
+
+    organisation_id: str
+    organisation_name: str
+    session_count: int
+
+
+@dataclass(frozen=True)
+class ProviderDeliveryStats:
+    """Aggregate delivery record for one practitioner within a tenant."""
+
+    total_sessions: int
+    first_session_at: datetime | None
+    last_session_at: datetime | None
+    by_delivery_context: dict[SessionDeliveryContext, int]
+    by_organisation: list[ProviderOrganisationSessionCount]
 
 
 class ServiceSessionRepository(BaseRepository[ServiceSessionEntity, SessionId]):
@@ -150,4 +172,23 @@ class ServiceSessionRepository(BaseRepository[ServiceSessionEntity, SessionId]):
 
         Returns:
             Total count
+        """
+
+    @abstractmethod
+    async def provider_delivery_stats(
+        self, tenant_id: TenantId, provider_id: ProviderId
+    ) -> ProviderDeliveryStats:
+        """
+        Aggregate every session attributed to one practitioner.
+
+        The organisation breakdown resolves through the affiliation each session
+        stored, not the practitioner's affiliations today, so a later move
+        between organisations cannot reattribute past delivery (decision 2).
+
+        Args:
+            tenant_id: Tenant identifier
+            provider_id: Provider identifier
+
+        Returns:
+            ProviderDeliveryStats over the practitioner's non-deleted sessions
         """
