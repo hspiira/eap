@@ -504,3 +504,24 @@ question, not a display one:
 Left for that work rather than fixed here: `clients.py`,
 `utilisation_event_repository.py` and `ClientManagementPanels.tsx` were all
 being edited in another session's working tree while this was written.
+
+## Discovered: `ClientUtilisationPanel` is now unreferenced
+
+The client detail Sessions tab reads `service_sessions` as of this change, so
+`ClientUtilisationPanel` and the `GET /clients/{client_id}/utilisation-events`
+endpoint behind it have no caller left in the app. Both are working code and
+were committed the same day in `d18fbfd`, so neither was deleted here.
+
+The reason for the swap: the tab is called Sessions and a utilisation event is
+a billing artefact, not a delivery record. Reading `utilisation_events` also
+left the tab empty for 34 of the 35 clients that have sessions, per the finding
+above. The new panel reads the sessions themselves and needs no seeding.
+
+Utilisation belongs on a contract, which is what it is keyed by. The obvious
+home is the contract detail page's Billing tab, beside the pricing model and
+the invoice preview that consume the same events. Whoever owns pricing should
+either move it there or delete both, rather than leaving them stranded.
+
+The same commit also synced `schema/openapi.json`, which `d18fbfd` had left
+behind: the route existed in code but not in the schema, so `contracts:check`
+would have failed on it.

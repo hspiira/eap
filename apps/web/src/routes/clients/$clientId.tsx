@@ -17,10 +17,10 @@ import {
   ClientContactsPanel,
   ClientDocumentsPanel,
   ClientRosterPanel,
-  ClientUtilisationPanel,
 } from "@/components/clients/ClientManagementPanels"
 import type { ClientOnboardingStep } from "@/components/clients/ClientOnboardingCard"
 import { ClientOnboardingCard } from "@/components/clients/ClientOnboardingCard"
+import { ClientSessionsPanel } from "@/components/clients/ClientSessionsPanel"
 import type { ClientTodaysTodoItem } from "@/components/clients/ClientTodaysTodoCard"
 import { ClientTodaysTodoCard } from "@/components/clients/ClientTodaysTodoCard"
 import type { ClientUpcomingItem } from "@/components/clients/ClientUpcomingCard"
@@ -539,7 +539,7 @@ function ClientDetailPage() {
               </TabPanel>
 
               <TabPanel value="utilisation">
-                <ClientUtilisationPanel clientId={clientId} />
+                <ClientSessionsPanel clientId={clientId} />
               </TabPanel>
             </Tabs>
           </div>
