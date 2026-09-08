@@ -170,7 +170,7 @@ describe("member roster", () => {
 
     expect(screen.getByRole("columnheader", { name: "Staff number" })).toBeInTheDocument()
     expect(screen.getByText("SN-9")).toBeInTheDocument()
-    // Filled on a handful of rows in a roster of thousands: the summary card's job.
+    // Filled on a handful of rows in a roster of thousands: the profile's job.
     expect(screen.queryByText("amina@personal.test")).not.toBeInTheDocument()
     expect(screen.queryByText("+256700000000")).not.toBeInTheDocument()
   })
@@ -186,23 +186,6 @@ describe("member roster", () => {
     renderWithProviders(<Page />)
     expect(await screen.findByText("Domestic Partner")).toBeInTheDocument()
     expect(screen.queryByText("DomesticPartner")).not.toBeInTheDocument()
-  })
-
-  it("previews the clicked member without leaving the list", async () => {
-    const user = userEvent.setup()
-    mocks.list.mockResolvedValue({
-      items: [makeMember({ staff_number: "SN-9", phone: "+256700000000" })],
-      total: 1,
-      page: 1,
-      limit: 20,
-      has_more: false,
-    })
-    renderWithProviders(<Page />)
-    await user.click(await screen.findByText("HR-1"))
-
-    // The card carries what the table no longer does.
-    expect(await screen.findByText("+256700000000")).toBeInTheDocument()
-    expect(screen.getByRole("link", { name: /Open full profile/ })).toBeInTheDocument()
   })
 
   it("shows roster counts for the current filter context", async () => {

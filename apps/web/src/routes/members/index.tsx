@@ -32,10 +32,6 @@ import { ROW_BORDER } from "@/components/common/tableStyles"
 import { MemberFormSheet } from "@/components/MemberFormSheet"
 import { MemberMergeDialog } from "@/components/MemberMergeDialog"
 import { MemberImportDialog } from "@/components/members/MemberImportDialog"
-import {
-  MemberSummaryCard,
-  MemberSummaryPlaceholder,
-} from "@/components/members/MemberSummaryCard"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import {
@@ -75,9 +71,8 @@ export const Route = createFileRoute("/members/")({
 /**
  * Ranked by how much of the roster actually carries the field. Phone, personal
  * email and date of birth are filled on a handful of rows in a roster of
- * thousands, so they live in the summary card and the detail page instead of
- * spending a column on empty cells. Staff number earns one: it is the number an
- * HR team quotes.
+ * thousands, so they live on the member's own page instead of spending a column
+ * on empty cells. Staff number earns one: it is the number an HR team quotes.
  */
 const COLUMNS: ListColumn[] = [
   { header: "Member", sortField: "display_label" },
@@ -173,8 +168,6 @@ function MembersListPage() {
     searchParams.client_id
   const items = query.data?.items ?? []
   const selection = useTableSelection(items)
-  const [previewId, setPreviewId] = useState<string | null>(null)
-  const previewMember = items.find((member) => member.id === previewId) ?? null
   const mergeMembers = items.filter((member) => selection.selectedIds.has(member.id))
   const mergePair = mergeMembers.length === 2 ? (mergeMembers as [Member, Member]) : null
 
@@ -361,7 +354,6 @@ function MembersListPage() {
         }}
       />
 
-      <div className="flex min-h-0 flex-1">
       <EntityListView
         columns={COLUMNS}
         items={items}
@@ -370,9 +362,7 @@ function MembersListPage() {
           <MemberRow
             member={row}
             selected={selection.selectedIds.has(row.id)}
-            previewed={previewId === row.id}
             onToggle={() => selection.toggleSelect(row.id)}
-            onPreview={() => setPreviewId(row.id)}
             onEdit={canWrite ? () => setEditing(row) : undefined}
           />
         )}
@@ -470,16 +460,6 @@ function MembersListPage() {
           </SelectionBar>
         }
       />
-        {items.length > 0 ? (
-          <aside className="hidden w-80 shrink-0 flex-col border-l border-fg/10 p-4 xl:flex">
-            {previewMember ? (
-              <MemberSummaryCard member={previewMember} onClose={() => setPreviewId(null)} />
-            ) : (
-              <MemberSummaryPlaceholder />
-            )}
-          </aside>
-        ) : null}
-      </div>
     </PageShell>
   )
 }
@@ -576,25 +556,18 @@ function MemberDuplicateCard({ member }: { member: MemberDuplicateCandidate["fir
 function MemberRow({
   member,
   selected,
-  previewed,
   onToggle,
-  onPreview,
   onEdit,
 }: {
   member: Member
   selected: boolean
-  previewed: boolean
   onToggle: () => void
-  onPreview: () => void
   onEdit?: () => void
 }) {
   const label = member.display_label ?? member.employer_member_id
   return (
-    <TableRow
-      onClick={onPreview}
-      className={`group h-9 cursor-pointer ${ROW_BORDER} ${previewed ? "bg-primary/5" : ""}`}
-    >
-      <TableCell className="px-3 py-1.5" onClick={(event) => event.stopPropagation()}>
+    <TableRow className={`group h-9 ${ROW_BORDER}`}>
+      <TableCell className="px-3 py-1.5">
         <Checkbox aria-label={`Select ${label}`} checked={selected} onCheckedChange={onToggle} />
       </TableCell>
       <TableCell className="max-w-[14rem] truncate py-1.5">
@@ -638,7 +611,7 @@ function MemberRow({
       <TableCell className="max-w-[14rem] truncate py-1.5 text-xs text-fg/70">
         {member.work_email ?? "-"}
       </TableCell>
-      <TableCell className="py-1.5 text-right" onClick={(event) => event.stopPropagation()}>
+      <TableCell className="py-1.5 text-right">
         <div className="flex items-center justify-end gap-0.5 opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100">
           <Link
             to="/members/$memberId"
