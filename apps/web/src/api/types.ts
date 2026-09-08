@@ -44,6 +44,7 @@ export type {
   EngagementDeliverable,
   EngagementTimeEntry,
   EngagementTimelineEvent,
+  EntityChange,
   Incident,
   IncidentTimelineEvent,
   Industry,

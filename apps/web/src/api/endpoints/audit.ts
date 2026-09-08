@@ -4,7 +4,7 @@
  */
 
 import apiClient from "../client"
-import type { AuditLog, ListParams, PaginatedResponse } from "../types"
+import type { AuditLog, EntityChange, ListParams, PaginatedResponse } from "../types"
 
 export type AuditListParams = ListParams & {
   action_type?: string
@@ -45,10 +45,33 @@ export const auditApi = {
     return (res as Record<string, unknown>) ?? {}
   },
 
-  async getEntityHistory(entityType: string, entityId: string): Promise<AuditLog[]> {
-    const res = await apiClient.get<{ items: AuditLog[] } | AuditLog[]>(
-      `/audit/entity/${encodeURIComponent(entityType)}/${encodeURIComponent(entityId)}`,
+  /**
+   * One record's activity, newest first.
+   *
+   * Read from `/audit/logs` rather than `/audit/entity/{type}/{id}/changes`,
+   * because an entity change carries no timestamp and a trail without times is
+   * not a trail. Field names come from `getEntityFieldChanges`.
+   */
+  async getEntityHistory(
+    entityType: string,
+    entityId: string,
+    params?: { limit?: number },
+  ): Promise<AuditLog[]> {
+    const res = await apiClient.get<PaginatedResponse<AuditLog>>("/audit/logs", {
+      resource_type: entityType,
+      resource_id: entityId,
+      sort_by: "occurred_at",
+      sort_desc: true,
+      limit: params?.limit ?? 50,
+    })
+    return res.items ?? []
+  },
+
+  /** Which fields each change touched, keyed by the audit log that recorded it. */
+  async getEntityFieldChanges(entityType: string, entityId: string): Promise<EntityChange[]> {
+    const res = await apiClient.get<PaginatedResponse<EntityChange>>(
+      `/audit/entity/${encodeURIComponent(entityType)}/${encodeURIComponent(entityId)}/changes`,
     )
-    return Array.isArray(res) ? res : (res.items ?? [])
+    return res.items ?? []
   },
 }

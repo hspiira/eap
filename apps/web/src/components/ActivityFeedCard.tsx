@@ -221,6 +221,6 @@ export function auditLogToActivity(log: AuditLog): Activity {
     tone,
     title,
     description: log.resource_id ? `#${log.resource_id.slice(0, 8)}` : "",
-    time: formatRelativeTime(log.created_at),
+    time: formatRelativeTime(log.occurred_at),
   }
 }
