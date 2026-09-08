@@ -13,6 +13,9 @@ from app.domain.repositories.kpi_repository import (
 from app.domain.repositories.service_assignment_repository import (
     ServiceAssignmentRepository,
 )
+from app.domain.repositories.service_category_repository import (
+    ServiceCategoryRepository,
+)
 from app.domain.repositories.service_repository import ServiceRepository
 from app.domain.repositories.service_session_repository import (
     ServiceSessionRepository,
@@ -129,3 +132,13 @@ async def get_diagnosis_repository(
     )
 
     return DiagnosisRepositoryImpl(db)
+
+
+async def get_service_category_repository(
+    db: AsyncSession = Depends(get_db),
+) -> ServiceCategoryRepository:
+    from app.infrastructure.repositories.service_category_repository import (
+        ServiceCategoryRepositoryImpl,
+    )
+
+    return ServiceCategoryRepositoryImpl(db)

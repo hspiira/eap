@@ -8,7 +8,7 @@ Separate from domain entities.
 from pydantic import BaseModel, ConfigDict, Field
 
 from app.api.schemas.base import OptionalSanitizedStr, SanitizedStr
-from app.domain.enums import BaseStatus, ServiceCategory
+from app.domain.enums import BaseStatus
 
 # === Request Schemas ===
 
@@ -20,7 +20,7 @@ class ServiceCreate(BaseModel):
     description: OptionalSanitizedStr = Field(
         None, max_length=2000, description="Service description"
     )
-    category: ServiceCategory | None = Field(
+    category: str | None = Field(
         None, description="Programme category this service is delivered under"
     )
     duration_minutes: int | None = Field(None, gt=0, description="Service duration in minutes")
@@ -39,7 +39,7 @@ class ServiceUpdate(BaseModel):
     description: OptionalSanitizedStr = Field(
         None, max_length=2000, description="Service description"
     )
-    category: ServiceCategory | None = Field(
+    category: str | None = Field(
         None, description="Programme category this service is delivered under"
     )
     duration_minutes: int | None = Field(None, gt=0, description="Service duration in minutes")
@@ -64,7 +64,7 @@ class ServiceResponse(BaseModel):
     tenant_id: str = Field(..., description="Tenant identifier")
     name: str = Field(..., description="Service name")
     description: str | None = Field(None, description="Service description")
-    category: ServiceCategory | None = Field(
+    category: str | None = Field(
         None, description="Programme category this service is delivered under"
     )
     status: BaseStatus = Field(..., description="Service status")

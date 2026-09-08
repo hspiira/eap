@@ -32,6 +32,7 @@ from app.api.dependencies.delivery import (
     get_kpi_assignment_repository,
     get_kpi_repository,
     get_service_assignment_repository,
+    get_service_category_repository,
     get_service_repository,
     get_service_session_repository,
 )
@@ -128,6 +129,7 @@ __all__ = [
     "get_report_run_repository",
     "get_report_template_repository",
     "get_service_assignment_repository",
+    "get_service_category_repository",
     "get_service_repository",
     "get_service_session_repository",
     "get_survey_campaign_repository",

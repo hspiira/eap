@@ -144,6 +144,7 @@ ignore_imports = [
     "app.api.dependencies.delivery -> app.infrastructure.repositories.document_repository",
     "app.api.dependencies.delivery -> app.infrastructure.repositories.kpi_repository",
     "app.api.dependencies.delivery -> app.infrastructure.repositories.service_assignment_repository",
+    "app.api.dependencies.delivery -> app.infrastructure.repositories.service_category_repository",
     "app.api.dependencies.delivery -> app.infrastructure.repositories.service_repository",
     "app.api.dependencies.delivery -> app.infrastructure.repositories.service_session_repository",
     "app.api.dependencies.identity -> app.infrastructure.repositories.contact_repository",

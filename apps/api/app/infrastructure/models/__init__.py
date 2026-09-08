@@ -83,6 +83,7 @@ from app.infrastructure.models.report_model import (
     ReportTemplateModel,
 )
 from app.infrastructure.models.service_assignment_model import ServiceAssignmentModel
+from app.infrastructure.models.service_category_model import ServiceCategoryModel
 from app.infrastructure.models.service_model import ServiceModel
 from app.infrastructure.models.service_session_model import ServiceSessionModel
 from app.infrastructure.models.session_import_model import (
@@ -155,6 +156,7 @@ __all__ = [
     "ReportRunModel",
     "ReportTemplateModel",
     "ServiceAssignmentModel",
+    "ServiceCategoryModel",
     "ServiceModel",
     "ServiceSessionModel",
     "SessionImportBatchModel",

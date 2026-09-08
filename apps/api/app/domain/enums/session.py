@@ -65,18 +65,6 @@ class SessionClinicalStatus(str, Enum):
     TERMINATED = "Terminated"
 
 
-class ServiceCategory(str, Enum):
-    """Coarse grouping used by EAP programme caps and authorization rules."""
-
-    SHORT_TERM_COUNSELLING = "ShortTermCounselling"
-    CRISIS_INTERVENTION = "CrisisIntervention"
-    SUBSTANCE_USE = "SubstanceUse"
-    MANAGER_CONSULT = "ManagerConsult"
-    WORK_LIFE_REFERRAL = "WorkLifeReferral"
-    CISM_RESPONSE = "CISMResponse"
-    WELLNESS_COACHING = "WellnessCoaching"
-
-
 class SessionDeliveryContext(str, Enum):
     """How the practitioner delivered, or will deliver, this session.
 

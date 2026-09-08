@@ -8,12 +8,11 @@ from app.api.schemas.base import OptionalSanitizedStr, SanitizedStr
 from app.domain.enums import (
     AuthorizationStatus,
     RelationType,
-    ServiceCategory,
 )
 
 
 class ProgrammeCapInput(BaseModel):
-    service_category: ServiceCategory
+    service_category: str
     per_issue_per_year: int = Field(..., ge=0)
     per_year: int | None = Field(default=None, ge=0)
     per_household_per_year: int | None = Field(default=None, ge=0)
@@ -50,7 +49,7 @@ class EAPProgrammeResponse(BaseModel):
 
 class AuthorizeCaseRequest(BaseModel):
     programme_id: str
-    service_category: ServiceCategory
+    service_category: str
     expires_on: date | None = None
 
 
@@ -69,7 +68,7 @@ class AuthorizationResponse(BaseModel):
     case_id: str
     clinical_subject_id: str
     programme_id: str
-    service_category: ServiceCategory
+    service_category: str
     sessions_granted: int
     sessions_used: int
     sessions_remaining: int

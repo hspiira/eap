@@ -5,10 +5,10 @@ Database representation of Service aggregate.
 This is a data container only - no business logic.
 """
 
-from sqlalchemy import CheckConstraint, Integer, String
+from sqlalchemy import CheckConstraint, ForeignKey, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column
 
-from app.domain.enums import BaseStatus, ServiceCategory
+from app.domain.enums import BaseStatus
 from app.infrastructure.models.base import (
     Base,
     CuidMixin,
@@ -33,19 +33,13 @@ class ServiceModel(CuidMixin, TenantMixin, Base, TimestampMixin, SoftDeleteMixin
             "status IN (" + ", ".join(f"'{e.value}'" for e in BaseStatus) + ")",
             name="service_status_check",
         ),
-        CheckConstraint(
-            "category IS NULL OR category IN ("
-            + ", ".join(f"'{e.value}'" for e in ServiceCategory)
-            + ")",
-            name="service_category_check",
-        ),
     )
 
     # Core attributes
     name: Mapped[str] = mapped_column(String(255), nullable=False, index=True)
     description: Mapped[str | None] = mapped_column(String(2000), nullable=True)
-    category: Mapped[ServiceCategory | None] = mapped_column(
-        EnumValueType(ServiceCategory), nullable=True, index=True
+    category: Mapped[str | None] = mapped_column(
+        String(50), ForeignKey("service_categories.code"), nullable=True, index=True
     )
 
     # Status

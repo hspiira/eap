@@ -5,7 +5,6 @@ from app.domain.entities.eap_programme import EAPProgramme
 from app.domain.enums import (
     AuthorizationStatus,
     RelationType,
-    ServiceCategory,
 )
 from app.domain.value_objects.core import (
     AuthorizationId,
@@ -26,7 +25,7 @@ from app.shared.utils.datetime import ensure_utc
 
 def _cap_from_dict(raw: dict) -> ProgrammeSessionCap:
     return ProgrammeSessionCap(
-        service_category=ServiceCategory(raw["service_category"]),
+        service_category=raw["service_category"],
         per_issue_per_year=int(raw["per_issue_per_year"]),
         per_year=raw.get("per_year"),
         per_household_per_year=raw.get("per_household_per_year"),
@@ -86,7 +85,7 @@ class AuthorizationMapper:
             case_id=CaseId(model.case_id),
             clinical_subject_id=ClinicalSubjectId(model.clinical_subject_id),
             programme_id=EAPProgrammeId(model.programme_id),
-            service_category=ServiceCategory(model.service_category),
+            service_category=model.service_category,
             sessions_granted=model.sessions_granted,
             sessions_used=model.sessions_used,
             status=AuthorizationStatus(model.status),

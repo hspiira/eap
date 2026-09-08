@@ -9,7 +9,7 @@ later programme changes don't retroactively rewrite consumed benefits.
 from dataclasses import dataclass, field
 from datetime import date, datetime
 
-from app.domain.enums import AuthorizationStatus, ServiceCategory
+from app.domain.enums import AuthorizationStatus
 from app.domain.events import (
     AuthorizationConsumed,
     AuthorizationExtended,
@@ -36,7 +36,7 @@ class Authorization:
     case_id: CaseId
     clinical_subject_id: ClinicalSubjectId
     programme_id: EAPProgrammeId
-    service_category: ServiceCategory
+    service_category: str
     sessions_granted: int
     sessions_used: int
     status: AuthorizationStatus

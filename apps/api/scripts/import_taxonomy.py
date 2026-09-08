@@ -77,10 +77,11 @@ async def run(tenant_id: str, apply: bool) -> int:
     app.dependency_overrides[get_current_user] = lambda: actor
     app.dependency_overrides[get_current_user_optional] = lambda: actor
 
-    types_plan, diags_plan, services_plan = Plan(), Plan(), Plan()
+    cats_plan, types_plan, diags_plan, services_plan = Plan(), Plan(), Plan(), Plan()
     async with AsyncClient(
         transport=ASGITransport(app=app), base_url="http://import", timeout=120
     ) as http:
+        await _service_categories(http, cats_plan, apply)
         type_ids = await _types(http, types_plan, apply)
         await _diagnoses(http, type_ids, diags_plan, apply)
         await _services(http, tenant_id, services_plan, apply)
@@ -88,11 +89,39 @@ async def run(tenant_id: str, apply: bool) -> int:
     return report(
         apply,
         [
+            ("service categories", cats_plan),
             ("diagnosis types", types_plan),
             ("diagnoses", diags_plan),
             ("services", services_plan),
         ],
     )
+
+
+async def _service_categories(http, plan: Plan, apply: bool) -> None:
+    """Upsert every category by code. Runs before services, which reference it."""
+    existing = {c["code"]: c for c in (await send(http, "GET", "/service-categories")).json()}
+    for row in _load("service_categories"):
+        current = existing.get(row["code"])
+        if current is None:
+            if not apply:
+                plan.created.append(row["code"])
+                continue
+            response = await send(http, "POST", "/service-categories", json=row)
+            if response.status_code != 201:
+                plan.failed.append(f"{row['code']}: {response.status_code} {response.text[:120]}")
+                continue
+            plan.created.append(row["code"])
+            continue
+        changes = _differs(current, row, ("name", "description", "sort_order"))
+        if not changes:
+            plan.unchanged.append(row["code"])
+        elif not apply:
+            plan.updated.append(f"{row['code']} ({', '.join(changes)})")
+        else:
+            response = await send(
+                http, "PATCH", f"/service-categories/{current['id']}", json=changes
+            )
+            (plan.updated if response.status_code == 200 else plan.failed).append(row["code"])
 
 
 async def _types(http, plan: Plan, apply: bool) -> dict[str, str]:

@@ -6,7 +6,7 @@ from sqlalchemy import Date, DateTime, ForeignKey, Integer, String, Text
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column
 
-from app.domain.enums import AuthorizationStatus, ServiceCategory
+from app.domain.enums import AuthorizationStatus
 from app.infrastructure.models.base import (
     Base,
     CuidMixin,
@@ -47,8 +47,8 @@ class AuthorizationModel(CuidMixin, TenantMixin, Base, TimestampMixin):
         nullable=False,
         index=True,
     )
-    service_category: Mapped[ServiceCategory] = mapped_column(
-        EnumValueType(ServiceCategory), nullable=False, index=True
+    service_category: Mapped[str] = mapped_column(
+        String(50), ForeignKey("service_categories.code"), nullable=False, index=True
     )
     sessions_granted: Mapped[int] = mapped_column(Integer, nullable=False)
     sessions_used: Mapped[int] = mapped_column(Integer, nullable=False, default=0)

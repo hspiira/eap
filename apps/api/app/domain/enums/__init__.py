@@ -86,7 +86,6 @@ from app.domain.enums.reporting import (
 from app.domain.enums.session import (
     BaseStatus,
     ClientType,
-    ServiceCategory,
     SessionAttendance,
     SessionCategory,
     SessionClinicalStatus,
@@ -163,7 +162,6 @@ __all__ = [
     "ReportRunStatus",
     "RetentionDataClass",
     "SafetyPlanStatus",
-    "ServiceCategory",
     "SessionAttendance",
     "SessionCategory",
     "SessionClinicalStatus",

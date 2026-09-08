@@ -785,7 +785,8 @@
             "type": "string"
           },
           "service_category": {
-            "$ref": "#/components/schemas/ServiceCategory"
+            "title": "Service Category",
+            "type": "string"
           },
           "sessions_granted": {
             "title": "Sessions Granted",
@@ -866,7 +867,8 @@
             "type": "string"
           },
           "service_category": {
-            "$ref": "#/components/schemas/ServiceCategory"
+            "title": "Service Category",
+            "type": "string"
           }
         },
         "required": [
@@ -11002,7 +11004,8 @@
             "title": "Per Year"
           },
           "service_category": {
-            "$ref": "#/components/schemas/ServiceCategory"
+            "title": "Service Category",
+            "type": "string"
           }
         },
         "required": [
@@ -12911,19 +12914,132 @@
         "title": "ServiceAssignmentUpdate",
         "type": "object"
       },
-      "ServiceCategory": {
-        "description": "Coarse grouping used by EAP programme caps and authorization rules.",
-        "enum": [
-          "ShortTermCounselling",
-          "CrisisIntervention",
-          "SubstanceUse",
-          "ManagerConsult",
-          "WorkLifeReferral",
-          "CISMResponse",
-          "WellnessCoaching"
+      "ServiceCategoryCreate": {
+        "properties": {
+          "code": {
+            "description": "Stable category code",
+            "maxLength": 50,
+            "minLength": 1,
+            "title": "Code",
+            "type": "string"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Optional description",
+            "title": "Description"
+          },
+          "name": {
+            "description": "Display name",
+            "maxLength": 255,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          },
+          "sort_order": {
+            "default": 0,
+            "description": "Sort order",
+            "title": "Sort Order",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "code",
+          "name"
         ],
-        "title": "ServiceCategory",
-        "type": "string"
+        "title": "ServiceCategoryCreate",
+        "type": "object"
+      },
+      "ServiceCategoryResponse": {
+        "properties": {
+          "code": {
+            "description": "Stable category code",
+            "title": "Code",
+            "type": "string"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Optional description",
+            "title": "Description"
+          },
+          "id": {
+            "description": "Service category identifier",
+            "title": "Id",
+            "type": "string"
+          },
+          "name": {
+            "description": "Display name",
+            "title": "Name",
+            "type": "string"
+          },
+          "sort_order": {
+            "description": "Sort order",
+            "title": "Sort Order",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "code",
+          "name",
+          "sort_order"
+        ],
+        "title": "ServiceCategoryResponse",
+        "type": "object"
+      },
+      "ServiceCategoryUpdate": {
+        "properties": {
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "maxLength": 255,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "sort_order": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sort Order"
+          }
+        },
+        "title": "ServiceCategoryUpdate",
+        "type": "object"
       },
       "ServiceCreate": {
         "description": "Request schema for creating a service.",
@@ -12931,13 +13047,14 @@
           "category": {
             "anyOf": [
               {
-                "$ref": "#/components/schemas/ServiceCategory"
+                "type": "string"
               },
               {
                 "type": "null"
               }
             ],
-            "description": "Programme category this service is delivered under"
+            "description": "Programme category this service is delivered under",
+            "title": "Category"
           },
           "description": {
             "anyOf": [
@@ -13046,13 +13163,14 @@
           "category": {
             "anyOf": [
               {
-                "$ref": "#/components/schemas/ServiceCategory"
+                "type": "string"
               },
               {
                 "type": "null"
               }
             ],
-            "description": "Programme category this service is delivered under"
+            "description": "Programme category this service is delivered under",
+            "title": "Category"
           },
           "description": {
             "anyOf": [
@@ -14116,13 +14234,14 @@
           "category": {
             "anyOf": [
               {
-                "$ref": "#/components/schemas/ServiceCategory"
+                "type": "string"
               },
               {
                 "type": "null"
               }
             ],
-            "description": "Programme category this service is delivered under"
+            "description": "Programme category this service is delivered under",
+            "title": "Category"
           },
           "description": {
             "anyOf": [
@@ -33797,6 +33916,219 @@
         ]
       }
     },
+    "/service-categories": {
+      "get": {
+        "operationId": "list_service_categories_service_categories_get",
+        "parameters": [
+          {
+            "description": "Return only active categories",
+            "in": "query",
+            "name": "active_only",
+            "required": false,
+            "schema": {
+              "default": true,
+              "description": "Return only active categories",
+              "title": "Active Only",
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/ServiceCategoryResponse"
+                  },
+                  "title": "Response List Service Categories Service Categories Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "List service categories",
+        "tags": [
+          "service-categories"
+        ]
+      },
+      "post": {
+        "operationId": "create_service_category_service_categories_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ServiceCategoryCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ServiceCategoryResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Create Service Category",
+        "tags": [
+          "service-categories"
+        ]
+      }
+    },
+    "/service-categories/{category_id}": {
+      "patch": {
+        "operationId": "update_service_category_service_categories__category_id__patch",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "category_id",
+            "required": true,
+            "schema": {
+              "title": "Category Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ServiceCategoryUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ServiceCategoryResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Update Service Category",
+        "tags": [
+          "service-categories"
+        ]
+      }
+    },
+    "/service-categories/{category_id}/active": {
+      "post": {
+        "operationId": "set_service_category_active_service_categories__category_id__active_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "category_id",
+            "required": true,
+            "schema": {
+              "title": "Category Id",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Activate or retire the category",
+            "in": "query",
+            "name": "is_active",
+            "required": true,
+            "schema": {
+              "description": "Activate or retire the category",
+              "title": "Is Active",
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ServiceCategoryResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Set Service Category Active",
+        "tags": [
+          "service-categories"
+        ]
+      }
+    },
     "/service-sessions/": {
       "get": {
         "description": "List service sessions with filtering, searching, and pagination.",
@@ -34855,7 +35187,7 @@
             "schema": {
               "anyOf": [
                 {
-                  "$ref": "#/components/schemas/ServiceCategory"
+                  "type": "string"
                 },
                 {
                   "type": "null"

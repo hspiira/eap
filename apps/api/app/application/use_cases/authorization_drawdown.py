@@ -16,7 +16,6 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from app.domain.entities.authorization import Authorization
-from app.domain.enums import ServiceCategory
 from app.domain.exceptions import DomainError, InvalidStateError
 from app.domain.repositories.eap_programme_repository import AuthorizationRepository
 from app.domain.value_objects.core import CaseId, TenantId
@@ -37,7 +36,7 @@ class DrawdownResult:
 def select_authorization(
     authorizations: list[Authorization],
     *,
-    service_category: ServiceCategory,
+    service_category: str,
 ) -> Authorization | None:
     """Pick the authorization a session of this category should draw down.
 
@@ -68,7 +67,7 @@ class ConsumeAuthorizationForSessionUseCase:
         *,
         tenant_id: TenantId,
         case_id: CaseId,
-        service_category: ServiceCategory | None,
+        service_category: str | None,
     ) -> DrawdownResult:
         if service_category is None:
             return DrawdownResult(None, "Service has no category, nothing to draw down against")
@@ -77,7 +76,7 @@ class ConsumeAuthorizationForSessionUseCase:
         selected = select_authorization(existing, service_category=service_category)
         if selected is None:
             return DrawdownResult(
-                None, f"No active authorization for {service_category.value} on this case"
+                None, f"No active authorization for {service_category} on this case"
             )
 
         try:

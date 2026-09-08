@@ -67,6 +67,20 @@ class TestCreateService:
         assert data["is_group_service"] is True
         assert data["max_participants"] == 20
 
+    async def test_create_service_rejects_an_unknown_category(
+        self, client: AsyncClient, service_test_tenant: dict
+    ):
+        """category is a foreign key to service_categories; an unknown code 404s
+        here rather than failing later as an opaque database integrity error."""
+        tenant_id = service_test_tenant["id"]
+
+        response = await client.post(
+            f"/services/?tenant_id={tenant_id}",
+            json={"name": "Made Up Service", "category": "NotARealCategory"},
+        )
+
+        assert response.status_code == 404
+
     async def test_create_service_requires_tenant_id(self, client: AsyncClient):
         """Test that creating a service requires tenant_id."""
         response = await client.post(

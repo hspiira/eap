@@ -20,9 +20,76 @@ from pathlib import Path
 API = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(API))
 
-from app.domain.enums import ServiceCategory  # noqa: E402
-
 OUT = API / "data/taxonomy"
+
+# (code, name, description). Coarse grouping used by EAP programme caps and
+# authorization rules; a table (migration 7af2412c8b90) rather than the
+# ServiceCategory enum it replaced, so a new category is a row rather than a
+# code deploy and a migration.
+SERVICE_CATEGORIES: list[tuple[str, str, str]] = [
+    (
+        "ShortTermCounselling",
+        "Short-Term Counselling",
+        "Bounded courses of individual, couple, family or group counselling: "
+        "the employee assistance core technology's short-term intervention "
+        "function (EAPA Core Technology, item 4).",
+    ),
+    (
+        "CrisisIntervention",
+        "Crisis Intervention",
+        "Immediate, same-day support for acute risk: active suicidal ideation, "
+        "an acute psychiatric crisis, or a violent incident, distinct from a "
+        "scheduled post-incident group response.",
+    ),
+    (
+        "SubstanceUse",
+        "Substance Use",
+        "Alcohol and drug use interventions, one of the historical defining "
+        "features of employee assistance (EAPA Core Technology).",
+    ),
+    (
+        "ManagerConsult",
+        "Manager Consult",
+        "Consultation with a manager or supervisor about an employee's "
+        "performance or conduct concern, distinct from training delivered to a "
+        "roster.",
+    ),
+    (
+        "WorkLifeReferral",
+        "Work-Life Referral",
+        "Signposting to legal, financial or other work-life services outside "
+        "the programme's own clinical scope.",
+    ),
+    (
+        "CISMResponse",
+        "CISM Response",
+        "Critical incident stress management: group response after a shared "
+        "traumatic event, distinct from crisis intervention's individual, "
+        "same-day support.",
+    ),
+    (
+        "WellnessCoaching",
+        "Wellness Coaching",
+        "Goal-directed coaching and physical wellness support where the member "
+        "is not presenting a clinical problem.",
+    ),
+    (
+        "Psychoeducation",
+        "Psychoeducation",
+        "Group psychoeducation and skills delivery with no individual clinical "
+        "contact and no entitlement drawdown: health talks and manager or "
+        "supervisor training alike, both forms of the core technology's "
+        "promotion and training functions (EAPA Core Technology, items 1 and "
+        "2).",
+    ),
+    (
+        "Assessment",
+        "Assessment",
+        "Structured evaluation, individual, group or psychiatric referral, "
+        "that produces a formulation rather than treatment and carries no "
+        "entitlement drawdown.",
+    ),
+]
 
 # Services that carry no programme category on purpose, and why. A null
 # category is how the model says "never draws down an entitlement": the
@@ -30,6 +97,12 @@ OUT = API / "data/taxonomy"
 # (app/application/use_cases/authorization_drawdown.py:73) rather than failing
 # or silently consuming. Naming them here keeps a deliberate null separable
 # from a forgotten one, and makes force-fitting a category fail the build.
+#
+# Assessment and Psychoeducation exist as categories (SERVICE_CATEGORIES,
+# above) for a future service that should genuinely be capped. These specific
+# services are not those: each has a standing business reason never to draw
+# down an individual member's entitlement, so giving them a category, even a
+# fitting one, would be a policy change disguised as a taxonomy label.
 UNCAPPED: dict[str, str] = {
     "Psychiatric Assessment": "Referral for diagnosis, not a session against a cap.",
     "Individual Assessment": "Assessment, not treatment. No cap applies.",
@@ -154,6 +227,20 @@ SERVICES: list[tuple[str, str | None, bool, str]] = [
         "directly for a member whose condition needs it and who has no other route to "
         "care. Sessions under this service should carry an established diagnosis, not a "
         "presenting concern alone.",
+    ),
+    (
+        "Crisis Intervention",
+        "CrisisIntervention",
+        False,
+        "Immediate, short-term support for a member in acute distress or facing an emergent "
+        "risk: active suicidal ideation, an acute psychiatric crisis, a violent incident, or "
+        "another situation needing same-day contact rather than a scheduled session. This is "
+        "the urgent-access face of EAPA Core Technology item 3, confidential problem "
+        "identification and assessment, applied under time pressure. The clinician's task is "
+        "safety, stabilisation, and routing: to emergency services, to a psychiatric "
+        "assessment, or into short-term counselling once the immediate risk has passed. "
+        "Distinct from trauma group counselling, which is a scheduled group response after an "
+        "incident rather than an individual same-day contact.",
     ),
     (
         "Psychiatric Assessment",
@@ -1851,8 +1938,8 @@ DIAGNOSES += [
 def _check_categories(services: list[dict]) -> None:
     """Every service is either programme-capped or declared uncapped.
 
-    ``services.category`` drives entitlement drawdown, so a value that is not a
-    ``ServiceCategory`` would be refused by the column's CHECK constraint, and a
+    ``services.category`` is a foreign key to ``service_categories.code``, so a
+    value not in ``SERVICE_CATEGORIES`` would be refused by the database, and a
     null nobody declared is indistinguishable from an oversight.
     """
     names = {s["name"] for s in services}
@@ -1863,7 +1950,7 @@ def _check_categories(services: list[dict]) -> None:
         if name in names:
             raise ValueError(f"{name!r} is in NOT_A_SERVICE but shipped as a service")
 
-    valid = {e.value for e in ServiceCategory}
+    valid = {code for code, _, _ in SERVICE_CATEGORIES}
     for service in services:
         name, category = service["name"], service["category"]
         if category is None:
@@ -1873,14 +1960,24 @@ def _check_categories(services: list[dict]) -> None:
                     "Give it a ServiceCategory or record why it is never capped."
                 )
         elif category not in valid:
-            raise ValueError(f"{name} has category {category!r}, which is not a ServiceCategory")
+            raise ValueError(f"{name} has category {category!r}, which is not a known category")
         elif name in UNCAPPED:
             raise ValueError(f"{name} is declared uncapped but carries category {category!r}")
 
 
 def build() -> None:
-    """Write the three import payloads."""
+    """Write the four import payloads."""
     OUT.mkdir(parents=True, exist_ok=True)
+    categories = [
+        {
+            "code": code,
+            "name": name,
+            "description": description,
+            "sort_order": order,
+            "is_active": True,
+        }
+        for order, (code, name, description) in enumerate(SERVICE_CATEGORIES)
+    ]
     types = [
         {
             "code": code,
@@ -1931,12 +2028,14 @@ def build() -> None:
     _check_categories(services)
 
     for filename, payload in (
+        ("service_categories.json", categories),
         ("diagnosis_types.json", types),
         ("diagnoses.json", diagnoses),
         ("services.json", services),
     ):
         (OUT / filename).write_text(json.dumps(payload, indent=2, ensure_ascii=False) + "\n")
 
+    print(f"service_categories.json  {len(categories)}")
     print(f"diagnosis_types.json  {len(types)}")
     print(
         f"diagnoses.json        {len(diagnoses)} ({sum(1 for d in diagnoses if not d['is_active'])} inactive)"

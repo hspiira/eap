@@ -65,6 +65,24 @@ test_engine = create_async_engine(
 TestAsyncSessionLocal = async_sessionmaker(test_engine, class_=AsyncSession, expire_on_commit=False)
 
 
+#: ``services.category`` and ``authorizations.service_category`` are foreign
+#: keys onto this table (migration 7af2412c8b90), so any test creating or
+#: seeding a service or authorization with a category needs the row to exist
+#: first. Seeded once per test alongside the schema, mirroring the catalogue
+#: in data/taxonomy/service_categories.json.
+_SERVICE_CATEGORY_CODES = (
+    "ShortTermCounselling",
+    "CrisisIntervention",
+    "SubstanceUse",
+    "ManagerConsult",
+    "WorkLifeReferral",
+    "CISMResponse",
+    "WellnessCoaching",
+    "Psychoeducation",
+    "Assessment",
+)
+
+
 @pytest_asyncio.fixture(scope="function")
 async def db_session() -> AsyncGenerator[AsyncSession, None]:
     """
@@ -77,6 +95,13 @@ async def db_session() -> AsyncGenerator[AsyncSession, None]:
         await conn.run_sync(Base.metadata.create_all)
 
     async with TestAsyncSessionLocal() as session:
+        from app.infrastructure.models.service_category_model import (
+            ServiceCategoryModel,
+        )
+
+        for code in _SERVICE_CATEGORY_CODES:
+            session.add(ServiceCategoryModel(code=code, name=code))
+        await session.commit()
         yield session
 
     # Drop all tables after test

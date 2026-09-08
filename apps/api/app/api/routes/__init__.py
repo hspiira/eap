@@ -41,6 +41,7 @@ from app.api.routes.providers import router as providers_router
 from app.api.routes.reports import router as reports_router
 from app.api.routes.search import router as search_router
 from app.api.routes.service_assignments import router as service_assignments_router
+from app.api.routes.service_categories import router as service_categories_router
 from app.api.routes.service_sessions import router as service_sessions_router
 from app.api.routes.services import router as services_router
 from app.api.routes.session_imports import router as session_imports_router
@@ -69,6 +70,7 @@ def register_routers(app: FastAPI) -> None:
     app.include_router(activities_router)
     app.include_router(contracts_router)
     app.include_router(services_router)
+    app.include_router(service_categories_router)
     app.include_router(service_assignments_router)
     app.include_router(service_sessions_router)
     app.include_router(documents_router)
@@ -130,6 +132,7 @@ __all__ = [
     "register_routers",
     "reports_router",
     "search_router",
+    "service_categories_router",
     "services_router",
     "service_assignments_router",
     "service_sessions_router",

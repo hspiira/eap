@@ -9,7 +9,6 @@ from app.domain.entities.eap_programme import EAPProgramme
 from app.domain.enums import (
     AuthorizationStatus,
     RelationType,
-    ServiceCategory,
 )
 from app.domain.events import (
     AuthorizationConsumed,
@@ -33,7 +32,7 @@ from app.shared.utils.datetime import utc_now
 
 
 def _cap(
-    cat: ServiceCategory = ServiceCategory.SHORT_TERM_COUNSELLING,
+    cat: str = "ShortTermCounselling",
     *,
     per_issue: int = 6,
     per_year: int | None = 12,
@@ -64,14 +63,14 @@ class TestProgrammeSessionCap:
     def test_negative_per_issue_rejected(self):
         with pytest.raises(DomainError):
             ProgrammeSessionCap(
-                service_category=ServiceCategory.SHORT_TERM_COUNSELLING,
+                service_category="ShortTermCounselling",
                 per_issue_per_year=-1,
             )
 
     def test_per_year_must_not_be_below_per_issue(self):
         with pytest.raises(DomainError):
             ProgrammeSessionCap(
-                service_category=ServiceCategory.SHORT_TERM_COUNSELLING,
+                service_category="ShortTermCounselling",
                 per_issue_per_year=8,
                 per_year=4,
             )
@@ -79,7 +78,7 @@ class TestProgrammeSessionCap:
     def test_per_household_must_not_be_below_per_year(self):
         with pytest.raises(DomainError):
             ProgrammeSessionCap(
-                service_category=ServiceCategory.SHORT_TERM_COUNSELLING,
+                service_category="ShortTermCounselling",
                 per_issue_per_year=4,
                 per_year=12,
                 per_household_per_year=10,
@@ -137,9 +136,9 @@ class TestEAPProgrammeInvariants:
             )
 
     def test_cap_for_lookup(self):
-        p = _programme(caps=(_cap(), _cap(ServiceCategory.SUBSTANCE_USE, per_issue=4)))
-        assert p.cap_for(ServiceCategory.SHORT_TERM_COUNSELLING).per_issue_per_year == 6
-        assert p.cap_for(ServiceCategory.WELLNESS_COACHING) is None
+        p = _programme(caps=(_cap(), _cap("SubstanceUse", per_issue=4)))
+        assert p.cap_for("ShortTermCounselling").per_issue_per_year == 6
+        assert p.cap_for("WellnessCoaching") is None
 
 
 def _authorization(
@@ -156,7 +155,7 @@ def _authorization(
         case_id=CaseId("case-1"),
         clinical_subject_id=ClinicalSubjectId("cs_aaaaaaaa11111111"),
         programme_id=EAPProgrammeId("prog-1"),
-        service_category=ServiceCategory.SHORT_TERM_COUNSELLING,
+        service_category="ShortTermCounselling",
         sessions_granted=granted,
         sessions_used=used,
         status=status,

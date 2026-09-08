@@ -203,7 +203,7 @@ def _authorization(remaining: int = 3):
     from datetime import date
 
     from app.domain.entities.authorization import Authorization
-    from app.domain.enums import AuthorizationStatus, ServiceCategory
+    from app.domain.enums import AuthorizationStatus
     from app.domain.value_objects.core import (
         AuthorizationId,
         CaseId,
@@ -219,7 +219,7 @@ def _authorization(remaining: int = 3):
         case_id=CaseId("case-1"),
         clinical_subject_id=ClinicalSubjectId("subj-1"),
         programme_id=EAPProgrammeId("prog-1"),
-        service_category=ServiceCategory.SHORT_TERM_COUNSELLING,
+        service_category="ShortTermCounselling",
         sessions_granted=remaining + 1,
         sessions_used=1,
         status=AuthorizationStatus.ACTIVE,
@@ -234,7 +234,7 @@ def _authorization(remaining: int = 3):
 async def completable(api):
     """Point the session and service fixtures at a completable session."""
     from app.domain.entities.service_session import ServiceSessionEntity
-    from app.domain.enums import ServiceCategory, SessionStatus
+    from app.domain.enums import SessionStatus
     from app.domain.value_objects.core import PersonId, ServiceId, SessionId
     from app.shared.utils.datetime import utc_now
 
@@ -264,7 +264,7 @@ async def completable(api):
         tenant_id=TenantId("t1"), client_id=ClientId("c1")
     )
     api.services.get_by_id.return_value = SimpleNamespace(
-        tenant_id=TenantId("t1"), category=ServiceCategory.SHORT_TERM_COUNSELLING
+        tenant_id=TenantId("t1"), category="ShortTermCounselling"
     )
     return api
 

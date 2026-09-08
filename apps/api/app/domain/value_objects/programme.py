@@ -10,13 +10,12 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from app.domain.enums import ServiceCategory
 from app.domain.exceptions import DomainError
 
 
 @dataclass(frozen=True)
 class ProgrammeSessionCap:
-    service_category: ServiceCategory
+    service_category: str
     per_issue_per_year: int
     per_year: int | None = None
     per_household_per_year: int | None = None
@@ -35,7 +34,7 @@ class ProgrammeSessionCap:
 
     def as_dict(self) -> dict[str, int | str | None]:
         return {
-            "service_category": self.service_category.value,
+            "service_category": self.service_category,
             "per_issue_per_year": self.per_issue_per_year,
             "per_year": self.per_year,
             "per_household_per_year": self.per_household_per_year,

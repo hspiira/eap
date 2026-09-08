@@ -4616,6 +4616,58 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/service-categories": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List service categories */
+        get: operations["list_service_categories_service_categories_get"];
+        put?: never;
+        /** Create Service Category */
+        post: operations["create_service_category_service_categories_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/service-categories/{category_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Update Service Category */
+        patch: operations["update_service_category_service_categories__category_id__patch"];
+        trace?: never;
+    };
+    "/service-categories/{category_id}/active": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Set Service Category Active */
+        post: operations["set_service_category_active_service_categories__category_id__active_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/service-sessions/": {
         parameters: {
             query?: never;
@@ -6382,7 +6434,8 @@ export interface components {
             id: string;
             /** Programme Id */
             programme_id: string;
-            service_category: components["schemas"]["ServiceCategory"];
+            /** Service Category */
+            service_category: string;
             /** Sessions Granted */
             sessions_granted: number;
             /** Sessions Remaining */
@@ -6410,7 +6463,8 @@ export interface components {
             expires_on?: string | null;
             /** Programme Id */
             programme_id: string;
-            service_category: components["schemas"]["ServiceCategory"];
+            /** Service Category */
+            service_category: string;
         };
         /**
          * BaseStatus
@@ -10803,7 +10857,8 @@ export interface components {
             per_issue_per_year: number;
             /** Per Year */
             per_year?: number | null;
-            service_category: components["schemas"]["ServiceCategory"];
+            /** Service Category */
+            service_category: string;
         };
         /**
          * ProviderAffiliationCreate
@@ -11623,19 +11678,77 @@ export interface components {
              */
             notes?: string | null;
         };
-        /**
-         * ServiceCategory
-         * @description Coarse grouping used by EAP programme caps and authorization rules.
-         * @enum {string}
-         */
-        ServiceCategory: "ShortTermCounselling" | "CrisisIntervention" | "SubstanceUse" | "ManagerConsult" | "WorkLifeReferral" | "CISMResponse" | "WellnessCoaching";
+        /** ServiceCategoryCreate */
+        ServiceCategoryCreate: {
+            /**
+             * Code
+             * @description Stable category code
+             */
+            code: string;
+            /**
+             * Description
+             * @description Optional description
+             */
+            description?: string | null;
+            /**
+             * Name
+             * @description Display name
+             */
+            name: string;
+            /**
+             * Sort Order
+             * @description Sort order
+             * @default 0
+             */
+            sort_order: number;
+        };
+        /** ServiceCategoryResponse */
+        ServiceCategoryResponse: {
+            /**
+             * Code
+             * @description Stable category code
+             */
+            code: string;
+            /**
+             * Description
+             * @description Optional description
+             */
+            description?: string | null;
+            /**
+             * Id
+             * @description Service category identifier
+             */
+            id: string;
+            /**
+             * Name
+             * @description Display name
+             */
+            name: string;
+            /**
+             * Sort Order
+             * @description Sort order
+             */
+            sort_order: number;
+        };
+        /** ServiceCategoryUpdate */
+        ServiceCategoryUpdate: {
+            /** Description */
+            description?: string | null;
+            /** Name */
+            name?: string | null;
+            /** Sort Order */
+            sort_order?: number | null;
+        };
         /**
          * ServiceCreate
          * @description Request schema for creating a service.
          */
         ServiceCreate: {
-            /** @description Programme category this service is delivered under */
-            category?: components["schemas"]["ServiceCategory"] | null;
+            /**
+             * Category
+             * @description Programme category this service is delivered under
+             */
+            category?: string | null;
             /**
              * Description
              * @description Service description
@@ -11699,8 +11812,11 @@ export interface components {
          * @description Response schema for service.
          */
         ServiceResponse: {
-            /** @description Programme category this service is delivered under */
-            category?: components["schemas"]["ServiceCategory"] | null;
+            /**
+             * Category
+             * @description Programme category this service is delivered under
+             */
+            category?: string | null;
             /**
              * Description
              * @description Service description
@@ -12199,8 +12315,11 @@ export interface components {
          * @description Request schema for updating service information.
          */
         ServiceUpdate: {
-            /** @description Programme category this service is delivered under */
-            category?: components["schemas"]["ServiceCategory"] | null;
+            /**
+             * Category
+             * @description Programme category this service is delivered under
+             */
+            category?: string | null;
             /**
              * Description
              * @description Service description
@@ -22910,6 +23029,140 @@ export interface operations {
             };
         };
     };
+    list_service_categories_service_categories_get: {
+        parameters: {
+            query?: {
+                /** @description Return only active categories */
+                active_only?: boolean;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ServiceCategoryResponse"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_service_category_service_categories_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ServiceCategoryCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ServiceCategoryResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_service_category_service_categories__category_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                category_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ServiceCategoryUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ServiceCategoryResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    set_service_category_active_service_categories__category_id__active_post: {
+        parameters: {
+            query: {
+                /** @description Activate or retire the category */
+                is_active: boolean;
+            };
+            header?: never;
+            path: {
+                category_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ServiceCategoryResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     list_service_sessions_service_sessions__get: {
         parameters: {
             query: {
@@ -23411,7 +23664,7 @@ export interface operations {
                 /** @description Search in service name */
                 search?: string | null;
                 /** @description Filter by category */
-                category?: components["schemas"]["ServiceCategory"] | null;
+                category?: string | null;
                 /** @description Filter by group service */
                 is_group_service?: boolean | null;
                 /** @description Field to sort by */
