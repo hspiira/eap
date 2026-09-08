@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react"
 
-import { AlertTriangle, Check } from "lucide-react"
+import { AlertTriangle, Check, X } from "lucide-react"
 
 import { diagnosesApi, type DiagnosisAlias } from "@/api/endpoints/diagnoses"
 import { ErrorState } from "@/components/common/ErrorState"
@@ -16,9 +16,11 @@ import type { DiagnosisTree } from "@/types/entities"
  * that a clinical owner would check them. Without a surface, "listable for
  * review" means running SQL, so in practice they would never be reviewed.
  *
- * Confirming is the only action offered. Correcting a mapping means choosing a
- * different taxonomy row, which is the form sheet's job, and getting it wrong
- * silently is worse than leaving it flagged.
+ * A reviewer can confirm the reading or reject it. Rejecting keeps the row and
+ * marks it refused rather than deleting it: a deleted alias and one nobody has
+ * read are indistinguishable, so the next import would infer the same reading
+ * again. Correcting a mapping is a third thing, and remains the form sheet's
+ * job, because getting it wrong silently is worse than leaving it flagged.
  */
 export function AliasReviewPanel({ tree }: { tree: DiagnosisTree | null }) {
   const [aliases, setAliases] = useState<DiagnosisAlias[] | null>(null)
@@ -49,7 +51,7 @@ export function AliasReviewPanel({ tree }: { tree: DiagnosisTree | null }) {
     return byId
   }, [tree])
 
-  const confirm = async (alias: DiagnosisAlias) => {
+  const decide = async (alias: DiagnosisAlias, confidence: "confirmed" | "rejected") => {
     setBusy(alias.id)
     try {
       await diagnosesApi.upsertAlias({
@@ -57,11 +59,18 @@ export function AliasReviewPanel({ tree }: { tree: DiagnosisTree | null }) {
         diagnosis_type_id: alias.diagnosis_type_id,
         diagnosis_id: alias.diagnosis_id,
         source: alias.source,
-        confidence: "confirmed",
+        confidence,
       })
       await load()
     } catch (err) {
-      setError(normalizeErrorMessage(err, "Could not confirm this mapping."))
+      setError(
+        normalizeErrorMessage(
+          err,
+          confidence === "confirmed"
+            ? "Could not confirm this mapping."
+            : "Could not reject this mapping.",
+        ),
+      )
     } finally {
       setBusy(null)
     }
@@ -79,7 +88,7 @@ export function AliasReviewPanel({ tree }: { tree: DiagnosisTree | null }) {
           {aliases.length} legacy {aliases.length === 1 ? "spelling" : "spellings"} awaiting review
         </h2>
         <p className="text-xs text-fg-muted">
-          Imported under an inferred mapping. Confirm each one, or correct it first.
+          Imported under an inferred mapping. Confirm the reading, or reject it if it is wrong.
         </p>
       </div>
       <ul>
@@ -92,14 +101,26 @@ export function AliasReviewPanel({ tree }: { tree: DiagnosisTree | null }) {
               {labels.get(alias.diagnosis_id ?? alias.diagnosis_type_id) ?? alias.diagnosis_type_id}
             </span>
             <Button
+              type="button"
               size="sm"
               variant="outline"
-              className="h-7 gap-1.5 px-2.5"
+              className="h-7 shrink-0 gap-1.5 px-2.5"
               disabled={busy === alias.id}
-              onClick={() => void confirm(alias)}
+              onClick={() => void decide(alias, "confirmed")}
             >
               <Check className="size-3.5" />
-              {busy === alias.id ? "Confirming…" : "Confirm"}
+              Confirm
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              className="h-7 shrink-0 gap-1.5 px-2.5 text-danger-fg"
+              disabled={busy === alias.id}
+              onClick={() => void decide(alias, "rejected")}
+            >
+              <X className="size-3.5" />
+              Reject
             </Button>
           </li>
         ))}

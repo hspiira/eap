@@ -305,11 +305,22 @@ describe("descriptions", () => {
     ).toBeInTheDocument()
   })
 
-  it("shows a diagnosis description under the selected type", async () => {
+  it("keeps a diagnosis description closed until it is asked for", async () => {
     vi.mocked(diagnosesApi.getTree).mockResolvedValue(DESCRIBED)
+    const user = userEvent.setup()
     renderPage()
 
-    // The first type is selected on arrival, so its diagnoses are already there.
+    // The first type is selected on arrival, so its diagnoses are listed, but a
+    // list of thirty definitions all open at once is unreadable.
+    const toggle = await screen.findByRole("button", { name: /^Domestic Violence/ })
+    expect(toggle).toHaveAttribute("aria-expanded", "false")
+    expect(
+      screen.queryByText("Physical, sexual or psychological violence by a partner."),
+    ).not.toBeInTheDocument()
+
+    await user.click(toggle)
+
+    expect(toggle).toHaveAttribute("aria-expanded", "true")
     expect(
       await screen.findByText("Physical, sexual or psychological violence by a partner."),
     ).toBeInTheDocument()
@@ -347,6 +358,7 @@ describe("descriptions", () => {
 
     await user.click(screen.getByRole("cell", { name: /^Stress$/ }))
 
+    await user.click(await screen.findByRole("button", { name: /^Burnout/ }))
     expect(
       await screen.findByText("Exhaustion from prolonged workplace stress."),
     ).toBeInTheDocument()

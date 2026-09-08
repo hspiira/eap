@@ -6782,9 +6782,15 @@ export interface components {
          *     ``INFERRED`` is a reading of the label that nobody has signed off, so it
          *     stays filterable: a reviewer can list exactly the mappings still awaiting
          *     a clinical owner without re-deriving which ones those were.
+         *
+         *     ``REJECTED`` records that a reviewer read the mapping and refused it. It is
+         *     kept rather than deleted so the same spelling is not inferred again by the
+         *     next import: a deleted row and a row nobody has seen are indistinguishable.
+         *     A rejected alias maps nothing, so its legacy values stay unresolved, which
+         *     is the honest outcome when the only reading on offer is wrong.
          * @enum {string}
          */
-        AliasConfidence: "confirmed" | "inferred";
+        AliasConfidence: "confirmed" | "inferred" | "rejected";
         /**
          * AliasResolutionState
          * @description Whether a source name has been reconciled to a practitioner.

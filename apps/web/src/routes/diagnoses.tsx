@@ -1,7 +1,16 @@
 import { useCallback, useEffect, useMemo, useState } from "react"
 
 import { createFileRoute } from "@tanstack/react-router"
-import { ChevronDown, ChevronUp, Eye, EyeOff, Pencil, Plus, Stethoscope } from "lucide-react"
+import {
+  ChevronDown,
+  ChevronRight,
+  ChevronUp,
+  Eye,
+  EyeOff,
+  Pencil,
+  Plus,
+  Stethoscope,
+} from "lucide-react"
 
 import {
   diagnosesApi,
@@ -444,14 +453,42 @@ function DiagnosisRow({
   isFirst: boolean
   isLast: boolean
 }) {
+  const [open, setOpen] = useState(false)
+  const hasDescription = Boolean(diagnosis.description)
+  const panelId = `dx-desc-${diagnosis.id}`
+  const label = (
+    <>
+      {localLabel ?? diagnosis.name}
+      {localLabel && <RelabelBadge original={diagnosis.name} />}
+      <span className="ml-1.5 text-xs text-fg/65">{diagnosis.code}</span>
+    </>
+  )
+
   return (
     <li className={cn("py-2", hidden && "opacity-50")}>
       <div className="flex items-center gap-2">
-        <span className="min-w-0 flex-1 text-sm text-fg">
-          {localLabel ?? diagnosis.name}
-          {localLabel && <RelabelBadge original={diagnosis.name} />}
-          <span className="ml-1.5 text-xs text-fg/65">{diagnosis.code}</span>
-        </span>
+        {hasDescription ? (
+          <Button
+            type="button"
+            variant="ghost"
+            onClick={() => setOpen((prev) => !prev)}
+            aria-expanded={open}
+            aria-controls={panelId}
+            className="h-auto min-w-0 flex-1 justify-start gap-1.5 rounded-none px-0 py-0 text-left text-sm font-normal text-fg hover:bg-transparent hover:text-primary"
+          >
+            <ChevronRight
+              aria-hidden
+              className={cn(
+                "size-3.5 shrink-0 text-fg-muted transition-transform",
+                open && "rotate-90",
+              )}
+            />
+            <span className="min-w-0 truncate">{label}</span>
+          </Button>
+        ) : (
+          // Nothing to reveal, so the row must not look like it opens.
+          <span className="min-w-0 flex-1 pl-5 text-sm text-fg">{label}</span>
+        )}
         <RowActions
           hidden={hidden}
           canManage={canManage}
@@ -464,10 +501,12 @@ function DiagnosisRow({
           label={diagnosis.name}
         />
       </div>
-      {/* The clinical definition, so the taxonomy is readable and not only
-          editable. */}
-      {diagnosis.description ? (
-        <p className="mt-0.5 text-xs text-fg-muted">{diagnosis.description}</p>
+      {/* The clinical definition, kept behind the disclosure: a type with
+          thirty diagnoses is unreadable with every definition open at once. */}
+      {hasDescription && open ? (
+        <p id={panelId} className="mt-1 pl-5 text-xs text-fg-muted">
+          {diagnosis.description}
+        </p>
       ) : null}
     </li>
   )

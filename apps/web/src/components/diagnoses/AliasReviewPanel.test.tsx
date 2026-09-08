@@ -102,6 +102,30 @@ describe("AliasReviewPanel", () => {
     )
   })
 
+  it("rejecting records the refusal instead of deleting the mapping", async () => {
+    // A deleted alias and one nobody has read look the same to the next import,
+    // so the decision has to be stored rather than the row removed.
+    const user = userEvent.setup()
+    renderWithProviders(<AliasReviewPanel tree={TREE} />)
+    await user.click(await screen.findByRole("button", { name: /reject/i }))
+
+    await waitFor(() =>
+      expect(mocks.upsertAlias).toHaveBeenCalledWith({
+        raw_value: "Personality",
+        diagnosis_type_id: "type-1",
+        diagnosis_id: "dx-1",
+        source: "inferred_review_2026_09",
+        confidence: "rejected",
+      }),
+    )
+  })
+
+  it("offers both decisions on every queued mapping", async () => {
+    renderWithProviders(<AliasReviewPanel tree={TREE} />)
+    expect(await screen.findByRole("button", { name: /confirm/i })).toBeEnabled()
+    expect(screen.getByRole("button", { name: /reject/i })).toBeEnabled()
+  })
+
   it("drops a row from the queue once it is confirmed", async () => {
     const user = userEvent.setup()
     mocks.listAliases.mockResolvedValueOnce([alias()]).mockResolvedValueOnce([])

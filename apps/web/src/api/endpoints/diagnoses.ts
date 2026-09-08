@@ -96,7 +96,7 @@ export const diagnosesApi = {
    * Legacy spellings and the taxonomy row each resolves to. Platform admin
    * only, since an alias decides what a legacy session is counted as.
    */
-  async listAliases(confidence?: "confirmed" | "inferred"): Promise<DiagnosisAlias[]> {
+  async listAliases(confidence?: "confirmed" | "inferred" | "rejected"): Promise<DiagnosisAlias[]> {
     return apiClient.get<DiagnosisAlias[]>(
       "/diagnoses/aliases",
       confidence ? { confidence } : undefined,

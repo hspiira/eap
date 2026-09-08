@@ -474,10 +474,11 @@
         "type": "object"
       },
       "AliasConfidence": {
-        "description": "How much weight a legacy alias mapping carries.\n\n``INFERRED`` is a reading of the label that nobody has signed off, so it\nstays filterable: a reviewer can list exactly the mappings still awaiting\na clinical owner without re-deriving which ones those were.",
+        "description": "How much weight a legacy alias mapping carries.\n\n``INFERRED`` is a reading of the label that nobody has signed off, so it\nstays filterable: a reviewer can list exactly the mappings still awaiting\na clinical owner without re-deriving which ones those were.\n\n``REJECTED`` records that a reviewer read the mapping and refused it. It is\nkept rather than deleted so the same spelling is not inferred again by the\nnext import: a deleted row and a row nobody has seen are indistinguishable.\nA rejected alias maps nothing, so its legacy values stay unresolved, which\nis the honest outcome when the only reading on offer is wrong.",
         "enum": [
           "confirmed",
-          "inferred"
+          "inferred",
+          "rejected"
         ],
         "title": "AliasConfidence",
         "type": "string"
