@@ -52,14 +52,10 @@ SPECIAL_CATEGORY_RESOURCE_TYPES: frozenset[str] = CLINICAL_RESOURCE_TYPES | froz
 )
 
 
-# A next of kin never consented to being on the system: they are named by
-# somebody else. A member's row carries government identifiers, a date of birth
-# and contact details, which are no less sensitive, so neither records field
-# values in the diff. The audit store is append-only and outside the reach of a
-# rectification or erasure request, so a value written here is a permanent copy
-# that the data subject cannot correct or remove. The field name and the fact of
-# the change are the auditable facts; the values live on the record itself,
-# where they can still be changed.
+# The audit store is append-only, so a value written here outlives any later
+# correction to the record. A next of kin never consented to being on the
+# system, and a member's row carries government identifiers and a date of birth,
+# so neither records its field values.
 REDACTED_RESOURCE_TYPES: frozenset[str] = CLINICAL_RESOURCE_TYPES | frozenset(
     {"EligibleMember", "MemberNextOfKin"}
 )
@@ -69,9 +65,7 @@ def redacts_content(resource_type: str | None) -> bool:
     """Whether a field diff on this resource must drop its values.
 
     Redaction follows content, not the reporting flag. What changed and who
-    changed it is still recorded for every resource; only the before and after
-    values are dropped, and only where the record holds data a permanent copy
-    would outlive the subject's right to correct it.
+    changed it is recorded either way; only the values are dropped.
     """
     return bool(resource_type) and resource_type in REDACTED_RESOURCE_TYPES
 

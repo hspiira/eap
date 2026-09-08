@@ -56,18 +56,12 @@ class TestIsSpecialCategory:
 
 
 class TestRedactsContent:
-    """The audit store is append-only, so a value written to it cannot later be
-    corrected or erased on the data subject's behalf. Anything holding personal
-    data therefore records which field moved, not what it moved between."""
+    """The audit store is append-only: a value written there cannot be corrected."""
 
     def test_a_member_row_drops_its_values(self):
-        # national_id, passport_number, date_of_birth and contact details all
-        # live on this row; a permanent copy of any of them outlives the
-        # subject's ability to rectify it.
         assert redacts_content("EligibleMember")
 
     def test_a_next_of_kin_drops_its_values(self):
-        # Named by somebody else, and never asked.
         assert redacts_content("MemberNextOfKin")
 
     def test_clinical_resources_drop_their_values(self):
@@ -75,7 +69,6 @@ class TestRedactsContent:
             assert redacts_content(resource_type), resource_type
 
     def test_a_commercial_record_keeps_its_values(self):
-        # A contract rename is the kind of change a reader needs to see in full.
         assert not redacts_content("Contract")
         assert not redacts_content("Client")
 

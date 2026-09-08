@@ -7,8 +7,8 @@ import {
   ChevronUp,
   Eye,
   EyeOff,
-  Pencil,
   Plus,
+  SquarePen,
   Stethoscope,
 } from "lucide-react"
 
@@ -96,6 +96,7 @@ function DiagnosesPage() {
   const { tree, overlay, caps, error, loading, reload } = useTaxonomy()
   const [search, setSearch] = useState("")
   const [selectedId, setSelectedId] = useState<string | null>(null)
+  const [openDiagnosisId, setOpenDiagnosisId] = useState<string | null>(null)
   const [sheet, setSheet] = useState<{
     target: { kind: "type" } | { kind: "diagnosis"; typeId: string }
     editing: DiagnosisType | Diagnosis | null
@@ -266,6 +267,8 @@ function DiagnosesPage() {
                   renderChild={(d, index) => (
                     <DiagnosisRow
                       key={d.id}
+                      open={openDiagnosisId === d.id}
+                      onToggle={() => setOpenDiagnosisId((prev) => (prev === d.id ? null : d.id))}
                       diagnosis={d}
                       localLabel={labelOf(selected.id, d.id)}
                       hidden={isHidden(selected.id, d.id)}
@@ -434,6 +437,8 @@ function DiagnosisRow({
   diagnosis,
   localLabel,
   hidden,
+  open,
+  onToggle,
   canManage,
   canOverlay,
   onEdit,
@@ -445,6 +450,8 @@ function DiagnosisRow({
   diagnosis: Diagnosis
   localLabel: string | null
   hidden: boolean
+  open: boolean
+  onToggle: () => void
   canManage: boolean
   canOverlay: boolean
   onEdit: () => void
@@ -453,7 +460,6 @@ function DiagnosisRow({
   isFirst: boolean
   isLast: boolean
 }) {
-  const [open, setOpen] = useState(false)
   const hasDescription = Boolean(diagnosis.description)
   const panelId = `dx-desc-${diagnosis.id}`
   const label = (
@@ -471,7 +477,7 @@ function DiagnosisRow({
           <Button
             type="button"
             variant="ghost"
-            onClick={() => setOpen((prev) => !prev)}
+            onClick={onToggle}
             aria-expanded={open}
             aria-controls={panelId}
             className="h-auto min-w-0 flex-1 justify-start gap-1.5 rounded-none px-0 py-0 text-left text-sm font-normal text-fg hover:bg-transparent hover:text-primary"
@@ -486,7 +492,6 @@ function DiagnosisRow({
             <span className="min-w-0 truncate">{label}</span>
           </Button>
         ) : (
-          // Nothing to reveal, so the row must not look like it opens.
           <span className="min-w-0 flex-1 pl-5 text-sm text-fg">{label}</span>
         )}
         <RowActions
@@ -501,8 +506,6 @@ function DiagnosisRow({
           label={diagnosis.name}
         />
       </div>
-      {/* The clinical definition, kept behind the disclosure: a type with
-          thirty diagnoses is unreadable with every definition open at once. */}
       {hasDescription && open ? (
         <p id={panelId} className="mt-1 pl-5 text-xs text-fg-muted">
           {diagnosis.description}
@@ -584,7 +587,7 @@ function RowActions({
           onClick={() => onSetVisible(hidden)}
         />
       )}
-      {canManage && <IconButton label="Edit shared row" icon={Pencil} onClick={onEdit} />}
+      {canManage && <IconButton label="Edit shared row" icon={SquarePen} onClick={onEdit} />}
     </div>
   )
 }

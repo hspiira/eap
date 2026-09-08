@@ -56,15 +56,15 @@ def setup_middleware(app: FastAPI) -> None:
         ),
     )
 
-    # Methods/headers are enumerated rather than "*": with allow_credentials=True a
-    # wildcard is broader than the API needs. Routes use only these four verbs, and
-    # x-user-id is deliberately absent; the audit middleware reads it, so accepting
-    # it from a browser would let a client spoof audit attribution.
+    # Enumerated rather than "*" because allow_credentials is True. Every verb
+    # the router serves must be listed or its preflight fails with 400.
+    # x-user-id is absent deliberately: the audit middleware reads it, so
+    # accepting it from a browser would let a client spoof audit attribution.
     app.add_middleware(
         CORSMiddleware,
         allow_origins=settings.cors_origins_list,
         allow_credentials=True,
-        allow_methods=["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
+        allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
         allow_headers=[
             "Authorization",
             "Content-Type",
