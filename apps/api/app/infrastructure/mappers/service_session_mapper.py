@@ -17,6 +17,7 @@ from app.domain.enums import (
 )
 from app.domain.value_objects.core import (
     ClientId,
+    ContractId,
     EligibleMemberId,
     ProviderId,
     ServiceId,
@@ -58,6 +59,7 @@ class ServiceSessionMapper:
             service_id=service_id,
             provider_id=provider_id,
             client_id=ClientId(model.client_id),
+            contract_id=ContractId(model.contract_id) if model.contract_id else None,
             attendance=SessionAttendance(model.attendance),
             member_id=member_id,
             scheduled_at=ensure_utc(model.scheduled_at),
@@ -114,6 +116,7 @@ class ServiceSessionMapper:
             service_id=entity.service_id.value,
             provider_id=entity.provider_id.value,
             client_id=entity.client_id.value,
+            contract_id=entity.contract_id.value if entity.contract_id else None,
             attendance=entity.attendance,
             member_id=entity.member_id.value if entity.member_id else None,
             scheduled_at=ensure_utc(entity.scheduled_at),

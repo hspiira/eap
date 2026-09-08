@@ -18,6 +18,7 @@ from app.api.dependencies import (
     get_authorization_repository,
     get_case_repository,
     get_client_repository,
+    get_contract_repository,
     get_eligible_member_repository,
     get_provider_repository,
     get_service_repository,
@@ -75,6 +76,7 @@ from app.domain.enums.provider_network import OrganisationApprovalStatus
 from app.domain.exceptions import NotFoundError, ValidationException
 from app.domain.repositories.case_repository import CaseRepository
 from app.domain.repositories.client_repository import ClientRepository
+from app.domain.repositories.contract_repository import ContractRepository
 from app.domain.repositories.eap_programme_repository import AuthorizationRepository
 from app.domain.repositories.eligible_member_repository import EligibleMemberRepository
 from app.domain.repositories.provider_network_repository import (
@@ -129,6 +131,7 @@ def to_service_session_response(
         service_id=session.service_id.value,
         provider_id=session.provider_id.value,
         client_id=session.client_id.value,
+        contract_id=session.contract_id.value if session.contract_id else None,
         client_name=names.clients.get(session.client_id.value),
         attendance=session.attendance,
         member_id=session.member_id.value if session.member_id else None,
@@ -345,6 +348,7 @@ async def create_service_session(
         get_provider_organisation_repository
     ),
     attribution_reader: SessionAttributionReader = Depends(get_session_attribution_reader),
+    contract_repo: ContractRepository = Depends(get_contract_repository),
     audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
 ):
@@ -367,7 +371,7 @@ async def create_service_session(
         raise NotFoundError(
             "Service not found", resource_type="Service", resource_id=data.service_id
         )
-    session = await CreateServiceSessionUseCase(session_repo).execute(
+    session = await CreateServiceSessionUseCase(session_repo, contract_repo).execute(
         session_id=SessionId(generate_cuid()),
         tenant_id=TenantId(tenant_id),
         service_id=ServiceId(data.service_id),

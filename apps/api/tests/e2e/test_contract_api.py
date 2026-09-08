@@ -996,3 +996,89 @@ class TestOneTermAtATime:
         )
 
         assert response.status_code == 201, response.text
+
+
+class TestSessionsCarryTheirTerm:
+    """A session records the contract it was delivered under."""
+
+    async def test_a_session_is_attached_to_the_term_covering_its_date(
+        self,
+        client: AsyncClient,
+        session_test_tenant: dict,
+        session_test_service: dict,
+        session_test_provider: dict,
+    ):
+        tenant_id = session_test_tenant["id"]
+        created_client = await client.post(
+            f"/clients/?tenant_id={tenant_id}",
+            json={
+                "name": "Term Attachment Client",
+                "code": "TERM",
+                "contact_info": {"phone": "+1-555-TERM", "email": "term@testclient.com"},
+            },
+        )
+        assert created_client.status_code == 201, created_client.text
+        client_id = created_client.json()["id"]
+
+        today = datetime.now(UTC).date()
+        contract = await client.post(
+            f"/contracts/?tenant_id={tenant_id}",
+            json={
+                "client_id": client_id,
+                "start_date": (today - timedelta(days=30)).isoformat(),
+                "end_date": (today + timedelta(days=30)).isoformat(),
+                "billing_rate": {"amount": "1000000", "currency": "UGX"},
+                "payment_frequency": "Quarterly",
+                "is_auto_renew": False,
+            },
+        )
+        assert contract.status_code == 201, contract.text
+
+        session = await client.post(
+            f"/service-sessions/?tenant_id={tenant_id}",
+            json={
+                "service_id": session_test_service["id"],
+                "provider_id": session_test_provider["id"],
+                "client_id": client_id,
+                "scheduled_at": datetime.now(UTC).isoformat(),
+                "delivery_context": "Direct",
+                "attendance": "CompanyWide",
+                "headcount": 12,
+            },
+        )
+        assert session.status_code == 201, session.text
+        assert session.json()["contract_id"] == contract.json()["id"]
+
+    async def test_a_session_outside_every_term_still_records(
+        self,
+        client: AsyncClient,
+        session_test_tenant: dict,
+        session_test_service: dict,
+        session_test_provider: dict,
+    ):
+        """A client with no contract on file still has sessions delivered."""
+        tenant_id = session_test_tenant["id"]
+        created_client = await client.post(
+            f"/clients/?tenant_id={tenant_id}",
+            json={
+                "name": "No Contract Client",
+                "code": "NOCT",
+                "contact_info": {"phone": "+1-555-NOCT", "email": "noct@testclient.com"},
+            },
+        )
+        assert created_client.status_code == 201, created_client.text
+
+        session = await client.post(
+            f"/service-sessions/?tenant_id={tenant_id}",
+            json={
+                "service_id": session_test_service["id"],
+                "provider_id": session_test_provider["id"],
+                "client_id": created_client.json()["id"],
+                "scheduled_at": datetime.now(UTC).isoformat(),
+                "delivery_context": "Direct",
+                "attendance": "CompanyWide",
+                "headcount": 12,
+            },
+        )
+        assert session.status_code == 201, session.text
+        assert session.json()["contract_id"] is None

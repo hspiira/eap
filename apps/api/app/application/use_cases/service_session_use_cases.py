@@ -5,7 +5,7 @@ Application services for Service Session aggregate operations.
 Refactored to use base use case classes.
 """
 
-from datetime import datetime
+from datetime import UTC, datetime
 
 from app.application.use_cases.base import BaseUseCase
 from app.domain.entities.service_session import ServiceSessionEntity
@@ -18,11 +18,13 @@ from app.domain.enums import (
     SessionStatus,
     SessionType,
 )
+from app.domain.repositories.contract_repository import ContractRepository
 from app.domain.repositories.service_session_repository import (
     ServiceSessionRepository,
 )
 from app.domain.value_objects.core import (
     ClientId,
+    ContractId,
     EligibleMemberId,
     ProviderId,
     ServiceId,
@@ -37,8 +39,30 @@ from app.shared.utils.datetime import utc_now
 class CreateServiceSessionUseCase(BaseUseCase[ServiceSessionEntity, SessionId]):
     """Use case for creating a new service session."""
 
-    def __init__(self, session_repository: ServiceSessionRepository):
+    def __init__(
+        self,
+        session_repository: ServiceSessionRepository,
+        contract_repository: ContractRepository | None = None,
+    ):
         super().__init__(session_repository)
+        self._contracts = contract_repository
+
+    async def _term_covering(
+        self, tenant_id: TenantId, client_id: ClientId, scheduled_at: datetime
+    ) -> ContractId | None:
+        """The client's contract running on the session's date, if there is one.
+
+        Resolved once, at the write, rather than inferred by every reader from
+        a date window. A client with no contract on file gets None: the session
+        still happened.
+        """
+        if self._contracts is None:
+            return None
+        day = scheduled_at.astimezone(UTC).date()
+        terms = await self._contracts.find_overlapping(
+            tenant_id, client_id, start_date=day, end_date=day
+        )
+        return terms[0].id if len(terms) == 1 else None
 
     async def execute(
         self,
@@ -68,12 +92,14 @@ class CreateServiceSessionUseCase(BaseUseCase[ServiceSessionEntity, SessionId]):
         clinical_outcome: SessionClinicalStatus | None = None,
     ) -> ServiceSessionEntity:
         """Create a new service session."""
+        contract_id = await self._term_covering(tenant_id, client_id, scheduled_at)
         session = ServiceSessionEntity(
             id=session_id,
             tenant_id=tenant_id,
             service_id=service_id,
             provider_id=provider_id,
             client_id=client_id,
+            contract_id=contract_id,
             attendance=attendance,
             member_id=member_id,
             scheduled_at=scheduled_at,

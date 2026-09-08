@@ -27,6 +27,7 @@ from app.domain.events import (
 from app.domain.exceptions import ConflictError, DomainError
 from app.domain.value_objects.core import (
     ClientId,
+    ContractId,
     EligibleMemberId,
     ProviderId,
     ServiceId,
@@ -59,6 +60,9 @@ class ServiceSessionEntity:
     provider_affiliation_id: str | None = None
     completed_at: datetime | None = None
     duration: int | None = None
+    # Nullable: a session delivered outside any term, or for a client with no
+    # contract on file, still happened and is still attributed to the client.
+    contract_id: ContractId | None = None
     location: str | None = None
     notes: str | None = None
     feedback: str | None = None

@@ -9,6 +9,7 @@ from httpx import ASGITransport, AsyncClient
 from app.api.dependencies import (
     get_audit_event_handler,
     get_client_repository,
+    get_contract_repository,
     get_eligible_member_repository,
     get_provider_repository,
     get_service_repository,
@@ -105,9 +106,13 @@ async def api():
     state.clients.get_by_id.return_value = SimpleNamespace(
         id=ClientId("c1"), tenant_id=TenantId("t1")
     )
+    # A session records the term it was delivered under; these fixtures have none.
+    state.contracts = AsyncMock()
+    state.contracts.find_overlapping.return_value = []
     for dep, value in {
         get_eligible_member_repository: state.members,
         get_client_repository: state.clients,
+        get_contract_repository: state.contracts,
         get_provider_repository: state.providers,
         get_service_repository: state.services,
         get_service_session_repository: state.sessions,
