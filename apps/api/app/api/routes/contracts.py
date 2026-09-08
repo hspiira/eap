@@ -73,11 +73,7 @@ def _to_contract_response(contract: ContractEntity) -> ContractResponse:
         end_date=contract.period.end_date,
     )
 
-    billing_rate = MoneySchema(
-        amount=str(contract.billing_rate.amount),
-        currency=contract.billing_rate.currency,
-    )
-
+    headline = contract.headline_rate()
     return ContractResponse(
         id=contract.id.value,
         tenant_id=contract.tenant_id.value,
@@ -85,7 +81,12 @@ def _to_contract_response(contract: ContractEntity) -> ContractResponse:
         reference=contract.reference,
         renewed_from_id=contract.renewed_from_id.value if contract.renewed_from_id else None,
         period=period,
-        billing_rate=billing_rate,
+        billing_rate=(
+            MoneySchema(amount=str(headline.amount), currency=headline.currency)
+            if headline
+            else None
+        ),
+        pricing_model=contract.pricing_model,
         payment_frequency=contract.payment_frequency,
         payment_status=contract.payment_status,
         status=contract.effective_status(),

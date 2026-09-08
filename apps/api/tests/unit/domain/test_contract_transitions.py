@@ -11,9 +11,10 @@ from decimal import Decimal
 import pytest
 
 from app.domain.entities.contract import ContractEntity
-from app.domain.enums import ContractStatus, PaymentFrequency, PaymentStatus
+from app.domain.enums import ContractStatus, PaymentFrequency, PaymentStatus, PricingModel
 from app.domain.value_objects.core import ClientId, ContractId, Money, TenantId
 from app.domain.value_objects.dates import DateRange
+from app.domain.value_objects.pricing import ContractPricing, RateCard
 from app.shared.utils.datetime import utc_now
 
 
@@ -153,3 +154,55 @@ class TestEffectiveStatus:
         contract = _contract(start_offset_days=-30, end_offset_days=30)
         contract.terminate("Client left")
         assert contract.deleted_at is None, "a terminated contract is evidence, not a deleted row"
+
+
+class TestHeadlineRate:
+    """`billing_rate` is a reading of the pricing, not a second source."""
+
+    def _priced(self, pricing):
+        contract = _contract(start_offset_days=-30, end_offset_days=30)
+        contract.pricing = pricing
+        return contract
+
+    def test_a_retainer_reads_its_standing_charge(self):
+        contract = self._priced(
+            ContractPricing(
+                model=PricingModel.RETAINER,
+                retainer_amount=Money(amount=Decimal("500"), currency="UGX"),
+            )
+        )
+        assert contract.headline_rate() == Money(amount=Decimal("500"), currency="UGX")
+
+    def test_fee_for_service_has_no_single_figure(self):
+        contract = self._priced(
+            ContractPricing(
+                model=PricingModel.FEE_FOR_SERVICE,
+                rate_card=RateCard(
+                    rates=(("counselling", Money(amount=Decimal("50"), currency="UGX")),)
+                ),
+            )
+        )
+        assert contract.headline_rate() is None, "a rate card is not one number"
+
+    def test_changing_the_rate_moves_it_in_the_pricing(self):
+        contract = self._priced(
+            ContractPricing(
+                model=PricingModel.RETAINER,
+                retainer_amount=Money(amount=Decimal("500"), currency="UGX"),
+            )
+        )
+        contract.update_billing_rate(Money(amount=Decimal("900"), currency="UGX"))
+        assert contract.pricing.retainer_amount == Money(amount=Decimal("900"), currency="UGX")
+        assert contract.headline_rate() == Money(amount=Decimal("900"), currency="UGX")
+
+    def test_a_model_without_a_standing_charge_refuses_a_flat_rate(self):
+        contract = self._priced(
+            ContractPricing(
+                model=PricingModel.FEE_FOR_SERVICE,
+                rate_card=RateCard(
+                    rates=(("counselling", Money(amount=Decimal("50"), currency="UGX")),)
+                ),
+            )
+        )
+        with pytest.raises(Exception, match="rate card"):
+            contract.update_billing_rate(Money(amount=Decimal("900"), currency="UGX"))

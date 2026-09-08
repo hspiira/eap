@@ -21,7 +21,7 @@ Design Notes:
 - Pure domain entity (no persistence or framework concerns)
 """
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from datetime import date, datetime, timedelta
 
 from app.domain.enums import ContractStatus, PaymentFrequency, PaymentStatus, PricingModel
@@ -38,6 +38,19 @@ from app.domain.exceptions import ConflictError, DomainError
 from app.domain.value_objects.core import ClientId, ContractId, DateRange, Money, TenantId
 from app.domain.value_objects.pricing import ContractPricing
 from app.shared.utils.datetime import utc_now
+
+
+def _pricing_with_standing_charge(pricing: ContractPricing, rate: Money) -> ContractPricing:
+    """The same pricing with its standing charge moved to `rate`."""
+    if pricing.model == PricingModel.RETAINER:
+        return replace(pricing, retainer_amount=rate)
+    if pricing.model == PricingModel.FRAMEWORK:
+        return replace(pricing, deposit_amount=rate)
+    if pricing.model == PricingModel.ADMIN_UTILISATION:
+        return replace(pricing, admin_fee_floor=rate)
+    raise DomainError(
+        f"{pricing.model.value} pricing has no standing charge; edit its rate card instead"
+    )
 
 
 @dataclass
@@ -83,6 +96,25 @@ class ContractEntity:
     def pricing_model(self) -> PricingModel | None:
         return self.pricing.model if self.pricing else None
 
+    def headline_rate(self) -> Money | None:
+        """The one figure that stands for this contract's price, if there is one.
+
+        `pricing` is the agreement; this is a reading of it for a list column.
+        Three of the five models have a standing charge and it is that.
+        Fee-for-service has only a rate card, so there is no single number and
+        this returns None rather than inventing one: the caller shows the model
+        instead.
+        """
+        if self.pricing is None:
+            return self.billing_rate
+        if self.pricing.model == PricingModel.RETAINER:
+            return self.pricing.retainer_amount
+        if self.pricing.model == PricingModel.FRAMEWORK:
+            return self.pricing.deposit_amount
+        if self.pricing.model == PricingModel.ADMIN_UTILISATION:
+            return self.pricing.admin_fee_floor
+        return None
+
     def renew(
         self,
         *,
@@ -104,6 +136,11 @@ class ContractEntity:
         if self.status == ContractStatus.TERMINATED:
             raise DomainError("Cannot renew a terminated contract")
         now = utc_now()
+        # A new rate is a change to the standing charge, so it has to move in
+        # the pricing too: that is what the invoice is computed from.
+        successor_pricing = self.pricing
+        if new_rate is not None and successor_pricing is not None:
+            successor_pricing = _pricing_with_standing_charge(successor_pricing, new_rate)
         successor = ContractEntity(
             id=successor_id,
             tenant_id=self.tenant_id,
@@ -116,7 +153,7 @@ class ContractEntity:
             is_auto_renew=self.is_auto_renew,
             reference=reference,
             renewed_from_id=self.id,
-            pricing=self.pricing,
+            pricing=successor_pricing,
             created_at=now,
             updated_at=now,
         )
@@ -217,11 +254,18 @@ class ContractEntity:
         self._record_status_change(previous)
 
     def update_billing_rate(self, new_rate: Money) -> None:
-        """Update billing rate"""
+        """Change the standing charge, in the pricing that defines it.
+
+        Writing only the old `billing_rate` column would leave the invoice
+        preview computing from the previous figure, because it reads `pricing`.
+        A model with no standing charge has to be edited as pricing.
+        """
         if self.deleted_at:
             raise DomainError("Cannot update billing rate for deleted contract")
         if self.status == ContractStatus.TERMINATED:
             raise DomainError("Cannot update billing rate for terminated contract")
+        if self.pricing is not None:
+            self.pricing = _pricing_with_standing_charge(self.pricing, new_rate)
         self.billing_rate = new_rate
         self.updated_at = utc_now()
         self.events.append(

@@ -9,7 +9,7 @@ from datetime import date, timedelta
 
 from app.application.use_cases.base import BaseUseCase
 from app.domain.entities.contract import ContractEntity
-from app.domain.enums import ContractStatus, PaymentFrequency, PaymentStatus
+from app.domain.enums import ContractStatus, PaymentFrequency, PaymentStatus, PricingModel
 from app.domain.exceptions import ConflictError, NotFoundError
 from app.domain.repositories.contract_repository import ContractRepository
 from app.domain.value_objects.core import (
@@ -19,6 +19,7 @@ from app.domain.value_objects.core import (
     Money,
     TenantId,
 )
+from app.domain.value_objects.pricing import ContractPricing
 from app.shared.utils.datetime import utc_now
 
 # Lifecycle / single-field updates dispatched via TransitionUseCase + ContractTransition.
@@ -40,10 +41,17 @@ class CreateContractUseCase(BaseUseCase[ContractEntity, ContractId]):
         billing_rate: Money,
         payment_frequency: PaymentFrequency,
         is_auto_renew: bool = False,
+        pricing: ContractPricing | None = None,
     ) -> ContractEntity:
         """Create a new contract."""
         period = DateRange(start_date=start_date, end_date=end_date)
         await _reject_overlap(self.repository, tenant_id, client_id, period)
+        # A flat periodic charge is a retainer. Saying so at creation means the
+        # invoice preview has something to compute from, rather than refusing
+        # until somebody configures pricing separately.
+        pricing = pricing or ContractPricing(
+            model=PricingModel.RETAINER, retainer_amount=billing_rate
+        )
 
         # Create contract entity
         contract = ContractEntity(
@@ -64,6 +72,7 @@ class CreateContractUseCase(BaseUseCase[ContractEntity, ContractId]):
             created_at=utc_now(),
             updated_at=utc_now(),
             deleted_at=None,
+            pricing=pricing,
         )
         contract.record_created()
 

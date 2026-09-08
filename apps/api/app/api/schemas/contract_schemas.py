@@ -10,7 +10,7 @@ from datetime import date, datetime
 from pydantic import BaseModel, ConfigDict, Field
 
 from app.api.schemas.base import SanitizedStr
-from app.domain.enums import ContractStatus, PaymentFrequency, PaymentStatus
+from app.domain.enums import ContractStatus, PaymentFrequency, PaymentStatus, PricingModel
 
 # === Value Object Schemas ===
 
@@ -96,7 +96,14 @@ class ContractResponse(BaseModel):
     reference: str | None = Field(None, description="Human reference for the term")
     renewed_from_id: str | None = Field(None, description="The term this one renewed")
     period: DateRangeSchema = Field(..., description="Contract period")
-    billing_rate: MoneySchema = Field(..., description="Billing rate")
+    billing_rate: MoneySchema | None = Field(
+        None,
+        description=(
+            "The standing charge, read from the contract's pricing. Absent on a "
+            "model priced only by rate card, where no single figure stands for it."
+        ),
+    )
+    pricing_model: PricingModel | None = Field(None, description="How this contract is priced")
     payment_frequency: PaymentFrequency = Field(..., description="Payment frequency")
     payment_status: PaymentStatus = Field(..., description="Payment status")
     status: ContractStatus = Field(
