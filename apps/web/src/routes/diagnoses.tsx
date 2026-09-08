@@ -1,16 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react"
 
 import { createFileRoute } from "@tanstack/react-router"
-import {
-  ChevronDown,
-  ChevronRight,
-  ChevronUp,
-  Eye,
-  EyeOff,
-  Pencil,
-  Plus,
-  Stethoscope,
-} from "lucide-react"
+import { ChevronDown, ChevronUp, Eye, EyeOff, Pencil, Plus, Stethoscope } from "lucide-react"
 
 import {
   diagnosesApi,
@@ -20,21 +11,31 @@ import {
 import { AppLayout } from "@/components/AppLayout"
 import { EmptyState } from "@/components/common/EmptyState"
 import { ErrorState } from "@/components/common/ErrorState"
+import { FilterBar, FilterSearch } from "@/components/common/FilterBar"
 import { IconButton } from "@/components/common/IconButton"
 import { PageShell } from "@/components/common/PageShell"
 import { TableSkeleton } from "@/components/common/PageSkeletons"
+import { ROW_BORDER, STICKY_TABLE_HEAD } from "@/components/common/tableStyles"
 import { AliasReviewPanel } from "@/components/diagnoses/AliasReviewPanel"
 import { DiagnosisFormSheet } from "@/components/DiagnosisFormSheet"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table"
 import { normalizeErrorMessage } from "@/lib/errors"
+import { cn } from "@/lib/utils"
 import type { Diagnosis, DiagnosisTree, DiagnosisType } from "@/types/entities"
 
 export const Route = createFileRoute("/diagnoses")({
   component: DiagnosesPage,
 })
 
-const ROW = "border-b border-safe/20"
+type TypeWithDiagnoses = DiagnosisType & { diagnoses: Diagnosis[] }
 
 type OverlayKey = string
 const keyOf = (typeId: string, diagnosisId: string | null): OverlayKey =>
@@ -72,10 +73,20 @@ function useTaxonomy() {
   return { tree, overlay, caps, error, loading, reload: load }
 }
 
+/** Types whose own name matches, plus types holding a matching diagnosis. */
+function filterTypes(tree: DiagnosisTree | null, search: string): TypeWithDiagnoses[] {
+  const all = tree?.types ?? []
+  const q = search.trim().toLowerCase()
+  if (!q) return all
+  return all
+    .map((t) => ({ ...t, diagnoses: t.diagnoses.filter((d) => d.name.toLowerCase().includes(q)) }))
+    .filter((t) => t.name.toLowerCase().includes(q) || t.diagnoses.length > 0)
+}
+
 function DiagnosesPage() {
   const { tree, overlay, caps, error, loading, reload } = useTaxonomy()
-  const [expanded, setExpanded] = useState<Set<string>>(new Set())
   const [search, setSearch] = useState("")
+  const [selectedId, setSelectedId] = useState<string | null>(null)
   const [sheet, setSheet] = useState<{
     target: { kind: "type" } | { kind: "diagnosis"; typeId: string }
     editing: DiagnosisType | Diagnosis | null
@@ -83,26 +94,10 @@ function DiagnosesPage() {
 
   const canManage = caps?.can_manage_taxonomy ?? false
   const canOverlay = caps?.can_manage_overlay ?? false
-
-  const types = useMemo(() => {
-    const all = tree?.types ?? []
-    const q = search.trim().toLowerCase()
-    if (!q) return all
-    return all
-      .map((t) => ({
-        ...t,
-        diagnoses: t.diagnoses.filter((d) => d.name.toLowerCase().includes(q)),
-      }))
-      .filter((t) => t.name.toLowerCase().includes(q) || t.diagnoses.length > 0)
-  }, [tree, search])
-
-  const toggle = (id: string) =>
-    setExpanded((prev) => {
-      const next = new Set(prev)
-      if (next.has(id)) next.delete(id)
-      else next.add(id)
-      return next
-    })
+  const types = useMemo(() => filterTypes(tree, search), [tree, search])
+  // Falls back to the first row, so the panel is never blank while the list has
+  // something in it, including after a search removes the previous selection.
+  const selected = types.find((t) => t.id === selectedId) ?? types[0] ?? null
 
   const setVisible = async (typeId: string, diagnosisId: string | null, isEnabled: boolean) => {
     await diagnosesApi.setOverlay({
@@ -115,6 +110,9 @@ function DiagnosesPage() {
 
   const isHidden = (typeId: string, diagnosisId: string | null) =>
     overlay.get(keyOf(typeId, diagnosisId))?.is_enabled === false
+
+  const labelOf = (typeId: string, diagnosisId: string | null) =>
+    overlay.get(keyOf(typeId, diagnosisId))?.local_label ?? null
 
   /**
    * Move a row one place within its siblings.
@@ -152,103 +150,140 @@ function DiagnosesPage() {
     const t = tree?.types ?? []
     return { types: t.length, diagnoses: t.reduce((n, x) => n + x.diagnoses.length, 0) }
   }, [tree])
+  // Positions written from a filtered list would not be the real ones.
+  const canReorder = canOverlay && !search.trim()
 
   return (
     <AppLayout>
       <PageShell
         icon={Stethoscope}
-        breadcrumb="Reference / Diagnoses"
-        title="Diagnoses"
+        breadcrumb="Reference · Diagnoses"
         actions={
           canManage ? (
             <Button
               size="sm"
-              className="gap-1.5 rounded-none"
+              className="h-7 gap-1.5 px-2.5"
               onClick={() => setSheet({ target: { kind: "type" }, editing: null })}
             >
-              <Plus className="size-4" />
+              <Plus className="size-3.5" />
               Add type
             </Button>
           ) : null
         }
       >
-        <div className="flex items-center justify-between gap-3 border-b border-safe/20 p-4">
-          <Input
-            className="max-w-sm rounded-none"
-            placeholder="Search types and diagnoses"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
-          <p className="text-sm text-safe">
+        <FilterBar>
+          <p className="shrink-0 text-xs text-fg-muted">
             {counts.types} types · {counts.diagnoses} diagnoses
             {canManage ? " · shared across all tenants" : ""}
           </p>
-        </div>
+          <div className="ml-auto" />
+          <FilterSearch
+            value={search}
+            onChange={setSearch}
+            placeholder="Search types and diagnoses"
+          />
+        </FilterBar>
 
-        {/* Legacy mappings nobody has signed off. Above the tree because it is
-            a queue that should empty, not part of browsing the taxonomy. */}
+        {/* Legacy mappings nobody has signed off. Above the taxonomy because it
+            is a queue that should empty, not part of browsing it. */}
         {canManage && !loading && !error ? <AliasReviewPanel tree={tree} /> : null}
 
         {loading ? (
-          <div className="p-5">
+          <div className="p-3">
             <TableSkeleton cols={4} />
           </div>
         ) : error ? (
           <ErrorState message={error} onRetry={() => void reload()} />
-        ) : types.length === 0 ? (
-          <EmptyState
-            icon={Stethoscope}
-            title="No diagnoses match your search"
-            description="Try a different term."
-          />
         ) : (
-          <div>
-            {types.map((type, typeIndex) => (
-              <TypeRow
-                key={type.id}
-                type={type}
-                expanded={expanded.has(type.id)}
-                onToggle={() => toggle(type.id)}
-                hidden={isHidden(type.id, null)}
-                canManage={canManage}
-                canOverlay={canOverlay}
-                localLabel={overlay.get(keyOf(type.id, null))?.local_label ?? null}
-                onEdit={() => setSheet({ target: { kind: "type" }, editing: type })}
-                onAddChild={() =>
-                  setSheet({ target: { kind: "diagnosis", typeId: type.id }, editing: null })
-                }
-                onSetVisible={(v) => void setVisible(type.id, null, v)}
-                onMove={
-                  canOverlay && !search.trim()
-                    ? (direction) => void move(types, typeIndex, direction, type.id, false)
-                    : undefined
-                }
-                isFirst={typeIndex === 0}
-                isLast={typeIndex === types.length - 1}
-                renderChild={(d, diagnosisIndex) => (
-                  <DiagnosisRow
-                    key={d.id}
-                    diagnosis={d}
-                    hidden={isHidden(type.id, d.id)}
-                    canManage={canManage}
-                    canOverlay={canOverlay}
-                    localLabel={overlay.get(keyOf(type.id, d.id))?.local_label ?? null}
-                    onEdit={() =>
-                      setSheet({ target: { kind: "diagnosis", typeId: type.id }, editing: d })
-                    }
-                    onSetVisible={(v) => void setVisible(type.id, d.id, v)}
-                    onMove={
-                      canOverlay && !search.trim()
-                        ? (direction) =>
-                            void move(type.diagnoses, diagnosisIndex, direction, type.id, true)
-                        : undefined
-                    }
-                    isFirst={diagnosisIndex === 0}
-                    isLast={diagnosisIndex === type.diagnoses.length - 1}
-                  />
-                )}
-              />
-            ))}
+          <div className="grid min-h-0 flex-1 grid-cols-12 gap-3 overflow-hidden bg-bg p-3">
+            <div className="col-span-12 flex min-h-0 min-w-0 flex-col overflow-hidden border border-fg/10 bg-surface lg:col-span-8">
+              {types.length === 0 ? (
+                <EmptyState
+                  icon={Stethoscope}
+                  title="No diagnoses match your search"
+                  description="Try a different term."
+                />
+              ) : (
+                <div className="min-h-0 flex-1 overflow-y-auto">
+                  <Table className="w-full text-sm" scrollable={false}>
+                    <TableHeader className={STICKY_TABLE_HEAD}>
+                      <TableRow className={`hover:bg-transparent ${ROW_BORDER}`}>
+                        <TableHead>Type</TableHead>
+                        <TableHead className="text-fg/65">Code</TableHead>
+                        <TableHead className="text-right text-fg/65">Diagnoses</TableHead>
+                        <TableHead className="w-32 text-right text-fg/65">
+                          <span className="sr-only">Actions</span>
+                        </TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {types.map((type, index) => (
+                        <TypeRow
+                          key={type.id}
+                          type={type}
+                          localLabel={labelOf(type.id, null)}
+                          hidden={isHidden(type.id, null)}
+                          selected={selected?.id === type.id}
+                          onSelect={() => setSelectedId(type.id)}
+                          canManage={canManage}
+                          canOverlay={canOverlay}
+                          onEdit={() => setSheet({ target: { kind: "type" }, editing: type })}
+                          onSetVisible={(v) => void setVisible(type.id, null, v)}
+                          onMove={
+                            canReorder
+                              ? (direction) => void move(types, index, direction, type.id, false)
+                              : undefined
+                          }
+                          isFirst={index === 0}
+                          isLast={index === types.length - 1}
+                        />
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              )}
+            </div>
+
+            <div className="col-span-12 flex min-h-0 min-w-0 flex-col lg:col-span-4">
+              {selected ? (
+                <TypeDetailsCard
+                  type={selected}
+                  localLabel={labelOf(selected.id, null)}
+                  canManage={canManage}
+                  canOverlay={canOverlay}
+                  onAddChild={() =>
+                    setSheet({ target: { kind: "diagnosis", typeId: selected.id }, editing: null })
+                  }
+                  renderChild={(d, index) => (
+                    <DiagnosisRow
+                      key={d.id}
+                      diagnosis={d}
+                      localLabel={labelOf(selected.id, d.id)}
+                      hidden={isHidden(selected.id, d.id)}
+                      canManage={canManage}
+                      canOverlay={canOverlay}
+                      onEdit={() =>
+                        setSheet({
+                          target: { kind: "diagnosis", typeId: selected.id },
+                          editing: d,
+                        })
+                      }
+                      onSetVisible={(v) => void setVisible(selected.id, d.id, v)}
+                      onMove={
+                        canReorder
+                          ? (direction) =>
+                              void move(selected.diagnoses, index, direction, selected.id, true)
+                          : undefined
+                      }
+                      isFirst={index === 0}
+                      isLast={index === selected.diagnoses.length - 1}
+                    />
+                  )}
+                />
+              ) : (
+                <DetailsPlaceholder />
+              )}
+            </div>
           </div>
         )}
       </PageShell>
@@ -266,84 +301,132 @@ function DiagnosesPage() {
   )
 }
 
-interface TypeRowProps {
-  type: DiagnosisType & { diagnoses: Diagnosis[] }
-  expanded: boolean
+function TypeRow({
+  type,
+  localLabel,
+  hidden,
+  selected,
+  onSelect,
+  canManage,
+  canOverlay,
+  onEdit,
+  onSetVisible,
+  onMove,
+  isFirst,
+  isLast,
+}: {
+  type: TypeWithDiagnoses
+  localLabel: string | null
   hidden: boolean
+  selected: boolean
+  onSelect: () => void
   canManage: boolean
   canOverlay: boolean
-  localLabel: string | null
-  onToggle: () => void
   onEdit: () => void
-  onAddChild: () => void
   onSetVisible: (visible: boolean) => void
-  renderChild: (d: Diagnosis, index: number) => React.ReactNode
   /** Omitted when the caller may not reorder, or while a search is filtering. */
   onMove?: (direction: -1 | 1) => void
   isFirst: boolean
   isLast: boolean
-}
-
-function TypeRow({
-  type,
-  expanded,
-  hidden,
-  canManage,
-  canOverlay,
-  localLabel,
-  onToggle,
-  onEdit,
-  onAddChild,
-  onSetVisible,
-  renderChild,
-  onMove,
-  isFirst,
-  isLast,
-}: TypeRowProps) {
-  const Chevron = expanded ? ChevronDown : ChevronRight
+}) {
   return (
-    <div className={ROW}>
-      <div className={`flex items-center gap-2 px-4 py-2.5 ${hidden ? "opacity-50" : ""}`}>
-        <Button
-          variant="ghost"
-          onClick={onToggle}
-          className="flex h-auto flex-1 items-center justify-start gap-2 rounded-none px-0 text-left font-normal"
-        >
-          <Chevron className="size-4 text-safe" />
-          <span className="font-medium">{localLabel ?? type.name}</span>
-          {localLabel && <RelabelBadge original={type.name} />}
-          <span className="text-sm text-safe">{type.code}</span>
-          <span className="text-sm text-safe">({type.diagnoses.length})</span>
-        </Button>
+    <TableRow
+      onClick={onSelect}
+      className={cn(
+        "group h-9 cursor-pointer",
+        ROW_BORDER,
+        hidden && "opacity-50",
+        selected && "bg-primary/5 hover:bg-primary/5",
+      )}
+    >
+      <TableCell>
+        <span className={cn("font-medium", selected ? "text-primary" : "text-fg")}>
+          {localLabel ?? type.name}
+        </span>
+        {localLabel && <RelabelBadge original={type.name} />}
+      </TableCell>
+      <TableCell className="text-xs text-fg/65">{type.code}</TableCell>
+      <TableCell className="text-right tabular-nums text-xs text-fg/65">
+        {type.diagnoses.length}
+      </TableCell>
+      <TableCell className="text-right">
         <RowActions
           hidden={hidden}
           canManage={canManage}
           canOverlay={canOverlay}
           onEdit={onEdit}
           onSetVisible={onSetVisible}
-          onAdd={canManage ? onAddChild : undefined}
           onMove={onMove}
           isFirst={isFirst}
           isLast={isLast}
           label={type.name}
         />
+      </TableCell>
+    </TableRow>
+  )
+}
+
+/** The selected type: what it means, and every diagnosis filed under it. */
+function TypeDetailsCard({
+  type,
+  localLabel,
+  canManage,
+  canOverlay,
+  onAddChild,
+  renderChild,
+}: {
+  type: TypeWithDiagnoses
+  localLabel: string | null
+  canManage: boolean
+  canOverlay: boolean
+  onAddChild: () => void
+  renderChild: (d: Diagnosis, index: number) => React.ReactNode
+}) {
+  return (
+    <div className="flex min-h-0 flex-col overflow-hidden border border-fg/10 bg-surface">
+      <header className="flex items-start gap-2.5 border-b border-fg/10 px-3 py-2.5">
+        <span
+          aria-hidden
+          className="grid size-7 shrink-0 place-items-center bg-primary/10 text-primary"
+        >
+          <Stethoscope className="size-3.5" />
+        </span>
+        <div className="min-w-0 flex-1">
+          <h3 className="truncate text-sm font-semibold leading-tight text-fg">
+            {localLabel ?? type.name}
+          </h3>
+          <p className="mt-0.5 text-[11px] text-fg-muted">
+            {type.code} · {type.diagnoses.length} diagnoses
+          </p>
+        </div>
+        {canManage && <IconButton label="Add diagnosis" icon={Plus} onClick={onAddChild} />}
+      </header>
+
+      <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto overscroll-contain p-3">
+        {type.description ? <p className="text-xs text-fg/70">{type.description}</p> : null}
+        {type.diagnoses.length === 0 ? (
+          <p className="text-sm text-fg-muted">Nothing filed under this type yet.</p>
+        ) : (
+          <ul className="divide-y divide-fg/10">
+            {type.diagnoses.map((d, index) => renderChild(d, index))}
+          </ul>
+        )}
+        {!canManage && !canOverlay ? (
+          <p className="mt-auto border-t border-fg/10 pt-2.5 text-[11px] text-fg-muted">
+            This taxonomy is shared. Ask a platform administrator to change it.
+          </p>
+        ) : null}
       </div>
-      {/* Outside the toggle button: a paragraph inside a control is read out
-          on every focus and makes the row's accessible name unusable. */}
-      {type.description ? <RowDescription text={type.description} indent="pl-10" /> : null}
-      {expanded && (
-        <div className="bg-surface">{type.diagnoses.map((d, i) => renderChild(d, i))}</div>
-      )}
     </div>
   )
 }
 
 function DiagnosisRow({
   diagnosis,
+  localLabel,
   hidden,
   canManage,
   canOverlay,
-  localLabel,
   onEdit,
   onSetVisible,
   onMove,
@@ -351,10 +434,10 @@ function DiagnosisRow({
   isLast,
 }: {
   diagnosis: Diagnosis
+  localLabel: string | null
   hidden: boolean
   canManage: boolean
   canOverlay: boolean
-  localLabel: string | null
   onEdit: () => void
   onSetVisible: (visible: boolean) => void
   onMove?: (direction: -1 | 1) => void
@@ -362,13 +445,13 @@ function DiagnosisRow({
   isLast: boolean
 }) {
   return (
-    <div className={`border-t border-safe/10 ${hidden ? "opacity-50" : ""}`}>
-      <div className="flex items-center gap-2 py-2 pl-12 pr-4">
-        <span className="flex-1">
+    <li className={cn("py-2", hidden && "opacity-50")}>
+      <div className="flex items-center gap-2">
+        <span className="min-w-0 flex-1 text-sm text-fg">
           {localLabel ?? diagnosis.name}
           {localLabel && <RelabelBadge original={diagnosis.name} />}
+          <span className="ml-1.5 text-xs text-fg/65">{diagnosis.code}</span>
         </span>
-        <span className="text-sm text-safe">{diagnosis.code}</span>
         <RowActions
           hidden={hidden}
           canManage={canManage}
@@ -381,22 +464,32 @@ function DiagnosisRow({
           label={diagnosis.name}
         />
       </div>
+      {/* The clinical definition, so the taxonomy is readable and not only
+          editable. */}
       {diagnosis.description ? (
-        <RowDescription text={diagnosis.description} indent="pl-12" />
+        <p className="mt-0.5 text-xs text-fg-muted">{diagnosis.description}</p>
       ) : null}
+    </li>
+  )
+}
+
+function DetailsPlaceholder() {
+  return (
+    <div className="flex flex-1 flex-col items-center justify-center gap-1 border border-dashed border-fg/15 p-8 text-center">
+      <div className="mb-2 grid size-9 place-items-center bg-primary/10">
+        <Stethoscope className="size-4 text-primary" />
+      </div>
+      <h3 className="text-sm font-semibold text-fg">Pick a type</h3>
+      <p className="max-w-[24ch] text-xs text-fg/60">
+        Select a row to read its definition and the diagnoses under it.
+      </p>
     </div>
   )
 }
 
-/** The clinical definition of a row, shown so the tree is readable and not
- *  only editable. */
-function RowDescription({ text, indent }: { text: string; indent: string }) {
-  return <p className={`${indent} pb-2.5 pr-4 text-sm text-safe`}>{text}</p>
-}
-
 function RelabelBadge({ original }: { original: string }) {
   return (
-    <span className="ml-2 border border-nurturing px-1.5 py-0.5 text-xs text-nurturing">
+    <span className="ml-2 border border-info/40 px-1.5 py-0.5 text-[11px] text-info-fg">
       renamed from {original}
     </span>
   )
@@ -408,7 +501,6 @@ function RowActions({
   canOverlay,
   onEdit,
   onSetVisible,
-  onAdd,
   onMove,
   isFirst,
   isLast,
@@ -419,14 +511,17 @@ function RowActions({
   canOverlay: boolean
   onEdit: () => void
   onSetVisible: (visible: boolean) => void
-  onAdd?: () => void
   onMove?: (direction: -1 | 1) => void
   isFirst?: boolean
   isLast?: boolean
   label?: string
 }) {
   return (
-    <div className="flex items-center gap-1">
+    <div
+      className="flex items-center justify-end gap-0.5"
+      // The row is a select control; its buttons are not.
+      onClick={(event) => event.stopPropagation()}
+    >
       {onMove && (
         <>
           <IconButton
@@ -451,7 +546,6 @@ function RowActions({
         />
       )}
       {canManage && <IconButton label="Edit shared row" icon={Pencil} onClick={onEdit} />}
-      {onAdd && <IconButton label="Add diagnosis" icon={Plus} onClick={onAdd} />}
     </div>
   )
 }

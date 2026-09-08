@@ -91,7 +91,7 @@ describe("diagnoses admin page", () => {
 
     renderPage()
 
-    await waitFor(() => expect(screen.getByText("Gender-Based Violence")).toBeInTheDocument())
+    await screen.findAllByText("Gender-Based Violence")
     expect(screen.queryByRole("button", { name: /add type/i })).not.toBeInTheDocument()
     expect(screen.queryByLabelText(/edit shared row/i)).not.toBeInTheDocument()
   })
@@ -105,7 +105,7 @@ describe("diagnoses admin page", () => {
 
     renderPage()
 
-    await waitFor(() => expect(screen.getByText("Gender-Based Violence")).toBeInTheDocument())
+    await screen.findAllByText("Gender-Based Violence")
     expect(screen.getByRole("button", { name: /add type/i })).toBeInTheDocument()
   })
 
@@ -119,7 +119,7 @@ describe("diagnoses admin page", () => {
 
     renderPage()
 
-    await waitFor(() => expect(screen.getByText("Gender-Based Violence")).toBeInTheDocument())
+    await screen.findAllByText("Gender-Based Violence")
     expect(diagnosesApi.listOverlay).not.toHaveBeenCalled()
   })
 
@@ -135,7 +135,7 @@ describe("diagnoses admin page", () => {
     const user = userEvent.setup()
 
     renderPage()
-    await waitFor(() => expect(screen.getByText("Addictions")).toBeInTheDocument())
+    await screen.findAllByText("Addictions")
     await user.click(screen.getByRole("button", { name: "Move Burnout up" }))
 
     await waitFor(() => expect(diagnosesApi.setOverlay).toHaveBeenCalledTimes(3))
@@ -156,7 +156,7 @@ describe("diagnoses admin page", () => {
     vi.mocked(diagnosesApi.listOverlay).mockResolvedValue([])
 
     renderPage()
-    await waitFor(() => expect(screen.getByText("Addictions")).toBeInTheDocument())
+    await screen.findAllByText("Addictions")
 
     expect(screen.getByRole("button", { name: "Move Addictions up" })).toBeDisabled()
     expect(screen.getByRole("button", { name: "Move Career down" })).toBeDisabled()
@@ -171,7 +171,7 @@ describe("diagnoses admin page", () => {
     })
 
     renderPage()
-    await waitFor(() => expect(screen.getByText("Addictions")).toBeInTheDocument())
+    await screen.findAllByText("Addictions")
 
     expect(screen.queryByRole("button", { name: /^Move /i })).not.toBeInTheDocument()
   })
@@ -187,7 +187,7 @@ describe("diagnoses admin page", () => {
     const user = userEvent.setup()
 
     renderPage()
-    await waitFor(() => expect(screen.getByText("Addictions")).toBeInTheDocument())
+    await screen.findAllByText("Addictions")
     expect(screen.getByRole("button", { name: "Move Burnout up" })).toBeInTheDocument()
 
     await user.type(screen.getByPlaceholderText("Search types and diagnoses"), "Burn")
@@ -215,7 +215,7 @@ describe("diagnoses admin page", () => {
 
     renderPage()
 
-    await waitFor(() => expect(screen.getByText("Relationship Abuse")).toBeInTheDocument())
+    await screen.findAllByText("Relationship Abuse")
     expect(screen.getByText(/renamed from Gender-Based Violence/i)).toBeInTheDocument()
   })
 
@@ -254,7 +254,7 @@ describe("diagnoses admin page", () => {
 
     renderPage()
 
-    await waitFor(() => expect(screen.getByText("Gender-Based Violence")).toBeInTheDocument())
+    await screen.findAllByText("Gender-Based Violence")
     expect(diagnosesApi.listAliases).not.toHaveBeenCalled()
   })
 })
@@ -305,18 +305,54 @@ describe("descriptions", () => {
     ).toBeInTheDocument()
   })
 
-  it("shows a diagnosis description once its type is expanded", async () => {
+  it("shows a diagnosis description under the selected type", async () => {
     vi.mocked(diagnosesApi.getTree).mockResolvedValue(DESCRIBED)
     renderPage()
-    await screen.findByText("Gender-Based Violence")
 
-    // The row's action buttons carry the type name too. The toggle is the one
-    // whose name also runs on into the code and the child count.
-    await userEvent.click(screen.getByRole("button", { name: /Gender-Based ViolenceGBV/ }))
-
+    // The first type is selected on arrival, so its diagnoses are already there.
     expect(
       await screen.findByText("Physical, sexual or psychological violence by a partner."),
     ).toBeInTheDocument()
+  })
+
+  it("follows a click to another type's diagnoses", async () => {
+    vi.mocked(diagnosesApi.getTree).mockResolvedValue({
+      types: [
+        DESCRIBED.types[0],
+        {
+          id: "t_str",
+          code: "STR",
+          name: "Stress",
+          description: "Pressure that outruns coping.",
+          sort_order: 1,
+          diagnoses: [
+            {
+              id: "d_burn",
+              code: "BRN",
+              name: "Burnout",
+              description: "Exhaustion from prolonged workplace stress.",
+              type_id: "t_str",
+              sort_order: 0,
+            },
+          ],
+        },
+      ],
+    })
+    const user = userEvent.setup()
+    renderPage()
+    await screen.findAllByText("Gender-Based Violence")
+    expect(
+      screen.queryByText("Exhaustion from prolonged workplace stress."),
+    ).not.toBeInTheDocument()
+
+    await user.click(screen.getByRole("cell", { name: /^Stress$/ }))
+
+    expect(
+      await screen.findByText("Exhaustion from prolonged workplace stress."),
+    ).toBeInTheDocument()
+    expect(
+      screen.queryByText("Physical, sexual or psychological violence by a partner."),
+    ).not.toBeInTheDocument()
   })
 
   it("renders no placeholder when a row has no description", async () => {
@@ -324,7 +360,7 @@ describe("descriptions", () => {
 
     renderPage()
 
-    await screen.findByText("Gender-Based Violence")
+    await screen.findAllByText("Gender-Based Violence")
     expect(screen.queryByText(/^null$/)).not.toBeInTheDocument()
     expect(screen.queryByText(/undefined/)).not.toBeInTheDocument()
   })
