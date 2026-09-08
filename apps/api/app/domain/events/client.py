@@ -7,6 +7,42 @@ from app.domain.value_objects.core import ClientId, UserId
 
 
 @dataclass(frozen=True)
+class ClientCreated(DomainEvent):
+    """Event raised when a client is created."""
+
+    client_id: ClientId
+    name: str
+    code: str
+
+
+@dataclass(frozen=True)
+class ClientUpdated(DomainEvent):
+    """Event raised when a client's stored details change.
+
+    `field` names what was touched. The values are not on the event: the
+    handler diffs the entity, so `entity_changes` carries them and this stays
+    free of client data.
+    """
+
+    client_id: ClientId
+    field: str
+
+
+@dataclass(frozen=True)
+class ClientArchived(DomainEvent):
+    """Event raised when a client is archived."""
+
+    client_id: ClientId
+
+
+@dataclass(frozen=True)
+class ClientRestored(DomainEvent):
+    """Event raised when an archived client is restored."""
+
+    client_id: ClientId
+
+
+@dataclass(frozen=True)
 class ClientVerified(DomainEvent):
     """Event raised when a client is verified."""
 

@@ -145,6 +145,7 @@ class CreateClientUseCase(BaseUseCase[ClientEntity, ClientId]):
             updated_at=utc_now(),
             deleted_at=None,
         )
+        client.record_created()
 
         return await self._save_and_publish_events(client)
 

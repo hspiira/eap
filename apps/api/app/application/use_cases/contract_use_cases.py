@@ -64,6 +64,7 @@ class CreateContractUseCase(BaseUseCase[ContractEntity, ContractId]):
             updated_at=utc_now(),
             deleted_at=None,
         )
+        contract.record_created()
 
         return await self._save_and_publish_events(contract)
 

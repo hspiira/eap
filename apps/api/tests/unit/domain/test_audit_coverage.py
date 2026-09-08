@@ -47,7 +47,17 @@ import app.domain.entities as entities_pkg
 # PractitionerImportBatchApplied with actor and counts, and each row carries
 # its created ids and quarantine reason as persisted detail.
 # Net of the two the provider work removed, that is 148.
-KNOWN_SILENT_MUTATORS = 148
+#
+# 148 -> 122 in one pass over clients and contracts, which is three separate
+# things and worth keeping apart:
+#   -14  ClientEntity and ContractEntity now emit on create, on every field
+#        update, and on archive and restore. Neither has a silent mutator left.
+#    -3  the detector follows a private helper: a method that hands the append
+#        to one (ContractEntity._record_status_change) was read as silent.
+#    -9  the detector no longer reads `self.x == y` as an assignment, so read
+#        predicates like `is_active` were never mutators at all.
+# Only the first is coverage. The other twelve were the measurement.
+KNOWN_SILENT_MUTATORS = 122
 
 
 def _entity_classes():
@@ -67,6 +77,28 @@ def _entity_classes():
             yield name, obj
 
 
+def _emits(cls, source: str, seen: frozenset[str] = frozenset()) -> bool:
+    """Whether a method appends an event, itself or through a private helper.
+
+    A method that hands the append to a helper is still audited, and factoring
+    a repeated append out is the normal way to write one. Without following the
+    call, `ContractEntity.activate` reads as silent while it emits.
+    """
+    if "events.append" in source:
+        return True
+    for helper in set(re.findall(r"self\.(_\w+)\(", source)) - seen:
+        member = getattr(cls, helper, None)
+        if not inspect.isfunction(member):
+            continue
+        try:
+            helper_source = inspect.getsource(member)
+        except (OSError, TypeError):
+            continue
+        if _emits(cls, helper_source, seen | {helper}):
+            return True
+    return False
+
+
 def _mutating_methods(cls):
     """Public methods that assign to self, with whether they emit an event."""
     for name, member in vars(cls).items():
@@ -76,9 +108,11 @@ def _mutating_methods(cls):
             source = inspect.getsource(member)
         except (OSError, TypeError):
             continue
-        if not re.search(r"self\.\w+\s*=", source):
+        # `=(?!=)` so a comparison is not read as an assignment: `is_active`
+        # returns `self.status == ACTIVE` and mutates nothing.
+        if not re.search(r"self\.\w+\s*=(?!=)", source):
             continue
-        yield name, "events.append" in source
+        yield name, _emits(cls, source)
 
 
 def silent_mutators() -> dict[str, list[str]]:
@@ -113,17 +147,26 @@ def test_lifecycle_transitions_are_audited():
     assert "activate" in emitting.get("ClientEntity", [])
 
 
-def test_creating_a_client_is_not_audited():
-    """Documents the gap rather than asserting it is acceptable.
+def test_creating_a_client_is_audited():
+    """Creation emits, and from the use case rather than the constructor.
 
-    ClientEntity has no __post_init__ emitting a creation event, so
-    POST /clients produces no outbox row. Verified against a running API.
+    A `__post_init__` would fire in the mapper too, which builds an entity for
+    every row it reads, so loading a client would record a creation. The
+    create use case calls `record_created` instead: see test_client_api.py for
+    the outbox row it produces.
     """
     from app.domain.entities.client import ClientEntity
 
     source = inspect.getsource(ClientEntity)
     assert "__post_init__" not in source, (
-        "ClientEntity gained a __post_init__. If it now emits a creation "
-        "event, client creation is audited and this test should assert that "
-        "instead."
+        "ClientEntity gained a __post_init__. Emitting there records a "
+        "creation every time the mapper hydrates a row."
     )
+    assert "ClientCreated" in inspect.getsource(ClientEntity.record_created)
+
+
+def test_both_sides_of_a_client_and_contract_write_are_audited():
+    """The aggregates a user edits daily leave no silent mutator behind."""
+    gap = silent_mutators()
+    assert gap.get("ClientEntity") is None, gap.get("ClientEntity")
+    assert gap.get("ContractEntity") is None, gap.get("ContractEntity")

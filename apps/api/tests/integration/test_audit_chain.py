@@ -21,6 +21,7 @@ from sqlalchemy.pool import NullPool
 from sqlalchemy.schema import CreateSchema, DropSchema
 
 from app.api.routes.clients import router as clients_router
+from app.api.routes.contracts import router as contracts_router
 from app.application.services.outbox_consumers import make_audit_consumer
 from app.application.services.outbox_dispatcher import OutboxDispatcher
 from app.core.database import get_db
@@ -103,6 +104,7 @@ async def api(chain_db):
     app = FastAPI()
     register_exception_handlers(app)
     app.include_router(clients_router)
+    app.include_router(contracts_router)
 
     async def override_db():
         async with chain_db() as session:
@@ -176,3 +178,89 @@ class TestAuditChain:
             assert len((await session.execute(select(OutboxEventModel))).scalars().all()) == 0
 
         assert await _drain(chain_db) == 0
+
+    async def test_a_rename_carries_its_diff_to_entity_changes(self, api, chain_db):
+        """The half the trail was missing: what changed, not only that it did."""
+        response = await api.patch(f"/clients/{CLIENT_ID}", json={"name": "Acme Holdings"})
+        assert response.status_code == 200, response.text
+        assert response.json()["name"] == "Acme Holdings"
+
+        assert await _drain(chain_db) == 1
+
+        async with chain_db() as session:
+            logs = (await session.execute(select(AuditLogModel))).scalars().all()
+            assert len(logs) == 1
+            assert logs[0].action_type == AuditActionType.UPDATE
+            assert logs[0].extra_metadata["event_type"] == "ClientUpdated"
+
+            changes = (await session.execute(select(EntityChangeModel))).scalars().all()
+            assert len(changes) == 1
+            assert changes[0].entity_type == "Client"
+            assert changes[0].entity_id == CLIENT_ID
+            renamed = {
+                field["field_name"]: (field["old_value"], field["new_value"])
+                for field in changes[0].field_changes
+            }
+            assert renamed["name"] == ("Acme Corp", "Acme Holdings")
+            # Bookkeeping the audit row already carries is not a change.
+            assert "updated_at" not in renamed
+            assert "events" not in renamed
+
+    async def test_creating_a_client_is_recorded_as_a_creation(self, api, chain_db):
+        response = await api.post(
+            "/clients/",
+            params={"tenant_id": TENANT_ID},
+            json={
+                "name": "Second Client",
+                "code": "SEC",
+                "contact_info": {"phone": "+441234567891", "email": "ops@second.test"},
+            },
+        )
+        assert response.status_code == 201, response.text
+        created_id = response.json()["id"]
+
+        assert await _drain(chain_db) == 1
+
+        async with chain_db() as session:
+            logs = (await session.execute(select(AuditLogModel))).scalars().all()
+            assert len(logs) == 1
+            assert logs[0].action_type == AuditActionType.CREATE
+            assert logs[0].resource_id == created_id
+            assert logs[0].extra_metadata["event_type"] == "ClientCreated"
+
+    async def test_activating_a_contract_is_an_update_not_a_creation(self, api, chain_db):
+        """The audit action has to match what happened.
+
+        `map_domain_event_to_audit_action` files any event whose name contains
+        "activated" as a CREATE, which is why the contract emits
+        ContractStatusChanged. An activation recorded as a creation would put
+        a second birth in the trail for a contract that already existed.
+        """
+        created = await api.post(
+            "/contracts/",
+            params={"tenant_id": TENANT_ID},
+            json={
+                "client_id": CLIENT_ID,
+                "start_date": "2026-01-01",
+                "end_date": "2026-12-31",
+                "billing_rate": {"amount": "1000000", "currency": "UGX"},
+                "payment_frequency": "Quarterly",
+                "is_auto_renew": False,
+            },
+        )
+        assert created.status_code == 201, created.text
+        contract_id = created.json()["id"]
+        assert await _drain(chain_db) == 1
+
+        activated = await api.post(f"/contracts/{contract_id}/activate")
+        assert activated.status_code == 200, activated.text
+        assert await _drain(chain_db) == 1
+
+        async with chain_db() as session:
+            logs = (await session.execute(select(AuditLogModel))).scalars().all()
+            by_event = {log.extra_metadata["event_type"]: log for log in logs}
+            assert by_event["ContractCreated"].action_type == AuditActionType.CREATE
+            assert by_event["ContractStatusChanged"].action_type == AuditActionType.UPDATE
+            assert by_event["ContractStatusChanged"].resource_type == "Contract"
+            event_data = by_event["ContractStatusChanged"].extra_metadata["event_data"]
+            assert (event_data["from_status"], event_data["to_status"]) == ("Draft", "Active")

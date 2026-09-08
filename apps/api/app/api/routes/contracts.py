@@ -6,6 +6,7 @@ Refactored to use @transactional decorator to eliminate try/except boilerplate.
 """
 
 import decimal
+from copy import deepcopy
 from datetime import date
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
@@ -316,13 +317,15 @@ async def update_contract(
             currency=data.billing_rate.currency,
         )
 
+    # The use case mutates in place, so the audit diff needs the state first.
+    before = deepcopy(contract)
     contract = await UpdateContractUseCase(contract_repo).execute(
         contract.id,
         billing_rate=billing_rate,
         payment_frequency=data.payment_frequency,
         is_auto_renew=data.is_auto_renew,
     )
-    await audit_change(contract, audit_handler, current_user, request)
+    await audit_change(contract, audit_handler, current_user, request, old_entity=before)
     return _to_contract_response(contract)
 
 

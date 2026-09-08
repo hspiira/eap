@@ -11,74 +11,48 @@ from app.domain.value_objects.audit import FieldChange
 
 
 def extract_field_changes(old_entity: Any | None, new_entity: Any) -> list[FieldChange]:
+    """What changed between two states of an entity, for `entity_changes`.
+
+    Compares the public dataclass fields. `events` is transient and the two
+    timestamps are bookkeeping the audit row already carries, so none of the
+    three counts as a change.
     """
-    Extract field changes between old and new entity states.
-
-    Args:
-        old_entity: Previous entity state (None for creates)
-        new_entity: Current entity state
-
-    Returns:
-        List of FieldChange value objects
-    """
-    changes = []
-
     if old_entity is None:
-        # For creates, we don't track all fields (too verbose)
-        # Only track key identifying fields
-        if hasattr(new_entity, "_id"):
-            changes.append(
-                FieldChange(
-                    field_name="id",
-                    old_value=None,
-                    new_value=new_entity.id.value
-                    if hasattr(new_entity.id, "value")
-                    else str(new_entity.id),
-                )
+        return [
+            FieldChange(
+                field_name="id",
+                old_value=None,
+                new_value=_audit_value(getattr(new_entity, "id", None)),
             )
-        return changes
+        ]
 
-    # Compare fields (only private fields starting with _)
-    old_dict = {
-        k: v for k, v in old_entity.__dict__.items() if k.startswith("_") and not k.startswith("__")
-    }
-    new_dict = {
-        k: v for k, v in new_entity.__dict__.items() if k.startswith("_") and not k.startswith("__")
-    }
-
-    # Skip events and deleted_at for change tracking
-    skip_fields = {"_events", "_deleted_at"}
-
-    # Find changed fields
-    all_fields = set(old_dict.keys()) | set(new_dict.keys())
-    for field in all_fields:
-        if field in skip_fields:
-            continue
-
-        old_value = old_dict.get(field)
-        new_value = new_dict.get(field)
-
-        # Convert value objects to strings
-        if hasattr(old_value, "value"):
-            old_value = old_value.value
-        if hasattr(new_value, "value"):
-            new_value = new_value.value
-
-        # Convert to strings for comparison
-        old_str = str(old_value) if old_value is not None else None
-        new_str = str(new_value) if new_value is not None else None
-
-        # Only track if changed
-        if old_str != new_str:
-            changes.append(
-                FieldChange(
-                    field_name=field.lstrip("_"),  # Remove leading underscore
-                    old_value=old_str,
-                    new_value=new_str,
-                )
-            )
-
+    changes = []
+    for field in _comparable_fields(new_entity):
+        old_value = _audit_value(getattr(old_entity, field, None))
+        new_value = _audit_value(getattr(new_entity, field, None))
+        if old_value != new_value:
+            changes.append(FieldChange(field_name=field, old_value=old_value, new_value=new_value))
     return changes
+
+
+_SKIP_FIELDS = {"events", "created_at", "updated_at"}
+
+
+def _comparable_fields(entity: Any) -> list[str]:
+    fields = getattr(entity, "__dataclass_fields__", None)
+    names = list(fields) if fields else [k for k in vars(entity) if not k.startswith("_")]
+    return [name for name in names if name not in _SKIP_FIELDS]
+
+
+def _audit_value(value: Any) -> str | None:
+    """A field rendered for storage: value objects unwrap, the rest stringify."""
+    if value is None:
+        return None
+    if hasattr(value, "value"):
+        value = value.value
+    if hasattr(value, "isoformat"):
+        return value.isoformat()
+    return str(value)
 
 
 def map_domain_event_to_audit_action(event_type: str) -> AuditActionType:

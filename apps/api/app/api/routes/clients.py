@@ -10,6 +10,7 @@ import csv
 import difflib
 import io
 import json
+from copy import deepcopy
 from datetime import timedelta
 
 from fastapi import (
@@ -560,6 +561,8 @@ async def update_client(
         )
 
     fields = data.model_fields_set
+    # The use case mutates in place, so the audit diff needs the state first.
+    before = deepcopy(client)
     client = await UpdateClientUseCase(client_repo).execute(
         client.id,
         name=data.name,
@@ -574,7 +577,7 @@ async def update_client(
         else UNSET,
         industry_repository=industry_repo,
     )
-    await audit_change(client, audit_handler, current_user, request)
+    await audit_change(client, audit_handler, current_user, request, old_entity=before)
     if "contact_person_name" in fields and data.contact_person_name:
         contacts = await contact_repo.get_by_client_id(client.id.value, client.tenant_id)
         primary = next((contact for contact in contacts if contact.is_primary), None)

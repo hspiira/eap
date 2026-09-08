@@ -10,9 +10,13 @@ from datetime import datetime
 from app.domain.enums import BaseStatus, ClientTier, ContactMethod
 from app.domain.events import (
     ClientActivated,
+    ClientArchived,
+    ClientCreated,
     ClientDeactivated,
+    ClientRestored,
     ClientSuspended,
     ClientTerminated,
+    ClientUpdated,
     ClientVerified,
     DomainEvent,
 )
@@ -121,6 +125,7 @@ class ClientEntity:
             raise ConflictError("Client is already archived")
         self.status = BaseStatus.ARCHIVED
         self.updated_at = utc_now()
+        self.events.append(ClientArchived(occurred_at=utc_now(), client_id=self.id))
 
     def restore(self) -> None:
         """Restore an archived client to active operation."""
@@ -129,6 +134,7 @@ class ClientEntity:
         self.status = BaseStatus.ACTIVE
         self.suspension_reason = None
         self.updated_at = utc_now()
+        self.events.append(ClientRestored(occurred_at=utc_now(), client_id=self.id))
 
     def update_name(self, name: str) -> None:
         """Update client name"""
@@ -138,6 +144,7 @@ class ClientEntity:
             raise DomainError("Cannot update name for deleted client")
         self.name = name
         self.updated_at = utc_now()
+        self.events.append(ClientUpdated(occurred_at=utc_now(), client_id=self.id, field="name"))
 
     def update_contact_info(self, contact_info: ContactInfo) -> None:
         """Update contact information"""
@@ -145,6 +152,9 @@ class ClientEntity:
             raise DomainError("Cannot update contact info for deleted client")
         self.contact_info = contact_info
         self.updated_at = utc_now()
+        self.events.append(
+            ClientUpdated(occurred_at=utc_now(), client_id=self.id, field="contact_info")
+        )
 
     def update_billing_address(self, billing_address: Address | None) -> None:
         """Update billing address"""
@@ -152,6 +162,9 @@ class ClientEntity:
             raise DomainError("Cannot update billing address for deleted client")
         self.billing_address = billing_address
         self.updated_at = utc_now()
+        self.events.append(
+            ClientUpdated(occurred_at=utc_now(), client_id=self.id, field="billing_address")
+        )
 
     def update_industry(self, industry_id: IndustryId | None) -> None:
         """Update or clear the client's industry classification."""
@@ -159,6 +172,9 @@ class ClientEntity:
             raise DomainError("Cannot update industry for deleted client")
         self.industry_id = industry_id
         self.updated_at = utc_now()
+        self.events.append(
+            ClientUpdated(occurred_at=utc_now(), client_id=self.id, field="industry_id")
+        )
 
     def update_preferred_contact_method(self, method: ContactMethod | None) -> None:
         """Update preferred contact method"""
@@ -166,6 +182,11 @@ class ClientEntity:
             raise DomainError("Cannot update preferred contact method for deleted client")
         self.preferred_contact_method = method
         self.updated_at = utc_now()
+        self.events.append(
+            ClientUpdated(
+                occurred_at=utc_now(), client_id=self.id, field="preferred_contact_method"
+            )
+        )
 
     def update_tier(self, tier: ClientTier | None) -> None:
         """Set the engagement tier (A/B/C) used by reporting and pricing."""
@@ -173,6 +194,18 @@ class ClientEntity:
             raise DomainError("Cannot update tier for deleted client")
         self.tier = tier
         self.updated_at = utc_now()
+        self.events.append(ClientUpdated(occurred_at=utc_now(), client_id=self.id, field="tier"))
+
+    def record_created(self) -> None:
+        """Announce this client as newly created.
+
+        Called by the create use case, not the constructor: the mapper builds
+        an entity for every row it reads, and emitting there would record a
+        creation on every load.
+        """
+        self.events.append(
+            ClientCreated(occurred_at=utc_now(), client_id=self.id, name=self.name, code=self.code)
+        )
 
     def is_active(self) -> bool:
         """Check if client is operational"""

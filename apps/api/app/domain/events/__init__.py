@@ -5,9 +5,13 @@
 from app.domain.events.base import DomainEvent
 from app.domain.events.client import (
     ClientActivated,
+    ClientArchived,
+    ClientCreated,
     ClientDeactivated,
+    ClientRestored,
     ClientSuspended,
     ClientTerminated,
+    ClientUpdated,
     ClientVerified,
 )
 from app.domain.events.clinical import (
@@ -31,7 +35,14 @@ from app.domain.events.consultancy import (
     EngagementInvoiced,
     HoursLogged,
 )
-from app.domain.events.contract import ContractRenewed, ContractTerminated
+from app.domain.events.contract import (
+    ContractCreated,
+    ContractRenewed,
+    ContractSigned,
+    ContractStatusChanged,
+    ContractTerminated,
+    ContractUpdated,
+)
 from app.domain.events.crisis import (
     CaringContactCompleted,
     CaringContactScheduled,
@@ -118,9 +129,13 @@ __all__ = [
     "CaseClosed",
     "CaseOpened",
     "ClientActivated",
+    "ClientArchived",
+    "ClientCreated",
     "ClientDeactivated",
+    "ClientRestored",
     "ClientSuspended",
     "ClientTerminated",
+    "ClientUpdated",
     "ClientVerified",
     "ClinicalNoteLocked",
     "ClinicalNoteSigned",
@@ -128,8 +143,12 @@ __all__ = [
     "ConsentGranted",
     "ConsentRequested",
     "ConsentRevoked",
+    "ContractCreated",
     "ContractRenewed",
+    "ContractSigned",
+    "ContractStatusChanged",
     "ContractTerminated",
+    "ContractUpdated",
     "CrisisContactClosed",
     "CrisisContactLogged",
     "CrisisFlagRaised",
