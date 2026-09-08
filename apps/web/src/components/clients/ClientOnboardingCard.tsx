@@ -17,6 +17,21 @@ interface ClientOnboardingCardProps {
   onStep?: (id: string) => void
 }
 
+/**
+ * Where the bar sits on the scale.
+ *
+ * Setup is not pass or fail. A client with nothing filled in needs attention,
+ * one part way through is in hand, and only a finished one is green, so the
+ * bar has to move through the tones rather than read as done from the first
+ * step. Tones are the same four `statusColors` assigns to a badge.
+ */
+function progressTone(percent: number): { bar: string; label: string } {
+  if (percent >= 100) return { bar: "bg-success", label: "text-success-fg" }
+  if (percent >= 67) return { bar: "bg-info", label: "text-info-fg" }
+  if (percent >= 34) return { bar: "bg-warning", label: "text-warning-fg" }
+  return { bar: "bg-danger", label: "text-danger-fg" }
+}
+
 export function ClientOnboardingCard({
   steps,
   title = "Setup progress",
@@ -27,6 +42,7 @@ export function ClientOnboardingCard({
   const total = steps.length
   const percent = total === 0 ? 0 : Math.round((doneCount / total) * 100)
   const nextStepId = steps.find((s) => !s.done)?.id
+  const tone = progressTone(percent)
 
   return (
     <Panel icon={Rocket} title={title} className={className}>
@@ -44,11 +60,11 @@ export function ClientOnboardingCard({
               aria-label="Setup progress"
             >
               <div
-                className="h-full bg-primary transition-[width] duration-200"
+                className={cn("h-full transition-[width] duration-200", tone.bar)}
                 style={{ width: `${percent}%` }}
               />
             </div>
-            <span className="text-xs font-medium tabular-nums text-fg/75">{percent}%</span>
+            <span className={cn("text-xs font-medium tabular-nums", tone.label)}>{percent}%</span>
           </div>
           <ol className="grid gap-1.5">
             {steps.map((step) => {
