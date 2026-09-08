@@ -1,4 +1,4 @@
-import { Calendar, Clock, MapPin } from "lucide-react"
+import { Calendar } from "lucide-react"
 
 import { Panel, PanelEmpty, PanelList } from "@/components/common/Panel"
 import { formatDay } from "@/lib/format"
@@ -32,42 +32,28 @@ export function ClientUpcomingCard({ items, className }: ClientUpcomingCardProps
       ) : (
         <PanelList className="max-h-72 overflow-y-auto">
           {items.map((item) => (
-            <li key={item.id} className="px-3 py-2.5">
-              <div className="flex flex-wrap items-start justify-between gap-2">
-                <div className="grid min-w-0 flex-1 gap-1">
-                  <h4 className="text-sm font-medium text-fg">{item.title}</h4>
-                  <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-fg/60">
-                    <span className="flex items-center gap-1">
-                      <Calendar className="size-3 shrink-0" aria-hidden />
-                      <span className="tabular-nums">{formatDay(item.date)}</span>
-                    </span>
-                    {item.time ? (
-                      <span className="flex items-center gap-1">
-                        <Clock className="size-3 shrink-0" aria-hidden />
-                        <span className="tabular-nums">{item.time}</span>
-                      </span>
-                    ) : null}
-                  </div>
-                  {item.context ? (
-                    <div className="flex items-center gap-1 text-xs text-fg-muted">
-                      <MapPin className="size-3 shrink-0" aria-hidden />
-                      <span>{item.context}</span>
-                    </div>
-                  ) : null}
-                </div>
-                {item.link ? (
-                  <a
-                    href={item.link}
-                    className="shrink-0 text-xs font-medium text-primary hover:underline"
-                  >
-                    {item.linkLabel ?? "View"}
-                  </a>
-                ) : null}
-              </div>
-            </li>
+            <UpcomingRow key={item.id} item={item} />
           ))}
         </PanelList>
       )}
     </Panel>
+  )
+}
+
+function UpcomingRow({ item }: { item: ClientUpcomingItem }) {
+  const meta = [formatDay(item.date), item.time, item.context].filter(Boolean).join(" · ")
+  return (
+    <li className="flex items-center gap-2.5 px-3 py-2.5">
+      <Calendar className="size-4 shrink-0 text-fg-subtle" aria-hidden />
+      <span className="flex min-w-0 flex-1 flex-wrap items-baseline gap-x-2">
+        <span className="truncate text-sm font-medium text-fg">{item.title}</span>
+        <span className="shrink-0 text-xs tabular-nums text-fg-muted">{meta}</span>
+      </span>
+      {item.link ? (
+        <a href={item.link} className="shrink-0 text-xs font-medium text-primary hover:underline">
+          {item.linkLabel ?? "View"}
+        </a>
+      ) : null}
+    </li>
   )
 }
