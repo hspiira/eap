@@ -21,6 +21,7 @@ from app.core.authorization import (
     require_same_tenant,
 )
 from app.core.database import get_db
+from app.core.reference_cache import cached_lookup, invalidate_reference_cache
 from app.core.security import TokenData
 from app.domain.entities.provider_specialty import (
     ProviderSpecialtyEntity,
@@ -40,6 +41,8 @@ from app.shared.utils.route_audit_helper import audit_change
 
 router = APIRouter(prefix="/provider-specialties", tags=["provider-specialties"])
 
+_RESOURCE = "provider_specialties"
+
 
 def _response(specialty: ProviderSpecialtyEntity) -> ProviderSpecialtyResponse:
     return ProviderSpecialtyResponse(
@@ -52,6 +55,7 @@ def _response(specialty: ProviderSpecialtyEntity) -> ProviderSpecialtyResponse:
 
 @router.get("", response_model=list[ProviderSpecialtyResponse])
 @readonly()
+@cached_lookup(_RESOURCE)
 async def list_specialties(
     include_inactive: bool = Query(False),
     repo: ProviderSpecialtyRepository = Depends(get_provider_specialty_repository),
@@ -81,6 +85,7 @@ async def create_specialty(
         updated_at=now,
     )
     await repo.save_specialty(specialty)
+    invalidate_reference_cache(_RESOURCE)
     return _response(specialty)
 
 
@@ -107,6 +112,7 @@ async def retire_specialty(
     specialty.retire(UserId(current_user.user_id), at=utc_now())
     await repo.save_specialty(specialty)
     await audit_change(specialty, audit_handler, current_user, request, tenant_id="platform")
+    invalidate_reference_cache(_RESOURCE)
     return _response(specialty)
 
 

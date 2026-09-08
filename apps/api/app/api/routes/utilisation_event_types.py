@@ -15,6 +15,7 @@ from app.api.schemas.utilisation_event_type_schemas import (
 )
 from app.core.authorization import require_platform_admin
 from app.core.database import get_db
+from app.core.reference_cache import cached_lookup, invalidate_reference_cache
 from app.core.security import TokenData, get_current_user
 from app.domain.repositories.utilisation_event_type_repository import (
     UtilisationEventTypeRepository,
@@ -23,11 +24,14 @@ from app.shared.decorators import readonly, transactional
 
 router = APIRouter(prefix="/utilisation-event-types", tags=["utilisation-event-types"])
 
+_RESOURCE = "utilisation_event_types"
+
 
 @router.get(
     "", response_model=list[UtilisationEventTypeResponse], summary="List utilisation event types"
 )
 @readonly()
+@cached_lookup(_RESOURCE)
 async def list_utilisation_event_types(
     active_only: bool = Query(True, description="Return only active rows"),
     _user: TokenData = Depends(get_current_user),
@@ -51,6 +55,7 @@ async def create_utilisation_event_type(
     created = await repo.create(
         code=data.code, name=data.name, description=data.description, sort_order=data.sort_order
     )
+    invalidate_reference_cache(_RESOURCE)
     return UtilisationEventTypeResponse.model_validate(created)
 
 
@@ -68,6 +73,7 @@ async def update_utilisation_event_type(
     )
     if updated is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, detail="Utilisation event type not found")
+    invalidate_reference_cache(_RESOURCE)
     return UtilisationEventTypeResponse.model_validate(updated)
 
 
@@ -83,4 +89,5 @@ async def set_utilisation_event_type_active(
     updated = await repo.set_active(event_type_id, is_active=is_active)
     if updated is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, detail="Utilisation event type not found")
+    invalidate_reference_cache(_RESOURCE)
     return UtilisationEventTypeResponse.model_validate(updated)

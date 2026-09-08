@@ -15,6 +15,7 @@ from app.api.schemas.case_referral_source_schemas import (
 )
 from app.core.authorization import require_platform_admin
 from app.core.database import get_db
+from app.core.reference_cache import cached_lookup, invalidate_reference_cache
 from app.core.security import TokenData, get_current_user
 from app.domain.repositories.case_referral_source_repository import (
     CaseReferralSourceRepository,
@@ -23,11 +24,14 @@ from app.shared.decorators import readonly, transactional
 
 router = APIRouter(prefix="/case-referral-sources", tags=["case-referral-sources"])
 
+_RESOURCE = "case_referral_sources"
+
 
 @router.get(
     "", response_model=list[CaseReferralSourceResponse], summary="List case referral sources"
 )
 @readonly()
+@cached_lookup(_RESOURCE)
 async def list_case_referral_sources(
     active_only: bool = Query(True, description="Return only active rows"),
     _user: TokenData = Depends(get_current_user),
@@ -51,6 +55,7 @@ async def create_case_referral_source(
     created = await repo.create(
         code=data.code, name=data.name, description=data.description, sort_order=data.sort_order
     )
+    invalidate_reference_cache(_RESOURCE)
     return CaseReferralSourceResponse.model_validate(created)
 
 
@@ -68,6 +73,7 @@ async def update_case_referral_source(
     )
     if updated is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, detail="Case referral source not found")
+    invalidate_reference_cache(_RESOURCE)
     return CaseReferralSourceResponse.model_validate(updated)
 
 
@@ -83,4 +89,5 @@ async def set_case_referral_source_active(
     updated = await repo.set_active(source_id, is_active=is_active)
     if updated is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, detail="Case referral source not found")
+    invalidate_reference_cache(_RESOURCE)
     return CaseReferralSourceResponse.model_validate(updated)

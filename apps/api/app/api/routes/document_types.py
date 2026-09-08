@@ -16,15 +16,19 @@ from app.api.schemas.document_type_schemas import (
 )
 from app.core.authorization import require_platform_admin
 from app.core.database import get_db
+from app.core.reference_cache import cached_lookup, invalidate_reference_cache
 from app.core.security import TokenData, get_current_user
 from app.domain.repositories.document_type_repository import DocumentTypeRepository
 from app.shared.decorators import readonly, transactional
 
 router = APIRouter(prefix="/document-types", tags=["document-types"])
 
+_RESOURCE = "document_types"
+
 
 @router.get("", response_model=list[DocumentTypeResponse], summary="List document types")
 @readonly()
+@cached_lookup(_RESOURCE)
 async def list_document_types(
     active_only: bool = Query(True, description="Return only active types"),
     _user: TokenData = Depends(get_current_user),
@@ -48,6 +52,7 @@ async def create_document_type(
     created = await repo.create(
         code=data.code, name=data.name, description=data.description, sort_order=data.sort_order
     )
+    invalidate_reference_cache(_RESOURCE)
     return DocumentTypeResponse.model_validate(created)
 
 
@@ -65,6 +70,7 @@ async def update_document_type(
     )
     if updated is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, detail="Document type not found")
+    invalidate_reference_cache(_RESOURCE)
     return DocumentTypeResponse.model_validate(updated)
 
 
@@ -80,4 +86,5 @@ async def set_document_type_active(
     updated = await repo.set_active(type_id, is_active=is_active)
     if updated is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, detail="Document type not found")
+    invalidate_reference_cache(_RESOURCE)
     return DocumentTypeResponse.model_validate(updated)

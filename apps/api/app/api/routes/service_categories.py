@@ -16,6 +16,7 @@ from app.api.schemas.service_category_schemas import (
 )
 from app.core.authorization import require_platform_admin
 from app.core.database import get_db
+from app.core.reference_cache import cached_lookup, invalidate_reference_cache
 from app.core.security import TokenData, get_current_user
 from app.domain.repositories.service_category_repository import (
     ServiceCategoryRepository,
@@ -24,9 +25,12 @@ from app.shared.decorators import readonly, transactional
 
 router = APIRouter(prefix="/service-categories", tags=["service-categories"])
 
+_RESOURCE = "service_categories"
+
 
 @router.get("", response_model=list[ServiceCategoryResponse], summary="List service categories")
 @readonly()
+@cached_lookup(_RESOURCE)
 async def list_service_categories(
     active_only: bool = Query(True, description="Return only active categories"),
     _user: TokenData = Depends(get_current_user),
@@ -53,6 +57,7 @@ async def create_service_category(
         description=data.description,
         sort_order=data.sort_order,
     )
+    invalidate_reference_cache(_RESOURCE)
     return ServiceCategoryResponse.model_validate(created)
 
 
@@ -70,6 +75,7 @@ async def update_service_category(
     )
     if updated is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, detail="Service category not found")
+    invalidate_reference_cache(_RESOURCE)
     return ServiceCategoryResponse.model_validate(updated)
 
 
@@ -85,4 +91,5 @@ async def set_service_category_active(
     updated = await repo.set_active(category_id, is_active=is_active)
     if updated is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, detail="Service category not found")
+    invalidate_reference_cache(_RESOURCE)
     return ServiceCategoryResponse.model_validate(updated)

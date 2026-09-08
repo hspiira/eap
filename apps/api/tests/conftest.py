@@ -33,6 +33,7 @@ from app.core.authorization import (
     get_user_in_tenant,
 )
 from app.core.database import get_db
+from app.core.reference_cache import _store as _reference_cache_store
 from app.core.security import TokenData, get_current_user
 from app.domain.entities.audit import AuditLog
 from app.domain.entities.document import DocumentEntity
@@ -63,6 +64,15 @@ test_engine = create_async_engine(
 
 # Async session factory for tests
 TestAsyncSessionLocal = async_sessionmaker(test_engine, class_=AsyncSession, expire_on_commit=False)
+
+
+@pytest.fixture(autouse=True)
+def _clear_reference_cache():
+    """The reference cache is a process-global dict; without this, a value
+    cached by one test would leak into the next test's assertions."""
+    _reference_cache_store.clear()
+    yield
+    _reference_cache_store.clear()
 
 
 #: ``services.category`` and ``authorizations.service_category`` are foreign

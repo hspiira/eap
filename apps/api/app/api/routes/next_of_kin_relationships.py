@@ -16,6 +16,7 @@ from app.api.schemas.next_of_kin_relationship_schemas import (
 )
 from app.core.authorization import require_platform_admin
 from app.core.database import get_db
+from app.core.reference_cache import cached_lookup, invalidate_reference_cache
 from app.core.security import TokenData, get_current_user
 from app.domain.repositories.next_of_kin_relationship_repository import (
     NextOfKinRelationshipRepository,
@@ -24,11 +25,14 @@ from app.shared.decorators import readonly, transactional
 
 router = APIRouter(prefix="/next-of-kin-relationships", tags=["next-of-kin-relationships"])
 
+_RESOURCE = "next_of_kin_relationships"
+
 
 @router.get(
     "", response_model=list[NextOfKinRelationshipResponse], summary="List NOK relationships"
 )
 @readonly()
+@cached_lookup(_RESOURCE)
 async def list_next_of_kin_relationships(
     active_only: bool = Query(True, description="Return only active rows"),
     _user: TokenData = Depends(get_current_user),
@@ -52,6 +56,7 @@ async def create_next_of_kin_relationship(
     created = await repo.create(
         code=data.code, name=data.name, description=data.description, sort_order=data.sort_order
     )
+    invalidate_reference_cache(_RESOURCE)
     return NextOfKinRelationshipResponse.model_validate(created)
 
 
@@ -72,6 +77,7 @@ async def update_next_of_kin_relationship(
     )
     if updated is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, detail="Relationship not found")
+    invalidate_reference_cache(_RESOURCE)
     return NextOfKinRelationshipResponse.model_validate(updated)
 
 
@@ -87,4 +93,5 @@ async def set_next_of_kin_relationship_active(
     updated = await repo.set_active(relationship_id, is_active=is_active)
     if updated is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, detail="Relationship not found")
+    invalidate_reference_cache(_RESOURCE)
     return NextOfKinRelationshipResponse.model_validate(updated)
