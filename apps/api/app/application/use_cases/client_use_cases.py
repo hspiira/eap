@@ -9,7 +9,7 @@ from typing import cast
 
 from app.application.use_cases.base import BaseUseCase
 from app.domain.entities.client import ClientEntity
-from app.domain.enums import BaseStatus, ClientTier, ContactMethod
+from app.domain.enums import BaseStatus, ContactMethod
 from app.domain.exceptions import (
     ConflictError,
     NotFoundError,
@@ -166,7 +166,7 @@ class UpdateClientUseCase(BaseUseCase[ClientEntity, ClientId]):
         client_id: ClientId,
         name: str | None = None,
         preferred_contact_method: ContactMethod | None | object = UNSET,
-        tier: ClientTier | None | object = UNSET,
+        tier: str | None | object = UNSET,
         contact_info: ContactInfo | None | object = UNSET,
         billing_address: Address | None | object = UNSET,
         industry_id: IndustryId | None | object = UNSET,
@@ -180,7 +180,7 @@ class UpdateClientUseCase(BaseUseCase[ClientEntity, ClientId]):
                 cast(ContactMethod | None, preferred_contact_method)
             )
         if tier is not UNSET:
-            client.update_tier(cast(ClientTier | None, tier))
+            client.update_tier(cast(str | None, tier))
         if contact_info is not UNSET:
             client.update_contact_info(cast(ContactInfo, contact_info))
         if billing_address is not UNSET:

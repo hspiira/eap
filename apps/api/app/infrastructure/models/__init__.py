@@ -20,12 +20,16 @@ from app.infrastructure.models.care_callback_model import (
     OutreachRecordModel,
 )
 from app.infrastructure.models.case_model import CaseModel
+from app.infrastructure.models.case_referral_source_model import (
+    CaseReferralSourceModel,
+)
 from app.infrastructure.models.client_alias_model import ClientAliasModel
 from app.infrastructure.models.client_import_job_model import ClientImportJobModel
 from app.infrastructure.models.client_model import ClientModel
 from app.infrastructure.models.client_saved_view_model import ClientSavedViewModel
 from app.infrastructure.models.client_tag_assignment_model import ClientTagAssignmentModel
 from app.infrastructure.models.client_tag_model import ClientTagModel
+from app.infrastructure.models.client_tier_model import ClientTierModel
 from app.infrastructure.models.clinical_note_model import ClinicalNoteModel
 from app.infrastructure.models.contact_model import ContactModel
 from app.infrastructure.models.contract_model import ContractModel
@@ -37,6 +41,7 @@ from app.infrastructure.models.diagnosis_model import (
     TenantDiagnosisSettingModel,
 )
 from app.infrastructure.models.document_model import DocumentModel
+from app.infrastructure.models.document_type_model import DocumentTypeModel
 from app.infrastructure.models.dsar_model import DSARRequestModel
 from app.infrastructure.models.eap_programme_model import (
     AuthorizationModel,
@@ -57,8 +62,15 @@ from app.infrastructure.models.json_schemas import (
     ProviderProfileDict,
     StaffInfoDict,
 )
+from app.infrastructure.models.kpi_category_model import KPICategoryModel
+from app.infrastructure.models.kpi_measurement_unit_model import (
+    KPIMeasurementUnitModel,
+)
 from app.infrastructure.models.kpi_model import KPIAssignmentModel, KPIModel
 from app.infrastructure.models.member_next_of_kin_model import MemberNextOfKinModel
+from app.infrastructure.models.next_of_kin_relationship_model import (
+    NextOfKinRelationshipModel,
+)
 from app.infrastructure.models.non_compete_clause_model import NonCompeteClauseModel
 from app.infrastructure.models.outbox_model import OutboxEventModel
 from app.infrastructure.models.password_set_token_model import PasswordSetTokenModel
@@ -67,6 +79,7 @@ from app.infrastructure.models.practitioner_import_model import (
     PractitionerImportBatchModel,
     PractitionerImportRowModel,
 )
+from app.infrastructure.models.presenting_problem_model import PresentingProblemModel
 from app.infrastructure.models.provider_affiliation_model import ProviderAffiliationModel
 from app.infrastructure.models.provider_alias_model import ProviderAliasModel
 from app.infrastructure.models.provider_engagement_document_model import (
@@ -94,9 +107,13 @@ from app.infrastructure.models.survey_model import (
     SurveyCampaignModel,
     SurveyResponseModel,
 )
+from app.infrastructure.models.survey_source_model import SurveySourceModel
 from app.infrastructure.models.tenant_model import TenantModel
 from app.infrastructure.models.user_model import UserModel
 from app.infrastructure.models.utilisation_event_model import UtilisationEventModel
+from app.infrastructure.models.utilisation_event_type_model import (
+    UtilisationEventTypeModel,
+)
 
 __all__ = [
     "ActivityModel",
@@ -106,10 +123,12 @@ __all__ = [
     "BenchmarkConsentModel",
     "CareCallbackCampaignModel",
     "CaseModel",
+    "CaseReferralSourceModel",
     "ClinicalNoteModel",
     "ClinicalSubjectModel",
     "EAPProgrammeModel",
     "ClientModel",
+    "ClientTierModel",
     "ClientImportJobModel",
     "ClientSavedViewModel",
     "ClientAliasModel",
@@ -125,10 +144,12 @@ __all__ = [
     "EligibleMemberClinicalLinkModel",
     "EligibleMemberModel",
     "MemberNextOfKinModel",
+    "NextOfKinRelationshipModel",
     "DiagnosisAliasModel",
     "DiagnosisTypeModel",
     "TenantDiagnosisSettingModel",
     "DocumentModel",
+    "DocumentTypeModel",
     "EmergencyContactDict",
     "EmploymentInfoDict",
     "EngagementModel",
@@ -136,6 +157,8 @@ __all__ = [
     "EnumValueType",
     "IndustryModel",
     "KPIAssignmentModel",
+    "KPICategoryModel",
+    "KPIMeasurementUnitModel",
     "KPIModel",
     "LicenseInfoDict",
     "NonCompeteClauseModel",
@@ -143,6 +166,7 @@ __all__ = [
     "OutreachRecordModel",
     "PasswordSetTokenModel",
     "PersonModel",
+    "PresentingProblemModel",
     "PractitionerImportBatchModel",
     "PractitionerImportRowModel",
     "ProviderAffiliationModel",
@@ -164,10 +188,12 @@ __all__ = [
     "SoftDeleteMixin",
     "StaffInfoDict",
     "SurveyCampaignModel",
+    "SurveySourceModel",
     "SurveyResponseModel",
     "TenantModel",
     "TenantMixin",
     "TimestampMixin",
     "UserModel",
     "UtilisationEventModel",
+    "UtilisationEventTypeModel",
 ]

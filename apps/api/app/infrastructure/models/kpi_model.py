@@ -10,11 +10,9 @@ from decimal import Decimal
 from sqlalchemy import CheckConstraint, ForeignKey, Numeric, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
 
-from app.domain.enums import KPICategory, KPIMeasurementUnit
 from app.infrastructure.models.base import (
     Base,
     CuidMixin,
-    EnumValueType,
     SoftDeleteMixin,
     TenantMixin,
     TimestampMixin,
@@ -30,25 +28,15 @@ class KPIModel(CuidMixin, TenantMixin, Base, TimestampMixin, SoftDeleteMixin):
     """
 
     __tablename__ = "kpis"
-    __table_args__ = (
-        CheckConstraint(
-            "category IN (" + ", ".join(f"'{e.value}'" for e in KPICategory) + ")",
-            name="kpi_category_check",
-        ),
-        CheckConstraint(
-            "measurement_unit IN (" + ", ".join(f"'{e.value}'" for e in KPIMeasurementUnit) + ")",
-            name="kpi_measurement_unit_check",
-        ),
-    )
 
     # Core attributes
     name: Mapped[str] = mapped_column(String(255), nullable=False, index=True)
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
-    category: Mapped[KPICategory] = mapped_column(
-        EnumValueType(KPICategory), nullable=False, index=True
+    category: Mapped[str] = mapped_column(
+        String(50), ForeignKey("kpi_categories.code"), nullable=False, index=True
     )
-    measurement_unit: Mapped[KPIMeasurementUnit] = mapped_column(
-        EnumValueType(KPIMeasurementUnit), nullable=False
+    measurement_unit: Mapped[str] = mapped_column(
+        String(50), ForeignKey("kpi_measurement_units.code"), nullable=False
     )
 
     # Targets and thresholds

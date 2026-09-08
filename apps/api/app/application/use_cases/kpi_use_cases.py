@@ -9,7 +9,6 @@ from decimal import Decimal
 
 from app.application.use_cases.base import BaseUseCase
 from app.domain.entities.kpi import KPIAssignmentEntity, KPIEntity
-from app.domain.enums import KPICategory, KPIMeasurementUnit
 from app.domain.exceptions import ConflictError
 from app.domain.repositories.kpi_repository import (
     KPIAssignmentRepository,
@@ -33,8 +32,8 @@ class CreateKPIUseCase(BaseUseCase[KPIEntity, KPIId]):
         kpi_id: KPIId,
         tenant_id: TenantId,
         name: str,
-        category: KPICategory,
-        measurement_unit: KPIMeasurementUnit,
+        category: str,
+        measurement_unit: str,
         description: str | None = None,
         target_value: Decimal | None = None,
         threshold_min: Decimal | None = None,

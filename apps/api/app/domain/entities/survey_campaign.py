@@ -9,7 +9,7 @@ ingestion endpoint can verify each delivery without an authenticated user.
 from dataclasses import dataclass, field
 from datetime import date, datetime
 
-from app.domain.enums import SurveyCampaignStatus, SurveySource
+from app.domain.enums import SurveyCampaignStatus
 from app.domain.events import (
     DomainEvent,
     SurveyCampaignActivated,
@@ -34,7 +34,7 @@ class SurveyCampaign:
     tenant_id: TenantId
     client_id: ClientId
     name: str
-    source: SurveySource
+    source: str
     external_form_id: str
     webhook_secret: str
     status: SurveyCampaignStatus

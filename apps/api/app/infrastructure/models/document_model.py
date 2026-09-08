@@ -10,7 +10,7 @@ from datetime import datetime
 from sqlalchemy import CheckConstraint, DateTime, ForeignKey, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
 
-from app.domain.enums import DocumentStatus, DocumentType
+from app.domain.enums import DocumentStatus
 from app.infrastructure.models.base import (
     Base,
     CuidMixin,
@@ -36,10 +36,6 @@ class DocumentModel(CuidMixin, TenantMixin, Base, TimestampMixin, SoftDeleteMixi
             name="document_status_check",
         ),
         CheckConstraint(
-            "document_type IN (" + ", ".join(f"'{e.value}'" for e in DocumentType) + ")",
-            name="document_type_check",
-        ),
-        CheckConstraint(
             "(file_path IS NOT NULL) OR (file_url IS NOT NULL)",
             name="document_file_or_url_check",
         ),
@@ -48,8 +44,8 @@ class DocumentModel(CuidMixin, TenantMixin, Base, TimestampMixin, SoftDeleteMixi
     # Core attributes
     name: Mapped[str] = mapped_column(String(255), nullable=False, index=True)
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
-    document_type: Mapped[DocumentType] = mapped_column(
-        EnumValueType(DocumentType), nullable=False, index=True
+    document_type: Mapped[str] = mapped_column(
+        String(50), ForeignKey("document_types.code"), nullable=False, index=True
     )
     status: Mapped[DocumentStatus] = mapped_column(
         EnumValueType(DocumentStatus), nullable=False, default=DocumentStatus.DRAFT

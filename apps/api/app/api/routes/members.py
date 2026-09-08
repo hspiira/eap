@@ -35,6 +35,7 @@ from app.api.dependencies import (
     get_eligible_member_clinical_link_repository,
     get_eligible_member_repository,
     get_member_next_of_kin_repository,
+    get_next_of_kin_relationship_repository,
     get_outbox_repository,
     get_service_session_repository,
     get_user_repository,
@@ -95,6 +96,9 @@ from app.domain.repositories.eligible_member_repository import (
     EligibleMemberRepository,
 )
 from app.domain.repositories.member_next_of_kin_repository import MemberNextOfKinRepository
+from app.domain.repositories.next_of_kin_relationship_repository import (
+    NextOfKinRelationshipRepository,
+)
 from app.domain.repositories.outbox_repository import OutboxRepository
 from app.domain.repositories.service_session_repository import ServiceSessionRepository
 from app.domain.repositories.user_repository import UserRepository
@@ -222,6 +226,21 @@ async def _get_contact(
     if contact is None or contact.tenant_id != member.tenant_id or contact.member_id != member.id:
         raise HTTPException(status_code=404, detail="Next-of-kin contact not found")
     return contact
+
+
+async def _assert_known_relationship(
+    repo: NextOfKinRelationshipRepository, relationship: str
+) -> None:
+    """Reject a relationship code the taxonomy does not recognise.
+
+    ``member_next_of_kin.relationship`` is a foreign key, so an unknown code
+    would fail at the database with an opaque integrity error; check it here
+    for a clean 404 instead.
+    """
+    if await repo.get_by_code(relationship) is None:
+        raise HTTPException(
+            status_code=404, detail=f"Next-of-kin relationship {relationship!r} not found"
+        )
 
 
 async def _validate_roster_update(
@@ -1159,10 +1178,14 @@ async def create_member_next_of_kin(
     current_user: TokenData = Depends(require_not_viewer),
     member_repo: EligibleMemberRepository = Depends(get_eligible_member_repository),
     next_of_kin_repo: MemberNextOfKinRepository = Depends(get_member_next_of_kin_repository),
+    relationship_repo: NextOfKinRelationshipRepository = Depends(
+        get_next_of_kin_relationship_repository
+    ),
     outbox: OutboxRepository = Depends(get_outbox_repository),
     db: AsyncSession = Depends(get_db),
 ):
     member = await _get_member(member_id, current_user.tenant_id, member_repo)
+    await _assert_known_relationship(relationship_repo, data.relationship)
     now = utc_now()
     contact = MemberNextOfKin(
         id=MemberNextOfKinId(generate_cuid()),
@@ -1199,12 +1222,16 @@ async def update_member_next_of_kin(
     current_user: TokenData = Depends(require_not_viewer),
     member_repo: EligibleMemberRepository = Depends(get_eligible_member_repository),
     next_of_kin_repo: MemberNextOfKinRepository = Depends(get_member_next_of_kin_repository),
+    relationship_repo: NextOfKinRelationshipRepository = Depends(
+        get_next_of_kin_relationship_repository
+    ),
     outbox: OutboxRepository = Depends(get_outbox_repository),
     db: AsyncSession = Depends(get_db),
 ):
     contact = await _get_contact(
         member_id, contact_id, current_user.tenant_id, member_repo, next_of_kin_repo
     )
+    await _assert_known_relationship(relationship_repo, data.relationship)
     before = deepcopy(contact)
     contact.update(
         name=data.name.strip(),

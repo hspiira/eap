@@ -105,7 +105,6 @@ from app.core.security import TokenData, get_current_user
 from app.domain.entities.client import ClientEntity
 from app.domain.enums import (
     BaseStatus,
-    ClientTier,
     ContractStatus,
     MemberRelation,
     TenantRole,
@@ -1072,7 +1071,7 @@ async def list_clients(
     tenant_id: str = Query(..., description="Tenant identifier"),
     status: BaseStatus | None = Query(None, description="Filter by client status"),
     is_verified: bool | None = Query(None, description="Filter by verification status"),
-    tier: ClientTier | None = Query(None, description="Filter by engagement tier (A/B/C)"),
+    tier: str | None = Query(None, description="Filter by engagement tier code"),
     parent_client_id: str | None = Query(None, description="Filter by parent client"),
     include_archived: bool = Query(False, description="Include archived clients"),
     search: str | None = Query(None, description="Search in client name"),
@@ -1169,7 +1168,7 @@ def _client_export_row(client: ClientEntity) -> dict[str, str | bool | None]:
         else None,
         "aliases": "; ".join(client.aliases),
         "status": client.status.value,
-        "tier": client.tier.value if client.tier else None,
+        "tier": client.tier,
         "is_verified": client.is_verified,
     }
 
@@ -1183,7 +1182,7 @@ async def export_clients(
     tenant_id: str = Query(..., description="Tenant identifier"),
     client_ids: list[str] | None = Query(None, description="Export only selected client IDs"),
     status: BaseStatus | None = Query(None, description="Filter by client status"),
-    tier: ClientTier | None = Query(None, description="Filter by engagement tier (A/B/C)"),
+    tier: str | None = Query(None, description="Filter by engagement tier code"),
     parent_client_id: str | None = Query(None, description="Filter by parent client"),
     include_archived: bool = Query(False, description="Include archived clients"),
     search: str | None = Query(None, description="Search in client name"),

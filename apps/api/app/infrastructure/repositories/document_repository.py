@@ -11,7 +11,7 @@ from typing import Any
 from sqlalchemy import func, or_, select
 
 from app.domain.entities.document import DocumentEntity
-from app.domain.enums import DocumentStatus, DocumentType
+from app.domain.enums import DocumentStatus
 from app.domain.repositories.document_repository import DocumentRepository
 from app.domain.value_objects.core import DocumentId, TenantId
 from app.infrastructure.mappers.document_mapper import DocumentMapper
@@ -118,7 +118,7 @@ class DocumentRepositoryImpl(
     async def list_all(
         self,
         tenant_id: TenantId,
-        document_type: DocumentType | None = None,
+        document_type: str | None = None,
         status: DocumentStatus | None = None,
         client_id: str | None = None,
         contract_id: str | None = None,
@@ -174,7 +174,7 @@ class DocumentRepositoryImpl(
     async def count(
         self,
         tenant_id: TenantId,
-        document_type: DocumentType | None = None,
+        document_type: str | None = None,
         status: DocumentStatus | None = None,
         client_id: str | None = None,
         contract_id: str | None = None,

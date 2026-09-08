@@ -3,9 +3,7 @@
 from app.domain.entities.case import Case
 from app.domain.enums import (
     CaseClosureReason,
-    CaseReferralSource,
     CaseStatus,
-    PresentingProblem,
 )
 from app.domain.value_objects.core import (
     AuthorizationId,
@@ -28,8 +26,8 @@ class CaseMapper:
             tenant_id=TenantId(model.tenant_id),
             clinical_subject_id=ClinicalSubjectId(model.clinical_subject_id),
             client_id=ClientId(model.client_id),
-            presenting_problem=PresentingProblem(model.presenting_problem),
-            referral_source=CaseReferralSource(model.referral_source),
+            presenting_problem=model.presenting_problem,
+            referral_source=model.referral_source,
             status=CaseStatus(model.status),
             opened_at=ensure_utc(model.opened_at),
             assigned_counsellor_id=PersonId(model.assigned_counsellor_id)

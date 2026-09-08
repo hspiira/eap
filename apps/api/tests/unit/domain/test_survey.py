@@ -6,7 +6,7 @@ import pytest
 
 from app.domain.entities.survey_campaign import SurveyCampaign
 from app.domain.entities.survey_response import SurveyResponse
-from app.domain.enums import SurveyCampaignStatus, SurveySource
+from app.domain.enums import SurveyCampaignStatus
 from app.domain.events import (
     SurveyCampaignActivated,
     SurveyCampaignClosed,
@@ -30,7 +30,7 @@ def _campaign(*, status: SurveyCampaignStatus = SurveyCampaignStatus.DRAFT) -> S
         tenant_id=TenantId("t-1"),
         client_id=ClientId("client-1"),
         name="ABSA quarterly satisfaction",
-        source=SurveySource.GOOGLE_FORMS,
+        source="GoogleForms",
         external_form_id="1FAIpQLSeXyz",
         webhook_secret="x" * 40,
         status=status,
@@ -55,7 +55,7 @@ class TestSurveyCampaignCreation:
                 tenant_id=TenantId("t-1"),
                 client_id=ClientId("c-1"),
                 name="x",
-                source=SurveySource.GOOGLE_FORMS,
+                source="GoogleForms",
                 external_form_id="f",
                 webhook_secret="too-short",
                 status=SurveyCampaignStatus.DRAFT,
@@ -72,7 +72,7 @@ class TestSurveyCampaignCreation:
                 tenant_id=TenantId("t-1"),
                 client_id=ClientId("c-1"),
                 name="x",
-                source=SurveySource.GOOGLE_FORMS,
+                source="GoogleForms",
                 external_form_id="f",
                 webhook_secret="x" * 40,
                 status=SurveyCampaignStatus.DRAFT,
@@ -91,7 +91,7 @@ class TestSurveyCampaignCreation:
                 tenant_id=TenantId("t-1"),
                 client_id=ClientId("c-1"),
                 name="x",
-                source=SurveySource.GOOGLE_FORMS,
+                source="GoogleForms",
                 external_form_id="",
                 webhook_secret="x" * 40,
                 status=SurveyCampaignStatus.DRAFT,

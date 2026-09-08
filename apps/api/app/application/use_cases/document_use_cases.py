@@ -9,7 +9,7 @@ from datetime import datetime
 
 from app.application.use_cases.base import BaseUseCase
 from app.domain.entities.document import DocumentEntity
-from app.domain.enums import DocumentStatus, DocumentType
+from app.domain.enums import DocumentStatus
 from app.domain.repositories.document_repository import DocumentRepository
 from app.domain.value_objects.core import DocumentId, TenantId, UserId
 from app.shared.utils.datetime import utc_now
@@ -28,7 +28,7 @@ class CreateDocumentUseCase(BaseUseCase[DocumentEntity, DocumentId]):
         document_id: DocumentId,
         tenant_id: TenantId,
         name: str,
-        document_type: DocumentType,
+        document_type: str,
         file_path: str | None = None,
         file_url: str | None = None,
         file_size: int | None = None,

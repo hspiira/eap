@@ -11,7 +11,7 @@ from app.application.use_cases.survey_use_cases import (
 from app.core.webhook_signature import compute_signature
 from app.domain.entities.survey_campaign import SurveyCampaign
 from app.domain.entities.survey_response import SurveyResponse
-from app.domain.enums import SurveyCampaignStatus, SurveySource
+from app.domain.enums import SurveyCampaignStatus
 from app.domain.exceptions import DomainError, NotFoundError
 from app.domain.value_objects.core import (
     ClientId,
@@ -83,7 +83,7 @@ def _campaign(*, status=SurveyCampaignStatus.ACTIVE) -> SurveyCampaign:
         tenant_id=TenantId("t-1"),
         client_id=ClientId("client-1"),
         name="Q3",
-        source=SurveySource.GOOGLE_FORMS,
+        source="GoogleForms",
         external_form_id="form-x",
         webhook_secret=SECRET,
         status=status,

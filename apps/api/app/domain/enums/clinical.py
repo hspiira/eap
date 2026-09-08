@@ -1,19 +1,6 @@
 from enum import Enum
 
 
-class ClientTier(str, Enum):
-    """Joseph's A/B/C clustering for client engagement tiering.
-
-    A: strategic / large account, full service mix.
-    B: mid-tier, consultancy-extension candidates.
-    C: long-tail / small account, lower-touch service model.
-    """
-
-    A = "A"
-    B = "B"
-    C = "C"
-
-
 class CaseStatus(str, Enum):
     """Lifecycle of a clinical case."""
 
@@ -23,32 +10,6 @@ class CaseStatus(str, Enum):
     CLOSED = "Closed"
     REFERRED_OUT = "ReferredOut"
     NO_SHOW_CLOSED = "NoShowClosed"
-
-
-class CaseReferralSource(str, Enum):
-    """Origin of a case, drives downstream disclosure and reporting rules."""
-
-    SELF = "Self"
-    INFORMAL_MANAGER = "InformalManager"
-    FORMAL_MANDATORY = "FormalMandatory"
-    HR = "HR"
-    CISM_FOLLOWUP = "CISMFollowUp"
-    EMPLOYER_PROACTIVE = "EmployerProactive"
-
-
-class PresentingProblem(str, Enum):
-    """Top-level category of the presenting concern at intake."""
-
-    MENTAL_HEALTH = "MentalHealth"
-    STRESS = "Stress"
-    RELATIONSHIP = "Relationship"
-    WORK = "Work"
-    FINANCIAL = "Financial"
-    SUBSTANCE = "Substance"
-    BEREAVEMENT = "Bereavement"
-    TRAUMA = "Trauma"
-    FAMILY_CHILD = "FamilyChild"
-    OTHER = "Other"
 
 
 class CaseClosureReason(str, Enum):

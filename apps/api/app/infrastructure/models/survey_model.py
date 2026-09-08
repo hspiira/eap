@@ -15,7 +15,7 @@ from sqlalchemy import (
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column
 
-from app.domain.enums import SurveyCampaignStatus, SurveySource
+from app.domain.enums import SurveyCampaignStatus
 from app.infrastructure.models.base import (
     Base,
     CuidMixin,
@@ -30,8 +30,9 @@ class SurveyCampaignModel(CuidMixin, TenantMixin, Base, TimestampMixin):
 
     client_id: Mapped[str] = mapped_column(String(25), nullable=False, index=True)
     name: Mapped[str] = mapped_column(String(255), nullable=False)
-    source: Mapped[SurveySource] = mapped_column(
-        EnumValueType(SurveySource),
+    source: Mapped[str] = mapped_column(
+        String(50),
+        ForeignKey("survey_sources.code"),
         nullable=False,
         index=True,
     )

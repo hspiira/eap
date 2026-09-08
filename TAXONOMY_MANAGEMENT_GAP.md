@@ -45,6 +45,23 @@ reintroducing the code-deploy dependency this migration removed on the
 backend. Fixing it means fetching `GET /service-categories` instead of the
 hardcoded enum, which is exactly the settings-page work below, scoped smaller.
 
+**Update 2026-09-08.** Eight more enums were converted the same way
+(`DocumentType`, `PresentingProblem`, `CaseReferralSource`, `KPICategory`,
+`NextOfKinRelationship`, `SurveySource`, `ClientTier`,
+`KPIMeasurementUnit`, `UtilisationEventType`), and the frontend hand-maintains
+the same kind of duplicate for most of them (`apps/web/src/types/enums.ts`,
+`apps/web/src/types/entities/{care,members,organization,delivery,clinical}.ts`,
+plus form components: `CaseFormSheet.tsx`, `MemberNextOfKinFormSheet.tsx`,
+`SurveyFormSheet.tsx`, `ClientFormSheet.tsx`, `TierBadge.tsx`). One of these,
+`ClientTier`, was pulled directly from the generated OpenAPI schema
+(`apps/web/src/api/generated/index.ts`) rather than hand-duplicated, so
+removing its backend enum component broke the frontend typecheck outright;
+fixed by redefining it as a plain `string` there (matching the existing
+`PersonType` precedent two lines above it in that same file). The other
+eight are hand-duplicated the same way `ServiceCategory` was and carry the
+same latent gap: a new row added through the API is invisible to these forms
+until someone updates them by hand.
+
 ## Suggested direction (not scoped or started)
 
 A platform-admin settings page backed by the existing

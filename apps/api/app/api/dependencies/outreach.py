@@ -12,6 +12,7 @@ from app.domain.repositories.survey_repository import (
     SurveyCampaignRepository,
     SurveyResponseRepository,
 )
+from app.domain.repositories.survey_source_repository import SurveySourceRepository
 
 
 async def get_care_callback_campaign_repository(
@@ -42,6 +43,16 @@ async def get_survey_campaign_repository(
     )
 
     return SurveyCampaignRepositoryImpl(db)
+
+
+async def get_survey_source_repository(
+    db: AsyncSession = Depends(get_db),
+) -> "SurveySourceRepository":
+    from app.infrastructure.repositories.survey_source_repository import (
+        SurveySourceRepositoryImpl,
+    )
+
+    return SurveySourceRepositoryImpl(db)
 
 
 async def get_survey_response_repository(

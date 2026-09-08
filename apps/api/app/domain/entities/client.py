@@ -7,7 +7,7 @@ Represents an organizational client receiving EAP services.
 from dataclasses import dataclass, field
 from datetime import datetime
 
-from app.domain.enums import BaseStatus, ClientTier, ContactMethod
+from app.domain.enums import BaseStatus, ContactMethod
 from app.domain.events import (
     ClientActivated,
     ClientArchived,
@@ -50,7 +50,7 @@ class ClientEntity:
     industry_id: IndustryId | None = None
     parent_client_id: ClientId | None = None
     preferred_contact_method: ContactMethod | None = None
-    tier: ClientTier | None = None
+    tier: str | None = None
     suspension_reason: str | None = None
     aliases: list[str] = field(default_factory=list[str])
     deleted_at: datetime | None = None
@@ -188,7 +188,7 @@ class ClientEntity:
             )
         )
 
-    def update_tier(self, tier: ClientTier | None) -> None:
+    def update_tier(self, tier: str | None) -> None:
         """Set the engagement tier (A/B/C) used by reporting and pricing."""
         if self.status == BaseStatus.DELETED:
             raise DomainError("Cannot update tier for deleted client")

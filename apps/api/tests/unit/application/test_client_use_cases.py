@@ -6,7 +6,7 @@ import pytest
 
 from app.application.use_cases.client_use_cases import CreateClientUseCase, UpdateClientUseCase
 from app.domain.entities.client import ClientEntity
-from app.domain.enums import BaseStatus, ClientTier, ContactMethod
+from app.domain.enums import BaseStatus, ContactMethod
 from app.domain.exceptions import ConflictError, NotFoundError
 from app.domain.value_objects.core import Address, ClientId, ContactInfo, IndustryId, TenantId
 
@@ -113,7 +113,7 @@ async def test_update_persists_profile_fields_atomically() -> None:
         existing.id,
         name="Updated Client",
         preferred_contact_method=ContactMethod.EMAIL,
-        tier=ClientTier.A,
+        tier="A",
         contact_info=ContactInfo(phone="+256711111111"),
         billing_address=Address(street="1 Main", city="Kampala", country="Uganda"),
         industry_id=IndustryId("industry-1"),
@@ -122,7 +122,7 @@ async def test_update_persists_profile_fields_atomically() -> None:
 
     assert result.name == "Updated Client"
     assert result.preferred_contact_method == ContactMethod.EMAIL
-    assert result.tier == ClientTier.A
+    assert result.tier == "A"
     assert result.contact_info.phone == "+256711111111"
     assert result.billing_address is not None
     assert result.industry_id == IndustryId("industry-1")

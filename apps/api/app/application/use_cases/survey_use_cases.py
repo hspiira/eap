@@ -13,7 +13,7 @@ from app.application.use_cases.base import BaseUseCase
 from app.core.webhook_signature import verify_signature
 from app.domain.entities.survey_campaign import SurveyCampaign
 from app.domain.entities.survey_response import SurveyResponse
-from app.domain.enums import SurveyCampaignStatus, SurveySource
+from app.domain.enums import SurveyCampaignStatus
 from app.domain.exceptions import DomainError, NotFoundError
 from app.domain.repositories.survey_repository import (
     SurveyCampaignRepository,
@@ -41,7 +41,7 @@ class CreateSurveyCampaignUseCase(BaseUseCase[SurveyCampaign, SurveyCampaignId])
         tenant_id: TenantId,
         client_id: ClientId,
         name: str,
-        source: SurveySource,
+        source: str,
         external_form_id: str,
         webhook_secret: str,
         created_by: UserId,
@@ -179,7 +179,7 @@ class GetSurveyAggregateUseCase:
             "client_id": campaign.client_id.value,
             "name": campaign.name,
             "status": campaign.status.value,
-            "source": campaign.source.value,
+            "source": campaign.source,
             "anonymous": campaign.anonymous,
             "response_total": len(responses),
             "answer_frequencies": per_question,

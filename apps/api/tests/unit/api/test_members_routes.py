@@ -15,6 +15,7 @@ from app.api.dependencies import (
     get_eligible_member_clinical_link_repository,
     get_eligible_member_repository,
     get_member_next_of_kin_repository,
+    get_next_of_kin_relationship_repository,
     get_outbox_repository,
     get_service_session_repository,
     get_user_repository,
@@ -25,7 +26,7 @@ from app.core.exception_handlers import register_exception_handlers
 from app.core.security import TokenData, get_current_user
 from app.domain.entities.eligible_member import EligibleMember
 from app.domain.entities.member_next_of_kin import MemberNextOfKin
-from app.domain.enums import EligibilityStatus, MemberRelation, NextOfKinRelationship, TenantRole
+from app.domain.enums import EligibilityStatus, MemberRelation, TenantRole
 from app.domain.repositories.eligible_member_repository import MemberRosterStats
 from app.domain.value_objects.core import (
     ClientId,
@@ -68,6 +69,7 @@ async def api():
         subjects=AsyncMock(),
         links=AsyncMock(),
         contacts=AsyncMock(),
+        relationships=AsyncMock(),
         outbox=AsyncMock(),
         users=AsyncMock(),
         sessions=AsyncMock(),
@@ -83,6 +85,7 @@ async def api():
         tenant_id=TenantId("t1"), name="Acme", code="ACM"
     )
     state.contacts.list_for_member.return_value = []
+    state.relationships.get_by_code.return_value = SimpleNamespace(code="Spouse")
     state.sessions.list_all.return_value = []
     state.sessions.count.return_value = 0
     state.users.get_by_id.side_effect = lambda user_id: SimpleNamespace(
@@ -97,6 +100,7 @@ async def api():
         get_clinical_subject_repository: state.subjects,
         get_eligible_member_clinical_link_repository: state.links,
         get_member_next_of_kin_repository: state.contacts,
+        get_next_of_kin_relationship_repository: state.relationships,
         get_outbox_repository: state.outbox,
         get_user_repository: state.users,
         get_service_session_repository: state.sessions,
@@ -726,7 +730,7 @@ async def test_contact_mutations_commit_with_audit(api, method, path, payload, a
         TenantId("t1"),
         EligibleMemberId("m1"),
         "Grace",
-        NextOfKinRelationship.SPOUSE,
+        "Spouse",
         "123",
         None,
         False,
@@ -750,7 +754,7 @@ async def test_contact_cannot_be_accessed_through_another_member(api, method):
         TenantId("t1"),
         EligibleMemberId("m2"),
         "Grace",
-        NextOfKinRelationship.SPOUSE,
+        "Spouse",
         "123",
         None,
         False,

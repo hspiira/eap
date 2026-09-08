@@ -90,7 +90,7 @@ def _framework(
         drawn_total += total.amount
         lines.append(
             InvoiceLine(
-                description=f"Drawdown: {event.event_type.value}"
+                description=f"Drawdown: {event.event_type}"
                 + (f" ({event.service_code})" if event.service_code else ""),
                 quantity=event.units,
                 unit_amount=rate,
@@ -117,7 +117,7 @@ def _fee_for_service(
         total = rate.multiply(decimal.Decimal(event.units))
         lines.append(
             InvoiceLine(
-                description=f"{event.event_type.value}"
+                description=f"{event.event_type}"
                 + (f" ({event.service_code})" if event.service_code else ""),
                 quantity=event.units,
                 unit_amount=rate,
@@ -146,7 +146,7 @@ def _admin_utilisation(
         total = rate.multiply(decimal.Decimal(event.units))
         usage_lines.append(
             InvoiceLine(
-                description=f"Usage: {event.event_type.value}"
+                description=f"Usage: {event.event_type}"
                 + (f" ({event.service_code})" if event.service_code else ""),
                 quantity=event.units,
                 unit_amount=rate,

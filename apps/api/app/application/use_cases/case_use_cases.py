@@ -18,10 +18,8 @@ from app.domain.entities.clinical_note import ClinicalNote
 from app.domain.enums import (
     AccessScope,
     CaseClosureReason,
-    CaseReferralSource,
     CaseStatus,
     ClinicalNoteType,
-    PresentingProblem,
 )
 from app.domain.exceptions import DomainError, InvalidStateError, NotFoundError
 from app.domain.repositories.case_repository import CaseRepository
@@ -60,8 +58,8 @@ class OpenCaseUseCase(BaseUseCase[Case, CaseId]):
         tenant_id: TenantId,
         client_id: ClientId,
         member_id: EligibleMemberId,
-        presenting_problem: PresentingProblem,
-        referral_source: CaseReferralSource,
+        presenting_problem: str,
+        referral_source: str,
         opened_by: UserId,
         referral_notes: str | None = None,
     ) -> Case:

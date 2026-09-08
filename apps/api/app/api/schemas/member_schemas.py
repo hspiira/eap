@@ -9,13 +9,12 @@ from app.domain.enums import (
     EligibilityStatus,
     MemberGender,
     MemberRelation,
-    NextOfKinRelationship,
 )
 
 
 class MemberNextOfKinCreate(BaseModel):
     name: SanitizedStr = Field(..., min_length=1, max_length=255)
-    relationship: NextOfKinRelationship
+    relationship: str
     phone: SanitizedStr | None = Field(None, max_length=50)
     email: EmailStr | None = None
     is_primary: bool = False
@@ -45,7 +44,7 @@ class MemberNextOfKinResponse(BaseModel):
     tenant_id: str
     member_id: str
     name: str
-    relationship: NextOfKinRelationship
+    relationship: str
     phone: str | None
     email: str | None
     is_primary: bool

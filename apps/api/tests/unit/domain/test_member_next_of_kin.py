@@ -3,7 +3,6 @@ from datetime import UTC, datetime
 import pytest
 
 from app.domain.entities.member_next_of_kin import MemberNextOfKin
-from app.domain.enums import NextOfKinRelationship
 from app.domain.exceptions import DomainError
 from app.domain.value_objects.core import EligibleMemberId, Email, MemberNextOfKinId, TenantId
 
@@ -15,7 +14,7 @@ def make_contact(*, phone: str | None = "+256700000000") -> MemberNextOfKin:
         tenant_id=TenantId("tenant-1"),
         member_id=EligibleMemberId("member-1"),
         name="Jane Doe",
-        relationship=NextOfKinRelationship.SPOUSE,
+        relationship="Spouse",
         phone=phone,
         email=None,
         is_primary=False,
@@ -35,7 +34,7 @@ def test_next_of_kin_update_keeps_contact_invariant():
 
     contact.update(
         name="Jane Updated",
-        relationship=NextOfKinRelationship.GUARDIAN,
+        relationship="Guardian",
         phone=None,
         email=Email("jane@example.com"),
         is_primary=True,
@@ -43,7 +42,7 @@ def test_next_of_kin_update_keeps_contact_invariant():
     )
 
     assert contact.name == "Jane Updated"
-    assert contact.relationship == NextOfKinRelationship.GUARDIAN
+    assert contact.relationship == "Guardian"
     assert contact.email == Email("jane@example.com")
     assert contact.is_primary is True
     assert contact.updated_at == updated_at

@@ -8,7 +8,6 @@ consumed by :class:`PricingEngine` to compute invoice previews.
 from dataclasses import dataclass
 from datetime import date, datetime
 
-from app.domain.enums import UtilisationEventType
 from app.domain.exceptions import DomainError
 from app.domain.value_objects.core import (
     ContractId,
@@ -22,7 +21,7 @@ class UtilisationEventEntity:
     id: UtilisationEventId
     tenant_id: TenantId
     contract_id: ContractId
-    event_type: UtilisationEventType
+    event_type: str
     occurred_on: date
     units: int
     service_code: str | None

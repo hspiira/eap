@@ -3,7 +3,6 @@
 from dataclasses import dataclass, field
 from datetime import datetime
 
-from app.domain.enums import NextOfKinRelationship
 from app.domain.events import DomainEvent
 from app.domain.exceptions import DomainError
 from app.domain.value_objects.core import EligibleMemberId, Email, MemberNextOfKinId, TenantId
@@ -15,7 +14,7 @@ class MemberNextOfKin:
     tenant_id: TenantId
     member_id: EligibleMemberId
     name: str
-    relationship: NextOfKinRelationship
+    relationship: str
     phone: str | None
     email: Email | None
     is_primary: bool
@@ -33,7 +32,7 @@ class MemberNextOfKin:
         self,
         *,
         name: str,
-        relationship: NextOfKinRelationship,
+        relationship: str,
         phone: str | None,
         email: Email | None,
         is_primary: bool,

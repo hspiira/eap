@@ -4,6 +4,9 @@ from fastapi import Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
+from app.domain.repositories.case_referral_source_repository import (
+    CaseReferralSourceRepository,
+)
 from app.domain.repositories.case_repository import CaseRepository
 from app.domain.repositories.clinical_note_repository import (
     ClinicalNoteRepository,
@@ -18,6 +21,12 @@ from app.domain.repositories.eligible_member_repository import (
     EligibleMemberRepository,
 )
 from app.domain.repositories.member_next_of_kin_repository import MemberNextOfKinRepository
+from app.domain.repositories.next_of_kin_relationship_repository import (
+    NextOfKinRelationshipRepository,
+)
+from app.domain.repositories.presenting_problem_repository import (
+    PresentingProblemRepository,
+)
 
 
 async def get_case_repository(
@@ -28,6 +37,26 @@ async def get_case_repository(
     )
 
     return CaseRepositoryImpl(db)
+
+
+async def get_presenting_problem_repository(
+    db: AsyncSession = Depends(get_db),
+) -> "PresentingProblemRepository":
+    from app.infrastructure.repositories.presenting_problem_repository import (
+        PresentingProblemRepositoryImpl,
+    )
+
+    return PresentingProblemRepositoryImpl(db)
+
+
+async def get_case_referral_source_repository(
+    db: AsyncSession = Depends(get_db),
+) -> "CaseReferralSourceRepository":
+    from app.infrastructure.repositories.case_referral_source_repository import (
+        CaseReferralSourceRepositoryImpl,
+    )
+
+    return CaseReferralSourceRepositoryImpl(db)
 
 
 async def get_clinical_note_repository(
@@ -98,3 +127,13 @@ async def get_member_next_of_kin_repository(
     )
 
     return MemberNextOfKinRepositoryImpl(db)
+
+
+async def get_next_of_kin_relationship_repository(
+    db: AsyncSession = Depends(get_db),
+) -> "NextOfKinRelationshipRepository":
+    from app.infrastructure.repositories.next_of_kin_relationship_repository import (
+        NextOfKinRelationshipRepositoryImpl,
+    )
+
+    return NextOfKinRelationshipRepositoryImpl(db)

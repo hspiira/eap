@@ -7,17 +7,15 @@ from pydantic import BaseModel, ConfigDict, Field
 from app.api.schemas.base import OptionalSanitizedStr, SanitizedStr
 from app.domain.enums import (
     CaseClosureReason,
-    CaseReferralSource,
     CaseStatus,
-    PresentingProblem,
 )
 
 
 class OpenCaseRequest(BaseModel):
     client_id: str
     member_id: str
-    presenting_problem: PresentingProblem
-    referral_source: CaseReferralSource
+    presenting_problem: str
+    referral_source: str
     referral_notes: OptionalSanitizedStr = None
 
 
@@ -43,8 +41,8 @@ class CaseResponse(BaseModel):
     tenant_id: str
     clinical_subject_id: str
     client_id: str
-    presenting_problem: PresentingProblem
-    referral_source: CaseReferralSource
+    presenting_problem: str
+    referral_source: str
     status: CaseStatus
     opened_at: datetime
     assigned_counsellor_id: str | None

@@ -22,11 +22,10 @@ from sqlalchemy import (
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from app.domain.enums import BaseStatus, ClientTier, ContactMethod
+from app.domain.enums import BaseStatus, ContactMethod
 from app.infrastructure.models.base import (
     Base,
     CuidMixin,
-    EnumValueType,
     SoftDeleteMixin,
     TenantMixin,
     TimestampMixin,
@@ -100,8 +99,8 @@ class ClientModel(CuidMixin, TenantMixin, Base, TimestampMixin, SoftDeleteMixin)
         ),
         nullable=True,
     )
-    tier: Mapped[ClientTier | None] = mapped_column(
-        EnumValueType(ClientTier), nullable=True, index=True
+    tier: Mapped[str | None] = mapped_column(
+        String(50), ForeignKey("client_tiers.code"), nullable=True, index=True
     )
     suspension_reason: Mapped[str | None] = mapped_column(String(500), nullable=True)
 

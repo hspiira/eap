@@ -6,13 +6,13 @@ from typing import Any
 from pydantic import BaseModel, ConfigDict, Field
 
 from app.api.schemas.base import SanitizedStr
-from app.domain.enums import SurveyCampaignStatus, SurveySource
+from app.domain.enums import SurveyCampaignStatus
 
 
 class SurveyCampaignCreate(BaseModel):
     client_id: str
     name: SanitizedStr = Field(..., min_length=1, max_length=255)
-    source: SurveySource
+    source: str
     external_form_id: SanitizedStr = Field(..., min_length=1, max_length=255)
     webhook_secret: str = Field(..., min_length=32, max_length=255)
     period_start: date | None = None
@@ -25,7 +25,7 @@ class SurveyCampaignResponse(BaseModel):
     tenant_id: str
     client_id: str
     name: str
-    source: SurveySource
+    source: str
     external_form_id: str
     status: SurveyCampaignStatus
     period_start: date | None
@@ -54,7 +54,7 @@ class SurveyAggregateResponse(BaseModel):
     client_id: str
     name: str
     status: SurveyCampaignStatus
-    source: SurveySource
+    source: str
     anonymous: bool
     response_total: int
     answer_frequencies: dict[str, dict[str, int]]

@@ -2,7 +2,7 @@
 
 from app.domain.entities.survey_campaign import SurveyCampaign
 from app.domain.entities.survey_response import SurveyResponse
-from app.domain.enums import SurveyCampaignStatus, SurveySource
+from app.domain.enums import SurveyCampaignStatus
 from app.domain.value_objects.core import (
     ClientId,
     SurveyCampaignId,
@@ -25,7 +25,7 @@ class SurveyCampaignMapper:
             tenant_id=TenantId(model.tenant_id),
             client_id=ClientId(model.client_id),
             name=model.name,
-            source=SurveySource(model.source),
+            source=model.source,
             external_form_id=model.external_form_id,
             webhook_secret=model.webhook_secret,
             status=SurveyCampaignStatus(model.status),

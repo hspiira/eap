@@ -17,7 +17,6 @@ from app.domain.enums import (
     PaymentFrequency,
     PaymentStatus,
     PricingModel,
-    UtilisationEventType,
 )
 from app.domain.exceptions import DomainError
 from app.domain.value_objects.core import (
@@ -62,7 +61,7 @@ def _event(
     service_code: str = "INDIVIDUAL_COUNSELLING",
     units: int = 1,
     on: date = date(2026, 6, 15),
-    event_type: UtilisationEventType = UtilisationEventType.SESSION_DELIVERED,
+    event_type: str = "SessionDelivered",
 ) -> UtilisationEventEntity:
     now = datetime.now(UTC)
     return UtilisationEventEntity(

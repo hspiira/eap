@@ -6,6 +6,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.database import get_db
 from app.domain.repositories.diagnosis_repository import DiagnosisRepository
 from app.domain.repositories.document_repository import DocumentRepository
+from app.domain.repositories.document_type_repository import DocumentTypeRepository
+from app.domain.repositories.kpi_category_repository import KPICategoryRepository
+from app.domain.repositories.kpi_measurement_unit_repository import (
+    KPIMeasurementUnitRepository,
+)
 from app.domain.repositories.kpi_repository import (
     KPIAssignmentRepository,
     KPIRepository,
@@ -79,6 +84,16 @@ async def get_document_repository(
     return DocumentRepositoryImpl(db)
 
 
+async def get_document_type_repository(
+    db: AsyncSession = Depends(get_db),
+) -> DocumentTypeRepository:
+    from app.infrastructure.repositories.document_type_repository import (
+        DocumentTypeRepositoryImpl,
+    )
+
+    return DocumentTypeRepositoryImpl(db)
+
+
 async def get_kpi_repository(
     db: AsyncSession = Depends(get_db),
 ) -> KPIRepository:
@@ -92,6 +107,26 @@ async def get_kpi_repository(
         KPIRepository implementation
     """
     return KPIRepositoryImpl(db)
+
+
+async def get_kpi_category_repository(
+    db: AsyncSession = Depends(get_db),
+) -> KPICategoryRepository:
+    from app.infrastructure.repositories.kpi_category_repository import (
+        KPICategoryRepositoryImpl,
+    )
+
+    return KPICategoryRepositoryImpl(db)
+
+
+async def get_kpi_measurement_unit_repository(
+    db: AsyncSession = Depends(get_db),
+) -> KPIMeasurementUnitRepository:
+    from app.infrastructure.repositories.kpi_measurement_unit_repository import (
+        KPIMeasurementUnitRepositoryImpl,
+    )
+
+    return KPIMeasurementUnitRepositoryImpl(db)
 
 
 async def get_kpi_assignment_repository(

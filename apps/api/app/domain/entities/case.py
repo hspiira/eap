@@ -15,9 +15,7 @@ from datetime import datetime
 
 from app.domain.enums import (
     CaseClosureReason,
-    CaseReferralSource,
     CaseStatus,
-    PresentingProblem,
 )
 from app.domain.events import (
     CaseAdvanced,
@@ -71,8 +69,8 @@ class Case:
     tenant_id: TenantId
     clinical_subject_id: ClinicalSubjectId
     client_id: ClientId
-    presenting_problem: PresentingProblem
-    referral_source: CaseReferralSource
+    presenting_problem: str
+    referral_source: str
     status: CaseStatus
     opened_at: datetime
     created_at: datetime
@@ -96,8 +94,8 @@ class Case:
                     case_id=self.id,
                     tenant_id=self.tenant_id,
                     clinical_subject_id=self.clinical_subject_id,
-                    referral_source=self.referral_source.value,
-                    presenting_problem=self.presenting_problem.value,
+                    referral_source=self.referral_source,
+                    presenting_problem=self.presenting_problem,
                 )
             )
 

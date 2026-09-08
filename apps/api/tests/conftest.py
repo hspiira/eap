@@ -134,6 +134,27 @@ _NEXT_OF_KIN_RELATIONSHIP_CODES = (
     "Other",
 )
 
+#: ``survey_campaigns.source`` is a foreign key onto this table (migration
+#: 6e23da00f089), for the same reason as service categories above.
+_SURVEY_SOURCE_CODES = ("GoogleForms", "Typeform", "MicrosoftForms")
+
+#: ``clients.tier`` is a foreign key onto this table (migration 6e23da00f089).
+_CLIENT_TIER_CODES = ("A", "B", "C")
+
+#: ``kpis.measurement_unit`` is a foreign key onto this table (migration
+#: 6e23da00f089).
+_KPI_MEASUREMENT_UNIT_CODES = ("Percentage", "Count", "Rate", "Score", "Time", "Currency")
+
+#: ``utilisation_events.event_type`` is a foreign key onto this table
+#: (migration 6e23da00f089).
+_UTILISATION_EVENT_TYPE_CODES = (
+    "SessionDelivered",
+    "CareCallback",
+    "Survey",
+    "IncidentResponse",
+    "ConsultancyHours",
+)
+
 
 @pytest_asyncio.fixture(scope="function")
 async def db_session() -> AsyncGenerator[AsyncSession, None]:
@@ -150,8 +171,12 @@ async def db_session() -> AsyncGenerator[AsyncSession, None]:
         from app.infrastructure.models.case_referral_source_model import (
             CaseReferralSourceModel,
         )
+        from app.infrastructure.models.client_tier_model import ClientTierModel
         from app.infrastructure.models.document_type_model import DocumentTypeModel
         from app.infrastructure.models.kpi_category_model import KPICategoryModel
+        from app.infrastructure.models.kpi_measurement_unit_model import (
+            KPIMeasurementUnitModel,
+        )
         from app.infrastructure.models.next_of_kin_relationship_model import (
             NextOfKinRelationshipModel,
         )
@@ -160,6 +185,10 @@ async def db_session() -> AsyncGenerator[AsyncSession, None]:
         )
         from app.infrastructure.models.service_category_model import (
             ServiceCategoryModel,
+        )
+        from app.infrastructure.models.survey_source_model import SurveySourceModel
+        from app.infrastructure.models.utilisation_event_type_model import (
+            UtilisationEventTypeModel,
         )
 
         for code in _SERVICE_CATEGORY_CODES:
@@ -174,6 +203,14 @@ async def db_session() -> AsyncGenerator[AsyncSession, None]:
             session.add(CaseReferralSourceModel(code=code, name=code))
         for code in _NEXT_OF_KIN_RELATIONSHIP_CODES:
             session.add(NextOfKinRelationshipModel(code=code, name=code))
+        for code in _SURVEY_SOURCE_CODES:
+            session.add(SurveySourceModel(code=code, name=code))
+        for code in _CLIENT_TIER_CODES:
+            session.add(ClientTierModel(code=code, name=code))
+        for code in _KPI_MEASUREMENT_UNIT_CODES:
+            session.add(KPIMeasurementUnitModel(code=code, name=code))
+        for code in _UTILISATION_EVENT_TYPE_CODES:
+            session.add(UtilisationEventTypeModel(code=code, name=code))
         await session.commit()
         yield session
 

@@ -8,6 +8,7 @@ from app.domain.repositories.activity_repository import ActivityRepository
 from app.domain.repositories.client_alias_repository import ClientAliasRepository
 from app.domain.repositories.client_repository import ClientRepository
 from app.domain.repositories.client_tag_repository import ClientTagRepository
+from app.domain.repositories.client_tier_repository import ClientTierRepository
 from app.domain.repositories.industry_repository import IndustryRepository
 from app.infrastructure.repositories.activity_repository import ActivityRepositoryImpl
 from app.infrastructure.repositories.client_alias_repository import ClientAliasRepositoryImpl
@@ -29,6 +30,16 @@ async def get_client_repository(
         ClientRepository implementation
     """
     return ClientRepositoryImpl(db)
+
+
+async def get_client_tier_repository(
+    db: AsyncSession = Depends(get_db),
+) -> ClientTierRepository:
+    from app.infrastructure.repositories.client_tier_repository import (
+        ClientTierRepositoryImpl,
+    )
+
+    return ClientTierRepositoryImpl(db)
 
 
 async def get_client_alias_repository(

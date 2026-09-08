@@ -42,7 +42,6 @@ from app.core.authorization import assert_same_tenant, require_same_tenant
 from app.core.database import get_db
 from app.core.security import TokenData, get_current_user
 from app.domain.entities.kpi import KPIAssignmentEntity, KPIEntity
-from app.domain.enums import KPICategory
 from app.domain.exceptions import NotFoundError
 from app.domain.repositories.kpi_repository import (
     KPIAssignmentRepository,
@@ -215,7 +214,7 @@ async def deactivate_kpi(
 async def list_kpis(
     tenant_id: str = Query(..., description="Tenant identifier"),
     current_user: TokenData = Depends(require_same_tenant),
-    category: KPICategory | None = Query(None, description="Filter by KPI category"),
+    category: str | None = Query(None, description="Filter by KPI category"),
     is_active: bool | None = Query(None, description="Filter by active status"),
     search: str | None = Query(None, description="Search in KPI name or description"),
     pg: PageParams = Depends(pagination()),

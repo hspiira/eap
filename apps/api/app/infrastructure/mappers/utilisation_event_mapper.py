@@ -1,7 +1,6 @@
 """Utilisation event mapper (Phase 2 #D-Pricing)."""
 
 from app.domain.entities.utilisation_event import UtilisationEventEntity
-from app.domain.enums import UtilisationEventType
 from app.domain.value_objects.core import (
     ContractId,
     TenantId,
@@ -20,7 +19,7 @@ class UtilisationEventMapper:
             id=UtilisationEventId(model.id),
             tenant_id=TenantId(model.tenant_id),
             contract_id=ContractId(model.contract_id),
-            event_type=UtilisationEventType(model.event_type),
+            event_type=model.event_type,
             occurred_on=model.occurred_on,
             units=model.units,
             service_code=model.service_code,

@@ -48,7 +48,7 @@ from app.core.database import get_db
 from app.core.security import TokenData, get_current_user
 from app.domain.entities.contract import ContractEntity
 from app.domain.entities.document import DocumentEntity
-from app.domain.enums import DocumentStatus, DocumentType
+from app.domain.enums import DocumentStatus
 from app.domain.exceptions import NotFoundError
 from app.domain.repositories.document_repository import DocumentRepository
 from app.domain.value_objects.core import DocumentId, TenantId, UserId
@@ -130,7 +130,7 @@ async def upload_contract_attachment(
             document_id=DocumentId(document_id),
             tenant_id=contract.tenant_id,
             name=name,
-            document_type=DocumentType.CONTRACT,
+            document_type="Contract",
             file_path=str(path.relative_to(path.parent.parent)),
             file_size=len(content),
             mime_type=mime_type,
@@ -363,7 +363,7 @@ async def set_document_expiry(
 async def list_documents(
     tenant_id: str = Query(..., description="Tenant identifier"),
     current_user: TokenData = Depends(require_same_tenant),
-    document_type: DocumentType | None = Query(None, description="Filter by document type"),
+    document_type: str | None = Query(None, description="Filter by document type"),
     status: DocumentStatus | None = Query(None, description="Filter by document status"),
     client_id: str | None = Query(None, description="Filter by associated client"),
     contract_id: str | None = Query(None, description="Filter by associated contract"),
