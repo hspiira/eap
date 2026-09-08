@@ -4057,7 +4057,7 @@
         "description": "Request schema for renewing a contract.",
         "properties": {
           "new_end_date": {
-            "description": "New contract end date",
+            "description": "End date of the new term",
             "format": "date",
             "title": "New End Date",
             "type": "string"
@@ -4072,6 +4072,18 @@
               }
             ],
             "description": "New billing rate (optional)"
+          },
+          "reference": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Reference for the new term",
+            "title": "Reference"
           }
         },
         "required": [
@@ -4150,6 +4162,34 @@
             "$ref": "#/components/schemas/DateRangeSchema",
             "description": "Contract period"
           },
+          "recorded_status": {
+            "$ref": "#/components/schemas/ContractStatus",
+            "description": "The status stored on the row, before the lapse is derived"
+          },
+          "reference": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Human reference for the term",
+            "title": "Reference"
+          },
+          "renewed_from_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The term this one renewed",
+            "title": "Renewed From Id"
+          },
           "signed_at": {
             "anyOf": [
               {
@@ -4177,7 +4217,7 @@
           },
           "status": {
             "$ref": "#/components/schemas/ContractStatus",
-            "description": "Contract status"
+            "description": "Status as at today. A term past its end date reads Expired whether or not anybody wrote that down."
           },
           "tenant_id": {
             "description": "Tenant identifier",
@@ -4206,6 +4246,7 @@
           "payment_frequency",
           "payment_status",
           "status",
+          "recorded_status",
           "is_auto_renew",
           "is_active",
           "days_remaining"
@@ -9620,6 +9661,30 @@
             ],
             "title": "Client Name"
           },
+          "coverage_end": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Coverage End"
+          },
+          "coverage_start": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Coverage Start"
+          },
           "created_at": {
             "format": "date-time",
             "title": "Created At",
@@ -9665,6 +9730,10 @@
           "id": {
             "title": "Id",
             "type": "string"
+          },
+          "is_currently_eligible": {
+            "title": "Is Currently Eligible",
+            "type": "boolean"
           },
           "last_imported_at": {
             "anyOf": [
@@ -9814,6 +9883,7 @@
           "relation",
           "status",
           "primary_employee_member_id",
+          "is_currently_eligible",
           "work_email",
           "personal_email",
           "display_label",
@@ -9827,6 +9897,44 @@
           "updated_at"
         ],
         "title": "MemberResponse",
+        "type": "object"
+      },
+      "MemberStatsResponse": {
+        "properties": {
+          "active": {
+            "title": "Active",
+            "type": "integer"
+          },
+          "pending": {
+            "title": "Pending",
+            "type": "integer"
+          },
+          "suspended": {
+            "title": "Suspended",
+            "type": "integer"
+          },
+          "terminated": {
+            "title": "Terminated",
+            "type": "integer"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          },
+          "with_account": {
+            "title": "With Account",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "total",
+          "active",
+          "suspended",
+          "pending",
+          "terminated",
+          "with_account"
+        ],
+        "title": "MemberStatsResponse",
         "type": "object"
       },
       "MemberUpdate": {
@@ -28936,6 +29044,109 @@
           }
         ],
         "summary": "Download the member CSV import template",
+        "tags": [
+          "members"
+        ]
+      }
+    },
+    "/members/stats": {
+      "get": {
+        "description": "Aggregate counts for the roster summary strip, honouring the list filters.",
+        "operationId": "member_stats_members_stats_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "client_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Client Id"
+            }
+          },
+          {
+            "in": "query",
+            "name": "status",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/EligibilityStatus"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Status"
+            }
+          },
+          {
+            "in": "query",
+            "name": "relation",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/MemberRelation"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Relation"
+            }
+          },
+          {
+            "in": "query",
+            "name": "search",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Search"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MemberStatsResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Member Stats",
         "tags": [
           "members"
         ]

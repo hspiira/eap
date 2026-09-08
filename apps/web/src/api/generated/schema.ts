@@ -3400,6 +3400,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/members/stats": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Member Stats
+         * @description Aggregate counts for the roster summary strip, honouring the list filters.
+         */
+        get: operations["member_stats_members_stats_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/members/{member_id}": {
         parameters: {
             query?: never;
@@ -7936,11 +7956,16 @@ export interface components {
             /**
              * New End Date
              * Format: date
-             * @description New contract end date
+             * @description End date of the new term
              */
             new_end_date: string;
             /** @description New billing rate (optional) */
             new_rate?: components["schemas"]["MoneyCreate"] | null;
+            /**
+             * Reference
+             * @description Reference for the new term
+             */
+            reference?: string | null;
         };
         /**
          * ContractResponse
@@ -7990,6 +8015,18 @@ export interface components {
             payment_status: components["schemas"]["PaymentStatus"];
             /** @description Contract period */
             period: components["schemas"]["DateRangeSchema"];
+            /** @description The status stored on the row, before the lapse is derived */
+            recorded_status: components["schemas"]["ContractStatus"];
+            /**
+             * Reference
+             * @description Human reference for the term
+             */
+            reference?: string | null;
+            /**
+             * Renewed From Id
+             * @description The term this one renewed
+             */
+            renewed_from_id?: string | null;
             /**
              * Signed At
              * @description When contract was signed
@@ -8000,7 +8037,7 @@ export interface components {
              * @description Name of person who signed
              */
             signed_by?: string | null;
-            /** @description Contract status */
+            /** @description Status as at today. A term past its end date reads Expired whether or not anybody wrote that down. */
             status: components["schemas"]["ContractStatus"];
             /**
              * Tenant Id
@@ -10396,6 +10433,10 @@ export interface components {
             client_id: string;
             /** Client Name */
             client_name?: string | null;
+            /** Coverage End */
+            coverage_end?: string | null;
+            /** Coverage Start */
+            coverage_start?: string | null;
             /**
              * Created At
              * Format: date-time
@@ -10410,6 +10451,8 @@ export interface components {
             gender: components["schemas"]["MemberGender"] | null;
             /** Id */
             id: string;
+            /** Is Currently Eligible */
+            is_currently_eligible: boolean;
             /** Last Imported At */
             last_imported_at: string | null;
             /** National Id */
@@ -10441,6 +10484,21 @@ export interface components {
             user_id?: string | null;
             /** Work Email */
             work_email: string | null;
+        };
+        /** MemberStatsResponse */
+        MemberStatsResponse: {
+            /** Active */
+            active: number;
+            /** Pending */
+            pending: number;
+            /** Suspended */
+            suspended: number;
+            /** Terminated */
+            terminated: number;
+            /** Total */
+            total: number;
+            /** With Account */
+            with_account: number;
         };
         /**
          * MemberUpdate
@@ -20281,6 +20339,40 @@ export interface operations {
                 };
                 content: {
                     "application/json": unknown;
+                };
+            };
+        };
+    };
+    member_stats_members_stats_get: {
+        parameters: {
+            query?: {
+                client_id?: string | null;
+                status?: components["schemas"]["EligibilityStatus"] | null;
+                relation?: components["schemas"]["MemberRelation"] | null;
+                search?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MemberStatsResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };

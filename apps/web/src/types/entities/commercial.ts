@@ -25,7 +25,14 @@ export interface ContractMoney {
  */
 export interface Contract extends BaseEntity {
   client_id: string
+  /** Human reference for the term, where one was given. */
+  reference?: string | null
+  /** The term this one renewed, so a client's history reads as a chain. */
+  renewed_from_id?: string | null
+  /** Status as at today: a term past its end date reads Expired. */
   status: ContractStatus
+  /** The status stored on the row, before the lapse is derived. */
+  recorded_status?: ContractStatus
   /** The contract term. Use `period.start_date` / `period.end_date`. */
   period: ContractPeriod
   billing_rate: ContractMoney
