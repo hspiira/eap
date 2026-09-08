@@ -1,0 +1,36 @@
+"""Domain events for the eligible member (roster) bounded context."""
+
+from dataclasses import dataclass
+
+from app.domain.events.base import DomainEvent
+from app.domain.value_objects.core import ClientId, EligibleMemberId
+
+
+@dataclass(frozen=True)
+class EligibleMemberCreated(DomainEvent):
+    """Event raised when a person is added to a client's roster."""
+
+    member_id: EligibleMemberId
+    client_id: ClientId
+    employer_member_id: str
+
+
+@dataclass(frozen=True)
+class EligibleMemberStatusChanged(DomainEvent):
+    """Event raised when a member is suspended, reinstated or terminated."""
+
+    member_id: EligibleMemberId
+    from_status: str
+    to_status: str
+
+
+@dataclass(frozen=True)
+class EligibleMemberUpdated(DomainEvent):
+    """Event raised when a member's roster details change.
+
+    `field` names what was touched; the values reach `entity_changes` through
+    the handler's diff.
+    """
+
+    member_id: EligibleMemberId
+    field: str

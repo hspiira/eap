@@ -57,7 +57,14 @@ import app.domain.entities as entities_pkg
 #    -9  the detector no longer reads `self.x == y` as an assignment, so read
 #        predicates like `is_active` were never mutators at all.
 # Only the first is coverage. The other twelve were the measurement.
-KNOWN_SILENT_MUTATORS = 122
+#
+# 122 -> 113 extending the same pass outwards: ServiceAssignmentEntity in full,
+# and EligibleMember except the three below.
+# EligibleMember.link_account and unlink_account stay silent for the reason at
+# the top of this list, and record_import is bookkeeping under an import batch
+# that already emits: a roster file of three thousand rows would otherwise
+# write three thousand audit rows for one operation a person performed once.
+KNOWN_SILENT_MUTATORS = 113
 
 
 def _entity_classes():
@@ -165,8 +172,19 @@ def test_creating_a_client_is_audited():
     assert "ClientCreated" in inspect.getsource(ClientEntity.record_created)
 
 
-def test_both_sides_of_a_client_and_contract_write_are_audited():
-    """The aggregates a user edits daily leave no silent mutator behind."""
+def test_the_commercial_aggregates_are_audited_in_full():
+    """The records a dispute is argued from leave no silent mutator behind."""
     gap = silent_mutators()
-    assert gap.get("ClientEntity") is None, gap.get("ClientEntity")
-    assert gap.get("ContractEntity") is None, gap.get("ContractEntity")
+    for entity in ("ClientEntity", "ContractEntity", "ServiceAssignmentEntity"):
+        assert gap.get(entity) is None, f"{entity}: {gap.get(entity)}"
+
+
+def test_only_the_documented_member_mutators_stay_silent():
+    """Roster changes emit, apart from the two the route audits itself.
+
+    Account linkage is an association between two aggregates and the members
+    route records it as its own operation; record_import is bookkeeping under
+    a batch that already emits.
+    """
+    gap = silent_mutators()
+    assert gap.get("EligibleMember") == ["link_account", "record_import", "unlink_account"]

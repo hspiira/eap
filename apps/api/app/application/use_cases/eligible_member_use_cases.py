@@ -96,6 +96,7 @@ class EnrolEligibleMemberUseCase:
             created_at=now,
             updated_at=now,
         )
+        member.record_created()
         await self._members.save(member)
 
         subject = ClinicalSubject(

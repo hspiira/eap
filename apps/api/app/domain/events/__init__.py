@@ -42,6 +42,9 @@ from app.domain.events.contract import (
     ContractStatusChanged,
     ContractTerminated,
     ContractUpdated,
+    ServiceAssignmentCreated,
+    ServiceAssignmentStatusChanged,
+    ServiceAssignmentUpdated,
 )
 from app.domain.events.crisis import (
     CaringContactCompleted,
@@ -60,6 +63,11 @@ from app.domain.events.crisis import (
     SafetyPlanSuperseded,
 )
 from app.domain.events.document import DocumentArchived, DocumentPublished, DocumentVersionCreated
+from app.domain.events.member import (
+    EligibleMemberCreated,
+    EligibleMemberStatusChanged,
+    EligibleMemberUpdated,
+)
 from app.domain.events.outreach import (
     CareCallbackCampaignActivated,
     CareCallbackCampaignCompleted,
@@ -149,6 +157,12 @@ __all__ = [
     "ContractStatusChanged",
     "ContractTerminated",
     "ContractUpdated",
+    "EligibleMemberCreated",
+    "EligibleMemberStatusChanged",
+    "EligibleMemberUpdated",
+    "ServiceAssignmentCreated",
+    "ServiceAssignmentStatusChanged",
+    "ServiceAssignmentUpdated",
     "CrisisContactClosed",
     "CrisisContactLogged",
     "CrisisFlagRaised",

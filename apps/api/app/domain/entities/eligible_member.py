@@ -10,7 +10,12 @@ from dataclasses import dataclass, field
 from datetime import date, datetime
 
 from app.domain.enums import EligibilityStatus, MemberGender, MemberRelation
-from app.domain.events import DomainEvent
+from app.domain.events import (
+    DomainEvent,
+    EligibleMemberCreated,
+    EligibleMemberStatusChanged,
+    EligibleMemberUpdated,
+)
 from app.domain.exceptions import DomainError, InvalidStateError
 from app.domain.value_objects.core import (
     ClientId,
@@ -82,10 +87,12 @@ class EligibleMember:
             raise InvalidStateError("Cannot suspend a terminated member")
         if self.status == EligibilityStatus.SUSPENDED:
             return
+        previous = self.status
         now = now or utc_now()
         self.status = EligibilityStatus.SUSPENDED
         self.suspended_at = now
         self.updated_at = now
+        self._record_status_change(previous)
 
     def reinstate(self, now: datetime | None = None) -> None:
         if self.status not in {
@@ -93,19 +100,23 @@ class EligibleMember:
             EligibilityStatus.PENDING,
         }:
             raise InvalidStateError(f"Cannot reinstate a {self.status.value} member")
+        previous = self.status
         now = now or utc_now()
         self.status = EligibilityStatus.ACTIVE
         self.suspended_at = None
         self.updated_at = now
+        self._record_status_change(previous)
 
     def terminate(self, *, end_date: date | None = None, now: datetime | None = None) -> None:
         if self.status == EligibilityStatus.TERMINATED:
             return
+        previous = self.status
         now = now or utc_now()
         self.status = EligibilityStatus.TERMINATED
         self.terminated_at = now
         self.coverage_end = end_date or now.date()
         self.updated_at = now
+        self._record_status_change(previous)
 
     def record_import(self, *, when: datetime | None = None) -> None:
         self.last_imported_at = when or utc_now()
@@ -156,6 +167,33 @@ class EligibleMember:
         self.national_id = national_id
         self.passport_number = passport_number
         self.updated_at = utc_now()
+        self.events.append(
+            EligibleMemberUpdated(occurred_at=utc_now(), member_id=self.id, field="roster_details")
+        )
+
+    def record_created(self) -> None:
+        """Announce this member as newly rostered. Called by the create path."""
+        self.events.append(
+            EligibleMemberCreated(
+                occurred_at=utc_now(),
+                member_id=self.id,
+                client_id=self.client_id,
+                employer_member_id=self.employer_member_id,
+            )
+        )
+
+    def _record_status_change(self, previous: EligibilityStatus) -> None:
+        """Record an eligibility move."""
+        if previous == self.status:
+            return
+        self.events.append(
+            EligibleMemberStatusChanged(
+                occurred_at=utc_now(),
+                member_id=self.id,
+                from_status=previous.value,
+                to_status=self.status.value,
+            )
+        )
 
     def is_currently_eligible(self, *, today: date | None = None) -> bool:
         today = today or utc_now().date()

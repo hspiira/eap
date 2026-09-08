@@ -22,6 +22,7 @@ from sqlalchemy.schema import CreateSchema, DropSchema
 
 from app.api.routes.clients import router as clients_router
 from app.api.routes.contracts import router as contracts_router
+from app.api.routes.service_assignments import router as assignments_router
 from app.application.services.outbox_consumers import make_audit_consumer
 from app.application.services.outbox_dispatcher import OutboxDispatcher
 from app.core.database import get_db
@@ -32,6 +33,7 @@ from app.infrastructure.models.audit_model import AuditLogModel, EntityChangeMod
 from app.infrastructure.models.base import Base
 from app.infrastructure.models.client_model import ClientModel
 from app.infrastructure.models.outbox_model import OutboxEventModel
+from app.infrastructure.models.service_model import ServiceModel
 from app.infrastructure.models.tenant_model import TenantModel
 from app.infrastructure.repositories.audit_repository import AuditRepositoryImpl
 from app.infrastructure.repositories.outbox_repository import OutboxRepositoryImpl
@@ -40,6 +42,7 @@ from app.shared.utils.datetime import utc_now
 TENANT_ID = "tenant-chain-test"
 USER_ID = "user-chain-test"
 CLIENT_ID = "client-chain-test"
+SERVICE_ID = "service-chain-test"
 
 
 @pytest_asyncio.fixture
@@ -88,6 +91,16 @@ async def chain_db():
                 updated_at=utc_now(),
             )
         )
+        session.add(
+            ServiceModel(
+                id=SERVICE_ID,
+                tenant_id=TENANT_ID,
+                name="Individual Counselling",
+                status=BaseStatus.ACTIVE,
+                created_at=utc_now(),
+                updated_at=utc_now(),
+            )
+        )
         await session.commit()
     try:
         yield sessions
@@ -105,6 +118,7 @@ async def api(chain_db):
     register_exception_handlers(app)
     app.include_router(clients_router)
     app.include_router(contracts_router)
+    app.include_router(assignments_router)
 
     async def override_db():
         async with chain_db() as session:
@@ -264,3 +278,37 @@ class TestAuditChain:
             assert by_event["ContractStatusChanged"].resource_type == "Contract"
             event_data = by_event["ContractStatusChanged"].extra_metadata["event_data"]
             assert (event_data["from_status"], event_data["to_status"]) == ("Draft", "Active")
+
+    async def test_assigning_a_service_to_a_contract_is_recorded(self, api, chain_db):
+        contract = await api.post(
+            "/contracts/",
+            params={"tenant_id": TENANT_ID},
+            json={
+                "client_id": CLIENT_ID,
+                "start_date": "2026-01-01",
+                "end_date": "2026-12-31",
+                "billing_rate": {"amount": "1000000", "currency": "UGX"},
+                "payment_frequency": "Quarterly",
+                "is_auto_renew": False,
+            },
+        )
+        assert contract.status_code == 201, contract.text
+        assert await _drain(chain_db) == 1
+
+        assigned = await api.post(
+            "/service-assignments/",
+            params={"tenant_id": TENANT_ID},
+            json={"service_id": SERVICE_ID, "contract_id": contract.json()["id"]},
+        )
+        assert assigned.status_code == 201, assigned.text
+        assert await _drain(chain_db) == 1
+
+        activated = await api.post(f"/service-assignments/{assigned.json()['id']}/activate")
+        assert activated.status_code == 200, activated.text
+        assert await _drain(chain_db) == 1
+
+        async with chain_db() as session:
+            logs = (await session.execute(select(AuditLogModel))).scalars().all()
+            recorded = {log.extra_metadata["event_type"]: log.action_type for log in logs}
+            assert recorded["ServiceAssignmentCreated"] == AuditActionType.CREATE
+            assert recorded["ServiceAssignmentStatusChanged"] == AuditActionType.UPDATE

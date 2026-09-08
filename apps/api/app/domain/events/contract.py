@@ -65,3 +65,29 @@ class ContractTerminated(DomainEvent):
 
 
 # === Client Events ===
+
+
+@dataclass(frozen=True)
+class ServiceAssignmentCreated(DomainEvent):
+    """Event raised when a service is assigned to a contract."""
+
+    assignment_id: str
+    contract_id: ContractId
+    service_id: str
+
+
+@dataclass(frozen=True)
+class ServiceAssignmentStatusChanged(DomainEvent):
+    """Event raised when an assignment is activated, deactivated or archived."""
+
+    assignment_id: str
+    from_status: str
+    to_status: str
+
+
+@dataclass(frozen=True)
+class ServiceAssignmentUpdated(DomainEvent):
+    """Event raised when an assignment's own details change."""
+
+    assignment_id: str
+    field: str

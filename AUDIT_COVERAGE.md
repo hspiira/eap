@@ -7,12 +7,20 @@ audited, the decisions behind that line, and what is still open.
 
 ## The decision
 
-Clients and contracts are audited in full: creation, every field update, and
-every lifecycle move. They were chosen first because they are the records a
-person edits daily and the ones a dispute is argued from, and because a client
-is the aggregate almost everything else hangs off.
+Clients, contracts and service assignments are audited in full: creation,
+every field update, and every lifecycle move. They were chosen first because
+they are the records a person edits daily and the ones a dispute is argued
+from, and because a client is the aggregate almost everything else hangs off.
 
-Not decided here, and deliberately left: the remaining 122 silent mutators
+The roster follows them. `EligibleMember` emits on creation, on suspend,
+reinstate and terminate, and on a roster-details edit. Three of its methods
+stay silent deliberately: `link_account` and `unlink_account` are an
+association between two aggregates that the members route records as its own
+operation, and `record_import` is bookkeeping under an import batch that
+already emits, where a roster file of three thousand rows would otherwise
+write three thousand audit rows for one operation a person performed once.
+
+Not decided here, and deliberately left: the remaining 113 silent mutators
 across the other aggregates. Auditing everything indiscriminately is not
 automatically right, and for special-category health data it creates its own
 disclosure surface, which is why `test_audit_coverage.py` refuses to assert it.
@@ -20,16 +28,17 @@ That scope is a product call.
 
 ## What this pass changed
 
-Baseline moved from 148 silent mutators to 122, which is three separate things
+Baseline moved from 148 silent mutators to 113, which is three separate things
 and they should not be read as one number:
 
 | Change | Count | What it was |
 | --- | --- | --- |
 | Coverage | -14 | `ClientEntity` and `ContractEntity` now emit on create, on every field update, and on archive and restore. Neither has a silent mutator left. |
+| Coverage | -9 | `ServiceAssignmentEntity` in full, and `EligibleMember` apart from the three above. |
 | Measurement | -3 | The detector follows a private helper. A method that hands the append to one, `ContractEntity._record_status_change`, read as silent while it emitted. |
 | Measurement | -9 | The detector no longer reads `self.x == y` as an assignment, so read predicates like `is_active` were never mutators at all. |
 
-Only the first is coverage. The other twelve were the ruler being wrong.
+Only the coverage rows are coverage. The other twelve were the ruler being wrong.
 
 ## Three faults found on the way
 
@@ -74,9 +83,30 @@ into this. Recorded here as open.
   `name: Acme Corp -> Acme Holdings`, a creation is filed as CREATE, and a
   contract activation is filed as UPDATE rather than CREATE.
 
+## Members are audited twice over, by two mechanisms
+
+`members.py` records every roster mutation through `record_member_change`,
+which enqueues an outbox row directly with `is_special_category` set and
+`field_changes` always empty. `eligible_members.py`, the employer-side router
+for the same aggregate, uses `audit_change` instead. Neither calls the other,
+so nothing is recorded twice, but the two paths disagree about what an audit
+row contains: only the second carries a diff.
+
+Converging `members.py` onto `audit_change` would give roster edits the same
+field-level detail the rest now has. It is ten call sites in a route file with
+its own tests, so it is named here rather than folded into this pass.
+
 ## Still open
 
-- The other 122 silent mutators, pending the scope call above.
+- The other 113 silent mutators, pending the scope call above.
+- `members.py` on its own audit path, above.
+- Sessions. `ServiceSessionEntity` has 12 silent mutators and is the largest
+  single gap left. It needs the redaction question answered first: a session
+  carries `notes`, `feedback`, `issue_topic` and a diagnosis, and a diff that
+  copies those into `entity_changes` puts clinical content in front of
+  everyone who can read the audit trail. `ServiceSession` is also absent from
+  `CLINICAL_RESOURCE_TYPES`, so it is not currently flagged as
+  special-category at all.
 - `map_domain_event_to_audit_action` treating "activated" as CREATE.
 - `apps/web/src/routes/audit.tsx` is a placeholder. The read API exists
   (`/audit/logs`, `/logs/{id}/changes`, `/entity/{type}/{id}/changes`) and
