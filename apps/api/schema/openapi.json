@@ -9441,6 +9441,19 @@
               }
             ]
           },
+          "import_source_id": {
+            "anyOf": [
+              {
+                "maxLength": 255,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Optional. The employer's own reference for this row (e.g. a roster Staff_ID), used to match rows on re-import. Never the member code.",
+            "title": "Import Source Id"
+          },
           "national_id": {
             "anyOf": [
               {
@@ -9793,7 +9806,7 @@
             ],
             "title": "Display Label"
           },
-          "employer_member_id": {
+          "import_source_id": {
             "anyOf": [
               {
                 "type": "string"
@@ -9802,7 +9815,7 @@
                 "type": "null"
               }
             ],
-            "title": "Employer Member Id"
+            "title": "Import Source Id"
           },
           "message": {
             "anyOf": [
@@ -9849,7 +9862,7 @@
           "row",
           "client_code",
           "client_name",
-          "employer_member_id",
+          "import_source_id",
           "display_label",
           "state"
         ],
@@ -9934,17 +9947,6 @@
             ],
             "title": "Display Label"
           },
-          "employer_member_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Employer Member Id"
-          },
           "gender": {
             "anyOf": [
               {
@@ -9955,6 +9957,17 @@
               }
             ],
             "title": "Gender"
+          },
+          "import_source_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Import Source Id"
           },
           "national_id": {
             "anyOf": [
@@ -10000,7 +10013,7 @@
             ],
             "title": "Phone"
           },
-          "primary_employee_member_id": {
+          "primary_import_source_id": {
             "anyOf": [
               {
                 "type": "string"
@@ -10009,7 +10022,7 @@
                 "type": "null"
               }
             ],
-            "title": "Primary Employee Member Id"
+            "title": "Primary Import Source Id"
           },
           "relation": {
             "anyOf": [
@@ -10406,6 +10419,17 @@
           "id": {
             "title": "Id",
             "type": "string"
+          },
+          "import_source_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Import Source Id"
           },
           "is_currently_eligible": {
             "title": "Is Currently Eligible",

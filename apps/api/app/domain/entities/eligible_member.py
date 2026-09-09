@@ -47,6 +47,7 @@ class EligibleMember:
     gender: MemberGender | None = None
     phone: str | None = None
     staff_number: str | None = None
+    import_source_id: str | None = None
     national_id: str | None = None
     passport_number: str | None = None
     last_imported_at: datetime | None = None

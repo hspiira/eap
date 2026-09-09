@@ -128,7 +128,6 @@ describe("member roster", () => {
       items: [
         makeMember({
           client_name: "Acme Ltd",
-          staff_number: "SN-9",
           work_email: "amina@acme.test",
         }),
       ],
@@ -144,14 +143,14 @@ describe("member roster", () => {
     // The employer is a destination of its own, reached without a detour.
     expect(screen.getByText("Acme Ltd").closest("a")).not.toBeNull()
 
-    for (const value of ["HR-1", "SN-9", "amina@acme.test"]) {
+    for (const value of ["HR-1", "amina@acme.test"]) {
       expect(screen.getByText(value).closest("a")).toBeNull()
     }
     // The client column shows the name, never the raw id.
     expect(screen.queryByText("client-1")).not.toBeInTheDocument()
   })
 
-  it("drops the near-empty contact columns and shows the staff number instead", async () => {
+  it("shows phone after email and drops the staff number column", async () => {
     mocks.list.mockResolvedValue({
       items: [
         makeMember({
@@ -168,11 +167,12 @@ describe("member roster", () => {
     renderWithProviders(<Page />)
     await screen.findByText("Amina Namukasa")
 
-    expect(screen.getByRole("columnheader", { name: "Staff number" })).toBeInTheDocument()
-    expect(screen.getByText("SN-9")).toBeInTheDocument()
+    expect(screen.queryByRole("columnheader", { name: "Staff number" })).not.toBeInTheDocument()
+    expect(screen.queryByText("SN-9")).not.toBeInTheDocument()
+    expect(screen.getByRole("columnheader", { name: "Phone" })).toBeInTheDocument()
+    expect(screen.getByText("+256700000000")).toBeInTheDocument()
     // Filled on a handful of rows in a roster of thousands: the profile's job.
     expect(screen.queryByText("amina@personal.test")).not.toBeInTheDocument()
-    expect(screen.queryByText("+256700000000")).not.toBeInTheDocument()
   })
 
   it("humanizes the relationship rather than showing the raw enum", async () => {

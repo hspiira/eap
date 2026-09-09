@@ -10993,6 +10993,11 @@ export interface components {
              */
             employer_member_id?: string | null;
             gender?: components["schemas"]["MemberGender"] | null;
+            /**
+             * Import Source Id
+             * @description Optional. The employer's own reference for this row (e.g. a roster Staff_ID), used to match rows on re-import. Never the member code.
+             */
+            import_source_id?: string | null;
             /** National Id */
             national_id?: string | null;
             /** Passport Number */
@@ -11100,8 +11105,8 @@ export interface components {
             default_action: string;
             /** Display Label */
             display_label: string | null;
-            /** Employer Member Id */
-            employer_member_id: string | null;
+            /** Import Source Id */
+            import_source_id: string | null;
             /** Message */
             message?: string | null;
             /** Row */
@@ -11140,10 +11145,10 @@ export interface components {
             date_of_birth?: string | null;
             /** Display Label */
             display_label?: string | null;
-            /** Employer Member Id */
-            employer_member_id?: string | null;
             /** Gender */
             gender?: string | null;
+            /** Import Source Id */
+            import_source_id?: string | null;
             /** National Id */
             national_id?: string | null;
             /** Passport Number */
@@ -11152,8 +11157,8 @@ export interface components {
             personal_email?: string | null;
             /** Phone */
             phone?: string | null;
-            /** Primary Employee Member Id */
-            primary_employee_member_id?: string | null;
+            /** Primary Import Source Id */
+            primary_import_source_id?: string | null;
             /** Relation */
             relation?: string | null;
             /** Staff Number */
@@ -11282,6 +11287,8 @@ export interface components {
             gender: components["schemas"]["MemberGender"] | null;
             /** Id */
             id: string;
+            /** Import Source Id */
+            import_source_id?: string | null;
             /** Is Currently Eligible */
             is_currently_eligible: boolean;
             /** Last Imported At */

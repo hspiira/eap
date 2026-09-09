@@ -55,6 +55,7 @@ class EligibleMemberMapper:
             gender=_member_gender(model.gender),
             phone=model.phone,
             staff_number=model.staff_number,
+            import_source_id=model.import_source_id,
             national_id=model.national_id,
             passport_number=model.passport_number,
             last_imported_at=ensure_utc(model.last_imported_at) if model.last_imported_at else None,
@@ -91,6 +92,7 @@ class EligibleMemberMapper:
             gender=entity.gender,
             phone=entity.phone,
             staff_number=entity.staff_number,
+            import_source_id=entity.import_source_id,
             national_id=entity.national_id,
             passport_number=entity.passport_number,
             last_imported_at=ensure_utc(entity.last_imported_at)

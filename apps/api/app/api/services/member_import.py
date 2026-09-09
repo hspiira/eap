@@ -33,7 +33,7 @@ DECISIONS = {"import", "skip"}
 def row_values(row: MemberCsvRow) -> MemberImportRowValues:
     return MemberImportRowValues(
         client_code=row.client_code,
-        employer_member_id=row.employer_member_id,
+        import_source_id=row.import_source_id,
         staff_number=row.staff_number,
         display_label=row.display_label,
         work_email=row.work_email,
@@ -45,7 +45,7 @@ def row_values(row: MemberCsvRow) -> MemberImportRowValues:
         passport_number=row.passport_number,
         status=row.status,
         relation=row.relation,
-        primary_employee_member_id=row.primary_employee_member_id,
+        primary_import_source_id=row.primary_import_source_id,
     )
 
 
@@ -67,10 +67,17 @@ class RowCheck:
         return self.state == "new" and self.data is not None
 
 
-def _member_create(row: MemberCsvRow, client: ClientEntity) -> MemberCreate:
+def _member_create(
+    row: MemberCsvRow, client: ClientEntity, *, primary_member_id: str | None
+) -> MemberCreate:
+    """Build the row's create payload.
+
+    ``employer_member_id`` is deliberately left unset: the member code is
+    always issued by the server at commit time, the same as manual creation.
+    """
     return MemberCreate(
         client_id=client.id.value,
-        employer_member_id=row.employer_member_id,
+        import_source_id=row.import_source_id,
         display_label=row.display_label or "",
         work_email=row.work_email,
         personal_email=row.personal_email,
@@ -81,8 +88,39 @@ def _member_create(row: MemberCsvRow, client: ClientEntity) -> MemberCreate:
         national_id=row.national_id,
         passport_number=row.passport_number,
         relation=MemberRelation(row.relation or MemberRelation.EMPLOYEE.value),
-        primary_employee_member_id=row.primary_employee_member_id,
+        primary_employee_member_id=primary_member_id,
     )
+
+
+async def issue_member_code(
+    member_repo: EligibleMemberRepository,
+    *,
+    tenant_id: TenantId,
+    client_id: ClientId,
+    client_code: str,
+) -> str:
+    """Issue the next ``{client code}-###`` id for this client.
+
+    Shared by manual creation and roster import so every member, no matter
+    how they are added or what relation they carry, draws from the same
+    per-client sequence.
+
+    Skips codes already taken, so a roster imported with hand-written codes
+    under the same prefix continues from the top rather than colliding.
+
+    This sees only committed rows, so it cannot resolve a race between two
+    in-flight enrolments. The unique constraint on ``employer_member_id`` is
+    what actually guarantees uniqueness; callers turn that violation into a
+    409 or a per-row failure, as fits their transport.
+    """
+    prefix = client_code.strip().upper()
+    sequence = await member_repo.next_member_sequence(tenant_id, client_id, prefix)
+    for candidate_sequence in range(sequence, sequence + 50):
+        candidate = f"{prefix}-{candidate_sequence:03d}"
+        existing = await member_repo.find_by_employer_member_id(tenant_id, client_id, candidate)
+        if existing is None:
+            return candidate
+    raise ValueError("Could not issue a member ID for this client")
 
 
 class MemberRowChecker:
@@ -126,7 +164,7 @@ class MemberRowChecker:
                 message="Company Code does not resolve to a client in this tenant",
             )
 
-        key = (client.id.value, row.employer_member_id or "")
+        key = (client.id.value, row.import_source_id or "")
         if key in self._seen:
             return RowCheck(
                 state="invalid",
@@ -135,8 +173,8 @@ class MemberRowChecker:
             )
         self._seen.add(key)
 
-        existing = await self._members.find_by_employer_member_id(
-            self._tenant_id, client.id, row.employer_member_id or ""
+        existing = await self._members.find_by_import_source_id(
+            self._tenant_id, client.id, row.import_source_id or ""
         )
         if existing is not None:
             if decision not in (None, "skip"):
@@ -147,8 +185,21 @@ class MemberRowChecker:
                 )
             return RowCheck(state="duplicate", client=client)
 
+        primary_member_id = None
+        if row.primary_import_source_id:
+            primary = await self._members.find_by_import_source_id(
+                self._tenant_id, client.id, row.primary_import_source_id
+            )
+            if primary is None:
+                return RowCheck(
+                    state="invalid",
+                    message="Primary employee's Staff_ID was not found; import the employee first",
+                    client=client,
+                )
+            primary_member_id = primary.id.value
+
         try:
-            data = _member_create(row, client)
+            data = _member_create(row, client, primary_member_id=primary_member_id)
         except (ValueError, ValidationError) as exc:
             return RowCheck(state="invalid", message=str(exc).split("\n", 1)[-1], client=client)
 
@@ -174,11 +225,20 @@ class MemberRowImporter:
         self._outbox = outbox
         self._secret = tenant_secret
 
-    async def enrol(self, row: MemberCsvRow, data: MemberCreate) -> EligibleMember:
+    async def enrol(self, row: MemberCsvRow, data: MemberCreate, client_code: str) -> EligibleMember:
+        tenant_id = TenantId(self._user.tenant_id)
+        client_id = ClientId(data.client_id)
+        employer_member_id = await issue_member_code(
+            self._members,
+            tenant_id=tenant_id,
+            client_id=client_id,
+            client_code=client_code,
+        )
         member, _ = await self._use_case.execute(
-            tenant_id=TenantId(self._user.tenant_id),
-            client_id=ClientId(data.client_id),
-            employer_member_id=row.employer_member_id or "",
+            tenant_id=tenant_id,
+            client_id=client_id,
+            employer_member_id=employer_member_id,
+            import_source_id=data.import_source_id,
             relation=data.relation,
             tenant_secret=self._secret,
             created_by=UserId(self._user.user_id),

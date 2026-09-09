@@ -82,10 +82,10 @@ const COLUMNS: ListColumn[] = [
     className: "text-center",
   },
   { header: "Member code", className: "text-fg/65" },
-  { header: "Staff number", className: "text-fg/65" },
   { header: "Client", className: "text-fg/65" },
   { header: "Relationship", sortField: "relation", className: "text-fg/65" },
   { header: "Work email", className: "text-fg/65" },
+  { header: "Phone", className: "text-fg/65" },
 ]
 
 const RELATION_OPTIONS = [
@@ -591,9 +591,6 @@ function MemberRow({
         <StatusBadge status={member.status} iconOnly />
       </TableCell>
       <TableCell className="py-1.5 text-xs text-fg/70">{member.employer_member_id}</TableCell>
-      <TableCell className="whitespace-nowrap py-1.5 text-xs text-fg/70">
-        {member.staff_number ?? "-"}
-      </TableCell>
       <TableCell className="max-w-[12rem] truncate py-1.5 text-xs text-fg/70">
         {member.client_name ? (
           <Link
@@ -610,6 +607,9 @@ function MemberRow({
       <TableCell className="py-1.5 text-xs text-fg/70">{getStatusLabel(member.relation)}</TableCell>
       <TableCell className="max-w-[14rem] truncate py-1.5 text-xs text-fg/70">
         {member.work_email ?? "-"}
+      </TableCell>
+      <TableCell className="whitespace-nowrap py-1.5 text-xs text-fg/70">
+        {member.phone ?? "-"}
       </TableCell>
       <TableCell className="py-1.5 text-right">
         <div className="flex items-center justify-end gap-0.5 opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100">

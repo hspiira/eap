@@ -432,7 +432,7 @@ function ImportRow({
         {row.display_label ?? "Unnamed"}
       </TableCell>
       <TableCell className="px-2 py-1 text-xs text-fg-muted">
-        {row.employer_member_id ?? "-"}
+        {row.import_source_id ?? "-"}
       </TableCell>
       <TableCell className="px-2 py-1 text-xs text-fg-muted">{row.staff_number ?? "-"}</TableCell>
       <TableCell className="max-w-36 truncate px-2 py-1 text-xs text-fg-muted">

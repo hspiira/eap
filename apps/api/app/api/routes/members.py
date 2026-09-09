@@ -69,6 +69,7 @@ from app.api.services.member_import import (
     MemberRowImporter,
     RowCheck,
     csv_row,
+    issue_member_code,
     row_values,
 )
 from app.application.use_cases.eligible_member_use_cases import EnrolEligibleMemberUseCase
@@ -132,7 +133,7 @@ def _member_import_row(
         row=row.row_number,
         client_code=row.client_code,
         client_name=client_name,
-        employer_member_id=row.employer_member_id,
+        import_source_id=row.import_source_id,
         staff_number=row.staff_number,
         display_label=row.display_label,
         state=state,
@@ -164,6 +165,7 @@ def _response(member: EligibleMember, client_name: str | None = None) -> MemberR
         gender=member.gender,
         phone=member.phone,
         staff_number=member.staff_number,
+        import_source_id=member.import_source_id,
         national_id=member.national_id,
         passport_number=member.passport_number,
         last_imported_at=member.last_imported_at,
@@ -283,32 +285,6 @@ async def _client_in_tenant(
     return client
 
 
-async def _issue_member_id(
-    member_repo: EligibleMemberRepository,
-    *,
-    tenant_id: TenantId,
-    client_id: ClientId,
-    client_code: str,
-) -> str:
-    """Issue the next ``{client code}-###`` id for this client.
-
-    Skips codes already taken, so a roster imported with hand-written codes
-    under the same prefix continues from the top rather than colliding.
-
-    This sees only committed rows, so it cannot resolve a race between two
-    in-flight enrolments. The unique constraint is what actually guarantees
-    uniqueness; ``create_member`` turns that violation into a 409.
-    """
-    prefix = client_code.strip().upper()
-    sequence = await member_repo.next_member_sequence(tenant_id, client_id, prefix)
-    for candidate_sequence in range(sequence, sequence + 50):
-        candidate = f"{prefix}-{candidate_sequence:03d}"
-        existing = await member_repo.find_by_employer_member_id(tenant_id, client_id, candidate)
-        if existing is None:
-            return candidate
-    raise HTTPException(status_code=409, detail="Could not issue a member ID for this client")
-
-
 async def _validate_primary(
     member_repo: EligibleMemberRepository,
     primary_id: str | None,
@@ -366,12 +342,15 @@ async def create_member(
     db: AsyncSession = Depends(get_db),
 ):
     client = await _client_in_tenant(data.client_id, current_user.tenant_id, client_repo)
-    employer_member_id = data.employer_member_id or await _issue_member_id(
-        member_repo,
-        tenant_id=TenantId(current_user.tenant_id),
-        client_id=ClientId(data.client_id),
-        client_code=client.code,
-    )
+    try:
+        employer_member_id = data.employer_member_id or await issue_member_code(
+            member_repo,
+            tenant_id=TenantId(current_user.tenant_id),
+            client_id=ClientId(data.client_id),
+            client_code=client.code,
+        )
+    except ValueError as error:
+        raise HTTPException(status_code=409, detail=str(error)) from error
     await _validate_primary(
         member_repo,
         data.primary_employee_member_id,
@@ -429,6 +408,7 @@ async def _enrol(
         gender=data.gender,
         phone=data.phone,
         staff_number=data.staff_number,
+        import_source_id=data.import_source_id,
         national_id=data.national_id,
         passport_number=data.passport_number,
     )
@@ -744,10 +724,10 @@ async def _import_row(
     db: AsyncSession,
 ) -> MemberImportRowResult:
     """Write one checked row in its own transaction and report what happened."""
-    if check.state != "new" or check.data is None:
+    if check.state != "new" or check.data is None or check.client is None:
         return MemberImportRowResult(row=row.row_number, state=check.state, message=check.message)
     try:
-        member = await importer.enrol(row, check.data)
+        member = await importer.enrol(row, check.data, check.client.code)
         await db.commit()
     except (EvexiaException, IntegrityError, ValueError) as exc:
         await db.rollback()
@@ -896,7 +876,9 @@ async def update_member(
     await _validate_roster_update(member, updated, member_repo)
     # update_roster_details mutates in place, so the diff needs the state first.
     before = deepcopy(member)
-    details = updated.model_dump(exclude={"client_id"})
+    # import_source_id is set once at creation and never revised through this
+    # general roster-details update; it stays whatever the member was created with.
+    details = updated.model_dump(exclude={"client_id", "import_source_id"})
     details["primary_employee_member_id"] = (
         EligibleMemberId(updated.primary_employee_member_id)
         if updated.primary_employee_member_id

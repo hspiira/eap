@@ -24,7 +24,7 @@ def _value(row: dict[str, str | None], *keys: str) -> str | None:
 class MemberCsvRow:
     row_number: int
     client_code: str | None
-    employer_member_id: str | None
+    import_source_id: str | None
     staff_number: str | None
     display_label: str | None
     work_email: str | None
@@ -36,7 +36,7 @@ class MemberCsvRow:
     passport_number: str | None
     status: str | None
     relation: str | None
-    primary_employee_member_id: str | None
+    primary_import_source_id: str | None
 
 
 def parse_member_csv(content: bytes) -> tuple[list[MemberCsvRow], list[dict[str, object]]]:
@@ -63,8 +63,10 @@ def parse_member_csv(content: bytes) -> tuple[list[MemberCsvRow], list[dict[str,
             client_code=_value(row, "company_code", "client_code"),
             # Staff Number is deliberately not an identity fallback.  It is often
             # payroll-scoped and may be blank/reused; only an explicit Staff_ID or
-            # employer_member_id is safe for idempotent roster imports.
-            employer_member_id=_value(row, "staff_id", "employer_member_id"),
+            # import_source_id is safe for idempotent roster imports. This is the
+            # employer's own reference for matching re-imports; the member code
+            # itself is always assigned by the server, never taken from the sheet.
+            import_source_id=_value(row, "staff_id", "import_source_id"),
             staff_number=_value(row, "staff_number"),
             display_label=_value(row, "name_of_employee", "display_label", "name"),
             work_email=_value(row, "email_address", "work_email", "email"),
@@ -76,8 +78,8 @@ def parse_member_csv(content: bytes) -> tuple[list[MemberCsvRow], list[dict[str,
             passport_number=_value(row, "passport_number", "passport"),
             status=_value(row, "status"),
             relation=_value(row, "relation", "member_relation"),
-            primary_employee_member_id=_value(
-                row, "primary_staff_id", "primary_employee_member_id"
+            primary_import_source_id=_value(
+                row, "primary_staff_id", "primary_import_source_id"
             ),
         )
         rows.append(parsed)
@@ -85,7 +87,7 @@ def parse_member_csv(content: bytes) -> tuple[list[MemberCsvRow], list[dict[str,
             issues.append(
                 {"row": row_number, "field": "Company Code", "message": "Client code is required"}
             )
-        if not parsed.employer_member_id or parsed.employer_member_id.endswith("-"):
+        if not parsed.import_source_id or parsed.import_source_id.endswith("-"):
             issues.append(
                 {"row": row_number, "field": "Staff_ID", "message": "Stable Staff_ID is required"}
             )

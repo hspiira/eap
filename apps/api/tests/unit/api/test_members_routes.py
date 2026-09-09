@@ -77,6 +77,8 @@ async def api():
     )
     state.members.get_by_id.return_value = member()
     state.members.find_by_employer_member_id.return_value = None
+    state.members.find_by_import_source_id.return_value = None
+    state.members.next_member_sequence.return_value = 1
     state.members.list_for_primary.return_value = []
     state.members.list_all.return_value = []
     state.members.count.return_value = 0
@@ -188,9 +190,9 @@ async def test_create_records_optional_identification_numbers(api):
 
 async def test_roster_preview_exposes_duplicate_as_safe_default_skip(api):
     api.clients.get_by_code.return_value = SimpleNamespace(
-        id=ClientId("c1"), name="Acme", tenant_id=TenantId("t1")
+        id=ClientId("c1"), name="Acme", code="ACME", tenant_id=TenantId("t1")
     )
-    api.members.find_by_employer_member_id.return_value = member()
+    api.members.find_by_import_source_id.return_value = member()
 
     response = await api.http.post(
         "/members/import?dry_run=true",
@@ -213,7 +215,7 @@ async def test_roster_preview_exposes_duplicate_as_safe_default_skip(api):
 
 async def test_roster_preview_honours_explicit_skip_for_new_rows(api):
     api.clients.get_by_code.return_value = SimpleNamespace(
-        id=ClientId("c1"), name="Acme", tenant_id=TenantId("t1")
+        id=ClientId("c1"), name="Acme", code="ACME", tenant_id=TenantId("t1")
     )
 
     response = await api.http.post(
@@ -237,7 +239,7 @@ async def test_roster_preview_honours_explicit_skip_for_new_rows(api):
 
 async def test_roster_preview_preserves_parser_issue_fields(api):
     api.clients.get_by_code.return_value = SimpleNamespace(
-        id=ClientId("c1"), name="Acme", tenant_id=TenantId("t1")
+        id=ClientId("c1"), name="Acme", code="ACME", tenant_id=TenantId("t1")
     )
     response = await api.http.post(
         "/members/import?dry_run=true",
@@ -261,7 +263,7 @@ def commit_row(row=2, **values):
         "row": row,
         "values": {
             "client_code": "ACME",
-            "employer_member_id": "HR-1",
+            "import_source_id": "HR-1",
             "display_label": "Amina",
             **values,
         },
@@ -270,7 +272,7 @@ def commit_row(row=2, **values):
 
 async def test_roster_preview_returns_the_values_the_commit_step_replays(api):
     api.clients.get_by_code.return_value = SimpleNamespace(
-        id=ClientId("c1"), name="Acme", tenant_id=TenantId("t1")
+        id=ClientId("c1"), name="Acme", code="ACME", tenant_id=TenantId("t1")
     )
 
     response = await api.http.post(
@@ -287,7 +289,7 @@ async def test_roster_preview_returns_the_values_the_commit_step_replays(api):
     assert response.status_code == 200, response.text
     assert response.json()["rows"][0]["values"] == {
         "client_code": "ACME",
-        "employer_member_id": "HR-1",
+        "import_source_id": "HR-1",
         "staff_number": None,
         "display_label": "Amina",
         "work_email": None,
@@ -299,13 +301,13 @@ async def test_roster_preview_returns_the_values_the_commit_step_replays(api):
         "passport_number": None,
         "status": None,
         "relation": None,
-        "primary_employee_member_id": None,
+        "primary_import_source_id": None,
     }
 
 
 async def test_import_commit_writes_every_row_in_its_own_transaction(api):
     api.clients.get_by_code.return_value = SimpleNamespace(
-        id=ClientId("c1"), name="Acme", tenant_id=TenantId("t1")
+        id=ClientId("c1"), name="Acme", code="ACME", tenant_id=TenantId("t1")
     )
 
     response = await api.http.post(
@@ -313,7 +315,7 @@ async def test_import_commit_writes_every_row_in_its_own_transaction(api):
         json={
             "rows": [
                 commit_row(2),
-                commit_row(3, employer_member_id="HR-2", display_label="Bosco"),
+                commit_row(3, import_source_id="HR-2", display_label="Bosco"),
             ]
         },
     )
@@ -325,7 +327,7 @@ async def test_import_commit_writes_every_row_in_its_own_transaction(api):
 
 async def test_import_commit_keeps_going_after_a_row_fails(api):
     api.clients.get_by_code.return_value = SimpleNamespace(
-        id=ClientId("c1"), name="Acme", tenant_id=TenantId("t1")
+        id=ClientId("c1"), name="Acme", code="ACME", tenant_id=TenantId("t1")
     )
     saves = {"n": 0}
 
@@ -341,7 +343,7 @@ async def test_import_commit_keeps_going_after_a_row_fails(api):
         json={
             "rows": [
                 commit_row(2),
-                commit_row(3, employer_member_id="HR-2", display_label="Bosco"),
+                commit_row(3, import_source_id="HR-2", display_label="Bosco"),
             ]
         },
     )
@@ -357,9 +359,9 @@ async def test_import_commit_keeps_going_after_a_row_fails(api):
 
 async def test_import_commit_never_overwrites_an_existing_member(api):
     api.clients.get_by_code.return_value = SimpleNamespace(
-        id=ClientId("c1"), name="Acme", tenant_id=TenantId("t1")
+        id=ClientId("c1"), name="Acme", code="ACME", tenant_id=TenantId("t1")
     )
-    api.members.find_by_employer_member_id.return_value = member()
+    api.members.find_by_import_source_id.return_value = member()
 
     response = await api.http.post("/members/import/commit", json={"rows": [commit_row()]})
 

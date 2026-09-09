@@ -5,7 +5,7 @@ def test_parser_requires_explicit_stable_staff_id():
     rows, issues = parse_member_csv(
         b"Company Code,Staff_ID,Staff Number,Name of Employee\nACME,,12345,Jane Doe\n"
     )
-    assert rows[0].employer_member_id is None
+    assert rows[0].import_source_id is None
     assert any(issue["field"] == "Staff_ID" for issue in issues)
 
 

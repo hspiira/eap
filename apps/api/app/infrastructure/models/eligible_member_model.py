@@ -32,6 +32,15 @@ class EligibleMemberModel(CuidMixin, TenantMixin, Base, TimestampMixin):
             "employer_member_id",
             name="uq_eligible_member_employer_id_per_client",
         ),
+        # Multiple NULLs are allowed under a UNIQUE constraint (standard SQL
+        # semantics), so manually created members (no import_source_id) never
+        # collide with each other here.
+        UniqueConstraint(
+            "tenant_id",
+            "client_id",
+            "import_source_id",
+            name="uq_eligible_member_import_source_per_client",
+        ),
         # A superset of the primary key, so it adds no constraint of its own.
         # It exists so service_sessions can carry a composite foreign key and
         # have the database refuse a member from a different client.
@@ -66,6 +75,7 @@ class EligibleMemberModel(CuidMixin, TenantMixin, Base, TimestampMixin):
     gender: Mapped[MemberGender | None] = mapped_column(String(30), nullable=True)
     phone: Mapped[str | None] = mapped_column(String(50), nullable=True)
     staff_number: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    import_source_id: Mapped[str | None] = mapped_column(String(255), nullable=True, index=True)
     national_id: Mapped[str | None] = mapped_column(String(100), nullable=True)
     passport_number: Mapped[str | None] = mapped_column(String(100), nullable=True)
     last_imported_at: Mapped[datetime | None] = mapped_column(

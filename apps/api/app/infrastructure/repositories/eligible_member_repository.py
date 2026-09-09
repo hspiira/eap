@@ -70,6 +70,7 @@ class EligibleMemberRepositoryImpl(EligibleMemberRepository):
             existing.gender = new_model.gender
             existing.phone = new_model.phone
             existing.staff_number = new_model.staff_number
+            existing.import_source_id = new_model.import_source_id
             existing.national_id = new_model.national_id
             existing.passport_number = new_model.passport_number
             existing.last_imported_at = new_model.last_imported_at
@@ -294,6 +295,20 @@ class EligibleMemberRepositoryImpl(EligibleMemberRepository):
             EligibleMemberModel.tenant_id == tenant_id.value,
             EligibleMemberModel.client_id == client_id.value,
             EligibleMemberModel.employer_member_id == employer_member_id,
+        )
+        row = (await self._session.execute(stmt)).scalar_one_or_none()
+        return EligibleMemberMapper.to_entity(row) if row else None
+
+    async def find_by_import_source_id(
+        self,
+        tenant_id: TenantId,
+        client_id: ClientId,
+        import_source_id: str,
+    ) -> EligibleMember | None:
+        stmt = select(EligibleMemberModel).where(
+            EligibleMemberModel.tenant_id == tenant_id.value,
+            EligibleMemberModel.client_id == client_id.value,
+            EligibleMemberModel.import_source_id == import_source_id,
         )
         row = (await self._session.execute(stmt)).scalar_one_or_none()
         return EligibleMemberMapper.to_entity(row) if row else None

@@ -15,6 +15,8 @@ export interface MemberCreateRequest {
   employer_member_id?: string | null
   relation: MemberRelation
   primary_employee_member_id?: string | null
+  /** Optional. The employer's own reference (e.g. a roster Staff_ID). Never the member code. */
+  import_source_id?: string | null
   work_email?: string | null
   personal_email?: string | null
   display_label: string
@@ -45,7 +47,7 @@ export interface MemberNextOfKinRequest {
 /** The parsed CSV values the preview echoes back, replayed row by row on confirm. */
 export interface MemberImportRowValues {
   client_code: string | null
-  employer_member_id: string | null
+  import_source_id: string | null
   staff_number: string | null
   display_label: string | null
   work_email: string | null
@@ -57,14 +59,14 @@ export interface MemberImportRowValues {
   passport_number: string | null
   status: string | null
   relation: string | null
-  primary_employee_member_id: string | null
+  primary_import_source_id: string | null
 }
 
 export interface MemberImportRow {
   row: number
   client_code: string | null
   client_name: string | null
-  employer_member_id: string | null
+  import_source_id: string | null
   staff_number?: string | null
   display_label: string | null
   state: string

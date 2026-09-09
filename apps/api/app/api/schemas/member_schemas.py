@@ -66,6 +66,14 @@ class MemberCreate(BaseModel):
     )
     relation: MemberRelation
     primary_employee_member_id: str | None = None
+    import_source_id: SanitizedStr | None = Field(
+        None,
+        max_length=255,
+        description=(
+            "Optional. The employer's own reference for this row (e.g. a roster "
+            "Staff_ID), used to match rows on re-import. Never the member code."
+        ),
+    )
     work_email: EmailStr | None = None
     personal_email: EmailStr | None = None
     display_label: SanitizedStr = Field(..., min_length=1, max_length=255)
@@ -153,6 +161,7 @@ class MemberResponse(BaseModel):
     gender: MemberGender | None
     phone: str | None
     staff_number: str | None = None
+    import_source_id: str | None = None
     national_id: str | None = None
     passport_number: str | None = None
     last_imported_at: datetime | None
@@ -224,7 +233,7 @@ class MemberImportRowValues(BaseModel):
     """
 
     client_code: str | None = None
-    employer_member_id: str | None = None
+    import_source_id: str | None = None
     staff_number: str | None = None
     display_label: str | None = None
     work_email: str | None = None
@@ -236,7 +245,7 @@ class MemberImportRowValues(BaseModel):
     passport_number: str | None = None
     status: str | None = None
     relation: str | None = None
-    primary_employee_member_id: str | None = None
+    primary_import_source_id: str | None = None
 
     model_config = ConfigDict(extra="forbid")
 
@@ -245,7 +254,7 @@ class MemberImportRowPreview(BaseModel):
     row: int
     client_code: str | None
     client_name: str | None
-    employer_member_id: str | None
+    import_source_id: str | None
     staff_number: str | None = None
     display_label: str | None
     state: str
