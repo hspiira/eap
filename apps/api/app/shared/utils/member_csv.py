@@ -78,9 +78,7 @@ def parse_member_csv(content: bytes) -> tuple[list[MemberCsvRow], list[dict[str,
             passport_number=_value(row, "passport_number", "passport"),
             status=_value(row, "status"),
             relation=_value(row, "relation", "member_relation"),
-            primary_import_source_id=_value(
-                row, "primary_staff_id", "primary_import_source_id"
-            ),
+            primary_import_source_id=_value(row, "primary_staff_id", "primary_import_source_id"),
         )
         rows.append(parsed)
         if not parsed.client_code:

@@ -225,7 +225,9 @@ class MemberRowImporter:
         self._outbox = outbox
         self._secret = tenant_secret
 
-    async def enrol(self, row: MemberCsvRow, data: MemberCreate, client_code: str) -> EligibleMember:
+    async def enrol(
+        self, row: MemberCsvRow, data: MemberCreate, client_code: str
+    ) -> EligibleMember:
         tenant_id = TenantId(self._user.tenant_id)
         client_id = ClientId(data.client_id)
         employer_member_id = await issue_member_code(
