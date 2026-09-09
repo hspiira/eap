@@ -326,7 +326,6 @@ class TestAuditChain:
             params={"tenant_id": TENANT_ID},
             json={
                 "client_id": CLIENT_ID,
-                "employer_member_id": "EMP-1",
                 "relation": "Employee",
                 "display_label": "Test Member",
             },
