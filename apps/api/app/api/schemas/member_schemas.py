@@ -62,7 +62,10 @@ class MemberCreate(BaseModel):
         None,
         min_length=1,
         max_length=255,
-        description="Optional. Left blank, the server issues {client code}-001, -002, and so on.",
+        description=(
+            "Do not set on create; the server always issues {client code}-001, -002, "
+            "and so on. Reused internally to revalidate a PATCH that changes it."
+        ),
     )
     relation: MemberRelation
     primary_employee_member_id: str | None = None

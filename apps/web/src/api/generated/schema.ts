@@ -10989,7 +10989,7 @@ export interface components {
             display_label: string;
             /**
              * Employer Member Id
-             * @description Optional. Left blank, the server issues {client code}-001, -002, and so on.
+             * @description Do not set on create; the server always issues {client code}-001, -002, and so on. Reused internally to revalidate a PATCH that changes it.
              */
             employer_member_id?: string | null;
             gender?: components["schemas"]["MemberGender"] | null;

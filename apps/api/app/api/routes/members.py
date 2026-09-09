@@ -342,8 +342,13 @@ async def create_member(
     db: AsyncSession = Depends(get_db),
 ):
     client = await _client_in_tenant(data.client_id, current_user.tenant_id, client_repo)
+    if data.employer_member_id:
+        raise HTTPException(
+            status_code=422,
+            detail="Member code is issued by the server and cannot be set on create",
+        )
     try:
-        employer_member_id = data.employer_member_id or await issue_member_code(
+        employer_member_id = await issue_member_code(
             member_repo,
             tenant_id=TenantId(current_user.tenant_id),
             client_id=ClientId(data.client_id),

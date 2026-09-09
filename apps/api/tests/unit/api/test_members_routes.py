@@ -118,7 +118,6 @@ async def api():
 
 CREATE = {
     "client_id": "c1",
-    "employer_member_id": "HR-1",
     "display_label": "Amina",
     "relation": "Employee",
 }
@@ -141,9 +140,8 @@ async def test_create_commits_roster_subject_link_and_audit_without_pii(api):
 
 async def test_create_without_a_code_issues_the_next_client_sequence(api):
     api.members.next_member_sequence.return_value = 4
-    payload = {key: value for key, value in CREATE.items() if key != "employer_member_id"}
 
-    response = await api.http.post("/members", json=payload)
+    response = await api.http.post("/members", json=CREATE)
 
     assert response.status_code == 201, response.text
     assert response.json()["employer_member_id"] == "ACM-004"
@@ -154,20 +152,19 @@ async def test_create_skips_a_code_already_taken(api):
     api.members.next_member_sequence.return_value = 1
     # Taken, free, then the route and the use case each re-check the issued code.
     api.members.find_by_employer_member_id.side_effect = [member("ACM-001"), None, None, None]
-    payload = {key: value for key, value in CREATE.items() if key != "employer_member_id"}
 
-    response = await api.http.post("/members", json=payload)
+    response = await api.http.post("/members", json=CREATE)
 
     assert response.status_code == 201, response.text
     assert response.json()["employer_member_id"] == "ACM-002"
 
 
-async def test_create_keeps_an_explicit_member_code(api):
-    response = await api.http.post("/members", json=CREATE)
+async def test_create_rejects_an_explicit_member_code(api):
+    response = await api.http.post("/members", json={**CREATE, "employer_member_id": "HR-1"})
 
-    assert response.status_code == 201, response.text
-    assert response.json()["employer_member_id"] == "HR-1"
+    assert response.status_code == 422, response.text
     api.members.next_member_sequence.assert_not_awaited()
+    api.members.save.assert_not_awaited()
 
 
 async def test_create_records_optional_identification_numbers(api):

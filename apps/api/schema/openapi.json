@@ -9428,7 +9428,7 @@
                 "type": "null"
               }
             ],
-            "description": "Optional. Left blank, the server issues {client code}-001, -002, and so on.",
+            "description": "Do not set on create; the server always issues {client code}-001, -002, and so on. Reused internally to revalidate a PATCH that changes it.",
             "title": "Employer Member Id"
           },
           "gender": {
