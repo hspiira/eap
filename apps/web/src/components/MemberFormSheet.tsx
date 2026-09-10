@@ -57,6 +57,12 @@ const memberSchema = z
     staff_number: optionalText(),
     national_id: optionalText(),
     passport_number: optionalText(),
+    job_title: optionalText(),
+    job_classification: optionalText(),
+    skill: optionalText(),
+    department: optionalText(),
+    unit: optionalText(),
+    employment_type: optionalText(),
   })
   .superRefine((value, ctx) => {
     if (value.relation !== MemberRelation.EMPLOYEE && !value.primary_employee_member_id?.trim()) {
@@ -83,6 +89,12 @@ const EMPTY: MemberFormValues = {
   staff_number: "",
   national_id: "",
   passport_number: "",
+  job_title: "",
+  job_classification: "",
+  skill: "",
+  department: "",
+  unit: "",
+  employment_type: "",
 }
 
 interface MemberFormSheetProps {
@@ -155,6 +167,8 @@ export function MemberFormSheet({
       <MemberIdentifierFields form={form} />
 
       <MemberContactFields form={form} />
+
+      <MemberEmploymentFields form={form} />
     </SheetForm>
   )
 }
@@ -173,6 +187,12 @@ function toValues(member: Member): MemberFormValues {
     staff_number: member.staff_number ?? "",
     national_id: member.national_id ?? "",
     passport_number: member.passport_number ?? "",
+    job_title: member.employment?.job_title ?? "",
+    job_classification: member.employment?.job_classification ?? "",
+    skill: member.employment?.skill ?? "",
+    department: member.employment?.department ?? "",
+    unit: member.employment?.unit ?? "",
+    employment_type: member.employment?.employment_type ?? "",
   }
 }
 
@@ -193,12 +213,25 @@ function toRequest(values: MemberFormValues) {
     staff_number: optionalValue(values.staff_number),
     national_id: optionalValue(values.national_id),
     passport_number: optionalValue(values.passport_number),
+    employment: toEmployment(values),
   }
 }
 
 function optionalValue(value: string | undefined) {
   const normalized = value?.trim()
   return normalized || null
+}
+
+function toEmployment(values: MemberFormValues) {
+  const employment = {
+    job_title: optionalValue(values.job_title),
+    job_classification: optionalValue(values.job_classification),
+    skill: optionalValue(values.skill),
+    department: optionalValue(values.department),
+    unit: optionalValue(values.unit),
+    employment_type: optionalValue(values.employment_type),
+  }
+  return Object.values(employment).some((value) => value !== null) ? employment : null
 }
 
 function omitClientId({ client_id: _clientId, ...data }: ReturnType<typeof toRequest>) {
@@ -448,6 +481,50 @@ function MemberContactFields({ form }: { form: UseEntityFormSheetReturn<MemberFo
       >
         <Input id="member-personal-email" type="email" {...form.register("personal_email")} />
       </FormField>
+    </FormSection>
+  )
+}
+
+function MemberEmploymentFields({ form }: { form: UseEntityFormSheetReturn<MemberFormValues> }) {
+  const errors = form.formState.errors
+  return (
+    <FormSection
+      title="Employment"
+      description="Optional workforce details from the employer, not used for eligibility."
+    >
+      <div className="grid gap-4 sm:grid-cols-2">
+        <FormField label="Job title" htmlFor="member-job-title" error={errors.job_title?.message}>
+          <Input id="member-job-title" {...form.register("job_title")} />
+        </FormField>
+        <FormField
+          label="Job classification"
+          htmlFor="member-job-classification"
+          error={errors.job_classification?.message}
+        >
+          <Input id="member-job-classification" {...form.register("job_classification")} />
+        </FormField>
+        <FormField label="Skill" htmlFor="member-skill" error={errors.skill?.message}>
+          <Input id="member-skill" {...form.register("skill")} />
+        </FormField>
+        <FormField
+          label="Department"
+          htmlFor="member-department"
+          error={errors.department?.message}
+        >
+          <Input id="member-department" {...form.register("department")} />
+        </FormField>
+        <FormField label="Unit" htmlFor="member-unit" error={errors.unit?.message}>
+          <Input id="member-unit" {...form.register("unit")} />
+        </FormField>
+        <FormField
+          label="Contract type"
+          htmlFor="member-employment-type"
+          hint="Permanent, FTC, etc. Not the client's commercial contract."
+          error={errors.employment_type?.message}
+        >
+          <Input id="member-employment-type" {...form.register("employment_type")} />
+        </FormField>
+      </div>
     </FormSection>
   )
 }
