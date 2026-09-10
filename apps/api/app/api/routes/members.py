@@ -831,10 +831,12 @@ async def stage_member_import(
     batch.mark_staged(at=now)
     await imports.save_batch(batch)
 
-    checker = MemberRowChecker(current_user.tenant_id, client_repo, member_repo)
+    checker = MemberRowChecker(current_user.tenant_id, client_repo, member_repo, imports)
     entities: list[MemberImportRowEntity] = []
     for row in rows:
-        check = await checker.check(row, parse_error=parse_errors.get(row.row_number))
+        check = await checker.check(
+            row, parse_error=parse_errors.get(row.row_number), file_hash=file_hash
+        )
         entities.append(
             build_row_entity(
                 row,
@@ -1044,7 +1046,7 @@ async def apply_member_import(
             http_status=409,
         )
     tenant = TenantId(current_user.tenant_id)
-    checker = MemberRowChecker(current_user.tenant_id, client_repo, member_repo)
+    checker = MemberRowChecker(current_user.tenant_id, client_repo, member_repo, imports)
     importer = _importer(current_user, member_repo, subject_repo, link_repo, outbox)
     tally = await _apply_rows(tenant, batch.id, checker, importer, imports, db)
     batch.mark_applied(UserId(current_user.user_id), at=utc_now(), accepted_count=tally["imported"])
