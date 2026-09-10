@@ -9,7 +9,7 @@ that already landed.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import date, datetime
+from datetime import datetime
 
 from pydantic import ValidationError
 
@@ -27,8 +27,7 @@ from app.domain.repositories.outbox_repository import OutboxRepository
 from app.domain.value_objects.core import ClientId, EligibleMemberId, Email, TenantId, UserId
 from app.domain.value_objects.ids import MemberImportBatchId, MemberImportRowId
 from app.shared.handlers.audit_event_handler import AuditEventHandler
-from app.shared.utils.member_csv import MemberCsvRow, is_employee_relation
-from app.shared.utils.replay_key import DUPLICATE_PREFIX, deferred_key
+from app.shared.utils.member_csv import MemberCsvRow, is_employee_relation, parse_roster_date
 from app.shared.utils.route_audit_helper import audit_change
 
 DECISIONS = {"import", "skip"}
@@ -67,14 +66,28 @@ def build_row_entity(
     A duplicate or invalid row can never be imported regardless of decision
     (`MemberImportRowEntity.set_decision` enforces this), so its stored
     decision is just a safe default and is never read.
+
+    Only a New row's replay key uses the identity form (`key:{client}:{id}`):
+    it is the one row actually claiming that Staff_ID. Any other outcome
+    falls back to a key scoped to this file and row number instead of also
+    computing the identity form, even when the row does carry that Staff_ID.
+    The whole point of a Duplicate or Invalid classification is that this row
+    is NOT the one holding that key; someone else already does, or another
+    row earlier in this same file already claimed it, and reusing that exact
+    string collides with whichever row legitimately holds it.
     """
     client_id = check.client.id if check.client else None
+    replay_key = (
+        row_replay_key(row, client_id, file_hash)
+        if check.state == "new"
+        else f"file:{file_hash}:row:{row.row_number}"
+    )
     return MemberImportRowEntity(
         id=row_id,
         batch_id=batch_id,
         tenant_id=tenant_id,
         row_number=row.row_number,
-        replay_key=check.replay_key or row_replay_key(row, client_id, file_hash),
+        replay_key=replay_key,
         outcome=_OUTCOME_BY_STATE[check.state],
         decision="import" if check.state == "new" else "skip",
         created_at=now,
@@ -138,7 +151,6 @@ class RowCheck:
     message: str | None = None
     client: ClientEntity | None = None
     data: MemberCreate | None = None
-    replay_key: str | None = None
 
     @property
     def importable(self) -> bool:
@@ -160,7 +172,7 @@ def _member_create(
         work_email=row.work_email,
         personal_email=row.personal_email,
         gender=MemberGender(row.gender.title()) if row.gender else None,
-        date_of_birth=date.fromisoformat(row.date_of_birth) if row.date_of_birth else None,
+        date_of_birth=parse_roster_date(row.date_of_birth) if row.date_of_birth else None,
         phone=row.phone,
         staff_number=row.staff_number,
         national_id=row.national_id,
@@ -214,6 +226,16 @@ class MemberRowChecker:
 
     An instance remembers the Staff_IDs it has already seen, so a file that
     repeats one inside the same client is caught before either row is written.
+
+    Every per-row lookup (client, existing member, staged-elsewhere row) is
+    memoized on this instance, so a caller processing a whole file should
+    call `preload()` once first: it fills these same caches with a handful
+    of batched queries instead of leaving `check()` to make one query per
+    row. Without it, staging thousands of rows one at a time was slow enough
+    to time out a serverless function; `preload()` is optional exactly so
+    `apply`'s per-row re-check, which needs live data rather than a bulk
+    snapshot, can keep calling `check()` without it and still benefit from
+    caching within its own run (e.g. several dependants sharing one primary).
     """
 
     def __init__(
@@ -228,6 +250,47 @@ class MemberRowChecker:
         self._members = member_repo
         self._imports = imports_repo
         self._seen: set[tuple[str, str]] = set()
+        self._clients_by_code: dict[str, ClientEntity | None] = {}
+        self._members_by_id: dict[tuple[str, str], EligibleMember | None] = {}
+        self._staged_rows_by_key: dict[str, MemberImportRowEntity | None] = {}
+
+    async def preload(self, rows: list[MemberCsvRow], file_hash: str | None) -> None:
+        """Batch every lookup `check()` would otherwise repeat once per row."""
+        for code in {row.client_code for row in rows if row.client_code}:
+            self._clients_by_code.setdefault(
+                code, await self._clients.get_by_code(self._tenant_id, code)
+            )
+
+        wanted_by_client: dict[str, set[str]] = {}
+        for row in rows:
+            client = self._clients_by_code.get(row.client_code or "")
+            if client is None:
+                continue
+            wanted = wanted_by_client.setdefault(client.id.value, set())
+            if row.import_source_id:
+                wanted.add(row.import_source_id)
+            if row.primary_import_source_id:
+                wanted.add(row.primary_import_source_id)
+        for client_id_value, ids in wanted_by_client.items():
+            found = await self._members.find_by_import_source_ids(
+                self._tenant_id, ClientId(client_id_value), sorted(ids)
+            )
+            for import_id in ids:
+                self._members_by_id.setdefault((client_id_value, import_id), found.get(import_id))
+
+        if file_hash is None:
+            return
+        keys = {
+            row_replay_key(row, client.id, file_hash)
+            for row in rows
+            if row.import_source_id
+            and (client := self._clients_by_code.get(row.client_code or "")) is not None
+        }
+        if not keys:
+            return
+        found_rows = await self._imports.find_rows_by_replay_keys(self._tenant_id, sorted(keys))
+        for key in keys:
+            self._staged_rows_by_key.setdefault(key, found_rows.get(key))
 
     async def check(
         self,
@@ -270,7 +333,22 @@ class MemberRowChecker:
     async def _client_for(self, row: MemberCsvRow) -> ClientEntity | None:
         if not row.client_code:
             return None
-        return await self._clients.get_by_code(self._tenant_id, row.client_code)
+        if row.client_code not in self._clients_by_code:
+            self._clients_by_code[row.client_code] = await self._clients.get_by_code(
+                self._tenant_id, row.client_code
+            )
+        return self._clients_by_code[row.client_code]
+
+    async def _member_by_import_id(
+        self, client: ClientEntity, import_source_id: str
+    ) -> EligibleMember | None:
+        """Cached per (client, id): `preload()` fills these in bulk; a miss falls back to one query."""
+        key = (client.id.value, import_source_id)
+        if key not in self._members_by_id:
+            self._members_by_id[key] = await self._members.find_by_import_source_id(
+                self._tenant_id, client.id, import_source_id
+            )
+        return self._members_by_id[key]
 
     def _claim_staff_id(self, client: ClientEntity, row: MemberCsvRow) -> RowCheck | None:
         """Records the row's Staff_ID, rejecting a second use of it in the same file.
@@ -301,9 +379,7 @@ class MemberRowChecker:
         """
         if not row.import_source_id:
             return None
-        existing = await self._members.find_by_import_source_id(
-            self._tenant_id, client.id, row.import_source_id
-        )
+        existing = await self._member_by_import_id(client, row.import_source_id)
         if existing is None:
             return None
         if decision not in (None, "skip"):
@@ -330,14 +406,17 @@ class MemberRowChecker:
         if not row.import_source_id:
             return None
         key = row_replay_key(row, client.id, file_hash)
-        existing = await self._imports.find_row_by_replay_key(self._tenant_id, key)
+        if key not in self._staged_rows_by_key:
+            self._staged_rows_by_key[key] = await self._imports.find_row_by_replay_key(
+                self._tenant_id, key
+            )
+        existing = self._staged_rows_by_key[key]
         if existing is None:
             return None
         return RowCheck(
             state="duplicate",
             message=f"Already staged as row {existing.row_number} of batch {existing.batch_id.value}",
             client=client,
-            replay_key=deferred_key(DUPLICATE_PREFIX, existing.batch_id.value, key),
         )
 
     async def _primary_member_id(
@@ -352,9 +431,7 @@ class MemberRowChecker:
                 message="Primary Staff ID is required for a beneficiary",
                 client=client,
             )
-        primary = await self._members.find_by_import_source_id(
-            self._tenant_id, client.id, row.primary_import_source_id
-        )
+        primary = await self._member_by_import_id(client, row.primary_import_source_id)
         if primary is None:
             return None, RowCheck(
                 state="invalid",

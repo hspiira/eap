@@ -6,18 +6,30 @@
 
 const EMPTY = "-"
 
-/** Locale short date, e.g. "7/14/2026". Returns a placeholder for nullish or invalid input. */
+/**
+ * Fixed to en-GB (dd/mm/yyyy, 24-hour) rather than the visitor's own browser
+ * locale. A bare `toLocaleDateString()` depends on the browser reporting a
+ * region, not just a language; a browser set to generic "English" resolves
+ * to en-US and silently renders mm/dd/yyyy, which reads as a different date
+ * for most day-of-month values above 12. One fixed, unambiguous format for
+ * every viewer beats a per-browser guess.
+ */
+const DATE_LOCALE = "en-GB"
+
+/** dd/mm/yyyy, e.g. "14/07/2026". Returns a placeholder for nullish or invalid input. */
 export function formatDate(value: string | number | Date | null | undefined): string {
   if (value == null || value === "") return EMPTY
   const d = new Date(value)
-  return Number.isNaN(d.getTime()) ? EMPTY : d.toLocaleDateString()
+  return Number.isNaN(d.getTime()) ? EMPTY : d.toLocaleDateString(DATE_LOCALE)
 }
 
-/** Locale date + time. Returns a placeholder for nullish or invalid input. */
+/** dd/mm/yyyy, 24-hour time. Returns a placeholder for nullish or invalid input. */
 export function formatDateTime(value: string | number | Date | null | undefined): string {
   if (value == null || value === "") return EMPTY
   const d = new Date(value)
-  return Number.isNaN(d.getTime()) ? EMPTY : d.toLocaleString()
+  return Number.isNaN(d.getTime())
+    ? EMPTY
+    : d.toLocaleString(DATE_LOCALE, { hour12: false }).replace(",", "")
 }
 
 /**
@@ -76,12 +88,12 @@ export function toDayKey(value: string | null | undefined): string {
   return m ? `${m[1]}-${m[2]}-${m[3]}` : ""
 }
 
-/** Locale date for a calendar day held on the wire. */
+/** dd/mm/yyyy for a calendar day held on the wire. */
 export function formatDay(value: string | null | undefined): string {
   const key = toDayKey(value)
   if (!key) return EMPTY
   const [y, m, d] = key.split("-").map(Number)
-  return new Date(y, m - 1, d).toLocaleDateString()
+  return new Date(y, m - 1, d).toLocaleDateString(DATE_LOCALE)
 }
 
 /** Whole days from one calendar day to another. Null if either cannot be read. */

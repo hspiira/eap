@@ -6,6 +6,7 @@ import csv
 import io
 import re
 from dataclasses import dataclass
+from datetime import date
 
 
 def _key(value: str) -> str:
@@ -18,6 +19,39 @@ def _value(row: dict[str, str | None], *keys: str) -> str | None:
         if value and value.casefold() not in {"n/a", "#n/a", "na", "null", "-"}:
             return value
     return None
+
+
+_DATE_PARTS = re.compile(r"[/-]")
+
+
+def parse_roster_date(value: str) -> date:
+    """A calendar date from free-form roster text.
+
+    Tries ISO (`YYYY-MM-DD`) first, since it is unambiguous and is what the
+    downloadable template uses. Otherwise splits on `/` or `-` and resolves
+    day-first: `03/04/2026` reads as 3 April, not March 4, matching the
+    region this importer serves. Falls back to month-first only when the
+    day-first reading is not a real calendar date (`12/25/2026` cannot be
+    day 12 of month 25) -- there is no way to tell a genuinely ambiguous
+    date apart from a mistyped one, so day-first always wins when both read.
+    """
+    text = value.strip()
+    try:
+        return date.fromisoformat(text)
+    except ValueError:
+        pass
+    parts = [part.strip() for part in _DATE_PARTS.split(text)]
+    if len(parts) != 3 or len(parts[2]) != 4:
+        raise ValueError(f"Unrecognised date: {value!r}")
+    first, second, year = parts
+    try:
+        return date(int(year), int(second), int(first))
+    except ValueError:
+        pass
+    try:
+        return date(int(year), int(first), int(second))
+    except ValueError:
+        raise ValueError(f"Unrecognised date: {value!r}") from None
 
 
 def is_employee_relation(relation: str | None) -> bool:

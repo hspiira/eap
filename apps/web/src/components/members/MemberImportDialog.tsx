@@ -152,6 +152,7 @@ function ImportControls({
   staging,
   error,
   canDiscardStuck,
+  showFieldHelp,
   onPick,
   onRefresh,
   onSelectFile,
@@ -164,6 +165,8 @@ function ImportControls({
   staging: boolean
   error: string | null
   canDiscardStuck: boolean
+  /** Hidden once a batch is staged, to give the review table the space back. */
+  showFieldHelp: boolean
   onPick: () => void
   onRefresh: () => void
   onSelectFile: (file: File | null) => void
@@ -222,13 +225,15 @@ function ImportControls({
           Template
         </Button>
       </div>
-      <p className="text-xs text-fg-muted">
-        Company Code resolves the client. Supported fields: Company Code, Staff_ID, Staff Number,
-        Name of Employee, Email Address, Personal Email, Date of Birth (YYYY-MM-DD), Gender, Phone,
-        National ID, Passport Number, Status, Relation, and Primary Staff ID. Job Title, Job
-        Classification, Skill, Department, Unit and Contract type are also imported when present.
-        Any other column is ignored; files are limited to 10 MB.
-      </p>
+      {showFieldHelp ? (
+        <p className="text-xs text-fg-muted">
+          Company Code resolves the client. Supported fields: Company Code, Staff_ID, Name of
+          Employee, Relation, Primary Staff ID, Staff Number, Email Address, Personal Email, Phone,
+          Date of Birth (dd/mm/yyyy or YYYY-MM-DD), Gender, National ID, Passport Number, and
+          Status. Job Title, Job Classification, Skill, Department, Unit and Contract type are also
+          imported when present. Any other column is ignored; files are limited to 10 MB.
+        </p>
+      ) : null}
 
       {staging ? <p className="text-xs text-fg-muted">Staging rows on the server…</p> : null}
       {error ? (
@@ -538,6 +543,7 @@ export function MemberImportDialog({ open, onOpenChange, onImported }: MemberImp
             staging={staging}
             error={error}
             canDiscardStuck={Boolean(conflictBatchId)}
+            showFieldHelp={!batch}
             onPick={() => void pickFile()}
             onRefresh={() => void refreshFile()}
             onSelectFile={selectFile}

@@ -26,7 +26,11 @@ describe("toDayKey", () => {
 
 describe("formatDay", () => {
   it("formats the day the wire named, not the day the viewer is on", () => {
-    expect(formatDay("2026-03-31T00:00:00Z")).toBe(new Date(2026, 2, 31).toLocaleDateString())
+    expect(formatDay("2026-03-31T00:00:00Z")).toBe("31/03/2026")
+  })
+
+  it("uses dd/mm/yyyy regardless of the viewer's own browser locale", () => {
+    expect(formatDay("2026-01-05")).toBe("05/01/2026")
   })
 
   it("returns the placeholder for nothing usable", () => {

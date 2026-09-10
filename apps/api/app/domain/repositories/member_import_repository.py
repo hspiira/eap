@@ -83,6 +83,16 @@ class MemberImportRepository(ABC):
     ) -> MemberImportRowEntity | None: ...
 
     @abstractmethod
+    async def find_rows_by_replay_keys(
+        self, tenant_id: TenantId, replay_keys: list[str]
+    ) -> dict[str, MemberImportRowEntity]:
+        """Every live row among the given keys, keyed by that key.
+
+        Batches what would otherwise be one `find_row_by_replay_key` call
+        per roster row.
+        """
+
+    @abstractmethod
     async def outcome_counts(
         self, tenant_id: TenantId, batch_id: MemberImportBatchId
     ) -> dict[str, int]: ...

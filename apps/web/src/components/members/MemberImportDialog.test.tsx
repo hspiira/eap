@@ -119,12 +119,21 @@ describe("member import preview", () => {
     expect(screen.getByText("Treasury")).toBeInTheDocument()
   })
 
-  it("tells the uploader these columns are imported", async () => {
-    await stage([makeRow()])
+  it("tells the uploader these columns are imported before they stage a file", () => {
+    renderWithProviders(<MemberImportDialog open onOpenChange={() => {}} onImported={() => {}} />)
     expect(
       screen.getByText(/Job Title, Job Classification, Skill, Department, Unit and Contract type/),
     ).toBeInTheDocument()
     expect(screen.queryByText(/Other workforce columns are ignored/)).not.toBeInTheDocument()
+  })
+
+  it("hides the field help once a batch is staged, to give the table the room back", async () => {
+    await stage([makeRow()])
+    expect(
+      screen.queryByText(
+        /Job Title, Job Classification, Skill, Department, Unit and Contract type/,
+      ),
+    ).not.toBeInTheDocument()
   })
 })
 

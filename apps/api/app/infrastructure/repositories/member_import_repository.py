@@ -189,6 +189,19 @@ class MemberImportRepositoryImpl(MemberImportRepository):
         )
         return MemberImportMapper.row_to_entity(model) if model else None
 
+    async def find_rows_by_replay_keys(
+        self, tenant_id: TenantId, replay_keys: list[str]
+    ) -> dict[str, MemberImportRowEntity]:
+        if not replay_keys:
+            return {}
+        models = await self.session.scalars(
+            select(MemberImportRowModel).where(
+                MemberImportRowModel.tenant_id == tenant_id.value,
+                MemberImportRowModel.replay_key.in_(replay_keys),
+            )
+        )
+        return {model.replay_key: MemberImportMapper.row_to_entity(model) for model in models}
+
     async def outcome_counts(
         self, tenant_id: TenantId, batch_id: MemberImportBatchId
     ) -> dict[str, int]:

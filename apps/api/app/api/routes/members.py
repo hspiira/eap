@@ -832,6 +832,7 @@ async def stage_member_import(
     await imports.save_batch(batch)
 
     checker = MemberRowChecker(current_user.tenant_id, client_repo, member_repo, imports)
+    await checker.preload(rows, file_hash)
     entities: list[MemberImportRowEntity] = []
     for row in rows:
         check = await checker.check(
