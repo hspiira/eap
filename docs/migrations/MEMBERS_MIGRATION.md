@@ -1211,9 +1211,35 @@ Migration `s8u0w2y4a6c8` was applied and reversed against a real PostgreSQL
 leaves the table exactly as it was. `alembic heads` reports the single head
 `s8u0w2y4a6c8`, so no branch was introduced.
 
-Not verified: no roster has been put through this end to end in a deployed
-environment, and no test exercises a real update against a real database.
-Every behavioural claim above rests on unit tests against mocked
-repositories, except the two replay-key tests and the migration check, which
-run against real SQL. In particular, whether `update_roster_details` and the
-audit diff behave as expected against persisted state is untested here.
+End to end: `tests/e2e/test_member_roster_update_api.py`, 14 tests, new, run
+against a real PostgreSQL through the actual routes rather than mocked
+repositories. A first roster enrols a member; a second matches them and
+offers Update; applying without choosing Update leaves them untouched;
+choosing it writes the roster's values; a blank Email Address and Department
+do not clear the stored ones; the member code and Staff_ID survive; an
+unchanged roster reports `unchanged` and writes no audit record; the roster's
+Status moves the member; and the refusals (contradicting Relation, Update on
+an unmatched row, Import on a matched one) all hold over HTTP.
+
+The audit was checked against stored outbox events, and behaves better than
+first assumed: an update raises exactly one `EligibleMemberUpdated` whose
+`field_changes` names `phone` and `last_imported_at` and nothing else, with
+`is_special_category: true` and the values themselves `[redacted]`. The audit
+records which field moved, not what it moved to, which is correct for
+special-category personal data. An unchanged row raises no such event at all.
+
+The tenth defect was also reproduced end to end, which took two files rather
+than one: a dependant sharing a file with their primary is `Invalid` on first
+staging, because the primary is not a member yet, so such a row never imports
+and never holds a key. With the primary enrolled by an earlier file, a
+dependant file that applies and is then re-staged raises exactly
+`UniqueViolationError ... uq_member_import_rows_tenant_replay, Key
+(tenant_id, replay_key)=(..., file:sha256:...:row:2) already exists` with the
+`_release` fix reverted, and stages cleanly with it. A first attempt at this
+test passed either way and did not pin the defect; it was rewritten until it
+failed for the right reason.
+
+Not verified: no roster has been put through the deployed environment, and
+none of this has been run at the scale (3,000+ rows) that produced the ninth
+defect. The frontend is covered by component tests against a rendered dialog,
+not by a browser driving a running app.
