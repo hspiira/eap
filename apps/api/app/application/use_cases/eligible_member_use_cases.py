@@ -28,6 +28,7 @@ from app.domain.value_objects.core import (
     TenantId,
     UserId,
 )
+from app.domain.value_objects.staffing import EmploymentDetails
 from app.shared.utils.datetime import utc_now
 from app.shared.utils.generators import generate_cuid
 
@@ -53,6 +54,7 @@ class EnrolEligibleMemberUseCase:
         tenant_secret: str,
         created_by: UserId | None = None,
         primary_employee_member_id: EligibleMemberId | None = None,
+        import_source_id: str | None = None,
         coverage_start: date | None = None,
         coverage_end: date | None = None,
         work_email: Email | None = None,
@@ -64,6 +66,7 @@ class EnrolEligibleMemberUseCase:
         staff_number: str | None = None,
         national_id: str | None = None,
         passport_number: str | None = None,
+        employment: EmploymentDetails | None = None,
     ) -> tuple[EligibleMember, ClinicalSubject]:
         existing = await self._members.find_by_employer_member_id(
             tenant_id, client_id, employer_member_id
@@ -72,6 +75,14 @@ class EnrolEligibleMemberUseCase:
             raise DomainError(
                 f"Eligible member already exists for employer_member_id={employer_member_id}"
             )
+        if import_source_id is not None:
+            existing_source = await self._members.find_by_import_source_id(
+                tenant_id, client_id, import_source_id
+            )
+            if existing_source is not None:
+                raise DomainError(
+                    f"Eligible member already exists for import_source_id={import_source_id}"
+                )
         now = utc_now()
         member = EligibleMember(
             id=EligibleMemberId(generate_cuid()),
@@ -90,8 +101,10 @@ class EnrolEligibleMemberUseCase:
             gender=gender,
             phone=phone,
             staff_number=staff_number,
+            import_source_id=import_source_id,
             national_id=national_id,
             passport_number=passport_number,
+            employment=employment,
             created_by=created_by,
             created_at=now,
             updated_at=now,

@@ -11,6 +11,7 @@ from app.domain.value_objects.core import (
     TenantId,
     UserId,
 )
+from app.domain.value_objects.staffing import EmploymentDetails
 from app.infrastructure.models.eligible_member_model import (
     ClinicalSubjectModel,
     EligibleMemberModel,
@@ -55,8 +56,17 @@ class EligibleMemberMapper:
             gender=_member_gender(model.gender),
             phone=model.phone,
             staff_number=model.staff_number,
+            import_source_id=model.import_source_id,
             national_id=model.national_id,
             passport_number=model.passport_number,
+            employment=EmploymentDetails.build(
+                job_title=model.job_title,
+                job_classification=model.job_classification,
+                skill=model.skill,
+                department=model.department,
+                unit=model.unit,
+                employment_type=model.employment_type,
+            ),
             last_imported_at=ensure_utc(model.last_imported_at) if model.last_imported_at else None,
             suspended_at=ensure_utc(model.suspended_at) if model.suspended_at else None,
             terminated_at=ensure_utc(model.terminated_at) if model.terminated_at else None,
@@ -70,6 +80,7 @@ class EligibleMemberMapper:
 
     @staticmethod
     def to_model(entity: EligibleMember) -> EligibleMemberModel:
+        employment = entity.employment or EmploymentDetails()
         return EligibleMemberModel(
             id=entity.id.value,
             tenant_id=entity.tenant_id.value,
@@ -91,8 +102,15 @@ class EligibleMemberMapper:
             gender=entity.gender,
             phone=entity.phone,
             staff_number=entity.staff_number,
+            import_source_id=entity.import_source_id,
             national_id=entity.national_id,
             passport_number=entity.passport_number,
+            job_title=employment.job_title,
+            job_classification=employment.job_classification,
+            skill=employment.skill,
+            department=employment.department,
+            unit=employment.unit,
+            employment_type=employment.employment_type,
             last_imported_at=ensure_utc(entity.last_imported_at)
             if entity.last_imported_at
             else None,

@@ -5,10 +5,11 @@ Replaces the ``SurveySource`` enum, whose docstring already called it
 not a code deploy.
 """
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.dependencies import get_survey_source_repository
+from app.api.dependencies.audit import get_audit_event_handler
 from app.api.schemas.survey_source_schemas import (
     SurveySourceCreate,
     SurveySourceResponse,
@@ -16,15 +17,21 @@ from app.api.schemas.survey_source_schemas import (
 )
 from app.core.authorization import require_platform_admin
 from app.core.database import get_db
+from app.core.reference_cache import cached_lookup, invalidate_reference_cache
 from app.core.security import TokenData, get_current_user
+from app.domain.enums import AuditActionType
 from app.domain.repositories.survey_source_repository import SurveySourceRepository
 from app.shared.decorators import readonly, transactional
+from app.shared.utils.route_audit_helper import audit_reference_change
 
 router = APIRouter(prefix="/survey-sources", tags=["survey-sources"])
+
+_RESOURCE = "survey_sources"
 
 
 @router.get("", response_model=list[SurveySourceResponse], summary="List survey sources")
 @readonly()
+@cached_lookup(_RESOURCE)
 async def list_survey_sources(
     active_only: bool = Query(True, description="Return only active rows"),
     _user: TokenData = Depends(get_current_user),
@@ -39,8 +46,10 @@ async def list_survey_sources(
 @transactional()
 async def create_survey_source(
     data: SurveySourceCreate,
+    request: Request,
     _user: TokenData = Depends(require_platform_admin),
     repo: SurveySourceRepository = Depends(get_survey_source_repository),
+    audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
 ):
     if await repo.get_by_code(data.code):
@@ -48,6 +57,16 @@ async def create_survey_source(
     created = await repo.create(
         code=data.code, name=data.name, description=data.description, sort_order=data.sort_order
     )
+    await audit_reference_change(
+        audit_handler,
+        _user,
+        request,
+        action=AuditActionType.CREATE,
+        resource_type="SurveySource",
+        resource_id=created.id,
+        after=created,
+    )
+    invalidate_reference_cache(_RESOURCE)
     return SurveySourceResponse.model_validate(created)
 
 
@@ -56,15 +75,29 @@ async def create_survey_source(
 async def update_survey_source(
     source_id: str,
     data: SurveySourceUpdate,
+    request: Request,
     _user: TokenData = Depends(require_platform_admin),
     repo: SurveySourceRepository = Depends(get_survey_source_repository),
+    audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
 ):
+    before = await repo.get_by_id(source_id)
     updated = await repo.update(
         source_id, name=data.name, description=data.description, sort_order=data.sort_order
     )
     if updated is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, detail="Survey source not found")
+    await audit_reference_change(
+        audit_handler,
+        _user,
+        request,
+        action=AuditActionType.UPDATE,
+        resource_type="SurveySource",
+        resource_id=updated.id,
+        before=before,
+        after=updated,
+    )
+    invalidate_reference_cache(_RESOURCE)
     return SurveySourceResponse.model_validate(updated)
 
 
@@ -72,12 +105,26 @@ async def update_survey_source(
 @transactional()
 async def set_survey_source_active(
     source_id: str,
+    request: Request,
     is_active: bool = Query(..., description="Activate or retire the row"),
     _user: TokenData = Depends(require_platform_admin),
     repo: SurveySourceRepository = Depends(get_survey_source_repository),
+    audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
 ):
+    before = await repo.get_by_id(source_id)
     updated = await repo.set_active(source_id, is_active=is_active)
     if updated is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, detail="Survey source not found")
+    await audit_reference_change(
+        audit_handler,
+        _user,
+        request,
+        action=AuditActionType.UPDATE,
+        resource_type="SurveySource",
+        resource_id=updated.id,
+        before=before,
+        after=updated,
+    )
+    invalidate_reference_cache(_RESOURCE)
     return SurveySourceResponse.model_validate(updated)

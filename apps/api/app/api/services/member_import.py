@@ -9,31 +9,76 @@ that already landed.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import date
+from datetime import date, datetime
 
 from pydantic import ValidationError
 
-from app.api.schemas.member_schemas import MemberCreate, MemberImportRowValues
+from app.api.schemas.member_schemas import MemberCreate, MemberEmployment
 from app.application.use_cases.eligible_member_use_cases import EnrolEligibleMemberUseCase
 from app.core.security import TokenData
 from app.domain.entities.client import ClientEntity
 from app.domain.entities.eligible_member import EligibleMember
-from app.domain.enums import EligibilityStatus, MemberGender, MemberRelation
+from app.domain.entities.member_import import MemberImportRowEntity
+from app.domain.enums import EligibilityStatus, MemberGender, MemberImportRowOutcome, MemberRelation
 from app.domain.repositories.client_repository import ClientRepository
 from app.domain.repositories.eligible_member_repository import EligibleMemberRepository
 from app.domain.repositories.outbox_repository import OutboxRepository
 from app.domain.value_objects.core import ClientId, EligibleMemberId, Email, TenantId, UserId
+from app.domain.value_objects.ids import MemberImportBatchId, MemberImportRowId
 from app.shared.handlers.audit_event_handler import AuditEventHandler
 from app.shared.utils.member_csv import MemberCsvRow
 from app.shared.utils.route_audit_helper import audit_change
 
 DECISIONS = {"import", "skip"}
 
+_OUTCOME_BY_STATE = {
+    "new": MemberImportRowOutcome.NEW,
+    "duplicate": MemberImportRowOutcome.DUPLICATE,
+    "invalid": MemberImportRowOutcome.INVALID,
+}
 
-def row_values(row: MemberCsvRow) -> MemberImportRowValues:
-    return MemberImportRowValues(
+
+def row_replay_key(row: MemberCsvRow, client_id: ClientId | None, file_hash: str) -> str:
+    """A stable key when Staff_ID is present, else one scoped to this exact file and row.
+
+    The fallback lets a blank-Staff_ID row stage without colliding with its
+    neighbours in the same file; it does not re-identify the same person
+    across a later file, which is a known limitation, not a bug.
+    """
+    if client_id is not None and row.import_source_id:
+        return f"key:{client_id.value}:{row.import_source_id}"
+    return f"file:{file_hash}:row:{row.row_number}"
+
+
+def build_row_entity(
+    row: MemberCsvRow,
+    check: RowCheck,
+    *,
+    row_id: MemberImportRowId,
+    batch_id: MemberImportBatchId,
+    tenant_id: TenantId,
+    file_hash: str,
+    now: datetime,
+) -> MemberImportRowEntity:
+    """Turn one checked roster row into the row a batch persists.
+
+    A duplicate or invalid row can never be imported regardless of decision
+    (`MemberImportRowEntity.set_decision` enforces this), so its stored
+    decision is just a safe default and is never read.
+    """
+    client_id = check.client.id if check.client else None
+    return MemberImportRowEntity(
+        id=row_id,
+        batch_id=batch_id,
+        tenant_id=tenant_id,
+        row_number=row.row_number,
+        replay_key=row_replay_key(row, client_id, file_hash),
+        outcome=_OUTCOME_BY_STATE[check.state],
+        decision="import" if check.state == "new" else "skip",
+        created_at=now,
         client_code=row.client_code,
-        employer_member_id=row.employer_member_id,
+        client_id=client_id,
+        import_source_id=row.import_source_id,
         staff_number=row.staff_number,
         display_label=row.display_label,
         work_email=row.work_email,
@@ -43,14 +88,44 @@ def row_values(row: MemberCsvRow) -> MemberImportRowValues:
         phone=row.phone,
         national_id=row.national_id,
         passport_number=row.passport_number,
+        job_title=row.job_title,
+        job_classification=row.job_classification,
+        skill=row.skill,
+        department=row.department,
+        unit=row.unit,
+        employment_type=row.employment_type,
         status=row.status,
         relation=row.relation,
-        primary_employee_member_id=row.primary_employee_member_id,
+        primary_import_source_id=row.primary_import_source_id,
+        message=check.message,
     )
 
 
-def csv_row(row_number: int, values: MemberImportRowValues) -> MemberCsvRow:
-    return MemberCsvRow(row_number=row_number, **values.model_dump())
+def csv_row_from_entity(row: MemberImportRowEntity) -> MemberCsvRow:
+    """Rebuild the parser's row shape from a persisted row, for re-checking at apply time."""
+    return MemberCsvRow(
+        row_number=row.row_number,
+        client_code=row.client_code,
+        import_source_id=row.import_source_id,
+        staff_number=row.staff_number,
+        display_label=row.display_label,
+        work_email=row.work_email,
+        personal_email=row.personal_email,
+        gender=row.gender,
+        date_of_birth=row.date_of_birth,
+        phone=row.phone,
+        national_id=row.national_id,
+        passport_number=row.passport_number,
+        job_title=row.job_title,
+        job_classification=row.job_classification,
+        skill=row.skill,
+        department=row.department,
+        unit=row.unit,
+        employment_type=row.employment_type,
+        status=row.status,
+        relation=row.relation,
+        primary_import_source_id=row.primary_import_source_id,
+    )
 
 
 @dataclass(frozen=True)
@@ -67,10 +142,17 @@ class RowCheck:
         return self.state == "new" and self.data is not None
 
 
-def _member_create(row: MemberCsvRow, client: ClientEntity) -> MemberCreate:
+def _member_create(
+    row: MemberCsvRow, client: ClientEntity, *, primary_member_id: str | None
+) -> MemberCreate:
+    """Build the row's create payload.
+
+    ``employer_member_id`` is deliberately left unset: the member code is
+    always issued by the server at commit time, the same as manual creation.
+    """
     return MemberCreate(
         client_id=client.id.value,
-        employer_member_id=row.employer_member_id,
+        import_source_id=row.import_source_id,
         display_label=row.display_label or "",
         work_email=row.work_email,
         personal_email=row.personal_email,
@@ -80,9 +162,48 @@ def _member_create(row: MemberCsvRow, client: ClientEntity) -> MemberCreate:
         staff_number=row.staff_number,
         national_id=row.national_id,
         passport_number=row.passport_number,
+        employment=MemberEmployment(
+            job_title=row.job_title,
+            job_classification=row.job_classification,
+            skill=row.skill,
+            department=row.department,
+            unit=row.unit,
+            employment_type=row.employment_type,
+        ),
         relation=MemberRelation(row.relation or MemberRelation.EMPLOYEE.value),
-        primary_employee_member_id=row.primary_employee_member_id,
+        primary_employee_member_id=primary_member_id,
     )
+
+
+async def issue_member_code(
+    member_repo: EligibleMemberRepository,
+    *,
+    tenant_id: TenantId,
+    client_id: ClientId,
+    client_code: str,
+) -> str:
+    """Issue the next ``{client code}-###`` id for this client.
+
+    Shared by manual creation and roster import so every member, no matter
+    how they are added or what relation they carry, draws from the same
+    per-client sequence.
+
+    Skips codes already taken, so a roster imported with hand-written codes
+    under the same prefix continues from the top rather than colliding.
+
+    This sees only committed rows, so it cannot resolve a race between two
+    in-flight enrolments. The unique constraint on ``employer_member_id`` is
+    what actually guarantees uniqueness; callers turn that violation into a
+    409 or a per-row failure, as fits their transport.
+    """
+    prefix = client_code.strip().upper()
+    sequence = await member_repo.next_member_sequence(tenant_id, client_id, prefix)
+    for candidate_sequence in range(sequence, sequence + 50):
+        candidate = f"{prefix}-{candidate_sequence:03d}"
+        existing = await member_repo.find_by_employer_member_id(tenant_id, client_id, candidate)
+        if existing is None:
+            return candidate
+    raise ValueError("Could not issue a member ID for this client")
 
 
 class MemberRowChecker:
@@ -110,23 +231,39 @@ class MemberRowChecker:
         decision: str | None = None,
         parse_error: str | None = None,
     ) -> RowCheck:
-        if parse_error:
-            return RowCheck(state="invalid", message=parse_error)
-        if decision is not None and decision not in DECISIONS:
-            return RowCheck(state="invalid", message="Decision must be import or skip")
+        rejected = _rejected_input(decision, parse_error)
+        if rejected:
+            return rejected
 
-        client = (
-            await self._clients.get_by_code(self._tenant_id, row.client_code or "")
-            if row.client_code
-            else None
-        )
+        client = await self._client_for(row)
         if client is None:
             return RowCheck(
                 state="invalid",
                 message="Company Code does not resolve to a client in this tenant",
             )
 
-        key = (client.id.value, row.employer_member_id or "")
+        repeated = self._claim_staff_id(client, row)
+        if repeated:
+            return repeated
+
+        enrolled = await self._already_enrolled(client, row, decision)
+        if enrolled:
+            return enrolled
+
+        primary_member_id, unresolved = await self._primary_member_id(client, row)
+        if unresolved:
+            return unresolved
+
+        return self._checked(row, client, primary_member_id, decision)
+
+    async def _client_for(self, row: MemberCsvRow) -> ClientEntity | None:
+        if not row.client_code:
+            return None
+        return await self._clients.get_by_code(self._tenant_id, row.client_code)
+
+    def _claim_staff_id(self, client: ClientEntity, row: MemberCsvRow) -> RowCheck | None:
+        """Records the row's Staff_ID, rejecting a second use of it in the same file."""
+        key = (client.id.value, row.import_source_id or "")
         if key in self._seen:
             return RowCheck(
                 state="invalid",
@@ -134,27 +271,61 @@ class MemberRowChecker:
                 client=client,
             )
         self._seen.add(key)
+        return None
 
-        existing = await self._members.find_by_employer_member_id(
-            self._tenant_id, client.id, row.employer_member_id or ""
+    async def _already_enrolled(
+        self, client: ClientEntity, row: MemberCsvRow, decision: str | None
+    ) -> RowCheck | None:
+        existing = await self._members.find_by_import_source_id(
+            self._tenant_id, client.id, row.import_source_id or ""
         )
-        if existing is not None:
-            if decision not in (None, "skip"):
-                return RowCheck(
-                    state="invalid",
-                    message="Existing members can only be skipped; they are never overwritten",
-                    client=client,
-                )
-            return RowCheck(state="duplicate", client=client)
+        if existing is None:
+            return None
+        if decision not in (None, "skip"):
+            return RowCheck(
+                state="invalid",
+                message="Existing members can only be skipped; they are never overwritten",
+                client=client,
+            )
+        return RowCheck(state="duplicate", client=client)
 
+    async def _primary_member_id(
+        self, client: ClientEntity, row: MemberCsvRow
+    ) -> tuple[str | None, RowCheck | None]:
+        """The beneficiary's primary employee, or the rejection when it is not on file yet."""
+        if not row.primary_import_source_id:
+            return None, None
+        primary = await self._members.find_by_import_source_id(
+            self._tenant_id, client.id, row.primary_import_source_id
+        )
+        if primary is None:
+            return None, RowCheck(
+                state="invalid",
+                message="Primary employee's Staff_ID was not found; import the employee first",
+                client=client,
+            )
+        return primary.id.value, None
+
+    def _checked(
+        self,
+        row: MemberCsvRow,
+        client: ClientEntity,
+        primary_member_id: str | None,
+        decision: str | None,
+    ) -> RowCheck:
         try:
-            data = _member_create(row, client)
+            data = _member_create(row, client, primary_member_id=primary_member_id)
         except (ValueError, ValidationError) as exc:
             return RowCheck(state="invalid", message=str(exc).split("\n", 1)[-1], client=client)
+        return RowCheck(state="skipped" if decision == "skip" else "new", client=client, data=data)
 
-        if decision == "skip":
-            return RowCheck(state="skipped", client=client, data=data)
-        return RowCheck(state="new", client=client, data=data)
+
+def _rejected_input(decision: str | None, parse_error: str | None) -> RowCheck | None:
+    if parse_error:
+        return RowCheck(state="invalid", message=parse_error)
+    if decision is not None and decision not in DECISIONS:
+        return RowCheck(state="invalid", message="Decision must be import or skip")
+    return None
 
 
 class MemberRowImporter:
@@ -174,11 +345,22 @@ class MemberRowImporter:
         self._outbox = outbox
         self._secret = tenant_secret
 
-    async def enrol(self, row: MemberCsvRow, data: MemberCreate) -> EligibleMember:
+    async def enrol(
+        self, row: MemberCsvRow, data: MemberCreate, client_code: str
+    ) -> EligibleMember:
+        tenant_id = TenantId(self._user.tenant_id)
+        client_id = ClientId(data.client_id)
+        employer_member_id = await issue_member_code(
+            self._members,
+            tenant_id=tenant_id,
+            client_id=client_id,
+            client_code=client_code,
+        )
         member, _ = await self._use_case.execute(
-            tenant_id=TenantId(self._user.tenant_id),
-            client_id=ClientId(data.client_id),
-            employer_member_id=row.employer_member_id or "",
+            tenant_id=tenant_id,
+            client_id=client_id,
+            employer_member_id=employer_member_id,
+            import_source_id=data.import_source_id,
             relation=data.relation,
             tenant_secret=self._secret,
             created_by=UserId(self._user.user_id),

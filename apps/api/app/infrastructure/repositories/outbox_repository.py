@@ -5,10 +5,11 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Any
 
-from sqlalchemy import select, update
+from sqlalchemy import func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.domain.repositories.outbox_repository import (
+    OutboxBacklog,
     OutboxEventDTO,
     OutboxRepository,
 )
@@ -109,3 +110,17 @@ class OutboxRepositoryImpl(OutboxRepository):
             )
         )
         await self._session.execute(stmt)
+
+    async def backlog(self) -> OutboxBacklog:
+        undelivered = OutboxEventModel.delivered_at.is_(None)
+        stmt = select(
+            func.count().filter(undelivered),
+            func.min(OutboxEventModel.occurred_at).filter(undelivered),
+            func.count().filter(undelivered & OutboxEventModel.last_error.isnot(None)),
+        )
+        depth, oldest, failed = (await self._session.execute(stmt)).one()
+        return OutboxBacklog(
+            depth=depth or 0,
+            oldest_undelivered=oldest,
+            failed=failed or 0,
+        )

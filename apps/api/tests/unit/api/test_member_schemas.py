@@ -70,3 +70,50 @@ def test_next_of_kin_accepts_phone_or_email():
     )
     assert contact.email == "jane@example.com"
     assert contact.is_primary is True
+
+
+def test_employment_details_are_optional_on_create():
+    member = MemberCreate(
+        client_id="client-1",
+        employer_member_id="HR-1",
+        relation=MemberRelation.EMPLOYEE,
+        display_label="Amina Namukasa",
+    )
+    assert member.employment is None
+
+
+def test_employment_details_are_accepted_on_create():
+    member = MemberCreate(
+        client_id="client-1",
+        employer_member_id="HR-1",
+        relation=MemberRelation.EMPLOYEE,
+        display_label="Amina Namukasa",
+        employment={
+            "job_title": "Branch Manager",
+            "job_classification": "Manager",
+            "skill": "Officer",
+            "department": "Operations",
+            "unit": "Kampala Road branch",
+            "employment_type": "Permanent",
+        },
+    )
+    assert member.employment is not None
+    assert member.employment.department == "Operations"
+    assert member.employment.employment_type == "Permanent"
+
+
+def test_employment_details_can_be_patched():
+    patch = MemberUpdate(employment={"department": "Treasury"})
+    assert patch.employment is not None
+    assert patch.employment.department == "Treasury"
+    assert patch.employment.unit is None
+
+
+def test_an_unknown_employment_field_is_rejected():
+    with pytest.raises(ValidationError):
+        MemberUpdate(employment={"cost_centre": "CC-1"})
+
+
+def test_an_over_long_employment_value_is_rejected():
+    with pytest.raises(ValidationError):
+        MemberUpdate(employment={"unit": "x" * 256})

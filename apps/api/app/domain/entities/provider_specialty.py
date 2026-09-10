@@ -5,6 +5,7 @@ from datetime import datetime
 
 from app.domain.events import DomainEvent
 from app.domain.events.provider_network import (
+    ProviderSpecialtyCreated,
     ProviderSpecialtyRestored,
     ProviderSpecialtyRetired,
 )
@@ -37,6 +38,17 @@ class ProviderSpecialtyEntity:
             raise DomainError("Specialty requires a code")
         if not self.label or not self.label.strip():
             raise DomainError("Specialty requires a label")
+
+    def record_created(self, actor: UserId) -> None:
+        self.events.append(
+            ProviderSpecialtyCreated(
+                occurred_at=self.created_at,
+                specialty_id=self.id,
+                code=self.code,
+                label=self.label,
+                actor=actor,
+            )
+        )
 
     def retire(self, actor: UserId, *, at: datetime) -> None:
         """Stop new selection. Existing links stay readable."""

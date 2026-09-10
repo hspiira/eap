@@ -5,7 +5,7 @@ pages, and the `/service-sessions/$sessionId` detail page (with the list where
 it constrains the detail). Method: code review of `apps/web` and `apps/api`
 plus direct sampling of the dev database `evexia_db` (tenant
 `jfj783wwafdgpvoz48snol6q`), which holds the client's real imported data per
-`DEV_DATA_LOAD.md`.
+`docs/operations/DEV_DATA_LOAD.md`.
 
 Everything under "What exists" and "What the data shows" is verified against
 code or the database, with citations. Everything under "Proposal" is design
@@ -66,11 +66,12 @@ links and lifecycle actions. Loading is a bare text line, not a skeleton
 exists at `apps/web/src/components/clients/ClientDetailWidgets.tsx:361-414`.
 
 The client detail page already contains a better members UI: the roster tab's
-master-detail split (`apps/web/src/components/clients/ClientManagementPanels.tsx:214-321`)
-with a row-click summary card, humanized labels via `getStatusLabel()`, and a
+master-detail split
+(`apps/web/src/components/clients/ClientManagementPanels.tsx:214-321`) with a
+row-click summary card, humanized labels via `getStatusLabel()`, and a
 clear-filters button. The standalone `/members` page got none of that pass
-(`MEMBERS_MIGRATION.md:143-145`) and still renders raw enum values such as
-`DomesticPartner` (`index.tsx:502`).
+(`docs/migrations/MEMBERS_MIGRATION.md:143-145`) and still renders raw enum
+values such as `DomesticPartner` (`index.tsx:502`).
 
 ### 1.2 What the data shows
 
@@ -123,7 +124,8 @@ number, national ID, passport number) so what the form collects can be read
 back without opening the edit sheet. Add a small status history block from
 `suspended_at` and `terminated_at`. Replace the bare loading text with the
 `DetailSkeleton` used elsewhere. Coverage dates stay off the page per the
-recorded policy (`MEMBERS_MODULE.md`), but see open question Q1.
+recorded policy (`apps/api/docs/MEMBERS_MODULE.md`), but see open
+question Q1.
 
 Backend touches needed: search over `staff_number`, a tenant-level member
 stats rollup, nothing else. Everything else is frontend.
@@ -195,9 +197,9 @@ both correct the proposal below:
    blocker would have been false. The rail therefore shows the gate's own
    verdict with its stable failure codes, and a separate profile-completeness
    list that states plainly it does not block a booking. The claim in
-   `DEV_DATA_LOAD.md` that the 53 canonical practitioners need a tier and
-   region "before any of them can be booked" is a data-quality requirement,
-   not the gate's rule.
+   `docs/operations/DEV_DATA_LOAD.md` that the 53 canonical practitioners need a
+   tier and region "before any of them can be booked" is a data-quality
+   requirement, not the gate's rule.
 2. **An unrecorded engagement document is not a missing one.** The checklist
    distinguishes a kind nobody has answered from one recorded `Missing`, so it
    cannot report an answer the team never gave.
@@ -222,7 +224,7 @@ multiple values, matching the API. Fix region label rendering with
 
 Detail. Turn the page into a credentialing dossier, since that is the work
 the team actually has (53 practitioners need a profession, tier and region
-before any can be booked, per `DEV_DATA_LOAD.md`):
+before any can be booked, per `docs/operations/DEV_DATA_LOAD.md`):
 
 - A readiness rail, top right: the live result of
   `GET /panel/{id}/eligibility`, each failing check named in plain language
@@ -250,10 +252,10 @@ documents card, provenance and activity tab are all existing endpoints.
 - `getStatusLabel()` for region on list and picker; stop rendering
   "null · null" in `ProviderPicker` (fall back to "Unassessed").
 - Expose the record-status filter.
-- The alias review queue and practitioner import remain deliberately without
-  UI (`PROVIDERS_FRONTEND.md:301-316`); this proposal does not reopen that
-  decision, but the 142 unmapped aliases and 109 NeedsReview rows recorded in
-  `IMPORT_REVIEW_UI_GAP.md` will eventually force it.
+- The alias review queue and practitioner import remain deliberately without UI
+  (`docs/archive/PROVIDERS_FRONTEND.md:301-316`); this proposal does not reopen
+  that decision, but the 142 unmapped aliases and 109 NeedsReview rows recorded
+  in `docs/gaps/IMPORT_REVIEW_UI_GAP.md` will eventually force it.
 
 ---
 
@@ -269,11 +271,11 @@ Subject, Service and practitioner, Clinical (a single diagnosis row).
 
 ### 3.2 What the data shows
 
-- 368 of the 369 real sessions are company-wide events with no member. For
-  every one of them the Subject card renders "Loading member…" forever
+- 368 of the 369 real sessions are company-wide events with no member. For every
+  one of them the Subject card renders "Loading member…" forever
   (`$sessionId.tsx:313-315`); the acceptance criterion that the detail page
-  renders member-less sessions properly (`SESSIONS_IMPLEMENTATION.md:163-164`)
-  is unmet.
+  renders member-less sessions properly
+  (`docs/handoffs/SESSIONS_IMPLEMENTATION.md:163-164`) is unmet.
 - The page hides most of what the record holds. Returned by the API and
   typed on the frontend but absent from the detail page: `attendance`,
   `client_name`, `session_type`, `category`, `client_type`, `rate_ugx`,
@@ -312,8 +314,8 @@ Company-wide shape (the dominant one in the data):
   Bank"), date, mode badge (Physical/Online), category badge, status.
   No Subject card at all.
 - An engagement card: headcount (currently never captured; Phase D of
-  `SESSIONS_IMPLEMENTATION.md` already proposes requiring it), session
-  number, client type (new or repeat engagement), rate.
+  `docs/handoffs/SESSIONS_IMPLEMENTATION.md` already proposes requiring it),
+  session number, client type (new or repeat engagement), rate.
 - Delivery card: practitioner, delivery context, organisation when
   attributed, location.
 - Outcome card: clinical_outcome (filled on half the real rows today),
@@ -343,7 +345,7 @@ Both shapes:
 - Import provenance line for imported sessions once the row link is exposed
   (the only durable link is `session_import_rows.imported_session_id`; a
   small read endpoint would be needed, or the provenance columns proposed in
-  `DEV_DATA_LOAD.md` before a production load).
+  `docs/operations/DEV_DATA_LOAD.md` before a production load).
 
 ### 3.4 Quick fixes independent of the redesign
 
@@ -385,7 +387,7 @@ the computed `is_currently_eligible` are now on `MemberResponse` and shown in
 the member profile's at-a-glance rail. Coverage stays read-only in the member
 API: it is still set at the client or programme level and by `terminate()`,
 and it is not a member form field. Implemented in commit `911201b`, recorded
-in `MEMBERS_MIGRATION.md` and `apps/api/docs/MEMBERS_MODULE.md`.
+in `docs/migrations/MEMBERS_MIGRATION.md` and `apps/api/docs/MEMBERS_MODULE.md`.
 
 Consequence with the current data: no member carries a `coverage_start` and
 one carries a `coverage_end`, so `is_currently_eligible` reduces to "status is
@@ -403,13 +405,12 @@ clinical scope for the clinical fields, and reads should be logged so the
 "PHI, access logged" chip is true. Scope: the sessions track, not this one.
 This restatement should be confirmed by the product owner before it is built.
 
-**Q3, vocabulary: confirmed with corrections.** These are the counselling
-team's words, with the mapping made explicit: "Intervention" is the service,
-"Mode" is mode of delivery (Online or Physical), "Counsellor" is the
-practitioner. The session pages should use "Service", "Mode of delivery" and
-"Practitioner" where they currently echo the workbook, and `SESSIONS_REVIEW.md`
-can close its open vocabulary question against this. Scope: the sessions
-track.
+**Q3, vocabulary: confirmed with corrections.** These are the counselling team's
+words, with the mapping made explicit: "Intervention" is the service, "Mode" is
+mode of delivery (Online or Physical), "Counsellor" is the practitioner. The
+session pages should use "Service", "Mode of delivery" and "Practitioner" where
+they currently echo the workbook, and `docs/reviews/SESSIONS_REVIEW.md` can
+close its open vocabulary question against this. Scope: the sessions track.
 
 **Q4, provider onboarding duration: no decision needed yet.** The question was
 whether the readiness framing should be permanent. It does not need answering
@@ -418,7 +419,7 @@ current network (112 of 113 practitioners are Pending with no tier or region)
 and stays useful afterwards. Revisit whether tier and region earn their table
 columns back once most practitioners are bookable; nothing blocks on it now.
 
-Findings recorded here that belong to other tracks and are not expanded on:
-the taxonomy admin gap (`TAXONOMY_MANAGEMENT_GAP.md`), the per-row session
-import review gap (`IMPORT_REVIEW_UI_GAP.md`), and the 93 remaining silent
-mutators (`AUDIT_COVERAGE.md`).
+Findings recorded here that belong to other tracks and are not expanded on: the
+taxonomy admin gap (`docs/gaps/TAXONOMY_MANAGEMENT_GAP.md`), the per-row session
+import review gap (`docs/gaps/IMPORT_REVIEW_UI_GAP.md`), and the 93 remaining
+silent mutators (`docs/reviews/AUDIT_COVERAGE.md`).

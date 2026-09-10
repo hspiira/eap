@@ -251,7 +251,7 @@ Two of the findings above are now closed on the frontend, in `a05f8fa`.
 joined to `/audit/entity/Contract/{id}/changes` for the field names, through the
 shared `EntityActivityPanel`. Note it will read as empty in dev until the outbox
 is drained: `audit_logs` is empty while `outbox_events` holds 3,668 undelivered
-rows, recorded in `DEV_DATA_LOAD.md`.
+rows, recorded in `docs/operations/DEV_DATA_LOAD.md`.
 
 **Billing shows money.** `GET /contracts/{id}/invoice-preview` had no caller;
 the client had a placeholder sending `projected_sessions` to a contract id of

@@ -122,6 +122,7 @@ async def execute_export(
     current_user: TokenData = Depends(get_current_user),
     repo: DSARRequestRepository = Depends(get_dsar_request_repository),
     collector: DSARDataCollector = Depends(get_dsar_collector),
+    audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
 ):
     req = await repo.get_by_id(DSARRequestId(request_id))
@@ -129,6 +130,7 @@ async def execute_export(
         raise HTTPException(status_code=404, detail="DSAR request not found")
     assert_same_tenant(current_user, req.tenant_id.value)
     out = await ExecuteExportUseCase(repo, collector).execute(DSARRequestId(request_id))
+    await audit_change(out, audit_handler, current_user, request)
     return _to_response(out)
 
 
@@ -173,6 +175,7 @@ async def cancel_erasure(
     request: Request,
     current_user: TokenData = Depends(get_current_user),
     repo: DSARRequestRepository = Depends(get_dsar_request_repository),
+    audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
 ):
     req = await repo.get_by_id(DSARRequestId(request_id))
@@ -180,6 +183,7 @@ async def cancel_erasure(
         raise HTTPException(status_code=404, detail="DSAR request not found")
     assert_same_tenant(current_user, req.tenant_id.value)
     out = await CancelErasureUseCase(repo).execute(DSARRequestId(request_id))
+    await audit_change(out, audit_handler, current_user, request)
     return _to_response(out)
 
 
@@ -195,6 +199,7 @@ async def execute_erasure(
     current_user: TokenData = Depends(get_current_user),
     repo: DSARRequestRepository = Depends(get_dsar_request_repository),
     tombstoner: DSARTombstoner = Depends(get_dsar_tombstoner),
+    audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
 ):
     req = await repo.get_by_id(DSARRequestId(request_id))
@@ -202,6 +207,7 @@ async def execute_erasure(
         raise HTTPException(status_code=404, detail="DSAR request not found")
     assert_same_tenant(current_user, req.tenant_id.value)
     out = await ExecuteErasureUseCase(repo, tombstoner).execute(DSARRequestId(request_id))
+    await audit_change(out, audit_handler, current_user, request)
     return _to_response(out)
 
 

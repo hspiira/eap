@@ -7,7 +7,7 @@ The source data is not in this repository. It was supplied at
 `/Users/piira/Downloads/services.csv` and every count below is taken from that
 file. If it is not to hand, section 2 records its shape and section 3.4 its
 defects, and a copy should be committed somewhere durable before phase 5 of
-`SERVICES_MIGRATION.md` runs.
+`docs/migrations/SERVICES_MIGRATION.md` runs.
 
 ## 1. What exists today
 

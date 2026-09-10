@@ -15,7 +15,7 @@ def _key(value: str) -> str:
 def _value(row: dict[str, str | None], *keys: str) -> str | None:
     for key in keys:
         value = (row.get(key) or "").strip()
-        if value and value.casefold() not in {"n/a", "na", "null", "-"}:
+        if value and value.casefold() not in {"n/a", "#n/a", "na", "null", "-"}:
             return value
     return None
 
@@ -24,7 +24,7 @@ def _value(row: dict[str, str | None], *keys: str) -> str | None:
 class MemberCsvRow:
     row_number: int
     client_code: str | None
-    employer_member_id: str | None
+    import_source_id: str | None
     staff_number: str | None
     display_label: str | None
     work_email: str | None
@@ -34,12 +34,22 @@ class MemberCsvRow:
     phone: str | None
     national_id: str | None
     passport_number: str | None
+    job_title: str | None
+    job_classification: str | None
+    skill: str | None
+    department: str | None
+    unit: str | None
+    employment_type: str | None
     status: str | None
     relation: str | None
-    primary_employee_member_id: str | None
+    primary_import_source_id: str | None
 
 
-def parse_member_csv(content: bytes) -> tuple[list[MemberCsvRow], list[dict[str, object]]]:
+REQUIRED_HEADERS = {"staff_id", "name_of_employee"}
+
+
+def _reader(content: bytes) -> csv.DictReader[str]:
+    """A reader over the decoded file, rejecting anything the mapping cannot use."""
     try:
         decoded = content.decode("utf-8-sig")
     except UnicodeDecodeError as exc:
@@ -47,54 +57,67 @@ def parse_member_csv(content: bytes) -> tuple[list[MemberCsvRow], list[dict[str,
     reader = csv.DictReader(io.StringIO(decoded))
     if not reader.fieldnames:
         raise ValueError("CSV must have a header row")
-    headers = {_key(header): header for header in reader.fieldnames if header}
-    required = {"staff_id", "name_of_employee"}
-    missing = sorted(required - headers.keys())
+    headers = {_key(header) for header in reader.fieldnames if header}
+    missing = sorted(REQUIRED_HEADERS - headers)
     if missing:
         raise ValueError(f"CSV must include: {', '.join(missing)}")
+    return reader
+
+
+def _parse_row(row_number: int, row: dict[str, str | None]) -> MemberCsvRow:
+    return MemberCsvRow(
+        row_number=row_number,
+        client_code=_value(row, "company_code", "client_code"),
+        # Staff Number is deliberately not an identity fallback.  It is often
+        # payroll-scoped and may be blank/reused; only an explicit Staff_ID or
+        # import_source_id is safe for idempotent roster imports. This is the
+        # employer's own reference for matching re-imports; the member code
+        # itself is always assigned by the server, never taken from the sheet.
+        import_source_id=_value(row, "staff_id", "import_source_id"),
+        staff_number=_value(row, "staff_number"),
+        display_label=_value(row, "name_of_employee", "display_label", "name"),
+        work_email=_value(row, "email_address", "work_email", "email"),
+        personal_email=_value(row, "personal_email", "personal_email_address"),
+        gender=_value(row, "gender"),
+        date_of_birth=_value(row, "date_of_birth", "dob"),
+        phone=_value(row, "phone", "phone_number", "mobile"),
+        national_id=_value(row, "national_id", "national_identification_number"),
+        passport_number=_value(row, "passport_number", "passport"),
+        job_title=_value(row, "job_title"),
+        job_classification=_value(row, "job_classification", "classification"),
+        skill=_value(row, "skill"),
+        department=_value(row, "department"),
+        unit=_value(row, "unit"),
+        employment_type=_value(row, "contract_type", "employment_type"),
+        status=_value(row, "status"),
+        relation=_value(row, "relation", "member_relation"),
+        primary_import_source_id=_value(row, "primary_staff_id", "primary_import_source_id"),
+    )
+
+
+def _row_issues(parsed: MemberCsvRow) -> list[dict[str, object]]:
+    """Everything wrong with one row, by the source file's column names."""
+    issues: list[dict[str, object]] = []
+    if not parsed.client_code:
+        issues.append({"field": "Company Code", "message": "Client code is required"})
+    if not parsed.import_source_id or parsed.import_source_id.endswith("-"):
+        issues.append({"field": "Staff_ID", "message": "Stable Staff_ID is required"})
+    if not parsed.display_label:
+        issues.append({"field": "Name of Employee", "message": "Member name is required"})
+    return [{"row": parsed.row_number, **issue} for issue in issues]
+
+
+def _is_blank(raw: dict[str, str | None]) -> bool:
+    return not any((value or "").strip() for value in raw.values() if value is not None)
+
+
+def parse_member_csv(content: bytes) -> tuple[list[MemberCsvRow], list[dict[str, object]]]:
     rows: list[MemberCsvRow] = []
     issues: list[dict[str, object]] = []
-    for row_number, raw in enumerate(reader, start=2):
-        row = {_key(key): value for key, value in raw.items() if key}
-        if not any((value or "").strip() for value in raw.values() if value is not None):
+    for row_number, raw in enumerate(_reader(content), start=2):
+        if _is_blank(raw):
             continue
-        parsed = MemberCsvRow(
-            row_number=row_number,
-            client_code=_value(row, "company_code", "client_code"),
-            # Staff Number is deliberately not an identity fallback.  It is often
-            # payroll-scoped and may be blank/reused; only an explicit Staff_ID or
-            # employer_member_id is safe for idempotent roster imports.
-            employer_member_id=_value(row, "staff_id", "employer_member_id"),
-            staff_number=_value(row, "staff_number"),
-            display_label=_value(row, "name_of_employee", "display_label", "name"),
-            work_email=_value(row, "email_address", "work_email", "email"),
-            personal_email=_value(row, "personal_email", "personal_email_address"),
-            gender=_value(row, "gender"),
-            date_of_birth=_value(row, "date_of_birth", "dob"),
-            phone=_value(row, "phone", "phone_number", "mobile"),
-            national_id=_value(row, "national_id", "national_identification_number"),
-            passport_number=_value(row, "passport_number", "passport"),
-            status=_value(row, "status"),
-            relation=_value(row, "relation", "member_relation"),
-            primary_employee_member_id=_value(
-                row, "primary_staff_id", "primary_employee_member_id"
-            ),
-        )
+        parsed = _parse_row(row_number, {_key(key): value for key, value in raw.items() if key})
         rows.append(parsed)
-        if not parsed.client_code:
-            issues.append(
-                {"row": row_number, "field": "Company Code", "message": "Client code is required"}
-            )
-        if not parsed.employer_member_id or parsed.employer_member_id.endswith("-"):
-            issues.append(
-                {"row": row_number, "field": "Staff_ID", "message": "Stable Staff_ID is required"}
-            )
-        if not parsed.display_label:
-            issues.append(
-                {
-                    "row": row_number,
-                    "field": "Name of Employee",
-                    "message": "Member name is required",
-                }
-            )
+        issues.extend(_row_issues(parsed))
     return rows, issues

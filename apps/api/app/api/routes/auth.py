@@ -17,6 +17,7 @@ from app.api.dependencies import (
     get_tenant_repository,
     get_user_repository,
 )
+from app.api.dependencies.audit import get_audit_event_handler
 from app.api.schemas.auth_schemas import (
     LoginRequest,
     LoginResponse,
@@ -40,7 +41,7 @@ from app.core.security import (
     hash_password,
     verify_password,
 )
-from app.domain.enums import TenantStatus, UserStatus
+from app.domain.enums import AuditActionType, TenantStatus, UserStatus
 from app.domain.repositories.tenant_repository import TenantRepository
 from app.domain.repositories.user_repository import UserRepository
 from app.domain.value_objects.core import Email, TenantId, UserId
@@ -52,10 +53,34 @@ from app.infrastructure.repositories.refresh_token_repository import (
 )
 from app.shared.decorators import transactional
 from app.shared.utils.generators import generate_cuid
+from app.shared.utils.route_audit_helper import audit_auth_event
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/auth", tags=["authentication"])
+
+
+async def _record_login(
+    audit_handler,
+    request: Request,
+    tenant,
+    user_id: str | None,
+    outcome: str,
+) -> None:
+    """Record one sign-in attempt against a known user.
+
+    An attempt that names no known tenant or user is left to the rate
+    limiter: it changes nothing and would let an unauthenticated caller
+    write audit rows.
+    """
+    await audit_auth_event(
+        audit_handler,
+        request,
+        action=AuditActionType.LOGIN,
+        tenant_id=tenant.id.value,
+        user_id=user_id,
+        outcome=outcome,
+    )
 
 
 @router.post(
@@ -66,10 +91,12 @@ router = APIRouter(prefix="/auth", tags=["authentication"])
 @transactional()
 async def set_initial_password(
     body: SetInitialPasswordRequest,
+    request: Request,
     password_set_token_repo: PasswordSetTokenRepository = Depends(
         get_password_set_token_repository
     ),
     user_repo: UserRepository = Depends(get_user_repository),
+    audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
 ):
     """
@@ -83,13 +110,22 @@ async def set_initial_password(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Invalid or expired link. Request a new link from your administrator.",
         )
+    user = await user_repo.get_by_id(UserId(user_id))
     password_hash = hash_password(body.password)
     updated = await user_repo.update_password(UserId(user_id), password_hash)
-    if not updated:
+    if not updated or user is None:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="User not found",
         )
+    await audit_auth_event(
+        audit_handler,
+        request,
+        action=AuditActionType.UPDATE,
+        tenant_id=user.tenant_id.value,
+        user_id=user_id,
+        outcome="initial_password_set",
+    )
     return None
 
 
@@ -149,6 +185,7 @@ async def login(
     tenant_repo: TenantRepository = Depends(get_tenant_repository),
     user_repo: UserRepository = Depends(get_user_repository),
     refresh_token_repo: RefreshTokenRepository = Depends(get_refresh_token_repository),
+    audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
 ):
     """
@@ -201,6 +238,8 @@ async def login(
         )
 
     if user.is_locked():
+        await _record_login(audit_handler, request, tenant, user.id.value, "locked_out")
+        await db.commit()
         raise HTTPException(
             status_code=status.HTTP_423_LOCKED,
             detail="Account is temporarily locked due to repeated failed sign-in attempts. Try again later.",
@@ -224,9 +263,10 @@ async def login(
             lock_duration=lockout_window,
         )
         await user_repo.save(user)
+        await _record_login(audit_handler, request, tenant, user.id.value, "bad_password")
         # Commit before raising. @transactional rolls back on HTTPException, and
-        # a failed login always ends in one, so without this the counter is
-        # discarded every time and the account lockout never fires.
+        # a failed login always ends in one, so without this the counter and the
+        # audit row are discarded every time and the account lockout never fires.
         await db.commit()
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -235,6 +275,10 @@ async def login(
         )
 
     if user.status in (UserStatus.BANNED, UserStatus.TERMINATED, UserStatus.SUSPENDED):
+        await _record_login(
+            audit_handler, request, tenant, user.id.value, f"account_{user.status.value.lower()}"
+        )
+        await db.commit()
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail=f"User account is {user.status.value.lower()}. Access denied.",
@@ -242,6 +286,7 @@ async def login(
 
     user.record_successful_login()
     await user_repo.save(user)
+    await _record_login(audit_handler, request, tenant, user.id.value, "granted")
 
     # Optionally revoke all previous refresh tokens for this user before issuing a new one
     if getattr(settings, "REVOKE_PREVIOUS_REFRESH_TOKENS_ON_LOGIN", False) and refresh_token_repo:
@@ -308,6 +353,7 @@ async def refresh_token(
     tenant_repo: TenantRepository = Depends(get_tenant_repository),
     user_repo: UserRepository = Depends(get_user_repository),
     refresh_token_repo: RefreshTokenRepository = Depends(get_refresh_token_repository),
+    audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
 ):
     """Exchange refresh token for new access and refresh tokens. Optionally rotates refresh token."""
@@ -381,6 +427,15 @@ async def refresh_token(
     if rotation:
         await refresh_token_repo.save(refresh_jti, token_data.user_id, token_data.tenant_id)
 
+    await audit_auth_event(
+        audit_handler,
+        request,
+        action=AuditActionType.LOGIN,
+        tenant_id=token_data.tenant_id,
+        user_id=token_data.user_id,
+        outcome="refresh_rotated" if rotation else "refresh_reused",
+    )
+
     refresh_response = RefreshResponse(
         access_token=token.access_token,
         refresh_token=token.refresh_token,
@@ -426,6 +481,7 @@ async def logout(
     request: Request,
     body: LogoutRequest | None = Body(None),
     refresh_token_repo: RefreshTokenRepository = Depends(get_refresh_token_repository),
+    audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
 ):
     """Revoke a refresh token so it can no longer be used. No-op if token has no jti or revocation is disabled."""
@@ -441,6 +497,14 @@ async def logout(
             jti = token_data.jti
             if jti:
                 await refresh_token_repo.revoke(jti)
+            await audit_auth_event(
+                audit_handler,
+                request,
+                action=AuditActionType.LOGOUT,
+                tenant_id=token_data.tenant_id,
+                user_id=token_data.user_id,
+                outcome="revoked" if jti else "no_jti",
+            )
         except Exception:
             # Logout still succeeds (cookies are cleared below), but an unrevoked
             # refresh token remains usable until it expires; that needs a trail.

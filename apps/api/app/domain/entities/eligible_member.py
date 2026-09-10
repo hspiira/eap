@@ -24,6 +24,7 @@ from app.domain.value_objects.core import (
     TenantId,
     UserId,
 )
+from app.domain.value_objects.staffing import EmploymentDetails
 from app.shared.utils.datetime import utc_now
 
 
@@ -47,8 +48,10 @@ class EligibleMember:
     gender: MemberGender | None = None
     phone: str | None = None
     staff_number: str | None = None
+    import_source_id: str | None = None
     national_id: str | None = None
     passport_number: str | None = None
+    employment: EmploymentDetails | None = None
     last_imported_at: datetime | None = None
     suspended_at: datetime | None = None
     terminated_at: datetime | None = None
@@ -139,6 +142,7 @@ class EligibleMember:
         staff_number: str | None = None,
         national_id: str | None = None,
         passport_number: str | None = None,
+        employment: EmploymentDetails | None = None,
     ) -> None:
         """Update current roster details without creating a User account."""
         if not employer_member_id.strip():
@@ -166,6 +170,7 @@ class EligibleMember:
         self.staff_number = staff_number
         self.national_id = national_id
         self.passport_number = passport_number
+        self.employment = employment if employment and not employment.is_empty else None
         self.updated_at = utc_now()
         self.events.append(
             EligibleMemberUpdated(occurred_at=utc_now(), member_id=self.id, field="roster_details")

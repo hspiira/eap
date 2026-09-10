@@ -18,6 +18,17 @@ export interface MemberNextOfKin {
   updated_at: string
 }
 
+/** Optional workforce attributes from the employer's roster. Free text. */
+export interface MemberEmployment {
+  job_title?: string | null
+  job_classification?: string | null
+  skill?: string | null
+  department?: string | null
+  unit?: string | null
+  /** The employee's contract of employment (e.g. Permanent, FTC). Not the client's contract. */
+  employment_type?: string | null
+}
+
 /** Employer-side member covered by a client's wellness programme. */
 export interface Member {
   id: string
@@ -35,8 +46,10 @@ export interface Member {
   gender?: MemberGender | null
   phone?: string | null
   staff_number?: string | null
+  import_source_id?: string | null
   national_id?: string | null
   passport_number?: string | null
+  employment?: MemberEmployment | null
   last_imported_at?: string | null
   suspended_at?: string | null
   terminated_at?: string | null

@@ -36,6 +36,9 @@ class DiagnosisRepository(ABC):
     @abstractmethod
     async def get_diagnosis_by_code(self, code: str) -> Diagnosis | None: ...
 
+    @abstractmethod
+    async def get_diagnosis_by_id(self, diagnosis_id: str) -> Diagnosis | None: ...
+
     # === Writes (platform admin only) ===
 
     @abstractmethod

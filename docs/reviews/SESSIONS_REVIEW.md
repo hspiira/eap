@@ -2,13 +2,15 @@
 
 Reviewed 2026-09-07 against `7a9ab41` on `chore/monorepo`. Scope: the service
 session aggregate, its API, its list UI, and the historical import path, checked
-against `SERVICES_MIGRATION.md`, `PROVIDERS_MIGRATION.md` (session extract and
-import acceptance), `MEMBERS_MIGRATION.md`, `MODULES_REPAIR_PLAN.md`, and the
-source extract the sessions are captured in today.
+against `docs/migrations/SERVICES_MIGRATION.md`,
+`docs/migrations/PROVIDERS_MIGRATION.md` (session extract and import
+acceptance), `docs/migrations/MEMBERS_MIGRATION.md`,
+`docs/reviews/MODULES_REPAIR_PLAN.md`, and the source extract the sessions are
+captured in today.
 
 Sessions are **not** behind a feature flag (`apps/web/src/lib/featureFlags.ts`),
 so this module is in scope under the paused-module rule in
-`MODULES_REPAIR_PLAN.md`.
+`docs/reviews/MODULES_REPAIR_PLAN.md`.
 
 ## The source extract
 
@@ -19,9 +21,9 @@ Every figure below was computed from that file at that hash.
 
 ### Inherited audit claims, now reverified
 
-`PROVIDERS_MIGRATION.md` records counsellor figures and flags them as
-"inherited audit claims, not independently reverified". They are reverified
-here and all but one hold:
+`docs/migrations/PROVIDERS_MIGRATION.md` records counsellor figures and flags
+them as "inherited audit claims, not independently reverified". They are
+reverified here and all but one hold:
 
 | Claim | Recomputed | Verdict |
 | --- | --- | --- |
@@ -54,7 +56,7 @@ Do not rebuild these.
   `session_import_rows` is unique on `(tenant_id, replay_key)`, and
   `_replay_key` uses the source record key when there is one and
   `file:{hash}:row:{n}` when there is not, which is exactly the fallback
-  `PROVIDERS_MIGRATION.md` prescribes.
+  `docs/migrations/PROVIDERS_MIGRATION.md` prescribes.
 - **Historical acceptance is correctly separated from booking eligibility.**
   `HistoricalSessionImport` does not consult the booking gate, performs no
   billing or authorization drawdown, and keeps `Unknown` delivery context when
@@ -274,8 +276,8 @@ Closes S-04 and S-06. No row is imported before this exists.
      controlled clinical list is a clinical decision, not a string function,
      and no fuzzy matching should be used on them.
    - `CLIENT FEEDBACK` is not imported as a category at all. It is free text
-     with 56 spellings, and PRIV-01 in `MODULES_REPAIR_PLAN.md` forbids free
-     text reaching an employer aggregate.
+     with 56 spellings, and PRIV-01 in `docs/reviews/MODULES_REPAIR_PLAN.md`
+     forbids free text reaching an employer aggregate.
 8. Map the source status onto the two enums it actually spans: `Ongoing` to
    `ToBeContinued`, `Completed` to `Completed`, `Referred` to `Referred`,
    `Terminated` to the new `Terminated`, and `No Show` to `SessionStatus`, not

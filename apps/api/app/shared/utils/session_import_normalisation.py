@@ -105,7 +105,7 @@ _GENDER: dict[str, MemberGender | SessionAttendance] = {
     "group": SessionAttendance.COMPANY_WIDE,
 }
 
-# Blocked on a clinician (SESSIONS_IMPLEMENTATION.md B2). These tables stay
+# Blocked on a clinician (docs/handoffs/SESSIONS_IMPLEMENTATION.md B2). These tables stay
 # empty until the controlled clinical list exists; every value stages as
 # Unmapped. Do not populate them from engineering.
 _DIAGNOSIS_TYPE: dict[str, str] = {}

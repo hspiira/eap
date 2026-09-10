@@ -39,7 +39,7 @@ describe("one registry for the sidebar and search", () => {
   })
 
   it("keeps Providers as one entry owning both route families", () => {
-    // PROVIDERS_MIGRATION.md navigation decision, 2026-09-07.
+    // docs/migrations/PROVIDERS_MIGRATION.md navigation decision, 2026-09-07.
     expect(item("Providers").matchPrefixes).toEqual(["/providers", "/provider-organisations"])
     expect(ALL.some((i) => i.to === "/provider-organisations")).toBe(false)
   })

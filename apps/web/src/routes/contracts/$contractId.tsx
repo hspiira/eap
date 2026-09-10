@@ -2,7 +2,7 @@ import { useCallback, useMemo, useState } from "react"
 
 import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router"
-import { ArrowLeft, ChevronRight, FileCheck, FileSignature, Pencil, Plus } from "lucide-react"
+import { ArrowLeft, ChevronRight, FileCheck, FileSignature, Plus, SquarePen } from "lucide-react"
 
 import { clientsApi } from "@/api/endpoints/clients"
 import { contractsApi } from "@/api/endpoints/contracts"
@@ -151,7 +151,7 @@ function ContractDetailPage() {
             className="h-7 gap-1.5 px-2.5"
             onClick={() => setEditOpen(true)}
           >
-            <Pencil className="size-3.5" />
+            <SquarePen className="size-3.5" />
             Edit
           </Button>
         </>

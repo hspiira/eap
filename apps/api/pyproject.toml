@@ -138,6 +138,7 @@ ignore_imports = [
     "app.api.dependencies.clinical -> app.infrastructure.repositories.clinical_note_repository",
     "app.api.dependencies.clinical -> app.infrastructure.repositories.eap_programme_repository",
     "app.api.dependencies.clinical -> app.infrastructure.repositories.eligible_member_repository",
+    "app.api.dependencies.clinical -> app.infrastructure.repositories.member_import_repository",
     "app.api.dependencies.clinical -> app.infrastructure.repositories.member_next_of_kin_repository",
     "app.api.dependencies.clinical -> app.infrastructure.repositories.next_of_kin_relationship_repository",
     "app.api.dependencies.commercial -> app.infrastructure.repositories.contract_repository",
@@ -188,7 +189,7 @@ ignore_imports = [
     "app.api.dependencies.tenancy -> app.infrastructure.repositories.tenant_repository",
     "app.core.authorization -> app.api.dependencies",
     "app.core.database -> app.infrastructure.models.base",
-    # Tech debt (must be eliminated; track in IMPLEMENTATION_PLAN.md Phase 1):
+    # Tech debt (must be eliminated):
     "app.api.routes.auth -> app.infrastructure.repositories.password_set_token_repository",
     "app.api.routes.auth -> app.infrastructure.repositories.refresh_token_repository",
     "app.api.routes.auth_azure -> app.infrastructure.repositories.refresh_token_repository",

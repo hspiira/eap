@@ -40,6 +40,7 @@ def make_audit_consumer(audit_repository: AuditRepository):
                 "event_data": payload.get("event_data") or {},
             },
             is_special_category=bool(payload.get("is_special_category", False)),
+            occurred_at=event.occurred_at,
         )
         if audit_log is None:
             return

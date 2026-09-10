@@ -2,7 +2,7 @@ import { useState } from "react"
 
 import { useQuery } from "@tanstack/react-query"
 import { createFileRoute } from "@tanstack/react-router"
-import { Pencil, ShieldCheck } from "lucide-react"
+import { ShieldCheck, SquarePen } from "lucide-react"
 
 import { tenantsApi } from "@/api/endpoints/tenants"
 import { AppLayout } from "@/components/AppLayout"
@@ -62,7 +62,7 @@ function TenantDetailBody() {
         actions={
           tenant ? (
             <Button type="button" variant="outline" size="sm" onClick={() => setEditOpen(true)}>
-              <Pencil className="size-3.5" /> Edit name
+              <SquarePen className="size-3.5" /> Edit name
             </Button>
           ) : null
         }

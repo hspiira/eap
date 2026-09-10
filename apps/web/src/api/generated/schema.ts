@@ -3054,6 +3054,30 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/health/outbox": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Outbox Health
+         * @description Whether the outbox worker is keeping up.
+         *
+         *     Reports unhealthy on the age of the oldest undelivered event, not on
+         *     depth. Nothing watched this before, and the worker being stopped showed
+         *     up only as an empty audit_logs that nothing reads.
+         */
+        get: operations["outbox_health_health_outbox_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/industries/": {
         parameters: {
             query?: never;
@@ -3607,33 +3631,14 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * Import Members
-         * @description Check a roster row by row, and on confirmation import each row on its own.
-         */
-        post: operations["import_members_members_import_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/members/import/commit": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Commit Member Import
-         * @description Import a slice of previewed rows, re-checking and committing each one alone.
+         * Stage Member Import
+         * @description Stage a roster for review. Writes no members; apply does that.
          *
-         *     The client sends the roster in slices so it can show progress. A row that
-         *     fails is reported and skipped; the rows already written stay written.
+         *     Restaging a roster whose batch is still awaiting a decision is a
+         *     conflict, not a second batch. Restaging one already applied or abandoned
+         *     is how a corrected file re-judges against the roster as it now stands.
          */
-        post: operations["commit_member_import_members_import_commit_post"];
+        post: operations["stage_member_import_members_import_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -3658,6 +3663,107 @@ export interface paths {
         options?: never;
         head?: never;
         patch?: never;
+        trace?: never;
+    };
+    "/members/import/{batch_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Member Import Batch */
+        get: operations["get_member_import_batch_members_import__batch_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/members/import/{batch_id}/abandon": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Abandon Member Import
+         * @description Close a batch nobody will apply, with the reason on the record.
+         *
+         *     Frees the file hash and this batch's rows' Staff_IDs, so the roster can
+         *     be staged again once whatever blocked it is fixed.
+         */
+        post: operations["abandon_member_import_members_import__batch_id__abandon_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/members/import/{batch_id}/apply": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Apply Member Import
+         * @description Write every still-importable row, one at a time, then close the batch.
+         *
+         *     Applying a second time is refused, so a replayed request cannot write
+         *     twice. A row that fails to write does not stop the rest; the rows
+         *     already written stay written.
+         */
+        post: operations["apply_member_import_members_import__batch_id__apply_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/members/import/{batch_id}/rows": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Member Import Rows */
+        get: operations["list_member_import_rows_members_import__batch_id__rows_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/members/import/{batch_id}/rows/{row_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Set Member Import Row Decision
+         * @description Override one still-new row's Import/Skip decision before applying.
+         */
+        patch: operations["set_member_import_row_decision_members_import__batch_id__rows__row_id__patch"];
         trace?: never;
     };
     "/members/stats": {
@@ -7072,19 +7178,6 @@ export interface components {
              */
             file: string;
         };
-        /** Body_import_members_members_import_post */
-        Body_import_members_members_import_post: {
-            /**
-             * Decisions Json
-             * @description Row decisions from the preview
-             */
-            decisions_json?: string | null;
-            /**
-             * File
-             * @description UTF-8 client member roster CSV
-             */
-            file: string;
-        };
         /** Body_queue_client_import_clients_import_jobs_post */
         Body_queue_client_import_clients_import_jobs_post: {
             /**
@@ -7107,6 +7200,14 @@ export interface components {
         /** Body_stage_import_session_imports_post */
         Body_stage_import_session_imports_post: {
             /** File */
+            file: string;
+        };
+        /** Body_stage_member_import_members_import_post */
+        Body_stage_member_import_members_import_post: {
+            /**
+             * File
+             * @description UTF-8 client member roster CSV
+             */
             file: string;
         };
         /** Body_upload_contract_attachment_documents_contracts__contract_id__attachments_post */
@@ -10989,10 +11090,16 @@ export interface components {
             display_label: string;
             /**
              * Employer Member Id
-             * @description Optional. Left blank, the server issues {client code}-001, -002, and so on.
+             * @description Do not set on create; the server always issues {client code}-001, -002, and so on. Reused internally to revalidate a PATCH that changes it.
              */
             employer_member_id?: string | null;
+            employment?: components["schemas"]["MemberEmployment"] | null;
             gender?: components["schemas"]["MemberGender"] | null;
+            /**
+             * Import Source Id
+             * @description Optional. The employer's own reference for this row (e.g. a roster Staff_ID), used to match rows on re-import. Never the member code.
+             */
+            import_source_id?: string | null;
             /** National Id */
             national_id?: string | null;
             /** Passport Number */
@@ -11038,130 +11145,144 @@ export interface components {
             relation: components["schemas"]["MemberRelation"];
         };
         /**
+         * MemberEmployment
+         * @description Optional workforce attributes from the employer's roster.
+         *
+         *     Free text: the vocabularies are the employer's own. Held for record and
+         *     segmentation only, and read by no eligibility rule.
+         */
+        MemberEmployment: {
+            /** Department */
+            department?: string | null;
+            /**
+             * Employment Type
+             * @description The employee's contract of employment (e.g. Permanent, FTC). Unrelated to the client's commercial contract.
+             */
+            employment_type?: string | null;
+            /** Job Classification */
+            job_classification?: string | null;
+            /** Job Title */
+            job_title?: string | null;
+            /** Skill */
+            skill?: string | null;
+            /** Unit */
+            unit?: string | null;
+        };
+        /**
          * MemberGender
          * @description Optional demographic value. Restricted to Male/Female by product decision.
          * @enum {string}
          */
         MemberGender: "Female" | "Male";
         /**
-         * MemberImportCommitRequest
-         * @description A slice of confirmed rows. Each row is committed on its own.
+         * MemberImportAbandonRequest
+         * @description Why nobody will apply this batch. It goes on the record, so it is required.
          */
-        MemberImportCommitRequest: {
-            /** Rows */
-            rows: components["schemas"]["MemberImportCommitRow"][];
-        };
-        /** MemberImportCommitResponse */
-        MemberImportCommitResponse: {
-            /** Results */
-            results: components["schemas"]["MemberImportRowResult"][];
+        MemberImportAbandonRequest: {
+            /** Reason */
+            reason: string;
         };
         /**
-         * MemberImportCommitRow
-         * @description One row the client confirmed for import, replayed from the preview.
+         * MemberImportApplyResponse
+         * @description What happened when a staged batch's importable rows were written.
          */
-        MemberImportCommitRow: {
-            /** Row */
-            row: number;
-            values: components["schemas"]["MemberImportRowValues"];
-        };
-        /** MemberImportIssue */
-        MemberImportIssue: {
-            /** Field */
-            field?: string | null;
-            /** Message */
-            message: string;
-            /** Row */
-            row: number;
-        };
-        /** MemberImportResponse */
-        MemberImportResponse: {
+        MemberImportApplyResponse: {
+            /** Batch Id */
+            batch_id: string;
             /** Failed */
             failed: number;
             /** Imported */
             imported: number;
-            /** Issues */
-            issues?: components["schemas"]["MemberImportIssue"][];
-            /** Rows */
-            rows: components["schemas"]["MemberImportRowPreview"][];
-            /** Skipped */
-            skipped: number;
+            /** Not Importable */
+            not_importable: number;
+            /** Skipped Already Imported */
+            skipped_already_imported: number;
         };
-        /** MemberImportRowPreview */
-        MemberImportRowPreview: {
+        /**
+         * MemberImportBatchResponse
+         * @description One staged roster upload and its outcome counts.
+         */
+        MemberImportBatchResponse: {
+            /** Applied At */
+            applied_at?: string | null;
+            /** Applied By */
+            applied_by?: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** File Hash */
+            file_hash: string;
+            /** File Name */
+            file_name: string;
+            /** Id */
+            id: string;
+            /** Outcome Counts */
+            outcome_counts: {
+                [key: string]: number;
+            };
+            /** Row Count */
+            row_count: number;
+            /** Staged By */
+            staged_by: string;
+            /** Status */
+            status: string;
+            /** Tenant Id */
+            tenant_id: string;
+        };
+        /**
+         * MemberImportRowDecisionRequest
+         * @description Override one still-new row's Import/Skip decision before applying.
+         */
+        MemberImportRowDecisionRequest: {
+            /**
+             * Decision
+             * @enum {string}
+             */
+            decision: "import" | "skip";
+        };
+        /** MemberImportRowListResponse */
+        MemberImportRowListResponse: {
+            /** Has More */
+            has_more: boolean;
+            /** Items */
+            items: components["schemas"]["MemberImportRowResponse"][];
+            /** Limit */
+            limit: number;
+            /** Page */
+            page: number;
+            /** Total */
+            total: number;
+        };
+        /**
+         * MemberImportRowResponse
+         * @description One staged row: what it resolved to, and what a person decided about it.
+         */
+        MemberImportRowResponse: {
             /** Client Code */
             client_code: string | null;
             /** Client Name */
-            client_name: string | null;
-            /**
-             * Default Action
-             * @default import
-             */
-            default_action: string;
+            client_name?: string | null;
+            /** Decision */
+            decision: string;
             /** Display Label */
             display_label: string | null;
-            /** Employer Member Id */
-            employer_member_id: string | null;
+            employment?: components["schemas"]["MemberEmployment"] | null;
+            /** Id */
+            id: string;
+            /** Import Source Id */
+            import_source_id: string | null;
+            /** Imported Member Id */
+            imported_member_id?: string | null;
             /** Message */
             message?: string | null;
-            /** Row */
-            row: number;
+            /** Outcome */
+            outcome: string;
+            /** Row Number */
+            row_number: number;
             /** Staff Number */
             staff_number?: string | null;
-            /** State */
-            state: string;
-            values?: components["schemas"]["MemberImportRowValues"] | null;
-        };
-        /**
-         * MemberImportRowResult
-         * @description What happened to a single row once it was written.
-         */
-        MemberImportRowResult: {
-            /** Member Id */
-            member_id?: string | null;
-            /** Message */
-            message?: string | null;
-            /** Row */
-            row: number;
-            /** State */
-            state: string;
-        };
-        /**
-         * MemberImportRowValues
-         * @description The raw CSV values for one roster row, as the parser read them.
-         *
-         *     The preview echoes these back so the confirmation step can send one row at a
-         *     time without re-uploading the file.
-         */
-        MemberImportRowValues: {
-            /** Client Code */
-            client_code?: string | null;
-            /** Date Of Birth */
-            date_of_birth?: string | null;
-            /** Display Label */
-            display_label?: string | null;
-            /** Employer Member Id */
-            employer_member_id?: string | null;
-            /** Gender */
-            gender?: string | null;
-            /** National Id */
-            national_id?: string | null;
-            /** Passport Number */
-            passport_number?: string | null;
-            /** Personal Email */
-            personal_email?: string | null;
-            /** Phone */
-            phone?: string | null;
-            /** Primary Employee Member Id */
-            primary_employee_member_id?: string | null;
-            /** Relation */
-            relation?: string | null;
-            /** Staff Number */
-            staff_number?: string | null;
-            /** Status */
-            status?: string | null;
-            /** Work Email */
-            work_email?: string | null;
         };
         /** MemberListResponse */
         MemberListResponse: {
@@ -11279,9 +11400,12 @@ export interface components {
             display_label: string | null;
             /** Employer Member Id */
             employer_member_id: string;
+            employment?: components["schemas"]["MemberEmployment"] | null;
             gender: components["schemas"]["MemberGender"] | null;
             /** Id */
             id: string;
+            /** Import Source Id */
+            import_source_id?: string | null;
             /** Is Currently Eligible */
             is_currently_eligible: boolean;
             /** Last Imported At */
@@ -11342,6 +11466,7 @@ export interface components {
             display_label?: string | null;
             /** Employer Member Id */
             employer_member_id?: string | null;
+            employment?: components["schemas"]["MemberEmployment"] | null;
             gender?: components["schemas"]["MemberGender"] | null;
             /** National Id */
             national_id?: string | null;
@@ -20858,6 +20983,26 @@ export interface operations {
             };
         };
     };
+    outbox_health_health_outbox_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
     list_industries_industries__get: {
         parameters: {
             query: {
@@ -22072,43 +22217,7 @@ export interface operations {
             };
         };
     };
-    import_members_members_import_post: {
-        parameters: {
-            query?: {
-                /** @description Preview only; set false to create members */
-                dry_run?: boolean;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "multipart/form-data": components["schemas"]["Body_import_members_members_import_post"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["MemberImportResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    commit_member_import_members_import_commit_post: {
+    stage_member_import_members_import_post: {
         parameters: {
             query?: never;
             header?: never;
@@ -22117,17 +22226,17 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["MemberImportCommitRequest"];
+                "multipart/form-data": components["schemas"]["Body_stage_member_import_members_import_post"];
             };
         };
         responses: {
             /** @description Successful Response */
-            200: {
+            201: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["MemberImportCommitResponse"];
+                    "application/json": components["schemas"]["MemberImportBatchResponse"];
                 };
             };
             /** @description Validation Error */
@@ -22157,6 +22266,177 @@ export interface operations {
                 };
                 content: {
                     "application/json": unknown;
+                };
+            };
+        };
+    };
+    get_member_import_batch_members_import__batch_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                batch_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MemberImportBatchResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    abandon_member_import_members_import__batch_id__abandon_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                batch_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MemberImportAbandonRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MemberImportBatchResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    apply_member_import_members_import__batch_id__apply_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                batch_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MemberImportApplyResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_member_import_rows_members_import__batch_id__rows_get: {
+        parameters: {
+            query?: {
+                /** @description Filter the review queue */
+                outcome?: string | null;
+                /** @description Page number */
+                page?: number;
+                /** @description Items per page */
+                limit?: number;
+            };
+            header?: never;
+            path: {
+                batch_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MemberImportRowListResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    set_member_import_row_decision_members_import__batch_id__rows__row_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                batch_id: string;
+                row_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MemberImportRowDecisionRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MemberImportRowResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };

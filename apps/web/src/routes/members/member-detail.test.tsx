@@ -68,4 +68,31 @@ describe("member detail", () => {
     expect(api.listBeneficiaries).not.toHaveBeenCalled()
     expect(api.listNextOfKin).not.toHaveBeenCalled()
   })
+
+  it("shows the employment card only when the employer supplied those details", async () => {
+    renderWithProviders(<Page />)
+    expect(await screen.findByRole("heading", { name: "Amina Namukasa" })).toBeInTheDocument()
+    expect(screen.queryByText("Employment")).not.toBeInTheDocument()
+  })
+
+  it("renders the employment details an employer did supply", async () => {
+    api.getById.mockResolvedValue(
+      makeMember({
+        employment: {
+          job_title: "Branch Manager",
+          job_classification: "Manager",
+          skill: "Officer",
+          department: "Operations",
+          unit: "Kampala Road branch",
+          employment_type: "Permanent",
+        },
+      }),
+    )
+    renderWithProviders(<Page />)
+    expect(await screen.findByText("Employment")).toBeInTheDocument()
+    expect(screen.getByText("Branch Manager")).toBeInTheDocument()
+    expect(screen.getByText("Operations")).toBeInTheDocument()
+    expect(screen.getByText("Kampala Road branch")).toBeInTheDocument()
+    expect(screen.getByText("Permanent")).toBeInTheDocument()
+  })
 })

@@ -32,6 +32,7 @@ export function EntityPicker<T extends { id: string }, P extends ListParams = Li
   selectedItem,
   params,
   filter,
+  staleTime,
 }: {
   resource: string
   listFn: (params: P) => Promise<PaginatedResponse<T>>
@@ -50,6 +51,8 @@ export function EntityPicker<T extends { id: string }, P extends ListParams = Li
   params?: Omit<P, keyof ListParams> & Partial<ListParams>
   /** Last-resort client-side narrowing for resources the API can't filter. */
   filter?: (item: T) => boolean
+  /** Longer for slow-changing lookups (e.g. industries, services categories). */
+  staleTime?: number
 }) {
   const [query, setQuery] = useState("")
   // A combobox, not a permanently open list: eight rows of every picker at
@@ -60,6 +63,7 @@ export function EntityPicker<T extends { id: string }, P extends ListParams = Li
     resource,
     params: { page: 1, limit: 8, search: debounced || undefined, ...params } as P,
     listFn,
+    staleTime,
   })
   const all = list.data?.items ?? []
   const items = filter ? all.filter(filter) : all
@@ -188,6 +192,7 @@ export function IndustryPicker({
       placeholder="Search industries by name…"
       emptyPrompt="Start typing to search industries."
       emptyNoMatch="No industries match."
+      staleTime={5 * 60_000}
       renderSelected={(i) => (
         <PickerRow initials={nameInitials(i.name)} primary={i.name} secondary={i.code} size="md" />
       )}
@@ -244,6 +249,7 @@ export function ServicePicker({
       placeholder="Search services by name…"
       emptyPrompt="Start typing to search services."
       emptyNoMatch="No services match."
+      staleTime={5 * 60_000}
       renderSelected={(s) => (
         <PickerRow
           initials="SV"

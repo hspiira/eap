@@ -95,8 +95,8 @@ class TestBatchIdempotency:
 
     async def test_a_successful_apply_marks_the_batch_with_the_count(self):
         use_case, imports, _ = _use_case(rows=[_row()])
-        result, imported = await use_case.execute(TENANT, BATCH, ACTOR, now=NOW)
-        assert (result.imported, imported) == (1, 1)
+        result, batch = await use_case.execute(TENANT, BATCH, ACTOR, now=NOW)
+        assert (result.imported, batch.status) == (1, ImportBatchStatus.APPLIED)
         saved = imports.save_batch.await_args.args[0]
         assert saved.status is ImportBatchStatus.APPLIED
         assert saved.events[0].accepted_count == 1

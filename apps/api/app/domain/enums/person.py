@@ -69,6 +69,21 @@ class EligibilityStatus(str, Enum):
     PENDING = "Pending"
 
 
+class MemberImportRowOutcome(str, Enum):
+    """Classification of one staged member roster row.
+
+    "Skip" is not a value here: it is the mutable `decision` field on the row,
+    since a New row can be toggled between Import and Skip after staging.
+    Outcome is what the row resolved to and does not change on that toggle.
+    """
+
+    NEW = "New"
+    DUPLICATE = "Duplicate"
+    INVALID = "Invalid"
+    # Applying a New/import row raised. Terminal: never retried by a later apply.
+    FAILED = "Failed"
+
+
 class Language(str, Enum):
     ENGLISH = "en"
     SPANISH = "es"

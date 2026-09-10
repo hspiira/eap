@@ -2,7 +2,7 @@ import { useCallback, useState } from "react"
 
 import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router"
-import { ArrowLeft, CalendarClock, ChevronRight, Pencil, Plus, Wrench } from "lucide-react"
+import { ArrowLeft, CalendarClock, ChevronRight, Plus, SquarePen, Wrench } from "lucide-react"
 
 import { serviceAssignmentsApi } from "@/api/endpoints/service-assignments"
 import { serviceSessionsApi } from "@/api/endpoints/service-sessions"
@@ -126,7 +126,7 @@ function ServiceDetailPage() {
             className="h-7 gap-1.5 px-2.5"
             onClick={() => setEditOpen(true)}
           >
-            <Pencil className="size-3.5" />
+            <SquarePen className="size-3.5" />
             Edit
           </Button>
         </>

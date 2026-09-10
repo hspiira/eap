@@ -3,7 +3,7 @@
 from dataclasses import dataclass
 
 from app.domain.events.base import DomainEvent
-from app.domain.value_objects.core import ClientId, EligibleMemberId
+from app.domain.value_objects.core import ClientId, EligibleMemberId, MemberImportBatchId, UserId
 
 
 @dataclass(frozen=True)
@@ -95,3 +95,31 @@ class MemberNextOfKinDeleted(DomainEvent):
     """Event raised when a next-of-kin contact is removed."""
 
     member_id: EligibleMemberId
+
+
+@dataclass(frozen=True)
+class MemberImportBatchStaged(DomainEvent):
+    """Event raised when a roster upload is parsed and its rows persisted."""
+
+    batch_id: MemberImportBatchId
+    source_file_name: str
+    row_count: int
+    actor: UserId
+
+
+@dataclass(frozen=True)
+class MemberImportBatchApplied(DomainEvent):
+    """Event raised when a staged batch's importable rows are written."""
+
+    batch_id: MemberImportBatchId
+    accepted_count: int
+    actor: UserId
+
+
+@dataclass(frozen=True)
+class MemberImportBatchAbandoned(DomainEvent):
+    """Event raised when a batch is closed without being applied."""
+
+    batch_id: MemberImportBatchId
+    actor: UserId
+    reason: str

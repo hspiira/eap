@@ -65,9 +65,10 @@ adding height, large icons, or another toolbar. Use existing visual tokens.
 8. Keep the desktop sidebar labelled by default for new users, allow collapsing,
    and respect saved preference. Keep unavailable modules out of routine
    navigation/search; feature previews belong in a deliberate preview area.
-9. Follow the adopted Providers grouping in `PROVIDERS_MIGRATION.md`: one module
-   with Practitioners and Organisations views. Avoid creating a sidebar entry
-   for every table. Broader sidebar regrouping is a separate change.
+9. Follow the adopted Providers grouping in
+   `docs/migrations/PROVIDERS_MIGRATION.md`: one module with Practitioners and
+   Organisations views. Avoid creating a sidebar entry for every table. Broader
+   sidebar regrouping is a separate change.
 
 The stable, visible search placement is consistent with NN/g's intranet-search
 guidance. This supports discoverability, not a claim that our exact proposed
@@ -131,8 +132,8 @@ must not create, delete, approve, or send anything directly from a search result
 Keep all results in groups even when a user types an action-like phrase.
 
 For the wellness officer, Prepare nugget could become an action after the
-workflow in `WELLNESS_NUGGETS_DECISION.md` is implemented. Do not expose it now
-as a working command.
+workflow in `docs/design/WELLNESS_NUGGETS_DECISION.md` is implemented. Do not
+expose it now as a working command.
 
 ### Interaction behaviour
 
@@ -201,8 +202,8 @@ Backend requirements:
 
 Existing list routes may be used in a small prototype with their actual field
 limits, but that prototype must not be presented as the completed global-search
-contract. The security findings in `MODULES_REPAIR_PLAN.md` must be revalidated
-where relevant before expansion.
+contract. The security findings in `docs/reviews/MODULES_REPAIR_PLAN.md` must be
+revalidated where relevant before expansion.
 
 ## Delivery order and acceptance
 

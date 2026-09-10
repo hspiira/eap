@@ -6,8 +6,8 @@ also the only identity-bearing side allowed to link to clinical subjects.
 """
 
 import csv
+import hashlib
 import io
-import json
 from collections.abc import Sequence
 from copy import deepcopy
 from typing import Literal
@@ -16,7 +16,6 @@ from fastapi import (
     APIRouter,
     Depends,
     File,
-    Form,
     HTTPException,
     Query,
     Request,
@@ -34,6 +33,7 @@ from app.api.dependencies import (
     get_clinical_subject_repository,
     get_eligible_member_clinical_link_repository,
     get_eligible_member_repository,
+    get_member_import_repository,
     get_member_next_of_kin_repository,
     get_next_of_kin_relationship_repository,
     get_outbox_repository,
@@ -48,11 +48,13 @@ from app.api.schemas.member_schemas import (
     MemberDuplicateCandidate,
     MemberDuplicateListResponse,
     MemberDuplicateMember,
-    MemberImportCommitRequest,
-    MemberImportCommitResponse,
-    MemberImportResponse,
-    MemberImportRowPreview,
-    MemberImportRowResult,
+    MemberEmployment,
+    MemberImportAbandonRequest,
+    MemberImportApplyResponse,
+    MemberImportBatchResponse,
+    MemberImportRowDecisionRequest,
+    MemberImportRowListResponse,
+    MemberImportRowResponse,
     MemberListResponse,
     MemberMergeRequest,
     MemberMergeResponse,
@@ -67,9 +69,9 @@ from app.api.schemas.service_session_schemas import ServiceSessionListResponse
 from app.api.services.member_import import (
     MemberRowChecker,
     MemberRowImporter,
-    RowCheck,
-    csv_row,
-    row_values,
+    build_row_entity,
+    csv_row_from_entity,
+    issue_member_code,
 )
 from app.application.use_cases.eligible_member_use_cases import EnrolEligibleMemberUseCase
 from app.core.authorization import require_clinical_scope, require_not_viewer, require_tenant_role
@@ -77,8 +79,10 @@ from app.core.database import get_db
 from app.core.security import TokenData, get_current_user
 from app.domain.entities.client import ClientEntity
 from app.domain.entities.eligible_member import EligibleMember
+from app.domain.entities.member_import import MemberImportBatchEntity, MemberImportRowEntity
 from app.domain.entities.member_next_of_kin import MemberNextOfKin
 from app.domain.enums import EligibilityStatus, MemberRelation, TenantRole
+from app.domain.enums.provider_network import ImportBatchStatus
 from app.domain.events import (
     EligibleMemberAccountLinked,
     EligibleMemberAccountUnlinked,
@@ -88,13 +92,14 @@ from app.domain.events import (
     MemberNextOfKinDeleted,
     MemberNextOfKinUpdated,
 )
-from app.domain.exceptions import EvexiaException
+from app.domain.exceptions import DomainError, EvexiaException, NotFoundError
 from app.domain.repositories.client_repository import ClientRepository
 from app.domain.repositories.eligible_member_repository import (
     ClinicalSubjectRepository,
     EligibleMemberClinicalLinkRepository,
     EligibleMemberRepository,
 )
+from app.domain.repositories.member_import_repository import MemberImportRepository
 from app.domain.repositories.member_next_of_kin_repository import MemberNextOfKinRepository
 from app.domain.repositories.next_of_kin_relationship_repository import (
     NextOfKinRelationshipRepository,
@@ -106,10 +111,13 @@ from app.domain.value_objects.core import (
     ClientId,
     EligibleMemberId,
     Email,
+    MemberImportBatchId,
+    MemberImportRowId,
     MemberNextOfKinId,
     TenantId,
     UserId,
 )
+from app.domain.value_objects.staffing import EmploymentDetails
 from app.shared.decorators import readonly, transactional
 from app.shared.handlers.audit_event_handler import AuditEventHandler
 from app.shared.utils.datetime import utc_now
@@ -120,26 +128,10 @@ from app.shared.utils.route_audit_helper import audit_change
 router = APIRouter(prefix="/members", tags=["members"])
 
 
-def _member_import_row(
-    row: MemberCsvRow,
-    *,
-    client_name: str | None = None,
-    state: str = "new",
-    message: str | None = None,
-    default_action: str | None = None,
-) -> MemberImportRowPreview:
-    return MemberImportRowPreview(
-        row=row.row_number,
-        client_code=row.client_code,
-        client_name=client_name,
-        employer_member_id=row.employer_member_id,
-        staff_number=row.staff_number,
-        display_label=row.display_label,
-        state=state,
-        message=message,
-        default_action=default_action or ("skip" if state == "duplicate" else "import"),
-        values=row_values(row),
-    )
+def _employment(data: MemberEmployment | None) -> EmploymentDetails | None:
+    if data is None:
+        return None
+    return EmploymentDetails.build(**data.model_dump())
 
 
 def _response(member: EligibleMember, client_name: str | None = None) -> MemberResponse:
@@ -164,8 +156,12 @@ def _response(member: EligibleMember, client_name: str | None = None) -> MemberR
         gender=member.gender,
         phone=member.phone,
         staff_number=member.staff_number,
+        import_source_id=member.import_source_id,
         national_id=member.national_id,
         passport_number=member.passport_number,
+        employment=(
+            MemberEmployment.model_validate(vars(member.employment)) if member.employment else None
+        ),
         last_imported_at=member.last_imported_at,
         suspended_at=member.suspended_at,
         terminated_at=member.terminated_at,
@@ -283,32 +279,6 @@ async def _client_in_tenant(
     return client
 
 
-async def _issue_member_id(
-    member_repo: EligibleMemberRepository,
-    *,
-    tenant_id: TenantId,
-    client_id: ClientId,
-    client_code: str,
-) -> str:
-    """Issue the next ``{client code}-###`` id for this client.
-
-    Skips codes already taken, so a roster imported with hand-written codes
-    under the same prefix continues from the top rather than colliding.
-
-    This sees only committed rows, so it cannot resolve a race between two
-    in-flight enrolments. The unique constraint is what actually guarantees
-    uniqueness; ``create_member`` turns that violation into a 409.
-    """
-    prefix = client_code.strip().upper()
-    sequence = await member_repo.next_member_sequence(tenant_id, client_id, prefix)
-    for candidate_sequence in range(sequence, sequence + 50):
-        candidate = f"{prefix}-{candidate_sequence:03d}"
-        existing = await member_repo.find_by_employer_member_id(tenant_id, client_id, candidate)
-        if existing is None:
-            return candidate
-    raise HTTPException(status_code=409, detail="Could not issue a member ID for this client")
-
-
 async def _validate_primary(
     member_repo: EligibleMemberRepository,
     primary_id: str | None,
@@ -366,12 +336,20 @@ async def create_member(
     db: AsyncSession = Depends(get_db),
 ):
     client = await _client_in_tenant(data.client_id, current_user.tenant_id, client_repo)
-    employer_member_id = data.employer_member_id or await _issue_member_id(
-        member_repo,
-        tenant_id=TenantId(current_user.tenant_id),
-        client_id=ClientId(data.client_id),
-        client_code=client.code,
-    )
+    if data.employer_member_id:
+        raise HTTPException(
+            status_code=422,
+            detail="Member code is issued by the server and cannot be set on create",
+        )
+    try:
+        employer_member_id = await issue_member_code(
+            member_repo,
+            tenant_id=TenantId(current_user.tenant_id),
+            client_id=ClientId(data.client_id),
+            client_code=client.code,
+        )
+    except ValueError as error:
+        raise HTTPException(status_code=409, detail=str(error)) from error
     await _validate_primary(
         member_repo,
         data.primary_employee_member_id,
@@ -429,8 +407,10 @@ async def _enrol(
         gender=data.gender,
         phone=data.phone,
         staff_number=data.staff_number,
+        import_source_id=data.import_source_id,
         national_id=data.national_id,
         passport_number=data.passport_number,
+        employment=_employment(data.employment),
     )
 
 
@@ -603,6 +583,12 @@ async def member_import_template(
             "Phone",
             "National ID",
             "Passport Number",
+            "Job Title",
+            "Job Classification",
+            "Skill",
+            "Department",
+            "Unit",
+            "Contract type",
             "Status",
             "Relation",
             "Primary Staff ID",
@@ -619,6 +605,12 @@ async def member_import_template(
             "1990-01-31",
             "Female",
             "+256700000000",
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
             "",
             "",
             "Pending",
@@ -694,31 +686,20 @@ async def scan_member_duplicates(
 ROSTER_MAX_BYTES = 10 * 1024 * 1024
 
 
-async def _read_roster(file: UploadFile) -> tuple[list[MemberCsvRow], list[dict[str, object]]]:
-    """Decode an uploaded roster into parsed rows plus per-row parser issues."""
+async def _read_roster(
+    file: UploadFile,
+) -> tuple[bytes, list[MemberCsvRow], list[dict[str, object]]]:
+    """Decode an uploaded roster into its raw bytes, parsed rows, and parser issues."""
     if not file.filename or not file.filename.lower().endswith(".csv"):
         raise HTTPException(status_code=415, detail="Only CSV files are supported")
     content = await file.read()
     if len(content) > ROSTER_MAX_BYTES:
         raise HTTPException(status_code=413, detail="Member roster CSV must be 10 MB or smaller")
     try:
-        return parse_member_csv(content)
+        rows, issues = parse_member_csv(content)
     except ValueError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
-
-
-def _decisions(raw: str | None) -> dict[str, str]:
-    try:
-        decoded = json.loads(raw) if raw else {}
-    except (TypeError, ValueError, json.JSONDecodeError) as exc:
-        raise HTTPException(status_code=422, detail="decisions_json must be an object") from exc
-    if not isinstance(decoded, dict):
-        raise HTTPException(status_code=422, detail="decisions_json must be an object")
-    return decoded
-
-
-def _decision_for(decisions: dict[str, str], row_number: int) -> str | None:
-    return decisions.get(str(row_number), decisions.get(row_number))
+    return content, rows, issues
 
 
 def _importer(
@@ -737,110 +718,309 @@ def _importer(
     )
 
 
-async def _import_row(
-    row: MemberCsvRow,
-    check: RowCheck,
-    importer: MemberRowImporter,
-    db: AsyncSession,
-) -> MemberImportRowResult:
-    """Write one checked row in its own transaction and report what happened."""
-    if check.state != "new" or check.data is None:
-        return MemberImportRowResult(row=row.row_number, state=check.state, message=check.message)
-    try:
-        member = await importer.enrol(row, check.data)
-        await db.commit()
-    except (EvexiaException, IntegrityError, ValueError) as exc:
-        await db.rollback()
-        return MemberImportRowResult(
-            row=row.row_number, state="failed", message=str(exc).split("\n", 1)[-1]
-        )
-    return MemberImportRowResult(row=row.row_number, state="imported", member_id=member.id.value)
-
-
-@router.post("/import", response_model=MemberImportResponse)
-@readonly()
-async def import_members(
-    file: UploadFile = File(..., description="UTF-8 client member roster CSV"),
-    decisions_json: str | None = Form(None, description="Row decisions from the preview"),
-    dry_run: bool = Query(True, description="Preview only; set false to create members"),
-    current_user: TokenData = Depends(require_not_viewer),
-    member_repo: EligibleMemberRepository = Depends(get_eligible_member_repository),
-    client_repo: ClientRepository = Depends(get_client_repository),
-    subject_repo: ClinicalSubjectRepository = Depends(get_clinical_subject_repository),
-    link_repo: EligibleMemberClinicalLinkRepository = Depends(
-        get_eligible_member_clinical_link_repository
-    ),
-    outbox: OutboxRepository = Depends(get_outbox_repository),
-    db: AsyncSession = Depends(get_db),
-):
-    """Check a roster row by row, and on confirmation import each row on its own."""
-    rows, parse_issues = await _read_roster(file)
-    decisions = _decisions(decisions_json)
-    parse_errors = {int(issue["row"]): str(issue["message"]) for issue in parse_issues}
-    error_fields = {
-        int(issue["row"]): str(issue.get("field")) if issue.get("field") else None
-        for issue in parse_issues
-    }
-
-    checker = MemberRowChecker(current_user.tenant_id, client_repo, member_repo)
-    checked: list[tuple[MemberCsvRow, RowCheck]] = []
-    for row in rows:
-        check = await checker.check(
-            row,
-            decision=_decision_for(decisions, row.row_number),
-            parse_error=parse_errors.get(row.row_number),
-        )
-        checked.append((row, check))
-
-    previews = [
-        _member_import_row(
-            row,
-            client_name=check.client.name if check.client else None,
-            state=check.state,
-            message=check.message,
-        )
-        for row, check in checked
-    ]
-    skipped = sum(preview.state in {"duplicate", "skipped"} for preview in previews)
-    invalid = [preview for preview in previews if preview.state == "invalid"]
-    ready = [(row, check) for row, check in checked if check.importable]
-
-    if invalid or dry_run:
-        return MemberImportResponse(
-            imported=0 if invalid else len(ready),
-            skipped=skipped,
-            failed=len(invalid),
-            issues=[
-                {
-                    "row": preview.row,
-                    "field": error_fields.get(preview.row),
-                    "message": preview.message or "Invalid row",
-                }
-                for preview in invalid
-            ],
-            rows=previews,
-        )
-
-    importer = _importer(current_user, member_repo, subject_repo, link_repo, outbox)
-    results = [await _import_row(row, check, importer, db) for row, check in ready]
-    failures = [result for result in results if result.state == "failed"]
-    return MemberImportResponse(
-        imported=sum(result.state == "imported" for result in results),
-        skipped=skipped,
-        failed=len(failures),
-        issues=[
-            {"row": result.row, "field": None, "message": result.message or "Import failed"}
-            for result in failures
-        ],
-        rows=previews,
+def _batch_response(
+    batch: MemberImportBatchEntity, counts: dict[str, int]
+) -> MemberImportBatchResponse:
+    return MemberImportBatchResponse(
+        id=batch.id.value,
+        tenant_id=batch.tenant_id.value,
+        file_name=batch.file_name,
+        file_hash=batch.file_hash,
+        row_count=batch.row_count,
+        status=batch.status.value,
+        outcome_counts=counts,
+        staged_by=batch.staged_by.value,
+        applied_by=batch.applied_by.value if batch.applied_by else None,
+        applied_at=batch.applied_at,
+        created_at=batch.created_at,
     )
 
 
-@router.post("/import/commit", response_model=MemberImportCommitResponse)
-@readonly()
-async def commit_member_import(
-    payload: MemberImportCommitRequest,
+def _staged_employment(row: MemberImportRowEntity) -> MemberEmployment | None:
+    """The row's employment values, or None when the roster carried none."""
+    details = EmploymentDetails.build(
+        job_title=row.job_title,
+        job_classification=row.job_classification,
+        skill=row.skill,
+        department=row.department,
+        unit=row.unit,
+        employment_type=row.employment_type,
+    )
+    return MemberEmployment.model_validate(vars(details)) if details else None
+
+
+def _row_response(
+    row: MemberImportRowEntity, client_name: str | None = None
+) -> MemberImportRowResponse:
+    return MemberImportRowResponse(
+        id=row.id.value,
+        row_number=row.row_number,
+        client_code=row.client_code,
+        client_name=client_name,
+        import_source_id=row.import_source_id,
+        staff_number=row.staff_number,
+        display_label=row.display_label,
+        outcome=row.outcome.value,
+        decision=row.decision,
+        employment=_staged_employment(row),
+        message=row.message,
+        imported_member_id=row.imported_member_id.value if row.imported_member_id else None,
+    )
+
+
+async def _require_import_batch(
+    imports: MemberImportRepository, tenant_id: str, batch_id: str
+) -> MemberImportBatchEntity:
+    batch = await imports.get_batch(TenantId(tenant_id), MemberImportBatchId(batch_id))
+    if batch is None:
+        raise NotFoundError(
+            "Import batch not found", resource_type="MemberImportBatch", resource_id=batch_id
+        )
+    return batch
+
+
+@router.post(
+    "/import",
+    response_model=MemberImportBatchResponse,
+    status_code=status.HTTP_201_CREATED,
+)
+@transactional()
+async def stage_member_import(
+    request: Request,
+    file: UploadFile = File(..., description="UTF-8 client member roster CSV"),
     current_user: TokenData = Depends(require_not_viewer),
+    imports: MemberImportRepository = Depends(get_member_import_repository),
+    member_repo: EligibleMemberRepository = Depends(get_eligible_member_repository),
+    client_repo: ClientRepository = Depends(get_client_repository),
+    outbox: OutboxRepository = Depends(get_outbox_repository),
+    db: AsyncSession = Depends(get_db),
+):
+    """Stage a roster for review. Writes no members; apply does that.
+
+    Restaging a roster whose batch is still awaiting a decision is a
+    conflict, not a second batch. Restaging one already applied or abandoned
+    is how a corrected file re-judges against the roster as it now stands.
+    """
+    content, rows, parse_issues = await _read_roster(file)
+    parse_errors = {int(issue["row"]): str(issue["message"]) for issue in parse_issues}
+    tenant = TenantId(current_user.tenant_id)
+    file_hash = "sha256:" + hashlib.sha256(content).hexdigest()
+
+    existing = await imports.find_batch_by_hash(tenant, file_hash)
+    if existing is not None and existing.status is ImportBatchStatus.STAGED:
+        message = f"This file was already staged as batch {existing.id.value}"
+        raise DomainError(
+            message,
+            error_code="IMPORT_ALREADY_STAGED",
+            http_status=409,
+            details={"file": message},
+        )
+    await imports.release_superseded_rows(tenant, file_hash)
+
+    now = utc_now()
+    batch = MemberImportBatchEntity(
+        id=MemberImportBatchId(generate_cuid()),
+        tenant_id=tenant,
+        file_name=file.filename or "upload",
+        file_hash=file_hash,
+        row_count=len(rows),
+        staged_by=UserId(current_user.user_id),
+        created_at=now,
+        updated_at=now,
+    )
+    batch.mark_staged(at=now)
+    await imports.save_batch(batch)
+
+    checker = MemberRowChecker(current_user.tenant_id, client_repo, member_repo)
+    entities: list[MemberImportRowEntity] = []
+    for row in rows:
+        check = await checker.check(row, parse_error=parse_errors.get(row.row_number))
+        entities.append(
+            build_row_entity(
+                row,
+                check,
+                row_id=MemberImportRowId(generate_cuid()),
+                batch_id=batch.id,
+                tenant_id=tenant,
+                file_hash=file_hash,
+                now=now,
+            )
+        )
+    await imports.add_rows(entities)
+    await _audit(batch, outbox=outbox, current_user=current_user, request=request)
+    return _batch_response(batch, await imports.outcome_counts(tenant, batch.id))
+
+
+@router.get("/import/{batch_id}", response_model=MemberImportBatchResponse)
+@readonly()
+async def get_member_import_batch(
+    batch_id: str,
+    current_user: TokenData = Depends(get_current_user),
+    imports: MemberImportRepository = Depends(get_member_import_repository),
+):
+    batch = await _require_import_batch(imports, current_user.tenant_id, batch_id)
+    return _batch_response(
+        batch, await imports.outcome_counts(TenantId(current_user.tenant_id), batch.id)
+    )
+
+
+@router.get("/import/{batch_id}/rows", response_model=MemberImportRowListResponse)
+@readonly()
+async def list_member_import_rows(
+    batch_id: str,
+    outcome: str | None = Query(None, description="Filter the review queue"),
+    pg: PageParams = Depends(pagination(default_limit=50)),
+    current_user: TokenData = Depends(get_current_user),
+    imports: MemberImportRepository = Depends(get_member_import_repository),
+    client_repo: ClientRepository = Depends(get_client_repository),
+):
+    tenant = TenantId(current_user.tenant_id)
+    items, total = await imports.list_rows(
+        tenant, MemberImportBatchId(batch_id), outcome=outcome, limit=pg.limit, offset=pg.offset
+    )
+    names: dict[str, str] = {}
+    for row in items:
+        if row.client_id and row.client_id.value not in names:
+            client = await client_repo.get_by_id(row.client_id)
+            if client:
+                names[row.client_id.value] = client.name
+    return MemberImportRowListResponse(
+        items=[
+            _row_response(row, names.get(row.client_id.value) if row.client_id else None)
+            for row in items
+        ],
+        total=total,
+        page=pg.page,
+        limit=pg.limit,
+        has_more=(pg.offset + len(items)) < total,
+    )
+
+
+@router.patch("/import/{batch_id}/rows/{row_id}", response_model=MemberImportRowResponse)
+@transactional()
+async def set_member_import_row_decision(
+    batch_id: str,
+    row_id: str,
+    data: MemberImportRowDecisionRequest,
+    current_user: TokenData = Depends(require_not_viewer),
+    imports: MemberImportRepository = Depends(get_member_import_repository),
+    db: AsyncSession = Depends(get_db),
+):
+    """Override one still-new row's Import/Skip decision before applying."""
+    tenant = TenantId(current_user.tenant_id)
+    row = await imports.get_row(tenant, MemberImportBatchId(batch_id), MemberImportRowId(row_id))
+    if row is None:
+        raise NotFoundError(
+            "Import row not found", resource_type="MemberImportRow", resource_id=row_id
+        )
+    row.set_decision(data.decision)
+    await imports.set_row_decision(tenant, row.id, row.decision)
+    return _row_response(row)
+
+
+@router.post("/import/{batch_id}/abandon", response_model=MemberImportBatchResponse)
+@transactional()
+async def abandon_member_import(
+    batch_id: str,
+    data: MemberImportAbandonRequest,
+    request: Request,
+    current_user: TokenData = Depends(require_not_viewer),
+    imports: MemberImportRepository = Depends(get_member_import_repository),
+    outbox: OutboxRepository = Depends(get_outbox_repository),
+    db: AsyncSession = Depends(get_db),
+):
+    """Close a batch nobody will apply, with the reason on the record.
+
+    Frees the file hash and this batch's rows' Staff_IDs, so the roster can
+    be staged again once whatever blocked it is fixed.
+    """
+    tenant = TenantId(current_user.tenant_id)
+    batch = await _require_import_batch(imports, current_user.tenant_id, batch_id)
+    batch.abandon(UserId(current_user.user_id), data.reason, at=utc_now())
+    await imports.save_batch(batch)
+    await imports.release_replay_keys(tenant, batch.id)
+    await _audit(batch, outbox=outbox, current_user=current_user, request=request)
+    return _batch_response(batch, await imports.outcome_counts(tenant, batch.id))
+
+
+async def _apply_row(
+    row: MemberImportRowEntity,
+    checker: MemberRowChecker,
+    importer: MemberRowImporter,
+    imports: MemberImportRepository,
+    tenant_id: TenantId,
+    db: AsyncSession,
+) -> str:
+    """Re-check and write one importable row in its own transaction.
+
+    A batch can sit staged for a while before it is applied, so the row is
+    judged again against the roster as it stands now rather than trusted from
+    staging time. A row that fails to write is marked Failed and the caller's
+    loop continues: see "Roster import atomicity" in
+    docs/migrations/MEMBERS_MIGRATION.md.
+    """
+    csv_row = csv_row_from_entity(row)
+    check = await checker.check(csv_row)
+    if check.state != "new" or check.data is None or check.client is None:
+        await imports.mark_row_failed(
+            tenant_id, row.id, check.message or f"No longer importable ({check.state})"
+        )
+        await db.commit()
+        return "not_importable"
+    try:
+        member = await importer.enrol(csv_row, check.data, check.client.code)
+        await imports.mark_row_imported(tenant_id, row.id, member.id.value)
+        await db.commit()
+    except (EvexiaException, IntegrityError, ValueError) as exc:
+        await db.rollback()
+        await imports.mark_row_failed(tenant_id, row.id, str(exc).split("\n", 1)[-1])
+        await db.commit()
+        return "failed"
+    return "imported"
+
+
+_APPLY_TALLY_KEYS = {
+    "imported": "imported",
+    "failed": "failed",
+    "not_importable": "not_importable",
+}
+
+
+async def _apply_rows(
+    tenant_id: TenantId,
+    batch_id: MemberImportBatchId,
+    checker: MemberRowChecker,
+    importer: MemberRowImporter,
+    imports: MemberImportRepository,
+    db: AsyncSession,
+) -> dict[str, int]:
+    tally = {"imported": 0, "failed": 0, "skipped_already_imported": 0, "not_importable": 0}
+    offset = 0
+    while True:
+        rows, total = await imports.list_rows(tenant_id, batch_id, limit=200, offset=offset)
+        if not rows:
+            break
+        for row in rows:
+            if row.imported_member_id is not None:
+                tally["skipped_already_imported"] += 1
+            elif not row.is_importable:
+                tally["not_importable"] += 1
+            else:
+                state = await _apply_row(row, checker, importer, imports, tenant_id, db)
+                tally[_APPLY_TALLY_KEYS[state]] += 1
+        offset += len(rows)
+        if offset >= total:
+            break
+    return tally
+
+
+@router.post("/import/{batch_id}/apply", response_model=MemberImportApplyResponse)
+@readonly()
+async def apply_member_import(
+    batch_id: str,
+    request: Request,
+    current_user: TokenData = Depends(require_not_viewer),
+    imports: MemberImportRepository = Depends(get_member_import_repository),
     member_repo: EligibleMemberRepository = Depends(get_eligible_member_repository),
     client_repo: ClientRepository = Depends(get_client_repository),
     subject_repo: ClinicalSubjectRepository = Depends(get_clinical_subject_repository),
@@ -850,19 +1030,28 @@ async def commit_member_import(
     outbox: OutboxRepository = Depends(get_outbox_repository),
     db: AsyncSession = Depends(get_db),
 ):
-    """Import a slice of previewed rows, re-checking and committing each one alone.
+    """Write every still-importable row, one at a time, then close the batch.
 
-    The client sends the roster in slices so it can show progress. A row that
-    fails is reported and skipped; the rows already written stay written.
+    Applying a second time is refused, so a replayed request cannot write
+    twice. A row that fails to write does not stop the rest; the rows
+    already written stay written.
     """
+    batch = await _require_import_batch(imports, current_user.tenant_id, batch_id)
+    if batch.status is not ImportBatchStatus.STAGED:
+        raise DomainError(
+            f"Batch {batch_id} is {batch.status.value} and cannot be applied again",
+            error_code="import_batch_not_staged",
+            http_status=409,
+        )
+    tenant = TenantId(current_user.tenant_id)
     checker = MemberRowChecker(current_user.tenant_id, client_repo, member_repo)
     importer = _importer(current_user, member_repo, subject_repo, link_repo, outbox)
-    results: list[MemberImportRowResult] = []
-    for entry in payload.rows:
-        row = csv_row(entry.row, entry.values)
-        check = await checker.check(row)
-        results.append(await _import_row(row, check, importer, db))
-    return MemberImportCommitResponse(results=results)
+    tally = await _apply_rows(tenant, batch.id, checker, importer, imports, db)
+    batch.mark_applied(UserId(current_user.user_id), at=utc_now(), accepted_count=tally["imported"])
+    await imports.save_batch(batch)
+    await db.commit()
+    await _audit(batch, outbox=outbox, current_user=current_user, request=request)
+    return MemberImportApplyResponse(batch_id=batch_id, **tally)
 
 
 def _csv_cell(value: str | None) -> str | None:
@@ -896,7 +1085,9 @@ async def update_member(
     await _validate_roster_update(member, updated, member_repo)
     # update_roster_details mutates in place, so the diff needs the state first.
     before = deepcopy(member)
-    details = updated.model_dump(exclude={"client_id"})
+    # import_source_id is set once at creation and never revised through this
+    # general roster-details update; it stays whatever the member was created with.
+    details = updated.model_dump(exclude={"client_id", "import_source_id"})
     details["primary_employee_member_id"] = (
         EligibleMemberId(updated.primary_employee_member_id)
         if updated.primary_employee_member_id
@@ -907,6 +1098,7 @@ async def update_member(
     details["personal_email"] = (
         Email(str(updated.personal_email)) if updated.personal_email else None
     )
+    details["employment"] = _employment(updated.employment)
     member.update_roster_details(
         **details, coverage_start=member.coverage_start, coverage_end=member.coverage_end
     )

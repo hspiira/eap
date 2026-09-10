@@ -2,7 +2,7 @@ import { useCallback, useState } from "react"
 
 import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router"
-import { ArrowLeft, FileCheck, FileSignature, Pencil, Wrench } from "lucide-react"
+import { ArrowLeft, FileCheck, FileSignature, SquarePen, Wrench } from "lucide-react"
 
 import { contractsApi } from "@/api/endpoints/contracts"
 import { serviceAssignmentsApi } from "@/api/endpoints/service-assignments"
@@ -122,7 +122,7 @@ function ServiceAssignmentDetailPage() {
             className="h-7 gap-1.5 px-2.5"
             onClick={() => setEditOpen(true)}
           >
-            <Pencil className="size-3.5" />
+            <SquarePen className="size-3.5" />
             Edit
           </Button>
         </>

@@ -2,7 +2,7 @@ import { useCallback, useState } from "react"
 
 import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router"
-import { ArrowLeft, Pencil, Users } from "lucide-react"
+import { ArrowLeft, SquarePen, Users } from "lucide-react"
 
 import { membersApi } from "@/api/endpoints/members"
 import {
@@ -118,7 +118,7 @@ function MemberDetail({ member }: { member: Member }) {
               className="h-7 rounded-none gap-1.5 px-2.5"
               onClick={() => setEditing(true)}
             >
-              <Pencil className="size-3.5" />
+              <SquarePen className="size-3.5" />
               Edit
             </Button>
           ) : null}
@@ -192,11 +192,16 @@ function MemberDetail({ member }: { member: Member }) {
                   </DetailCard>
                   <DetailCard title="Identification">
                     <DetailGrid>
-                      <DetailRow label="Staff number" value={member.staff_number} />
+                      <DetailRow label="Staff ID" value={member.import_source_id} />
+                      <DetailRow
+                        label="Staff number (reference only)"
+                        value={member.staff_number}
+                      />
                       <DetailRow label="National ID" value={member.national_id} />
                       <DetailRow label="Passport" value={member.passport_number} />
                     </DetailGrid>
                   </DetailCard>
+                  <MemberEmploymentCard member={member} />
                   <MemberNextOfKinCard member={member} />
                 </div>
               </TabPanel>
@@ -215,15 +220,7 @@ function MemberDetail({ member }: { member: Member }) {
           </div>
           <aside className="col-span-12 min-w-0 space-y-5 lg:sticky lg:top-3 lg:col-span-4 lg:max-h-[80vh] lg:overflow-y-auto lg:pt-14">
             <MemberGlanceSection member={member} />
-            <RailSection title="Beneficiary relationship">
-              {member.relation === "Employee" ? (
-                <p className="text-xs text-fg-muted">This is a primary employee member.</p>
-              ) : member.primary_employee_member_id ? (
-                <MemberLink memberId={member.primary_employee_member_id} />
-              ) : (
-                <p className="text-xs text-danger-fg">Primary employee missing</p>
-              )}
-            </RailSection>
+            <BeneficiaryRelationSection member={member} />
             {member.relation === "Employee" && <MemberBeneficiaries member={member} />}
             <MemberStatusHistory member={member} />
             <RailSection title="Lifecycle">
@@ -256,8 +253,64 @@ function GlanceStat({ label, value }: { label: string; value: React.ReactNode })
  * member joined, when the roster last confirmed them, and whether cover is
  * live today.
  */
+/** Only rendered when the employer's roster carried these optional columns. */
+function MemberEmploymentCard({ member }: { member: Member }) {
+  const employment = member.employment
+  if (!employment) return null
+  return (
+    <DetailCard title="Employment">
+      <DetailGrid>
+        <DetailRow label="Job title" value={employment.job_title} />
+        <DetailRow label="Classification" value={employment.job_classification} />
+        <DetailRow label="Skill" value={employment.skill} />
+        <DetailRow label="Department" value={employment.department} />
+        <DetailRow label="Unit" value={employment.unit} />
+        <DetailRow label="Contract" value={employment.employment_type} />
+      </DetailGrid>
+    </DetailCard>
+  )
+}
+
+function BeneficiaryRelationSection({ member }: { member: Member }) {
+  return (
+    <RailSection title="Beneficiary relationship">
+      {member.relation === "Employee" ? (
+        <p className="text-xs text-fg-muted">This is a primary employee member.</p>
+      ) : member.primary_employee_member_id ? (
+        <MemberLink memberId={member.primary_employee_member_id} />
+      ) : (
+        <p className="text-xs text-danger-fg">Primary employee missing</p>
+      )}
+    </RailSection>
+  )
+}
+
+function CoverTodayValue({ eligible }: { eligible: boolean | undefined }) {
+  if (eligible === undefined) return <>-</>
+  return (
+    <span className={eligible ? "text-success-fg" : "text-fg-muted"}>
+      {eligible ? "Eligible" : "Not eligible"}
+    </span>
+  )
+}
+
+function CoverageWindow({ member }: { member: Member }) {
+  if (!member.coverage_start && !member.coverage_end) {
+    return (
+      <p className="text-xs text-fg-muted">
+        No coverage window recorded. Cover is set at the client or programme level.
+      </p>
+    )
+  }
+  return (
+    <p className="text-xs text-fg-muted">
+      Cover {member.coverage_start ? formatDate(member.coverage_start) : "open"} to{" "}
+      {member.coverage_end ? formatDate(member.coverage_end) : "open ended"}
+    </p>
+  )
+}
+
 function MemberGlanceSection({ member }: { member: Member }) {
-  const eligible = member.is_currently_eligible
   return (
     <RailSection title="At a glance">
       <div className="grid grid-cols-2 gap-2">
@@ -269,27 +322,10 @@ function MemberGlanceSection({ member }: { member: Member }) {
         <GlanceStat label="Portal account" value={member.user_id ? "Linked" : "None"} />
         <GlanceStat
           label="Cover today"
-          value={
-            eligible === undefined ? (
-              "-"
-            ) : (
-              <span className={eligible ? "text-success-fg" : "text-fg-muted"}>
-                {eligible ? "Eligible" : "Not eligible"}
-              </span>
-            )
-          }
+          value={<CoverTodayValue eligible={member.is_currently_eligible} />}
         />
       </div>
-      {member.coverage_start || member.coverage_end ? (
-        <p className="text-xs text-fg-muted">
-          Cover {member.coverage_start ? formatDate(member.coverage_start) : "open"} to{" "}
-          {member.coverage_end ? formatDate(member.coverage_end) : "open ended"}
-        </p>
-      ) : (
-        <p className="text-xs text-fg-muted">
-          No coverage window recorded. Cover is set at the client or programme level.
-        </p>
-      )}
+      <CoverageWindow member={member} />
     </RailSection>
   )
 }

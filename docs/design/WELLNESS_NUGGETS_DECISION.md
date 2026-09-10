@@ -285,10 +285,10 @@ Do not treat member rosters, clinical contacts, client HR contacts, user account
 and newsletter subscribers as interchangeable. The existing member/provider
 migration identity rules continue to apply.
 
-`MODULES_REPAIR_PLAN.md` records access-control and frontend isolation findings
-against an earlier baseline. Revalidate and close relevant findings before a new
-module can schedule external communication. This research did not rerun that
-audit or assert which issues remain in today's deployment.
+`docs/reviews/MODULES_REPAIR_PLAN.md` records access-control and frontend
+isolation findings against an earlier baseline. Revalidate and close relevant
+findings before a new module can schedule external communication. This research
+did not rerun that audit or assert which issues remain in today's deployment.
 
 ## Team operating model to adopt first
 

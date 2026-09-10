@@ -180,9 +180,9 @@ from two recorded decisions, and refuses everything else.
    the practitioner that already existed before the batch).
 
 204 aliases are left unmapped: 87 from the practitioners workbook and 117 from
-the activity log. Decision 5 in `PROVIDERS_MIGRATION.md` is why: a normalised
-name is not identity, and an alias that merely looks like a practitioner's name
-is a question for a person, not a match for a script.
+the activity log. Decision 5 in `docs/migrations/PROVIDERS_MIGRATION.md` is why:
+a normalised name is not identity, and an alias that merely looks like a
+practitioner's name is a question for a person, not a match for a script.
 
 Queueing a name needed a route that did not exist. Staging reads reconciliation
 decisions and never opens one, so a source system whose names nobody had queued

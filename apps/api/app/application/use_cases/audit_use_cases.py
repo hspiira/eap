@@ -8,6 +8,7 @@ Note: These use cases are primarily for logging actions.
 They will be called by middleware/decorators, not directly via REST API.
 """
 
+from datetime import datetime
 from typing import Any
 
 from app.domain.entities.audit import AuditLog, EntityChange
@@ -43,12 +44,19 @@ class LogAuditActionUseCase:
         user_agent: str | None = None,
         metadata: dict[str, Any] | None = None,
         is_special_category: bool = False,
+        occurred_at: datetime | None = None,
     ) -> AuditLog | None:
         """Persist one audit log entry, honouring the action-filter policy.
 
         ``is_special_category`` flags clinical / health-data accesses so the DPO
         can produce a separate report. Defaults to False; callers in the audit
         event handler set it from the clinical-data classifier.
+
+        ``occurred_at`` is when the action happened, not when this ran. The
+        outbox means the two differ by however long the worker took to reach
+        the row, and by the whole outage if it was down. Callers draining the
+        outbox pass the event's own time; it defaults to now for a caller that
+        is recording something as it happens.
 
         Returns ``None`` when the action is filtered out by
         :class:`AuditFilterService`.
@@ -66,7 +74,7 @@ class LogAuditActionUseCase:
             description=description,
             ip_address=ip_address,
             user_agent=user_agent,
-            occurred_at=utc_now(),
+            occurred_at=occurred_at or utc_now(),
             metadata=metadata,
             is_special_category=is_special_category,
         )

@@ -2,7 +2,7 @@
 
 The taxonomy is global, so a tenant admin writing to it would give twenty
 tenants twenty spellings of the same concept and break cross-tenant prevalence.
-Tenant preference goes to the overlay instead. See SERVICES_MIGRATION.md.
+Tenant preference goes to the overlay instead. See docs/migrations/SERVICES_MIGRATION.md.
 """
 
 from fastapi.routing import APIRoute

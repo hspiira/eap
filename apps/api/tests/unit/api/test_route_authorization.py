@@ -34,6 +34,7 @@ INTENTIONALLY_PUBLIC = {
     ("GET", "/"): "landing page",
     ("GET", "/docs"): "API reference",
     ("GET", "/health"): "readiness probe",
+    ("GET", "/health/outbox"): "worker liveness probe, counts only and no tenant data",
     ("GET", "/metrics"): "metrics scrape",
     ("POST", "/auth/login"): "obtains the token",
     ("POST", "/auth/logout"): "clears a session that may already be invalid",
@@ -44,7 +45,7 @@ INTENTIONALLY_PUBLIC = {
     ("POST", "/survey-campaigns/{campaign_id}/webhook"): "signed provider webhook",
     ("GET", "/tenants/check-code/{code}"): "signup-time code availability",
     # Provider module, owned by the provider worktrees. Tracked, not approved:
-    # see MODULES_REPAIR_PLAN.md, stream 1 ownership block.
+    # see docs/reviews/MODULES_REPAIR_PLAN.md, stream 1 ownership block.
     ("GET", "/provider-specialties"): "PENDING: provider owner to gate this read",
 }
 

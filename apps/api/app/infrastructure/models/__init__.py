@@ -67,6 +67,10 @@ from app.infrastructure.models.kpi_measurement_unit_model import (
     KPIMeasurementUnitModel,
 )
 from app.infrastructure.models.kpi_model import KPIAssignmentModel, KPIModel
+from app.infrastructure.models.member_import_model import (
+    MemberImportBatchModel,
+    MemberImportRowModel,
+)
 from app.infrastructure.models.member_next_of_kin_model import MemberNextOfKinModel
 from app.infrastructure.models.next_of_kin_relationship_model import (
     NextOfKinRelationshipModel,
@@ -143,6 +147,8 @@ __all__ = [
     "DiagnosisModel",
     "EligibleMemberClinicalLinkModel",
     "EligibleMemberModel",
+    "MemberImportBatchModel",
+    "MemberImportRowModel",
     "MemberNextOfKinModel",
     "NextOfKinRelationshipModel",
     "DiagnosisAliasModel",

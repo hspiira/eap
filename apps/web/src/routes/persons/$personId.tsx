@@ -2,7 +2,7 @@ import { useCallback, useState } from "react"
 
 import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router"
-import { ArrowLeft, Pencil, UserCog, Users } from "lucide-react"
+import { ArrowLeft, SquarePen, UserCog, Users } from "lucide-react"
 
 import { clientsApi } from "@/api/endpoints/clients"
 import { personsApi } from "@/api/endpoints/persons"
@@ -148,7 +148,7 @@ function PersonDetailPage() {
             className="h-7 gap-1.5 px-2.5"
             onClick={() => setEditOpen(true)}
           >
-            <Pencil className="size-3.5" />
+            <SquarePen className="size-3.5" />
             Edit
           </Button>
         </>
@@ -250,7 +250,7 @@ function PersonDetailPage() {
                     description="Edit this person to fill in role, department, and dates."
                     action={
                       <Button size="sm" className="gap-1.5" onClick={() => setEditOpen(true)}>
-                        <Pencil className="size-4" />
+                        <SquarePen className="size-4" />
                         Edit
                       </Button>
                     }
@@ -317,7 +317,7 @@ function PersonDetailPage() {
                     description="Add a name and phone in case of incidents."
                     action={
                       <Button size="sm" className="gap-1.5" onClick={() => setEditOpen(true)}>
-                        <Pencil className="size-4" />
+                        <SquarePen className="size-4" />
                         Add contact
                       </Button>
                     }

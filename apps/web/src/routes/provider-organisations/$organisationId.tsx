@@ -2,7 +2,7 @@ import { useState } from "react"
 
 import { useQueryClient } from "@tanstack/react-query"
 import { createFileRoute, useNavigate } from "@tanstack/react-router"
-import { Building, Pencil } from "lucide-react"
+import { Building, SquarePen } from "lucide-react"
 
 import { providerOrganisationsApi } from "@/api/endpoints/provider-organisations"
 import { DetailCard, DetailGrid, DetailRow } from "@/components/common/DetailPrimitives"
@@ -157,7 +157,7 @@ function ProviderOrganisationDetailPage() {
             className="h-7 gap-1.5 rounded-none px-2"
             onClick={() => setEditOpen(true)}
           >
-            <Pencil className="size-3.5" />
+            <SquarePen className="size-3.5" />
             Edit
           </Button>
         ) : null

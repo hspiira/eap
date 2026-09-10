@@ -1,12 +1,12 @@
 # Sessions: implementation tasks
 
-Companion to `SESSIONS_REVIEW.md`, which holds the evidence and the decisions.
-This document is the work breakdown: one section per task, sized so that a task
-is one agent's assignment and one commit or a short series of them.
+Companion to `docs/reviews/SESSIONS_REVIEW.md`, which holds the evidence and the
+decisions. This document is the work breakdown: one section per task, sized so
+that a task is one agent's assignment and one commit or a short series of them.
 
 Written against `c646fe2` on `chore/monorepo`. Sessions are not behind a feature
 flag, so this module is in scope under the paused-module rule in
-`MODULES_REPAIR_PLAN.md`.
+`docs/reviews/MODULES_REPAIR_PLAN.md`.
 
 ## How to run this with more than one agent
 
@@ -346,7 +346,8 @@ operator slices by and none are filterable today.
 # Phase D — better than the activity log
 
 Not code. Each item needs the counselling team to agree before a field is made
-required, and each is recorded in `SESSIONS_REVIEW.md` with its evidence.
+required, and each is recorded in `docs/reviews/SESSIONS_REVIEW.md` with its
+evidence.
 
 - **Require headcount on company-wide sessions.** Recorded on 28 of 7,470 rows
   today, so group reach is currently unmeasurable.
@@ -398,10 +399,10 @@ intervention canon.
 
 2026-09-07: those prerequisites were loaded into dev and the workbook's 7,471
 activity-log rows were staged and applied for real. 85 imported; the rest wait
-on data, not code. `DEV_DATA_LOAD.md` carries the counts per outcome, what each
-one waits on, and the one design change worth making first: a staged session
-row keeps no copy of the source values it was judged from, so improving the
-reference data forces a re-stage rather than a re-judge.
+on data, not code. `docs/operations/DEV_DATA_LOAD.md` carries the counts per
+outcome, what each one waits on, and the one design change worth making first: a
+staged session row keeps no copy of the source values it was judged from, so
+improving the reference data forces a re-stage rather than a re-judge.
 
 ## Sequencing summary
 

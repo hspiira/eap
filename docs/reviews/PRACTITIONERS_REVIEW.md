@@ -8,13 +8,13 @@ Consultants - General" (68 rows), "Requirement Checklist" (19 provider rows).
 All figures below were computed from the file at that hash.
 
 **Ownership.** The provider module belonged to the provider worktrees
-(`wt-agent1..3`), now dormant per `PROVIDERS_MIGRATION.md`'s 2026-09-07 entry
-directing provider-module work onto the main branch. This review started
-advisory and implementing nothing; P-08 through P-10 below were implemented
-and tested on 2026-09-07 under that same direction, at the user's explicit
-request, before any real import runs. It follows the decisions already
-adopted in `PROVIDERS_MIGRATION.md` and flags where the workbook meets or
-misses them.
+(`wt-agent1..3`), now dormant per `docs/migrations/PROVIDERS_MIGRATION.md`'s
+2026-09-07 entry directing provider-module work onto the main branch. This
+review started advisory and implementing nothing; P-08 through P-10 below were
+implemented and tested on 2026-09-07 under that same direction, at the user's
+explicit request, before any real import runs. It follows the decisions already
+adopted in `docs/migrations/PROVIDERS_MIGRATION.md` and flags where the workbook
+meets or misses them.
 
 ## Where the implementation already fits the file
 
@@ -66,11 +66,12 @@ needed either way; recorded, not assumed.
 ### P-03: per-practitioner rates are captured but deliberately unmodelled
 
 The consultants sheet carries `Counsel` and `Talks` rates per practitioner
-(60,000 / 500,000 UGX and similar). `PROVIDERS_MIGRATION.md` records supplier
-contracts as a deferred capability requiring its own design, and nothing in
-the current model holds a practitioner rate; `rate_ugx` lives on the session.
-The import should preserve these columns as source data and not invent a rate
-field. If supplier contracting is picked up, this sheet is its seed data.
+(60,000 / 500,000 UGX and similar). `docs/migrations/PROVIDERS_MIGRATION.md`
+records supplier contracts as a deferred capability requiring its own design,
+and nothing in the current model holds a practitioner rate; `rate_ugx` lives on
+the session. The import should preserve these columns as source data and not
+invent a rate field. If supplier contracting is picked up, this sheet is its
+seed data.
 
 ### P-04: contact columns do not fit one-to-one
 
@@ -141,17 +142,17 @@ Found 2026-09-07 while building a system-shaped export of the currently
 `Accepted` rows. `apply_practitioner_import.py` set `contact_phone = None`
 unconditionally on every created practitioner, and left
 `provider_profile.specialties` at its empty default; neither the workbook's
-mobile number columns nor `mapped_profession` (computed at staging
-specifically to decide Accepted vs. NeedsReview) reached the created
-`ProviderEntity`. A narrower, more actionable instance of the "To fix"
-table's "Typed profile promotion" item in `PROVIDERS_MIGRATION.md`, not a new
-category of gap.
+mobile number columns nor `mapped_profession` (computed at staging specifically
+to decide Accepted vs. NeedsReview) reached the created `ProviderEntity`. A
+narrower, more actionable instance of the "To fix" table's "Typed profile
+promotion" item in `docs/migrations/PROVIDERS_MIGRATION.md`, not a new category
+of gap.
 
-**Phone: fixed and tested 2026-09-07.** `apply_practitioner_import.py` now
-sets `contact_phone` from the row's own provenance (`CONTACT MOBILE 1`, else
-`MOBILE CONTACT 2`, first non-blank only, never concatenated). Recorded as an
-adopted decision in `PROVIDERS_MIGRATION.md`. Covered by new unit tests in
-`tests/unit/application/test_apply_practitioner_import.py`.
+**Phone: fixed and tested 2026-09-07.** `apply_practitioner_import.py` now sets
+`contact_phone` from the row's own provenance (`CONTACT MOBILE 1`, else `MOBILE
+CONTACT 2`, first non-blank only, never concatenated). Recorded as an adopted
+decision in `docs/migrations/PROVIDERS_MIGRATION.md`. Covered by new unit tests
+in `tests/unit/application/test_apply_practitioner_import.py`.
 
 **Profession/specialty: deliberately not fixed.** Populating
 `provider_profile.specialties`, even as free text, would answer the P-01
@@ -188,11 +189,11 @@ Found 2026-09-07 while building `practitioner-import-review/practitioners.json`
 and `role_descriptions.json` from the API's own `reasons` field: distinguishing
 "unmapped profession" from "duplicate-name candidate" from "double email cell"
 required regex-matching English prose (`"Same normalised name as (.+):
-candidates for one identity"`), because the field carried only a message
-string, never a code. The same shape of defect that finding 3 in
-`PROVIDERS_MIGRATION.md` already fixed for `ValidationException` field errors
-elsewhere in this same migration: a message good enough to display is not
-good enough to build a review UI or any other consumer against, because
+candidates for one identity"`), because the field carried only a message string,
+never a code. The same shape of defect that finding 3 in
+`docs/migrations/PROVIDERS_MIGRATION.md` already fixed for `ValidationException`
+field errors elsewhere in this same migration: a message good enough to display
+is not good enough to build a review UI or any other consumer against, because
 prose can be reworded without anyone noticing it broke a downstream parser.
 
 **Fixed and tested 2026-09-07.** `PractitionerImportRowEntity.reasons` is now
@@ -204,7 +205,7 @@ a tuple of `ImportReviewReason(code, message)`, with `ImportReasonCode`
 repository JSON column, and `PractitionerImportRowPreview` API schema all
 carry the new shape; this is a breaking API contract change to that one
 field, but nothing outside the pipeline consumed it yet (no review UI exists
-per `PROVIDERS_MIGRATION.md`), so nothing else needed updating.
+per `docs/migrations/PROVIDERS_MIGRATION.md`), so nothing else needed updating.
 `ruff`/`ruff format`/`lint-imports`/the `app/domain` pyright gate all pass,
 and the full practitioner-import unit and PostgreSQL-backed integration
 suite passes (64 tests). Not run: web contract regeneration, since no

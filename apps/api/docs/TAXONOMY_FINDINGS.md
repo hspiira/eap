@@ -44,9 +44,10 @@ incremented anywhere.
 
 Two consequences. There are two mechanisms for one concept, `is_active` and
 `effective_until`, and only one of them works, while the tree query requires
-both to agree. And `SERVICES_MIGRATION.md` decision 3 rejected soft delete
-specifically to protect the labels persisted in `report_runs.output`; the
-mechanism chosen to provide that protection is two columns nothing writes.
+both to agree. And `docs/migrations/SERVICES_MIGRATION.md` decision 3 rejected
+soft delete specifically to protect the labels persisted in
+`report_runs.output`; the mechanism chosen to provide that protection is two
+columns nothing writes.
 
 This is load-bearing for the catalogue import: 27 of the 88 diagnosis rows are
 name updates.
@@ -71,8 +72,8 @@ Recovering a previous label needs an audit trail, which is item 11.
 `effective_until` alongside `is_active`; `_apply` now reports whether a value
 actually changed so `update_type` and `update_diagnosis` bump `version` on a
 real edit and not on a no-op patch. The false docstring in `diagnosis_model.py`
-is replaced with what the code does, and `SERVICES_MIGRATION.md` decision 3
-carries the amendment.
+is replaced with what the code does, and `docs/migrations/SERVICES_MIGRATION.md`
+decision 3 carries the amendment.
 
 Verified by `apps/api/tests/integration/test_diagnosis_versioning.py`, 8 tests
 against local PostgreSQL. Four of them fail against the previous code, which is
@@ -116,11 +117,11 @@ Left open deliberately: the admin UI does not expose the move.
 adding a type selector needs the type list passed into the sheet. The catalogue
 import uses the API directly and does not need it.
 
-The regenerated contract is **not** in this commit.
-`pnpm contracts:sync` picks up another session's in-flight `ImportReasonCode`
-from the practitioner import work, which is not in `HEAD`. Same situation as
-phases 1 and 3 recorded in `SERVICES_MIGRATION.md`: whoever lands the
-practitioner work regenerates `apps/api/schema/openapi.json` and
+The regenerated contract is **not** in this commit. `pnpm contracts:sync` picks
+up another session's in-flight `ImportReasonCode` from the practitioner import
+work, which is not in `HEAD`. Same situation as phases 1 and 3 recorded in
+`docs/migrations/SERVICES_MIGRATION.md`: whoever lands the practitioner work
+regenerates `apps/api/schema/openapi.json` and
 `apps/web/src/api/generated/schema.ts`, which will then also carry
 `DiagnosisUpdate.type_id`.
 
@@ -272,9 +273,9 @@ defect by stashing the fix: 2 of 5 fail against the old file.
 was false when written. It now points at the test that keeps it true.
 
 Root cause worth noting: typing the column in migration `a5b8c1d4e7f0` is what
-made the seed invalid, and phase 1 of `SERVICES_MIGRATION.md` audited the
-*database* for unmappable values and found none, because the tables were empty.
-Nothing audited the seed file.
+made the seed invalid, and phase 1 of `docs/migrations/SERVICES_MIGRATION.md`
+audited the *database* for unmappable values and found none, because the tables
+were empty. Nothing audited the seed file.
 
 ## 6. ~~Three visit services duplicate `service_sessions.location`~~
 
@@ -373,10 +374,11 @@ table is tenant-scoped. `services.json` is applied per tenant matched on name,
 so a rename breaks import idempotency, and intervention mix is not comparable
 across tenants.
 
-`SERVICES_MIGRATION.md` decision 1 rejected per-tenant diagnosis rows because
-"if every tenant owns a private copy of the taxonomy, no two tenants share a
-diagnosis id and that scope cannot be built without a cross-tenant crosswalk".
-That reasoning applies unchanged to interventions and was not applied to them.
+`docs/migrations/SERVICES_MIGRATION.md` decision 1 rejected per-tenant diagnosis
+rows because "if every tenant owns a private copy of the taxonomy, no two
+tenants share a diagnosis id and that scope cannot be built without a
+cross-tenant crosswalk". That reasoning applies unchanged to interventions and
+was not applied to them.
 
 Whether it should be depends on whether intervention mix is ever benchmarked,
 which I have not evaluated. This belongs to whoever owns benchmarking.

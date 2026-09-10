@@ -1,13 +1,12 @@
 # Services and diagnoses module migration
 
-Working handoff log for the service catalogue and diagnosis taxonomy redesign.
-Intentionally untracked while the migration is in progress, matching
-`MEMBERS_MIGRATION.md`. Update this file as each phase completes; strike
-completed items through rather than removing them.
+Working handoff log for the service catalogue and diagnosis taxonomy redesign,
+tracked in git, matching `docs/migrations/MEMBERS_MIGRATION.md`. Update this
+file as each phase completes; strike completed items through rather than
+removing them.
 
-Companion review, tracked, carrying the data analysis of `services.csv` and the
+Companion review carrying the data analysis of `services.csv` and the
 entitlement finding in its section 3.6: `apps/api/docs/SERVICES_MODULE.md`.
-Cite that file rather than this one; this log is untracked by design.
 
 ## Product boundary
 

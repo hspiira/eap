@@ -85,6 +85,13 @@ class EligibleMemberRepository(BaseRepository[EligibleMember, EligibleMemberId])
         employer_member_id: str,
     ) -> EligibleMember | None: ...
 
+    async def find_by_import_source_id(
+        self,
+        tenant_id: TenantId,
+        client_id: ClientId,
+        import_source_id: str,
+    ) -> EligibleMember | None: ...
+
     async def find_by_user_id(
         self, tenant_id: TenantId, user_id: UserId
     ) -> EligibleMember | None: ...

@@ -16,7 +16,7 @@ system keys off a different selector. The two dark palettes independently define
 surface/border values (`--token-surface: #171717` in `theme/themes/evexia-dark.css:12` vs
 `--surface → #171717` in `styles/theme/tokens-dark.css`): same colors maintained twice,
 guaranteed to drift. `styles.css:16-21` admits it ("Legacy palette tokens, retained for backwards
-compatibility… on collision, the later block wins"), and `theme/README.md` still documents the
+compatibility… on collision, the later block wins"), and `src/theme/README.md` still documents the
 legacy system as *the* system.
 
 **Recommended fix.**

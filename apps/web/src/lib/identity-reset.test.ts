@@ -1,7 +1,7 @@
 /**
  * AUTH-01, reproduced and then held closed.
  *
- * The diagnostic in MODULES_REPAIR_PLAN.md placed a synthetic case in the
+ * The diagnostic in docs/reviews/MODULES_REPAIR_PLAN.md placed a synthetic case in the
  * shared query cache, called `authActions.logout()`, and read the same case
  * back from `queryClient`. Nothing here mocks the query client: these assert
  * against the real cache, so they fail if the teardown stops reaching it.

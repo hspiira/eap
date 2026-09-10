@@ -136,3 +136,45 @@ class DependentInfo:
             RelationType.GRANDPARENT,
             RelationType.GUARDIAN,
         }
+
+
+EMPLOYMENT_DETAIL_MAX_LENGTH = 255
+
+
+@dataclass(frozen=True)
+class EmploymentDetails:
+    """Optional workforce attributes an employer supplies on its roster.
+
+    Free text, because the vocabularies belong to the employer rather than the
+    platform. Held for record and segmentation, never for eligibility: no
+    domain rule reads these fields.
+    """
+
+    job_title: str | None = None
+    job_classification: str | None = None
+    skill: str | None = None
+    department: str | None = None
+    unit: str | None = None
+    employment_type: str | None = None
+
+    def __post_init__(self) -> None:
+        for name in self.__dataclass_fields__:
+            value = getattr(self, name)
+            if value is None:
+                continue
+            if not isinstance(value, str):
+                raise ValueError(f"{name} must be a string")
+            cleaned = value.strip()
+            if len(cleaned) > EMPLOYMENT_DETAIL_MAX_LENGTH:
+                raise ValueError(f"{name} exceeds {EMPLOYMENT_DETAIL_MAX_LENGTH} characters")
+            object.__setattr__(self, name, cleaned or None)
+
+    @property
+    def is_empty(self) -> bool:
+        return all(getattr(self, name) is None for name in self.__dataclass_fields__)
+
+    @classmethod
+    def build(cls, **values: str | None) -> "EmploymentDetails | None":
+        """Return the details, or None when the employer supplied nothing."""
+        details = cls(**values)
+        return None if details.is_empty else details

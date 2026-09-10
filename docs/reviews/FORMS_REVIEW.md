@@ -53,7 +53,7 @@ suggested, and names the owner where a form is not this stream's to change.
 - **ProviderFormSheet** (provider worktrees): only one description and it is a
   good one. No changes suggested; noted so the owner knows it was looked at.
 
-### Paused modules (out of scope per MODULES_REPAIR_PLAN.md)
+### Paused modules (out of scope per docs/reviews/MODULES_REPAIR_PLAN.md)
 
 CampaignFormSheet, SurveyFormSheet and EngagementFormSheet carry the wordiest
 copy of the set, e.g. the campaign pool description runs two sentences and

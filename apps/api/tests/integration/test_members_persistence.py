@@ -133,12 +133,11 @@ async def member_http(isolated_members_db):
         yield http, app
 
 
-async def create_member(http, employer_member_id="HR-1", display_label="Test member"):
+async def create_member(http, display_label="Test member"):
     response = await http.post(
         "/members",
         json={
             "client_id": "c1",
-            "employer_member_id": employer_member_id,
             "display_label": display_label,
             "relation": "Employee",
         },
@@ -151,13 +150,12 @@ async def test_reviewed_merge_moves_references_and_deletes_only_the_source(
     member_http, isolated_members_db
 ):
     http, _ = member_http
-    target_id = await create_member(http, "HR-1", "Member to keep")
-    source_id = await create_member(http, "HR-2", "Duplicate member")
+    target_id = await create_member(http, "Member to keep")
+    source_id = await create_member(http, "Duplicate member")
     child = await http.post(
         "/members",
         json={
             "client_id": "c1",
-            "employer_member_id": "HR-3",
             "display_label": "Child",
             "relation": "Child",
             "primary_employee_member_id": source_id,
@@ -302,7 +300,6 @@ async def test_repository_filters_and_tenant_isolation(member_http, isolated_mem
         "/members",
         json={
             "client_id": "c1",
-            "employer_member_id": "HR-2",
             "display_label": "Child member",
             "relation": "Child",
             "primary_employee_member_id": primary_id,
@@ -371,19 +368,26 @@ async def test_member_codes_are_issued_in_sequence_against_postgresql(
         assert sorted(stored) == ["ACM-001", "ACM-002", "ACM-003"]
 
 
-async def test_hand_written_codes_do_not_get_reissued(member_http):
-    """An imported roster already using the prefix must not collide."""
+async def test_hand_written_codes_do_not_get_reissued(member_http, isolated_members_db):
+    """A code already on the roster, from data that predates this system, must not collide.
+
+    Nothing can hand-write a code through the API any more, so this seeds the
+    row directly, the way a one-off migration of a legacy roster would.
+    """
     http, _ = member_http
-    seeded = await http.post(
-        "/members",
-        json={
-            "client_id": "c1",
-            "employer_member_id": "ACM-007",
-            "display_label": "Imported",
-            "relation": "Employee",
-        },
-    )
-    assert seeded.status_code == 201, seeded.text
+    async with isolated_members_db() as session:
+        session.add(
+            EligibleMemberModel(
+                id="legacy-1",
+                tenant_id="t1",
+                client_id="c1",
+                employer_member_id="ACM-007",
+                display_label="Migrated",
+                relation="Employee",
+                status="Active",
+            )
+        )
+        await session.commit()
 
     response = await http.post(
         "/members",
@@ -426,18 +430,15 @@ async def test_identity_numbers_round_trip_through_postgresql(member_http, isola
 
 
 async def test_duplicate_member_code_is_rejected_not_500(member_http):
+    """A code can no longer be hand-picked on create, but PATCH still accepts one explicitly."""
     http, _ = member_http
-    payload = {
-        "client_id": "c1",
-        "employer_member_id": "ACM-001",
-        "display_label": "First",
-        "relation": "Employee",
-    }
-    assert (await http.post("/members", json=payload)).status_code == 201
+    first_id = await create_member(http, "First")
+    second_id = await create_member(http, "Second")
 
-    duplicate = await http.post("/members", json={**payload, "display_label": "Second"})
+    conflict = await http.patch(f"/members/{second_id}", json={"employer_member_id": "ACM-001"})
 
-    assert duplicate.status_code == 409, duplicate.text
+    assert conflict.status_code == 409, conflict.text
+    assert first_id != second_id
 
 
 async def test_patching_one_identity_number_preserves_the_others(member_http, isolated_members_db):
@@ -528,7 +529,7 @@ async def test_search_matches_staff_number(member_http):
         },
     )
     assert created.status_code == 201, created.text
-    await create_member(http, "HR-2", "Bosco")
+    await create_member(http, "Bosco")
 
     listed = await http.get("/members", params={"search": "4321"})
 
@@ -539,8 +540,8 @@ async def test_search_matches_staff_number(member_http):
 
 async def test_stats_counts_the_filtered_roster(member_http):
     http, _ = member_http
-    await create_member(http, "HR-1", "Keeps working")
-    leaver_id = await create_member(http, "HR-2", "Leaver")
+    await create_member(http, "Keeps working")
+    leaver_id = await create_member(http, "Leaver")
     assert (await http.post(f"/members/{leaver_id}/terminate")).status_code == 200
 
     stats = await http.get("/members/stats")

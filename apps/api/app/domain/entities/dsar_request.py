@@ -12,6 +12,7 @@ from typing import Any
 from app.domain.enums import DSARRequestStatus, DSARRequestType
 from app.domain.events import (
     DomainEvent,
+    DSARRequestCancelled,
     DSARRequestCompleted,
     DSARRequestSubmitted,
 )
@@ -109,6 +110,13 @@ class DSARRequest:
             raise DomainError("Reversible window has elapsed; erasure can no longer be cancelled")
         self.status = DSARRequestStatus.CANCELLED
         self.updated_at = now
+        self.events.append(
+            DSARRequestCancelled(
+                occurred_at=now,
+                request_id=self.id,
+                request_type=self.request_type.value,
+            )
+        )
 
     def is_within_reversible_window(self, now: datetime | None = None) -> bool:
         if self.erasure_executes_at is None:

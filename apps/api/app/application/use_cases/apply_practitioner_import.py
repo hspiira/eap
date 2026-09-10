@@ -5,7 +5,7 @@ are untouched, so a batch with zero Accepted rows applies successfully and
 creates nothing. Each created record goes through the same audited creation
 path the provider module uses: entity factory, creation event, save, audit.
 
-Adopted decisions (recorded in PROVIDERS_MIGRATION.md, 2026-09-07):
+Adopted decisions (recorded in docs/migrations/PROVIDERS_MIGRATION.md, 2026-09-07):
 
 - Affiliation ``valid_from`` is the apply day in the provider boundary
   timezone, meaning "affiliated as of import". The workbook carries no dates

@@ -42,6 +42,24 @@ from app.shared.utils.datetime import utc_now
 _link_audit_logger = logging.getLogger("evexia.privacy.subject_link")
 
 
+def _mergeable_pair(
+    source: EligibleMemberModel | None, target: EligibleMemberModel | None
+) -> tuple[EligibleMemberModel, EligibleMemberModel]:
+    """The two rows, once every reason not to merge them has been ruled out."""
+    if source is None or target is None:
+        raise ConflictError("Both members must exist in the current tenant")
+    if source.client_id != target.client_id:
+        raise ConflictError("Members must belong to the same client")
+    if source.relation != target.relation or (
+        source.relation != MemberRelation.EMPLOYEE
+        and source.primary_employee_member_id != target.primary_employee_member_id
+    ):
+        raise ConflictError("Members must have the same relationship context")
+    if source.user_id and target.user_id:
+        raise ConflictError("Unlink one member account before merging")
+    return source, target
+
+
 class EligibleMemberRepositoryImpl(EligibleMemberRepository):
     def __init__(self, session: AsyncSession):
         self._session = session
@@ -70,8 +88,15 @@ class EligibleMemberRepositoryImpl(EligibleMemberRepository):
             existing.gender = new_model.gender
             existing.phone = new_model.phone
             existing.staff_number = new_model.staff_number
+            existing.import_source_id = new_model.import_source_id
             existing.national_id = new_model.national_id
             existing.passport_number = new_model.passport_number
+            existing.job_title = new_model.job_title
+            existing.job_classification = new_model.job_classification
+            existing.skill = new_model.skill
+            existing.department = new_model.department
+            existing.unit = new_model.unit
+            existing.employment_type = new_model.employment_type
             existing.last_imported_at = new_model.last_imported_at
             existing.suspended_at = new_model.suspended_at
             existing.terminated_at = new_model.terminated_at
@@ -298,6 +323,20 @@ class EligibleMemberRepositoryImpl(EligibleMemberRepository):
         row = (await self._session.execute(stmt)).scalar_one_or_none()
         return EligibleMemberMapper.to_entity(row) if row else None
 
+    async def find_by_import_source_id(
+        self,
+        tenant_id: TenantId,
+        client_id: ClientId,
+        import_source_id: str,
+    ) -> EligibleMember | None:
+        stmt = select(EligibleMemberModel).where(
+            EligibleMemberModel.tenant_id == tenant_id.value,
+            EligibleMemberModel.client_id == client_id.value,
+            EligibleMemberModel.import_source_id == import_source_id,
+        )
+        row = (await self._session.execute(stmt)).scalar_one_or_none()
+        return EligibleMemberMapper.to_entity(row) if row else None
+
     async def find_by_user_id(self, tenant_id: TenantId, user_id: UserId) -> EligibleMember | None:
         row = (
             await self._session.execute(
@@ -328,18 +367,7 @@ class EligibleMemberRepositoryImpl(EligibleMemberRepository):
             .all()
         )
         members = {row.id: row for row in rows}
-        source, target = members.get(source_id.value), members.get(target_id.value)
-        if source is None or target is None:
-            raise ConflictError("Both members must exist in the current tenant")
-        if source.client_id != target.client_id:
-            raise ConflictError("Members must belong to the same client")
-        if source.relation != target.relation or (
-            source.relation != MemberRelation.EMPLOYEE
-            and source.primary_employee_member_id != target.primary_employee_member_id
-        ):
-            raise ConflictError("Members must have the same relationship context")
-        if source.user_id and target.user_id:
-            raise ConflictError("Unlink one member account before merging")
+        source, target = _mergeable_pair(members.get(source_id.value), members.get(target_id.value))
 
         contacts = (
             await self._session.execute(

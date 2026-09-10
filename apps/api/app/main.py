@@ -26,7 +26,9 @@ from app.core.database import AsyncSessionLocal
 from app.core.exception_handlers import register_exception_handlers
 from app.core.logging_config import configure_logging
 from app.core.middleware import setup_middleware
+from app.infrastructure.repositories.outbox_repository import OutboxRepositoryImpl
 from app.pages import render_root_page
+from app.shared.utils.datetime import utc_now
 
 configure_logging(level=settings.LOG_LEVEL)
 logger = logging.getLogger(__name__)
@@ -133,6 +135,36 @@ async def health():
             status_code=503,
             content={"status": "not ready", "database": "disconnected"},
         )
+
+
+@app.get("/health/outbox")
+async def outbox_health():
+    """Whether the outbox worker is keeping up.
+
+    Reports unhealthy on the age of the oldest undelivered event, not on
+    depth. Nothing watched this before, and the worker being stopped showed
+    up only as an empty audit_logs that nothing reads.
+    """
+    try:
+        async with AsyncSessionLocal() as session:
+            backlog = await OutboxRepositoryImpl(session).backlog()
+    except Exception as e:
+        logger.error(f"Outbox health check failed: {e}")
+        return JSONResponse(
+            status_code=503,
+            content={"status": "unknown", "error": "backlog query failed"},
+        )
+
+    lag = backlog.age_seconds(now=utc_now())
+    healthy = lag is None or lag <= settings.OUTBOX_MAX_LAG_SECONDS
+    body = {
+        "status": "ok" if healthy else "behind",
+        "depth": backlog.depth,
+        "failed": backlog.failed,
+        "lag_seconds": int(lag) if lag is not None else None,
+        "max_lag_seconds": settings.OUTBOX_MAX_LAG_SECONDS,
+    }
+    return body if healthy else JSONResponse(status_code=503, content=body)
 
 
 @app.get("/metrics", include_in_schema=False)

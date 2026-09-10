@@ -1,10 +1,11 @@
 """API contracts for the employer-side Members module."""
 
 from datetime import date, datetime
+from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator, model_validator
 
-from app.api.schemas.base import OptionalSanitizedStr, SanitizedStr
+from app.api.schemas.base import NonBlankReason, OptionalSanitizedStr, SanitizedStr
 from app.domain.enums import (
     EligibilityStatus,
     MemberGender,
@@ -54,6 +55,30 @@ class MemberNextOfKinResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
+class MemberEmployment(BaseModel):
+    """Optional workforce attributes from the employer's roster.
+
+    Free text: the vocabularies are the employer's own. Held for record and
+    segmentation only, and read by no eligibility rule.
+    """
+
+    job_title: OptionalSanitizedStr = Field(None, max_length=255)
+    job_classification: OptionalSanitizedStr = Field(None, max_length=255)
+    skill: OptionalSanitizedStr = Field(None, max_length=255)
+    department: OptionalSanitizedStr = Field(None, max_length=255)
+    unit: OptionalSanitizedStr = Field(None, max_length=255)
+    employment_type: OptionalSanitizedStr = Field(
+        None,
+        max_length=255,
+        description=(
+            "The employee's contract of employment (e.g. Permanent, FTC). "
+            "Unrelated to the client's commercial contract."
+        ),
+    )
+
+    model_config = ConfigDict(extra="forbid")
+
+
 class MemberCreate(BaseModel):
     """Create a covered member; a login account is optional and separate."""
 
@@ -62,10 +87,21 @@ class MemberCreate(BaseModel):
         None,
         min_length=1,
         max_length=255,
-        description="Optional. Left blank, the server issues {client code}-001, -002, and so on.",
+        description=(
+            "Do not set on create; the server always issues {client code}-001, -002, "
+            "and so on. Reused internally to revalidate a PATCH that changes it."
+        ),
     )
     relation: MemberRelation
     primary_employee_member_id: str | None = None
+    import_source_id: SanitizedStr | None = Field(
+        None,
+        max_length=255,
+        description=(
+            "Optional. The employer's own reference for this row (e.g. a roster "
+            "Staff_ID), used to match rows on re-import. Never the member code."
+        ),
+    )
     work_email: EmailStr | None = None
     personal_email: EmailStr | None = None
     display_label: SanitizedStr = Field(..., min_length=1, max_length=255)
@@ -75,6 +111,7 @@ class MemberCreate(BaseModel):
     staff_number: SanitizedStr | None = Field(None, max_length=100)
     national_id: SanitizedStr | None = Field(None, max_length=100)
     passport_number: SanitizedStr | None = Field(None, max_length=100)
+    employment: MemberEmployment | None = None
 
     model_config = ConfigDict(extra="forbid")
 
@@ -116,6 +153,7 @@ class MemberUpdate(BaseModel):
     staff_number: SanitizedStr | None = Field(None, max_length=100)
     national_id: SanitizedStr | None = Field(None, max_length=100)
     passport_number: SanitizedStr | None = Field(None, max_length=100)
+    employment: MemberEmployment | None = None
 
     model_config = ConfigDict(extra="forbid")
 
@@ -153,8 +191,10 @@ class MemberResponse(BaseModel):
     gender: MemberGender | None
     phone: str | None
     staff_number: str | None = None
+    import_source_id: str | None = None
     national_id: str | None = None
     passport_number: str | None = None
+    employment: MemberEmployment | None = None
     last_imported_at: datetime | None
     suspended_at: datetime | None
     terminated_at: datetime | None
@@ -216,83 +256,68 @@ class MemberDuplicateListResponse(BaseModel):
     scanned: int
 
 
-class MemberImportRowValues(BaseModel):
-    """The raw CSV values for one roster row, as the parser read them.
+class MemberImportBatchResponse(BaseModel):
+    """One staged roster upload and its outcome counts."""
 
-    The preview echoes these back so the confirmation step can send one row at a
-    time without re-uploading the file.
-    """
-
-    client_code: str | None = None
-    employer_member_id: str | None = None
-    staff_number: str | None = None
-    display_label: str | None = None
-    work_email: str | None = None
-    personal_email: str | None = None
-    gender: str | None = None
-    date_of_birth: str | None = None
-    phone: str | None = None
-    national_id: str | None = None
-    passport_number: str | None = None
-    status: str | None = None
-    relation: str | None = None
-    primary_employee_member_id: str | None = None
-
-    model_config = ConfigDict(extra="forbid")
+    id: str
+    tenant_id: str
+    file_name: str
+    file_hash: str
+    row_count: int
+    status: str
+    outcome_counts: dict[str, int]
+    staged_by: str
+    applied_by: str | None = None
+    applied_at: datetime | None = None
+    created_at: datetime
 
 
-class MemberImportRowPreview(BaseModel):
-    row: int
+class MemberImportRowResponse(BaseModel):
+    """One staged row: what it resolved to, and what a person decided about it."""
+
+    id: str
+    row_number: int
     client_code: str | None
-    client_name: str | None
-    employer_member_id: str | None
+    client_name: str | None = None
+    import_source_id: str | None
     staff_number: str | None = None
     display_label: str | None
-    state: str
+    outcome: str
+    decision: str
+    employment: MemberEmployment | None = None
     message: str | None = None
-    default_action: str = "import"
-    values: MemberImportRowValues | None = None
+    imported_member_id: str | None = None
 
 
-class MemberImportIssue(BaseModel):
-    row: int
-    field: str | None = None
-    message: str
+class MemberImportRowListResponse(BaseModel):
+    items: list[MemberImportRowResponse]
+    total: int
+    page: int
+    limit: int
+    has_more: bool
 
 
-class MemberImportResponse(BaseModel):
+class MemberImportRowDecisionRequest(BaseModel):
+    """Override one still-new row's Import/Skip decision before applying."""
+
+    decision: Literal["import", "skip"]
+
+    model_config = ConfigDict(extra="forbid")
+
+
+class MemberImportAbandonRequest(BaseModel):
+    """Why nobody will apply this batch. It goes on the record, so it is required."""
+
+    reason: NonBlankReason
+
+    model_config = ConfigDict(extra="forbid")
+
+
+class MemberImportApplyResponse(BaseModel):
+    """What happened when a staged batch's importable rows were written."""
+
+    batch_id: str
     imported: int
-    skipped: int
     failed: int
-    issues: list[MemberImportIssue] = Field(default_factory=list)
-    rows: list[MemberImportRowPreview]
-
-
-class MemberImportCommitRow(BaseModel):
-    """One row the client confirmed for import, replayed from the preview."""
-
-    row: int = Field(..., ge=1)
-    values: MemberImportRowValues
-
-    model_config = ConfigDict(extra="forbid")
-
-
-class MemberImportCommitRequest(BaseModel):
-    """A slice of confirmed rows. Each row is committed on its own."""
-
-    rows: list[MemberImportCommitRow] = Field(..., min_length=1, max_length=100)
-
-    model_config = ConfigDict(extra="forbid")
-
-
-class MemberImportRowResult(BaseModel):
-    """What happened to a single row once it was written."""
-
-    row: int
-    state: str
-    member_id: str | None = None
-    message: str | None = None
-
-
-class MemberImportCommitResponse(BaseModel):
-    results: list[MemberImportRowResult]
+    skipped_already_imported: int
+    not_importable: int

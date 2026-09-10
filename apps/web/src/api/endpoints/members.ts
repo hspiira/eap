@@ -1,4 +1,10 @@
-import type { Member, MemberNextOfKin, MemberStats, ServiceSession } from "@/types/entities"
+import type {
+  Member,
+  MemberEmployment,
+  MemberNextOfKin,
+  MemberStats,
+  ServiceSession,
+} from "@/types/entities"
 import type {
   EligibilityStatus,
   MemberGender,
@@ -15,6 +21,8 @@ export interface MemberCreateRequest {
   employer_member_id?: string | null
   relation: MemberRelation
   primary_employee_member_id?: string | null
+  /** Optional. The employer's own reference (e.g. a roster Staff_ID). Never the member code. */
+  import_source_id?: string | null
   work_email?: string | null
   personal_email?: string | null
   display_label: string
@@ -24,6 +32,7 @@ export interface MemberCreateRequest {
   staff_number?: string | null
   national_id?: string | null
   passport_number?: string | null
+  employment?: MemberEmployment | null
 }
 
 export type MemberUpdateRequest = Partial<Omit<MemberCreateRequest, "client_id">>
@@ -42,59 +51,56 @@ export interface MemberNextOfKinRequest {
   is_primary?: boolean
 }
 
-/** The parsed CSV values the preview echoes back, replayed row by row on confirm. */
-export interface MemberImportRowValues {
-  client_code: string | null
-  employer_member_id: string | null
-  staff_number: string | null
-  display_label: string | null
-  work_email: string | null
-  personal_email: string | null
-  gender: string | null
-  date_of_birth: string | null
-  phone: string | null
-  national_id: string | null
-  passport_number: string | null
-  status: string | null
-  relation: string | null
-  primary_employee_member_id: string | null
+export type MemberImportBatchStatus = "Staged" | "Applied" | "Abandoned"
+
+/** One staged roster upload. Row data lives server-side; nothing is replayed from the browser. */
+export interface MemberImportBatch {
+  id: string
+  tenant_id: string
+  file_name: string
+  file_hash: string
+  row_count: number
+  status: MemberImportBatchStatus
+  outcome_counts: Record<string, number>
+  staged_by: string
+  applied_by?: string | null
+  applied_at?: string | null
+  created_at: string
 }
+
+export type MemberImportRowOutcome = "New" | "Duplicate" | "Invalid" | "Failed"
+export type MemberImportRowDecision = "import" | "skip"
 
 export interface MemberImportRow {
-  row: number
+  id: string
+  row_number: number
   client_code: string | null
-  client_name: string | null
-  employer_member_id: string | null
+  client_name?: string | null
+  import_source_id: string | null
   staff_number?: string | null
   display_label: string | null
-  state: string
+  outcome: MemberImportRowOutcome
+  decision: MemberImportRowDecision
+  employment?: MemberEmployment | null
   message?: string | null
-  default_action: "import" | "skip"
-  values?: MemberImportRowValues | null
+  imported_member_id?: string | null
 }
 
-export type MemberImportRowState = "imported" | "skipped" | "duplicate" | "invalid" | "failed"
-
-/** What the server did with one confirmed row. */
-export interface MemberImportRowResult {
-  row: number
-  state: MemberImportRowState
-  member_id?: string | null
-  message?: string | null
+export interface MemberImportRowListResponse {
+  items: MemberImportRow[]
+  total: number
+  page: number
+  limit: number
+  has_more: boolean
 }
 
-export interface MemberImportIssue {
-  row: number
-  field?: string | null
-  message: string
-}
-
-export interface MemberImportResult {
+/** What happened when a staged batch's importable rows were written. */
+export interface MemberImportApplyResult {
+  batch_id: string
   imported: number
-  skipped: number
   failed: number
-  issues: MemberImportIssue[]
-  rows: MemberImportRow[]
+  skipped_already_imported: number
+  not_importable: number
 }
 
 export interface MemberDuplicateMember {
@@ -123,25 +129,42 @@ export const membersApi = {
     )
   },
 
-  async importRoster(
-    file: File,
-    dryRun = true,
-    decisions?: Record<number, "import" | "skip">,
-  ): Promise<MemberImportResult> {
+  /** Stage a roster upload. Writes no members; review and applyImport do that. */
+  async stageImport(file: File): Promise<MemberImportBatch> {
     const body = new FormData()
     body.append("file", file)
-    if (decisions) body.append("decisions_json", JSON.stringify(decisions))
-    return apiClient.postFormData<MemberImportResult>(
-      `/members/import?dry_run=${String(dryRun)}`,
-      body,
-    )
+    return apiClient.postFormData<MemberImportBatch>("/members/import", body)
   },
 
-  /** Import a slice of previewed rows. Each row is committed on its own server side. */
-  async commitImport(
-    rows: Array<{ row: number; values: MemberImportRowValues }>,
-  ): Promise<{ results: MemberImportRowResult[] }> {
-    return apiClient.post<{ results: MemberImportRowResult[] }>("/members/import/commit", { rows })
+  async getImportBatch(batchId: string): Promise<MemberImportBatch> {
+    return apiClient.get<MemberImportBatch>(`/members/import/${batchId}`)
+  },
+
+  async listImportRows(
+    batchId: string,
+    params?: { outcome?: MemberImportRowOutcome; page?: number; limit?: number },
+  ): Promise<MemberImportRowListResponse> {
+    return apiClient.get<MemberImportRowListResponse>(`/members/import/${batchId}/rows`, params)
+  },
+
+  /** Override one still-new row's Import/Skip decision before applying. */
+  async setImportRowDecision(
+    batchId: string,
+    rowId: string,
+    decision: MemberImportRowDecision,
+  ): Promise<MemberImportRow> {
+    return apiClient.patch<MemberImportRow>(`/members/import/${batchId}/rows/${rowId}`, {
+      decision,
+    })
+  },
+
+  async abandonImport(batchId: string, reason: string): Promise<MemberImportBatch> {
+    return apiClient.post<MemberImportBatch>(`/members/import/${batchId}/abandon`, { reason })
+  },
+
+  /** Write every still-importable row, one at a time, then close the batch. */
+  async applyImport(batchId: string): Promise<MemberImportApplyResult> {
+    return apiClient.post<MemberImportApplyResult>(`/members/import/${batchId}/apply`)
   },
 
   async list(params?: MemberListParams): Promise<PaginatedResponse<Member>> {

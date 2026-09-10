@@ -37,4 +37,4 @@
 
 ## Reference Files
 - Design system: `.cursor/rules/DESIGN_SYSTEM.md`
-- Full documentation: `docs/DESIGN_SYSTEM.md`
+- Full documentation: `.cursor/rules/DESIGN_SYSTEM.md`

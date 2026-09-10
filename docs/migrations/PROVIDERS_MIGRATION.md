@@ -1,13 +1,14 @@
 # Provider module migration
 
 Decision record and implementation handoff for the provider module. Updated
-2026-09-06 against the assembled integration branch `codex/providers-agent1-core`.
-The evidence in "Current implementation and evidence" below describes the
-earlier baseline at `3b4daed`; what this branch changed is recorded under
-"Phase 1 to 4 verification". Track this document in git. Update it with
-each implementation commit; strike completed tasks through rather than deleting
-them. Implemented, tested, and applied to a database are separate claims.
-Execution ownership and agent prompts are in `PROVIDERS_EXECUTION.md`.
+2026-09-06 against the assembled integration branch
+`codex/providers-agent1-core`. The evidence in "Current implementation and
+evidence" below describes the earlier baseline at `3b4daed`; what this branch
+changed is recorded under "Phase 1 to 4 verification". Track this document in
+git. Update it with each implementation commit; strike completed tasks through
+rather than deleting them. Implemented, tested, and applied to a database are
+separate claims. Execution ownership and agent prompts are in
+`docs/archive/PROVIDERS_EXECUTION.md`.
 
 ## Status at a glance
 
@@ -739,29 +740,29 @@ owner has directed that provider-module work proceed on the main branch.
   the test failed before the change and all 8 tests in
   `test_provider_audit_persistence.py` pass after it.
 
-  P-02 (`PRACTITIONERS_REVIEW.md`) was implemented the same day under the
-  same direction: `provider_engagement_documents` (migration `d8w1y3a5c7e9`)
-  holds one row per (tenant, provider, document kind) with a Present/Missing/
-  Open state and an optional note, exposed at
+  P-02 (`docs/reviews/PRACTITIONERS_REVIEW.md`) was implemented the same day
+  under the same direction: `provider_engagement_documents` (migration
+  `d8w1y3a5c7e9`) holds one row per (tenant, provider, document kind) with a
+  Present/Missing/ Open state and an optional note, exposed at
   `/providers/{id}/engagement-documents` with an Admin-only audited PUT per
   kind. The workbook importer remains owned elsewhere.
 
-  P-01 and P-03 to P-06 (`PRACTITIONERS_REVIEW.md`) were implemented on
-  2026-09-07 under the same direction as staging only: migration
+  P-01 and P-03 to P-06 (`docs/reviews/PRACTITIONERS_REVIEW.md`) were
+  implemented on 2026-09-07 under the same direction as staging only: migration
   `e9x2z4b6d8f0` adds `practitioner_import_batches` and
-  `practitioner_import_rows`, staged by an Admin-only
-  `POST /practitioner-imports` that parses both practitioner sheets, keeps
-  every source cell verbatim in a provenance JSON, maps role spellings
-  through a version-controlled table (21 of 57 PROFESSION and 7 of 50
-  Speciality spellings; the rest stay unmapped), records repeated
-  normalised names as review candidates through `provider_aliases` under
-  source system `practitioners-orgs-workbook`, and quarantines the
-  double-email cell and the Employee contract memo as needs-review rows.
-  Replay keys are `file:{hash}:sheet:{name}:row:{n}`. Tested against
-  PostgreSQL, migration forward and back included. Not done: the apply
-  step (nothing staged creates a practitioner, organisation, affiliation
-  or catalogue entry), the P-01 catalogue vocabulary decision (product),
-  and alias reconciliation itself, which stays a human API-driven step.
+  `practitioner_import_rows`, staged by an Admin-only `POST
+  /practitioner-imports` that parses both practitioner sheets, keeps every
+  source cell verbatim in a provenance JSON, maps role spellings through a
+  version-controlled table (21 of 57 PROFESSION and 7 of 50 Speciality
+  spellings; the rest stay unmapped), records repeated normalised names as
+  review candidates through `provider_aliases` under source system
+  `practitioners-orgs-workbook`, and quarantines the double-email cell and the
+  Employee contract memo as needs-review rows. Replay keys are
+  `file:{hash}:sheet:{name}:row:{n}`. Tested against PostgreSQL, migration
+  forward and back included. Not done: the apply step (nothing staged creates a
+  practitioner, organisation, affiliation or catalogue entry), the P-01
+  catalogue vocabulary decision (product), and alias reconciliation itself,
+  which stays a human API-driven step.
 
   The apply step was implemented on 2026-09-07 under the same direction:
   Admin-only `POST /practitioner-imports/{batch}/apply` (migration
@@ -799,37 +800,36 @@ owner has directed that provider-module work proceed on the main branch.
   exact-but-case-insensitive, so spelling variants of a firm create
   separate organisations for a person to merge.
 
-  2026-09-07, staging exercised for real: `POST /practitioner-imports` was
-  run against the local dev database (`evexia_db`, tenant `dev`) with the
-  actual workbook, not a synthetic fixture. First run, before the fixes
-  below: batch `kv8g55457voze8d7tu2maubg`, 168 rows staged, 60 Accepted, 108
-  NeedsReview. That batch was deleted and replaced after the code changes
-  below, rather than left inconsistent with the code that produced it.
-  Current batch `rbmhgppuptpyknd1j4hyciyz`, same 168 rows, **59 Accepted, 109
-  NeedsReview**, same `file_hash` as recorded in `PRACTITIONERS_REVIEW.md`.
-  Not applied. Full row export, organisation grouping, and the review gates
-  before `apply` are recorded in `practitioner-import-review/README.md`. A
-  dedicated Admin user, `practitioner-import-bot@example.com` in tenant
-  `dev`, was created to run this and left in place for traceability rather
-  than deleted.
+  2026-09-07, staging exercised for real: `POST /practitioner-imports` was run
+  against the local dev database (`evexia_db`, tenant `dev`) with the actual
+  workbook, not a synthetic fixture. First run, before the fixes below: batch
+  `kv8g55457voze8d7tu2maubg`, 168 rows staged, 60 Accepted, 108 NeedsReview.
+  That batch was deleted and replaced after the code changes below, rather than
+  left inconsistent with the code that produced it. Current batch
+  `rbmhgppuptpyknd1j4hyciyz`, same 168 rows, **59 Accepted, 109 NeedsReview**,
+  same `file_hash` as recorded in `docs/reviews/PRACTITIONERS_REVIEW.md`. Not
+  applied. Full row export, organisation grouping, and the review gates before
+  `apply` are recorded in `practitioner-import-review/README.md`. A dedicated
+  Admin user, `practitioner-import-bot@example.com` in tenant `dev`, was created
+  to run this and left in place for traceability rather than deleted.
 
   Same session, three findings from that staging run
-  (`PRACTITIONERS_REVIEW.md` P-08 to P-10) were implemented and tested, not
-  just documented, at the user's explicit request before any real import:
-  `apply_practitioner_import.py` now sets a created practitioner's
+  (`docs/reviews/PRACTITIONERS_REVIEW.md` P-08 to P-10) were implemented and
+  tested, not just documented, at the user's explicit request before any real
+  import: `apply_practitioner_import.py` now sets a created practitioner's
   `contact_phone` from the workbook's own mobile columns instead of always
-  `None` (P-08, phone half only; profession/specialty stays unset pending
-  the P-01 catalogue decision); `practitioner_import_staging.py` now flags
-  an organisation column that collides with a practitioner's own or another
-  practitioner's name, which previously produced zero review signal (P-09,
-  and the reason the Accepted count above dropped by exactly one); and
-  `PractitionerImportRowEntity.reasons` carries a `{code, message}` shape
-  via a new `ImportReasonCode` enum instead of a bare string, with the
-  mapper, JSON column, and `PractitionerImportRowPreview` schema updated to
-  match (P-10). `ruff`, `ruff format --check`, `lint-imports`, the
-  `app/domain` pyright gate, and the full practitioner-import unit and
-  PostgreSQL-backed integration suite (64 tests) all pass. Not run: web
-  contract regeneration, since no contract-consuming file changed.
+  `None` (P-08, phone half only; profession/specialty stays unset pending the
+  P-01 catalogue decision); `practitioner_import_staging.py` now flags an
+  organisation column that collides with a practitioner's own or another
+  practitioner's name, which previously produced zero review signal (P-09, and
+  the reason the Accepted count above dropped by exactly one); and
+  `PractitionerImportRowEntity.reasons` carries a `{code, message}` shape via a
+  new `ImportReasonCode` enum instead of a bare string, with the mapper, JSON
+  column, and `PractitionerImportRowPreview` schema updated to match (P-10).
+  `ruff`, `ruff format --check`, `lint-imports`, the `app/domain` pyright gate,
+  and the full practitioner-import unit and PostgreSQL-backed integration suite
+  (64 tests) all pass. Not run: web contract regeneration, since no
+  contract-consuming file changed.
 
 - `apps/api/alembic` is outside the ruff gate, which scopes to `app tests
   scripts`. 65 pre-existing migrations would need reformatting to bring it in.
