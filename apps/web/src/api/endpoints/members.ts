@@ -94,13 +94,15 @@ export interface MemberImportRowListResponse {
   has_more: boolean
 }
 
-/** What happened when a staged batch's importable rows were written. */
+/** What one chunked apply call wrote. Call again while `remaining` is above zero. */
 export interface MemberImportApplyResult {
   batch_id: string
   imported: number
+  updated: number
+  unchanged: number
   failed: number
-  skipped_already_imported: number
-  not_importable: number
+  remaining: number
+  done: boolean
 }
 
 export interface MemberDuplicateMember {
@@ -162,9 +164,13 @@ export const membersApi = {
     return apiClient.post<MemberImportBatch>(`/members/import/${batchId}/abandon`, { reason })
   },
 
-  /** Write every still-importable row, one at a time, then close the batch. */
-  async applyImport(batchId: string): Promise<MemberImportApplyResult> {
-    return apiClient.post<MemberImportApplyResult>(`/members/import/${batchId}/apply`)
+  /**
+   * Write up to `limit` still-pending rows. Call again while the result's
+   * `done` is false; the batch only closes once a call finds nothing left.
+   */
+  async applyImport(batchId: string, limit?: number): Promise<MemberImportApplyResult> {
+    const query = limit ? `?limit=${limit}` : ""
+    return apiClient.post<MemberImportApplyResult>(`/members/import/${batchId}/apply${query}`)
   },
 
   async list(params?: MemberListParams): Promise<PaginatedResponse<Member>> {

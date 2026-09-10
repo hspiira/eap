@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 
 import { Download, FileInput, RefreshCw } from "lucide-react"
 
@@ -89,6 +89,17 @@ const TONE_CLASS: Record<Tone, string> = {
 
 /** Headers never wrap; the table scrolls horizontally instead when columns run out of room. */
 const HEAD_CLASS = "h-auto whitespace-nowrap px-2 py-1 text-xs font-medium"
+
+/** Rows written per apply call. Keeps each round trip well under a platform request timeout. */
+const APPLY_CHUNK_SIZE = 200
+
+interface ApplyProgress {
+  imported: number
+  updated: number
+  unchanged: number
+  failed: number
+  total: number
+}
 
 /** A New row still set to import: the only state that gets written on apply. */
 function isQueued(row: MemberImportRow): boolean {
@@ -375,6 +386,45 @@ function ImportFooter({
   )
 }
 
+/** Compact, toast-style status while a chunked apply is in flight. */
+function ApplyProgressBanner({
+  fileName,
+  progress,
+  onCancel,
+}: {
+  fileName: string | null
+  progress: ApplyProgress
+  onCancel: () => void
+}) {
+  const done = progress.imported + progress.updated + progress.unchanged + progress.failed
+  const percent = progress.total > 0 ? Math.round((done / progress.total) * 100) : 100
+  return (
+    <div className="flex shrink-0 items-center gap-3 border-t border-fg/10 bg-surface px-6 py-3">
+      <div className="min-w-0 flex-1">
+        <p className="truncate text-xs font-medium text-fg">{fileName ?? "Applying import…"}</p>
+        <div className="mt-1.5 h-1.5 w-full overflow-hidden rounded-full bg-fg/10">
+          <div
+            className="h-full rounded-full bg-primary transition-[width]"
+            style={{ width: `${percent}%` }}
+          />
+        </div>
+      </div>
+      <p className="shrink-0 text-xs tabular-nums text-fg-muted">
+        {done} / {progress.total} · {percent}%
+      </p>
+      <Button
+        type="button"
+        variant="ghost"
+        size="sm"
+        className="h-7 shrink-0 px-2 text-xs"
+        onClick={onCancel}
+      >
+        Cancel
+      </Button>
+    </div>
+  )
+}
+
 export function MemberImportDialog({ open, onOpenChange, onImported }: MemberImportDialogProps) {
   const toast = useToast()
   const [file, setFile] = useState<File | null>(null)
@@ -383,11 +433,13 @@ export function MemberImportDialog({ open, onOpenChange, onImported }: MemberImp
   const [rows, setRows] = useState<MemberImportRow[]>([])
   const [staging, setStaging] = useState(false)
   const [applying, setApplying] = useState(false)
+  const [applyProgress, setApplyProgress] = useState<ApplyProgress | null>(null)
   const [applied, setApplied] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [conflictBatchId, setConflictBatchId] = useState<string | null>(null)
   const [discarding, setDiscarding] = useState(false)
   const [confirmDiscardOpen, setConfirmDiscardOpen] = useState(false)
+  const applyCancelledRef = useRef(false)
 
   useEffect(() => {
     if (open) return
@@ -397,6 +449,7 @@ export function MemberImportDialog({ open, onOpenChange, onImported }: MemberImp
     setRows([])
     setStaging(false)
     setApplying(false)
+    setApplyProgress(null)
     setApplied(false)
     setError(null)
     setConflictBatchId(null)
@@ -502,22 +555,40 @@ export function MemberImportDialog({ open, onOpenChange, onImported }: MemberImp
     }
   }
 
+  const cancelApply = () => {
+    applyCancelledRef.current = true
+  }
+
   const applyImport = async () => {
     if (!batch) return
+    applyCancelledRef.current = false
     setApplying(true)
     setError(null)
+    const totals = { imported: 0, updated: 0, unchanged: 0, failed: 0, total: queued.length }
+    setApplyProgress({ ...totals })
     try {
-      const result = await membersApi.applyImport(batch.id)
-      setRows(await fetchAllRows(batch.id))
-      setApplied(true)
-      if (result.imported > 0) onImported()
-      const attention = result.failed + result.not_importable
-      if (attention === 0) toast.showSuccess(`${result.imported} member rows imported`)
-      else toast.showError(`${attention} row${attention === 1 ? "" : "s"} need attention`)
+      let done = false
+      while (!done && !applyCancelledRef.current) {
+        const result = await membersApi.applyImport(batch.id, APPLY_CHUNK_SIZE)
+        totals.imported += result.imported
+        totals.updated += result.updated
+        totals.unchanged += result.unchanged
+        totals.failed += result.failed
+        done = result.done
+        setApplyProgress({ ...totals })
+        setRows(await fetchAllRows(batch.id))
+      }
+      if (totals.imported + totals.updated > 0) onImported()
+      if (done) {
+        setApplied(true)
+        if (totals.failed === 0) toast.showSuccess(`${totals.imported} member rows imported`)
+        else toast.showError(`${totals.failed} row${totals.failed === 1 ? "" : "s"} need attention`)
+      }
     } catch (cause) {
       setError(normalizeErrorMessage(cause, "Could not apply the import"))
     } finally {
       setApplying(false)
+      setApplyProgress(null)
     }
   }
 
@@ -562,6 +633,14 @@ export function MemberImportDialog({ open, onOpenChange, onImported }: MemberImp
             updateDecision={updateDecision}
           />
         </div>
+
+        {applyProgress ? (
+          <ApplyProgressBanner
+            fileName={batch?.file_name ?? file?.name ?? null}
+            progress={applyProgress}
+            onCancel={cancelApply}
+          />
+        ) : null}
 
         <ImportFooter
           batch={batch}

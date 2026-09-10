@@ -975,3 +975,75 @@ round-trip test alongside the existing employment ones (the same class of bug
 the eighth defect was — a field persisted on stage but not read back at
 confirmation, or vice versa), and two route-level apply tests (`Date Joined`
 becomes `coverage_start`; blank leaves it unset).
+
+## Ninth defect: applying a roster timed out the same way staging once did, and its fix (2026-09-10)
+
+The owner reported that of 3,000+ staged rows, only about 190 were actually
+applied, with `No session found in parameter 'db' for list_members` in the
+logs. Cause: `apply_member_import` wrote every importable row of the batch in
+one request, one row per commit, the same shape the sixth defect fixed for
+staging. A roster large enough to write for several minutes exceeds the
+platform's request timeout mid-loop; the request is killed, the surrounding
+`AsyncSession` is torn down, and whatever background work was mid-flight (a
+vocabulary lookup cache refresh, in this case) finds its session already
+gone. Nothing rolls back the rows already committed in earlier iterations of
+that same request, so the batch is left holding a partial write with no
+record of where it stopped.
+
+Fix: made apply chunked and resumable, matching the batching precedent
+already set for staging.
+
+- `MemberImportRepository` gained `list_pending_rows(tenant_id, batch_id,
+  limit)`, `count_pending_rows`, and `count_imported_rows`. `list_pending_rows`
+  re-queries what is left by outcome/decision/`imported_member_id` each call
+  rather than trusting a caller-supplied offset, so a chunk that never
+  returns (closed tab, another timeout) leaves the batch safely resumable
+  from exactly where it stopped, with nothing skipped or written twice.
+- `POST /members/import/{batch_id}/apply` takes a `limit` query parameter
+  (default 100, max 500) and writes at most that many rows per call, each in
+  its own commit as before. The response reports what that one call wrote
+  (`imported`, `updated`, `unchanged`, `failed`), how many rows are still
+  `remaining`, and whether the batch is `done`. The batch only flips to
+  Applied and fires its audit event once a call finds nothing left to write.
+  A client is expected to keep calling while `remaining` is above zero.
+- The frontend (`MemberImportDialog`) loops `applyImport` in 200-row chunks,
+  accumulating the running totals and refreshing the row table after every
+  chunk, so the review table updates as the batch progresses rather than
+  only once at the end. A compact status bar between the table and the
+  sheet's footer shows the file name, a live count/total, and a percentage
+  while a chunk is in flight, with a Cancel button that stops the loop after
+  the in-flight chunk finishes (never mid-request); cancelling leaves the
+  batch Staged with whatever was already written, resumable by pressing
+  Import again.
+
+This lands in the same files another session was actively extending to let
+a re-imported roster update, not only create, a matching member (`decision:
+"update"`, `MemberRowUpdater`, `matched_member_id`). The two designs compose:
+`list_pending_rows` already covers both a New row decided "import" and a
+matched Duplicate row decided "update"; `_write_row` in `members.py` (renamed
+from `_apply_row`) dispatches on `row.decision` to `MemberRowImporter.enrol`
+or `MemberRowUpdater.update` accordingly. Picked up and completed one part of
+that other session's in-progress edit left mid-save: `_write_row` was
+referenced but undefined, and `MemberImportApplyResponse` was constructed
+with `updated`/`unchanged` fields the schema did not yet declare, silently
+dropping them (Pydantic v2 ignores unrecognized constructor kwargs by
+default). Added the two fields to the schema and finished `_write_row` using
+the already-complete `MemberRowChecker.updatable`/`existing` and
+`MemberRowUpdater.update` from that session's own work, without changing its
+design.
+
+Verified: the full backend unit suite (2,189 passed) and full frontend unit
+suite (766 passed) both pass against the combined state, including two new
+frontend tests exercising the chunked loop directly (`chunked apply` describe
+block in `MemberImportDialog.test.tsx`): one asserting `applyImport` is
+polled until `done`, refreshing the table each time; one asserting the
+progress bar's live count/percentage text and that Cancel stops the loop
+after, not during, the in-flight chunk.
+
+Not verified: whether this closes the specific production incident reported
+(190 of 3,000+ rows applied). The timeout hypothesis matches the logged
+error and the same class of bug the sixth defect already confirmed for
+staging on this same roster, but no production or load test against a
+roster of that size has been run against this fix. Confirming that requires
+re-running the actual I&M Bank roster through a deployed environment, which
+the owner is best placed to do.

@@ -137,6 +137,83 @@ describe("member import preview", () => {
   })
 })
 
+describe("chunked apply", () => {
+  it("polls the apply endpoint until done, refreshing the table after each chunk", async () => {
+    await stage([makeRow()])
+    api.applyImport
+      .mockResolvedValueOnce({
+        batch_id: "batch-1",
+        imported: 0,
+        updated: 0,
+        unchanged: 0,
+        failed: 0,
+        remaining: 1,
+        done: false,
+      })
+      .mockResolvedValueOnce({
+        batch_id: "batch-1",
+        imported: 1,
+        updated: 0,
+        unchanged: 0,
+        failed: 0,
+        remaining: 0,
+        done: true,
+      })
+
+    await userEvent.click(screen.getByRole("button", { name: "Import 1 rows" }))
+
+    await waitFor(() => expect(api.applyImport).toHaveBeenCalledTimes(2))
+    expect(api.applyImport).toHaveBeenNthCalledWith(1, "batch-1", 200)
+    expect(api.applyImport).toHaveBeenNthCalledWith(2, "batch-1", 200)
+    expect(api.listImportRows).toHaveBeenCalledTimes(3) // initial stage + one refresh per chunk
+    await screen.findByRole("button", { name: "Done" })
+    expect(screen.queryByRole("button", { name: "Cancel" })).not.toBeInTheDocument()
+  })
+
+  it("shows live count and percentage while a chunk is in flight, and stops on cancel", async () => {
+    await stage([makeRow({ id: "row-1" }), makeRow({ id: "row-2", row_number: 3 })])
+    const resolvers: Array<(value: unknown) => void> = []
+    api.applyImport.mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          resolvers.push(resolve)
+        }),
+    )
+
+    await userEvent.click(screen.getByRole("button", { name: "Import 2 rows" }))
+    const cancelButton = await screen.findByRole("button", { name: "Cancel" })
+
+    resolvers[0]({
+      batch_id: "batch-1",
+      imported: 1,
+      updated: 0,
+      unchanged: 0,
+      failed: 0,
+      remaining: 1,
+      done: false,
+    })
+    await screen.findByText("1 / 2 · 50%")
+    await waitFor(() => expect(resolvers).toHaveLength(2))
+
+    // Cancel takes effect after the in-flight chunk finishes, not mid-request.
+    await userEvent.click(cancelButton)
+    resolvers[1]({
+      batch_id: "batch-1",
+      imported: 1,
+      updated: 0,
+      unchanged: 0,
+      failed: 0,
+      remaining: 0,
+      done: false,
+    })
+
+    await waitFor(() =>
+      expect(screen.queryByRole("button", { name: "Cancel" })).not.toBeInTheDocument(),
+    )
+    expect(api.applyImport).toHaveBeenCalledTimes(2)
+  })
+})
+
 describe("restage conflict", () => {
   it("offers to discard the stuck batch and retries staging after confirming", async () => {
     api.stageImport
