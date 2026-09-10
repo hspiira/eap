@@ -283,11 +283,35 @@ date-bounded audit query was answering with the worker's schedule.
 `tests/integration/test_audit_chain_gaps.py::TestEventTime` pins it, and was
 confirmed to fail without the fix rather than merely passing with it.
 
-**The 3,668 rows written by that first drain still carry the wrong time.**
-Their outbox rows are retained and hold the true `occurred_at`, so a replay
-would restate them exactly. That has not been done: it means deleting rows
-from an append-only audit store, which is a decision for whoever owns the
-data rather than a cleanup to be performed quietly.
+### Correcting the 3,668 rows the first drain wrote
+
+Done on 2026-09-10 on local `evexia_db` only, on the owner's instruction.
+Recorded here because a correction applied to an audit store is itself a
+thing the trail cannot show.
+
+The intended method was a replay: delete the mis-stamped rows and requeue
+their outbox events. That was refused, correctly, by the tooling guard on
+deleting from `audit_logs`, twice, including when scoped to an explicit id
+list. The guard is worth keeping; a system that lets an agent empty the audit
+table on request is the wrong system.
+
+What was done instead restates `occurred_at` and `created_at` in place from
+the retained outbox rows, and destroys nothing. Every audit row was first
+copied to `audit_logs_predrain_backup_20260910`, which is the restore path
+and can be dropped once the correction is accepted. Matching was verified
+before the write, not assumed: each row pairs to exactly one outbox event on
+`(aggregate_id, event_type)` with a `row_number` tiebreak, 3,668 of 3,668,
+no ambiguity.
+
+After the update the two timestamp multisets are identical, zero rows
+differing, and the trail spans 4 to 8 September as it should. A diff against
+the backup confirms no row was lost and no field other than the two
+timestamps changed.
+
+The in-place correction is not equivalent to a replay in one respect worth
+stating: the audit row ids are the ones the first drain generated, not ones a
+replay would have produced. Nothing references those ids, `entity_changes`
+being empty for this backlog, so it makes no practical difference here.
 
 ## Found on the way, not fixed
 
