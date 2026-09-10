@@ -385,6 +385,27 @@ between this endpoint and its only caller. Fixed by passing
 the route's first HTTP-level test; confirmed it fails on the old signature
 with the same 422 the live server produced.
 
+A fourth bug reached production directly: staging a real roster raised a raw
+500, `UniqueViolationError` on `uq_member_import_rows_tenant_replay`, for a
+Staff_ID already held by a row in an earlier batch nobody had applied or
+abandoned. `member_import_repository` already exposes `find_row_by_replay_key`
+(used by `member_import_repository.py:181`), and `session_import_staging.py:166`
+and `practitioner_import_staging.py:107` both call it before inserting a row,
+exactly to classify this case as a graceful Duplicate rather than let the
+database catch it. `stage_member_import` never called it — an incomplete port
+from the `bb8b631f` precedent, invisible for the same reason as the previous
+two: nothing staged an overlapping roster in a unit test. `MemberRowChecker`
+now takes the import repository and performs this lookup, but only while
+staging (`file_hash` passed); the apply-time re-check omits it, since the row
+being re-checked already holds the exact key it would be checking against. A
+collision gets a deferred key, `duplicate:{batch}:{key}` via
+`app.shared.utils.replay_key.deferred_key`, the same shape session_import
+already uses, so persisting the Duplicate classification cannot itself
+collide. Reproduced at the route level in
+`test_stage_flags_a_row_still_claimed_by_another_unresolved_batch`: fails
+(row comes back New) without the fix, passes (Duplicate, named batch and row)
+with it.
+
 ### Verification
 
 Migration `q6s8u0w2y4a6`, applied to the dev database and reversed, both
