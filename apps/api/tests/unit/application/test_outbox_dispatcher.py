@@ -7,6 +7,7 @@ import pytest
 
 from app.application.services.outbox_dispatcher import OutboxDispatcher
 from app.domain.repositories.outbox_repository import (
+    OutboxBacklog,
     OutboxEventDTO,
     OutboxRepository,
 )
@@ -36,6 +37,9 @@ class _FakeRepo(OutboxRepository):
         next_attempt_at: datetime | None = None,
     ) -> None:
         self.failed.append((event_id, error, next_attempt_at))
+
+    async def backlog(self) -> OutboxBacklog:
+        return OutboxBacklog(depth=len(self.events), oldest_undelivered=None, failed=0)
 
 
 def _event(id_: str, attempts: int = 0) -> OutboxEventDTO:

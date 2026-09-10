@@ -7,6 +7,7 @@ OUTBOX_TEST_DATABASE_URL pointing at local PostgreSQL.
 """
 
 import os
+from datetime import timedelta
 from uuid import uuid4
 
 import pytest
@@ -175,3 +176,71 @@ class TestOutboxDelivery:
             assert row.last_error
             assert row.next_attempt_at is not None
             assert await session.scalar(select(func.count(AuditLogModel.id))) == 0
+
+
+class TestBacklogHealth:
+    """The signal that would have caught four days of a stopped worker."""
+
+    async def test_an_empty_queue_reports_no_lag(self, outbox_db):
+        async with outbox_db() as session:
+            backlog = await OutboxRepositoryImpl(session).backlog()
+        assert (backlog.depth, backlog.failed) == (0, 0)
+        assert backlog.age_seconds(now=utc_now()) is None
+
+    async def test_lag_is_measured_from_the_event_not_the_row(self, outbox_db):
+        """An event enqueued days ago is hours late even if the row is new."""
+        happened = utc_now() - timedelta(days=4)
+        async with outbox_db() as session:
+            await OutboxRepositoryImpl(session).enqueue(
+                tenant_id=TENANT_ID,
+                event_type="ClientSuspended",
+                payload=_payload(),
+                occurred_at=happened,
+                aggregate_type="Client",
+                aggregate_id="client-1",
+            )
+            await session.commit()
+
+        async with outbox_db() as session:
+            backlog = await OutboxRepositoryImpl(session).backlog()
+
+        assert backlog.depth == 1
+        lag = backlog.age_seconds(now=utc_now())
+        assert lag is not None and lag > 3 * 86400
+
+    async def test_a_delivered_event_leaves_no_lag_behind(self, outbox_db):
+        async with outbox_db() as session:
+            await OutboxRepositoryImpl(session).enqueue(
+                tenant_id=TENANT_ID,
+                event_type="ClientSuspended",
+                payload=_payload(),
+                occurred_at=utc_now() - timedelta(days=4),
+                aggregate_type="Client",
+                aggregate_id="client-1",
+            )
+            await session.commit()
+
+        assert await _drain(outbox_db) == 1
+
+        async with outbox_db() as session:
+            backlog = await OutboxRepositoryImpl(session).backlog()
+        assert backlog.depth == 0
+        assert backlog.age_seconds(now=utc_now()) is None
+
+    async def test_a_poisoned_row_is_counted_as_failed(self, outbox_db):
+        async with outbox_db() as session:
+            await OutboxRepositoryImpl(session).enqueue(
+                tenant_id=TENANT_ID,
+                event_type="ClientSuspended",
+                payload=_payload(action_type="NOT_A_VALID_ACTION"),
+                occurred_at=utc_now(),
+                aggregate_type="Client",
+                aggregate_id="client-1",
+            )
+            await session.commit()
+
+        assert await _drain(outbox_db) == 0
+
+        async with outbox_db() as session:
+            backlog = await OutboxRepositoryImpl(session).backlog()
+        assert (backlog.depth, backlog.failed) == (1, 1)

@@ -8,7 +8,7 @@ import pytest
 from app.domain.entities.user import UserEntity
 from app.domain.enums import UserStatus
 from app.domain.events import UserActivated
-from app.domain.repositories.outbox_repository import OutboxRepository
+from app.domain.repositories.outbox_repository import OutboxBacklog, OutboxRepository
 from app.domain.value_objects.core import Email, TenantId, UserId
 from app.shared.handlers.audit_event_handler import AuditEventHandler
 
@@ -49,6 +49,9 @@ class _RecordingOutbox(OutboxRepository):
         self, event_id: str, error: str, next_attempt_at: datetime | None = None
     ) -> None:
         pass
+
+    async def backlog(self) -> OutboxBacklog:
+        return OutboxBacklog(depth=0, oldest_undelivered=None, failed=0)
 
 
 def _user() -> UserEntity:

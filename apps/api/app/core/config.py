@@ -216,6 +216,15 @@ class Settings(BaseSettings):
         description="Comma-separated resource types to skip for LIST/VIEW (e.g., 'AuditLog,Health')",
     )
 
+    # Age of the oldest undelivered outbox event at which /health/outbox reports
+    # unhealthy. Depth is not the signal: a bulk import enqueues thousands of
+    # rows a working worker clears in seconds. An event still undelivered an
+    # hour after it happened means the worker is not running.
+    OUTBOX_MAX_LAG_SECONDS: int = Field(
+        default=3600,
+        description="Oldest undelivered outbox event age before /health/outbox reports unhealthy",
+    )
+
     @field_validator("DATABASE_URL")
     @classmethod
     def normalize_database_url(cls, v: str) -> str:

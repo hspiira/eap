@@ -353,11 +353,17 @@ being empty for this backlog, so it makes no practical difference here.
   deployed and supervised in production matters more than any coverage number
   in this document. Four days of undetected silence in dev is what a missing
   liveness check looks like.
-- Nothing alerts on outbox depth or worker liveness. The backlog grew for four
-  days and the only symptom was an empty `audit_logs`, which nothing reads yet
-  because the UI is a placeholder. A depth-and-age check on
-  `outbox_events WHERE delivered_at IS NULL` is the cheapest way to make the
-  next outage visible.
+- ~~Nothing alerts on outbox depth or worker liveness.~~ Closed 2026-09-10:
+  `GET /health/outbox` reports depth, failed count and lag, and returns 503
+  once the oldest undelivered event is older than `OUTBOX_MAX_LAG_SECONDS`
+  (default one hour). It is unauthenticated, like `/health`, and carries
+  counts only. Point a monitor at it; nothing does so automatically.
+
+  The threshold is on **age, not depth**, and that choice is the whole point.
+  A bulk import enqueues thousands of rows that a working worker clears in
+  seconds, so a depth alarm would have cried wolf on every roster import while
+  staying silent through the four-day outage that actually happened. Age is
+  the signal that separates the two.
 - `outbox_events.payload` is `json` in the migrated database and `JSONB` on
   the model (`outbox_model.py`). SQLAlchemy reads both, so nothing is broken,
   but `?` and the other jsonb operators need an explicit cast when querying
