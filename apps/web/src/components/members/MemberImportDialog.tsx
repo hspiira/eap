@@ -90,8 +90,12 @@ const TONE_CLASS: Record<Tone, string> = {
 /** Headers never wrap; the table scrolls horizontally instead when columns run out of room. */
 const HEAD_CLASS = "h-auto whitespace-nowrap px-2 py-1 text-xs font-medium"
 
-/** Rows written per apply call. Keeps each round trip well under a platform request timeout. */
-const APPLY_CHUNK_SIZE = 200
+/**
+ * Rows written per apply call. Each row is its own DB round trip and commit,
+ * so this stays small enough that one chunk reliably finishes well inside the
+ * client's request timeout even against a remote, non-local database.
+ */
+const APPLY_CHUNK_SIZE = 50
 
 interface ApplyProgress {
   imported: number
@@ -171,6 +175,21 @@ function downloadIssues(rows: MemberImportRow[]): void {
 function conflictingBatchId(cause: unknown): string | null {
   if (!(cause instanceof ApiError) || cause.code !== "IMPORT_ALREADY_STAGED") return null
   return cause.details?.find((detail) => detail.field === "batch_id")?.message ?? null
+}
+
+/**
+ * A chunk that timed out or dropped connection already committed on the
+ * server before the response was lost in transit, so this is never data
+ * loss: the next click resumes from wherever the server actually is.
+ */
+function applyErrorMessage(cause: unknown): string {
+  if (
+    cause instanceof ApiError &&
+    (cause.code === "TIMEOUT_ERROR" || cause.code === "NETWORK_ERROR")
+  ) {
+    return "Lost the connection partway through, but nothing already written was lost. Click Import to resume."
+  }
+  return normalizeErrorMessage(cause, "Could not apply the import")
 }
 
 async function fetchAllRows(batchId: string): Promise<MemberImportRow[]> {
@@ -630,7 +649,15 @@ export function MemberImportDialog({ open, onOpenChange, onImported }: MemberImp
         else toast.showError(`${totals.failed} row${totals.failed === 1 ? "" : "s"} need attention`)
       }
     } catch (cause) {
-      setError(normalizeErrorMessage(cause, "Could not apply the import"))
+      // Each row commits on the server as it writes, independently of
+      // whether this call's response ever arrives, so a failed chunk (a
+      // timeout, a dropped connection) never loses rows already written,
+      // even ones from the very chunk that just failed. Refresh so the
+      // table and the Import button reflect whatever actually landed.
+      const refreshed = await fetchAllRows(batch.id).catch(() => null)
+      if (refreshed) setRows(refreshed)
+      onImported()
+      setError(applyErrorMessage(cause))
     } finally {
       setApplying(false)
       setApplyProgress(null)

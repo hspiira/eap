@@ -126,6 +126,9 @@ export interface MemberDuplicateCandidate {
   reason: string
 }
 
+/** Generous: a chunk writes many rows one at a time against a remote database. */
+const APPLY_TIMEOUT_MS = 180_000
+
 export const membersApi = {
   async getImportTemplate(): Promise<Blob> {
     return apiClient.getBlob("/members/import/template")
@@ -173,10 +176,19 @@ export const membersApi = {
   /**
    * Write up to `limit` still-pending rows. Call again while the result's
    * `done` is false; the batch only closes once a call finds nothing left.
+   *
+   * Each row is its own DB round trip and commit, so this is slow by design.
+   * The default 30s client timeout is tuned for ordinary requests and fires
+   * well before a real chunk finishes against a remote database, so this
+   * call gets a much longer one of its own.
    */
   async applyImport(batchId: string, limit?: number): Promise<MemberImportApplyResult> {
     const query = limit ? `?limit=${limit}` : ""
-    return apiClient.post<MemberImportApplyResult>(`/members/import/${batchId}/apply${query}`)
+    return apiClient.post<MemberImportApplyResult>(
+      `/members/import/${batchId}/apply${query}`,
+      undefined,
+      { timeout: APPLY_TIMEOUT_MS },
+    )
   },
 
   async list(params?: MemberListParams): Promise<PaginatedResponse<Member>> {
