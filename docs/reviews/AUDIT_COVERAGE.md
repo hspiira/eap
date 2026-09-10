@@ -264,6 +264,31 @@ cases and the 5 new ones pass against local PostgreSQL, `ruff check` and
 Not verified: none of this has been deployed, and the worker still has to be
 running for any of it to reach `audit_logs`.
 
+## The trail recorded the worker's schedule, not the tenant's history
+
+Fixed on 2026-09-10, found by draining the local backlog for the first time.
+
+`LogAuditActionUseCase` hardcoded `occurred_at=utc_now()` and the outbox
+consumer never passed the event's own time, so an audit row was stamped when
+the worker reached it. The outbox exists precisely to decouple those two
+moments, so they always differ, and after an outage they differ by the whole
+outage.
+
+The local drain made the size of it plain: 3,668 events that happened between
+4 and 8 September were all written as 10 September, within four seconds of
+each other. `occurred_at` is the column `/audit/logs` sorts on by default and
+the one its `start_date` and `end_date` filters compare against, so every
+date-bounded audit query was answering with the worker's schedule.
+
+`tests/integration/test_audit_chain_gaps.py::TestEventTime` pins it, and was
+confirmed to fail without the fix rather than merely passing with it.
+
+**The 3,668 rows written by that first drain still carry the wrong time.**
+Their outbox rows are retained and hold the true `occurred_at`, so a replay
+would restate them exactly. That has not been done: it means deleting rows
+from an append-only audit store, which is a decision for whoever owns the
+data rather than a cleanup to be performed quietly.
+
 ## Found on the way, not fixed
 
 - **A failed DSAR export or erasure persists nothing, including its own
@@ -296,9 +321,24 @@ running for any of it to reach `audit_logs`.
 - `apps/web/src/routes/audit.tsx` is a placeholder. The read API exists
   (`/audit/logs`, `/logs/{id}/changes`, `/entity/{type}/{id}/changes`) and
   nothing in the UI calls it.
-- The worker is a separate process nobody runs in dev, so a local database
-  accumulates outbox rows and no audit rows. Local `evexia_db` held 3,668
-  undelivered events and 0 audit rows when this was written, and still did on
-  2026-09-10. Nothing above reaches `audit_logs` in any environment where
-  `scripts/outbox_worker.py` is not running, so confirming it is deployed
-  matters more than any coverage number in this document.
+- The worker is a separate process nobody runs in dev. Local `evexia_db` had
+  accumulated 3,668 undelivered events and 0 audit rows by 2026-09-10, when
+  the backlog was drained for the first time: all 3,668 delivered, no
+  failures, 3,668 audit rows. Nothing reaches `audit_logs` in any environment
+  where `scripts/outbox_worker.py` is not running, so confirming it is
+  deployed and supervised in production matters more than any coverage number
+  in this document. Four days of undetected silence in dev is what a missing
+  liveness check looks like.
+- Nothing alerts on outbox depth or worker liveness. The backlog grew for four
+  days and the only symptom was an empty `audit_logs`, which nothing reads yet
+  because the UI is a placeholder. A depth-and-age check on
+  `outbox_events WHERE delivered_at IS NULL` is the cheapest way to make the
+  next outage visible.
+- `outbox_events.payload` is `json` in the migrated database and `JSONB` on
+  the model (`outbox_model.py`). SQLAlchemy reads both, so nothing is broken,
+  but `?` and the other jsonb operators need an explicit cast when querying
+  the table by hand.
+- The 3,668 backfilled rows carry no `entity_changes`: every payload holds an
+  empty `field_changes` array, because they were enqueued before the diff
+  extraction described above was fixed. The trail says what happened to what,
+  and not what changed, for everything before 2026-09-08.
