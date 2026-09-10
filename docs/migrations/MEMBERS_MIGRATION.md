@@ -371,6 +371,20 @@ the multiple-batches-per-hash case routine rather than rare, so they were left
 alone rather than expanding this fix into an unrelated module. Whoever adds a
 discard/retry action to either flow should apply the same status filter first.
 
+A third bug surfaced testing the same discard/retry path end to end: once a
+restage succeeded, the preview never populated any rows. `MemberImportDialog`'s
+`fetchAllRows` pages `GET /members/import/{id}/rows` at `limit=200`, but the
+route declared `pagination(default_limit=50)` with no `max_limit` override, so
+it inherits the shared default cap of 100 and 422s on the very first request.
+This has been broken since the route was introduced
+(`bb8b631f`): every unit test mocks `imports.list_rows` directly, bypassing
+FastAPI's query validation, so nothing ever exercised the real HTTP contract
+between this endpoint and its only caller. Fixed by passing
+`max_limit=200`, matching the precedent already set by
+`care_callbacks.py:671`. Added `test_list_import_rows_accepts_the_200_page_size_the_dialog_uses`,
+the route's first HTTP-level test; confirmed it fails on the old signature
+with the same 422 the live server produced.
+
 ### Verification
 
 Migration `q6s8u0w2y4a6`, applied to the dev database and reversed, both

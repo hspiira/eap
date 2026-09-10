@@ -869,7 +869,7 @@ async def get_member_import_batch(
 async def list_member_import_rows(
     batch_id: str,
     outcome: str | None = Query(None, description="Filter the review queue"),
-    pg: PageParams = Depends(pagination(default_limit=50)),
+    pg: PageParams = Depends(pagination(default_limit=50, max_limit=200)),
     current_user: TokenData = Depends(get_current_user),
     imports: MemberImportRepository = Depends(get_member_import_repository),
     client_repo: ClientRepository = Depends(get_client_repository),
