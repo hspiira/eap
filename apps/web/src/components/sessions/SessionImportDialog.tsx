@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from "react"
+import { useCallback, useMemo, useRef, useState } from "react"
 
 import { FileInput, Upload } from "lucide-react"
 
@@ -31,9 +31,38 @@ import {
 import { useToast } from "@/contexts/ToastContext"
 import { normalizeErrorMessage } from "@/lib/errors"
 import { cn } from "@/lib/utils"
+import { ApiError } from "@/types/api"
 
 /** Rows shown per page of the review queue. */
 const ROW_LIMIT = 50
+
+/**
+ * Rows written per apply call. Each row is its own DB round trip and commit,
+ * so this stays small enough that one chunk reliably finishes well inside
+ * the client's request timeout even against a remote, non-local database.
+ */
+const APPLY_CHUNK_SIZE = 50
+
+interface ApplyProgress {
+  imported: number
+  failed: number
+  total: number
+}
+
+/**
+ * A chunk that timed out or dropped connection already committed on the
+ * server before the response was lost in transit, so this is never data
+ * loss: the next click resumes from wherever the server actually is.
+ */
+function applyErrorMessage(cause: unknown): string {
+  if (
+    cause instanceof ApiError &&
+    (cause.code === "TIMEOUT_ERROR" || cause.code === "NETWORK_ERROR")
+  ) {
+    return "Lost the connection partway through, but nothing already written was lost. Click Apply to resume."
+  }
+  return normalizeErrorMessage(cause, "Could not apply the batch")
+}
 
 /**
  * What each outcome means, in the order a reviewer cares about.
@@ -113,6 +142,45 @@ function presentCounts(batch: SessionImportBatch): { outcome: SessionImportOutco
     .sort((a, b) => b.n - a.n)
 }
 
+/** Compact, toast-style status while a chunked apply is in flight. */
+function ApplyProgressBanner({
+  fileName,
+  progress,
+  onCancel,
+}: {
+  fileName: string
+  progress: ApplyProgress
+  onCancel: () => void
+}) {
+  const done = progress.imported + progress.failed
+  const percent = progress.total > 0 ? Math.round((done / progress.total) * 100) : 100
+  return (
+    <div className="flex shrink-0 items-center gap-3 border-t border-fg/10 bg-surface px-6 py-3">
+      <div className="min-w-0 flex-1">
+        <p className="truncate text-xs font-medium text-fg">{fileName}</p>
+        <div className="mt-1.5 h-1.5 w-full overflow-hidden rounded-full bg-fg/10">
+          <div
+            className="h-full rounded-full bg-primary transition-[width]"
+            style={{ width: `${percent}%` }}
+          />
+        </div>
+      </div>
+      <p className="shrink-0 text-xs tabular-nums text-fg-muted">
+        {done} / {progress.total} · {percent}%
+      </p>
+      <Button
+        type="button"
+        variant="ghost"
+        size="sm"
+        className="h-7 shrink-0 px-2 text-xs"
+        onClick={onCancel}
+      >
+        Cancel
+      </Button>
+    </div>
+  )
+}
+
 export function SessionImportDialog({ open, onOpenChange, onImported }: SessionImportDialogProps) {
   const toast = useToast()
   const [file, setFile] = useState<File | null>(null)
@@ -124,6 +192,8 @@ export function SessionImportDialog({ open, onOpenChange, onImported }: SessionI
   const [busy, setBusy] = useState<"" | "staging" | "rows" | "applying" | "abandoning">("")
   const [error, setError] = useState<string | null>(null)
   const [applied, setApplied] = useState<SessionImportApplyResult | null>(null)
+  const [applyProgress, setApplyProgress] = useState<ApplyProgress | null>(null)
+  const applyCancelledRef = useRef(false)
 
   const counts = useMemo(() => (batch ? presentCounts(batch) : []), [batch])
   const accepted = batch ? outcomeCount(batch.outcome_counts, "Accepted") : 0
@@ -134,6 +204,7 @@ export function SessionImportDialog({ open, onOpenChange, onImported }: SessionI
     setBatch(null)
     setRows([])
     setApplied(null)
+    setApplyProgress(null)
     setError(null)
     setFilter("Accepted")
   }, [])
@@ -171,20 +242,51 @@ export function SessionImportDialog({ open, onOpenChange, onImported }: SessionI
     }
   }
 
+  const cancelApply = () => {
+    applyCancelledRef.current = true
+  }
+
   async function apply() {
     if (!batch) return
+    applyCancelledRef.current = false
     setBusy("applying")
     setError(null)
+    const totals = { imported: 0, failed: 0, remaining: accepted }
+    setApplyProgress({ imported: 0, failed: 0, total: accepted })
     try {
-      const result = await sessionImportsApi.apply(batch.id)
+      let done = false
+      while (!done && !applyCancelledRef.current) {
+        const result = await sessionImportsApi.apply(batch.id, APPLY_CHUNK_SIZE)
+        totals.imported += result.imported
+        totals.failed += result.failed
+        totals.remaining = result.remaining
+        done = result.done
+        setApplyProgress({ imported: totals.imported, failed: totals.failed, total: accepted })
+        setBatch(await sessionImportsApi.getBatch(batch.id))
+      }
+      const result: SessionImportApplyResult = { batch_id: batch.id, done, ...totals }
       setApplied(result)
-      setBatch(await sessionImportsApi.getBatch(batch.id))
-      toast.showSuccess(`Imported ${result.imported} sessions`)
-      onImported()
+      if (totals.imported > 0) onImported()
+      if (done) {
+        if (totals.failed === 0) toast.showSuccess(`Imported ${totals.imported} sessions`)
+        else
+          toast.showError(
+            `${totals.failed} row${totals.failed === 1 ? "" : "s"} could not be written`,
+          )
+        await loadRows(batch.id, filter)
+      }
     } catch (cause) {
-      setError(normalizeErrorMessage(cause, "Could not apply the batch"))
+      // Each row commits on the server as it writes, independently of
+      // whether this call's response ever arrives, so a failed chunk (a
+      // timeout, a dropped connection) never loses rows already written.
+      // Refresh so the batch and the Apply button reflect whatever landed.
+      const refreshed = await sessionImportsApi.getBatch(batch.id).catch(() => null)
+      if (refreshed) setBatch(refreshed)
+      if (totals.imported > 0) onImported()
+      setError(applyErrorMessage(cause))
     } finally {
       setBusy("")
+      setApplyProgress(null)
     }
   }
 
@@ -281,9 +383,18 @@ export function SessionImportDialog({ open, onOpenChange, onImported }: SessionI
                 </span>
               </p>
               {applied ? (
-                <p className="text-sm text-primary">
-                  Imported {applied.imported} sessions. {applied.skipped_already_imported} were
-                  already imported and {applied.not_importable} were not importable.
+                <p
+                  className={cn(
+                    "text-sm",
+                    applied.failed > 0 ? "text-destructive" : "text-primary",
+                  )}
+                >
+                  Imported {applied.imported} session{applied.imported === 1 ? "" : "s"}
+                  {applied.failed > 0 ? `. ${applied.failed} could not be written` : ""}
+                  {!applied.done
+                    ? `. ${applied.remaining} still pending, click Apply to resume`
+                    : ""}
+                  .
                 </p>
               ) : null}
               <div className="flex flex-wrap gap-1.5">
@@ -309,6 +420,14 @@ export function SessionImportDialog({ open, onOpenChange, onImported }: SessionI
             </div>
           ) : null}
         </div>
+
+        {applyProgress ? (
+          <ApplyProgressBanner
+            fileName={batch?.file_name ?? "Applying import…"}
+            progress={applyProgress}
+            onCancel={cancelApply}
+          />
+        ) : null}
 
         <SheetFooter className="shrink-0 justify-end gap-2 border-t border-fg/10 bg-surface px-6 py-3">
           <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>

@@ -28,6 +28,9 @@ export interface SessionImportRowParams {
   limit?: number
 }
 
+/** Generous: a chunk writes many rows one at a time against a remote database. */
+const APPLY_TIMEOUT_MS = 180_000
+
 export const sessionImportsApi = {
   /**
    * Judge an extract without writing anything.
@@ -63,8 +66,22 @@ export const sessionImportsApi = {
     )
   },
 
-  async apply(batchId: string): Promise<SessionImportApplyResult> {
-    return apiClient.post<SessionImportApplyResult>(`/session-imports/${batchId}/apply`)
+  /**
+   * Write up to `limit` still-pending rows. Call again while the result's
+   * `done` is false; the batch only closes once a call finds nothing left.
+   *
+   * Each row is its own DB round trip and commit, so this is slow by design.
+   * The default client timeout is tuned for ordinary requests and fires
+   * well before a real chunk finishes against a remote database, so this
+   * call gets a much longer one of its own.
+   */
+  async apply(batchId: string, limit?: number): Promise<SessionImportApplyResult> {
+    const query = limit ? `?limit=${limit}` : ""
+    return apiClient.post<SessionImportApplyResult>(
+      `/session-imports/${batchId}/apply${query}`,
+      undefined,
+      { timeout: APPLY_TIMEOUT_MS },
+    )
   },
 
   /** Close a batch nobody will apply. The reason goes on the record. */

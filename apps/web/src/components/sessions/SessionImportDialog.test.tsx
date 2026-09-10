@@ -3,22 +3,25 @@
  * outcome counts are what tells them whether applying is worth doing.
  */
 
+import { waitFor } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { describe, expect, it, vi } from "vitest"
 
 import { SessionImportDialog } from "@/components/sessions/SessionImportDialog"
 import { renderWithProviders } from "@/test/utils"
+import { ApiError } from "@/types/api"
 
 const stage = vi.fn()
 const apply = vi.fn()
 const listRows = vi.fn()
+const getBatch = vi.fn()
 
 vi.mock("@/api/endpoints/session-imports", () => ({
   sessionImportsApi: {
     stage: (...args: unknown[]) => stage(...args),
     apply: (...args: unknown[]) => apply(...args),
     listRows: (...args: unknown[]) => listRows(...args),
-    getBatch: vi.fn(),
+    getBatch: (...args: unknown[]) => getBatch(...args),
     abandon: vi.fn(),
   },
 }))
@@ -70,5 +73,66 @@ describe("session import", () => {
   it("cannot apply a batch with nothing accepted", async () => {
     const screen = await stageFile({ UnresolvedMember: 10 })
     expect(await screen.findByRole("button", { name: /apply 0 rows/i })).toBeDisabled()
+  })
+})
+
+describe("chunked apply", () => {
+  it("polls the apply endpoint until done, refreshing the batch after each chunk", async () => {
+    const screen = await stageFile({ Accepted: 2 })
+    getBatch.mockResolvedValue(batch({ Accepted: 2 }))
+    apply
+      .mockResolvedValueOnce({ batch_id: "b_1", imported: 1, failed: 0, remaining: 1, done: false })
+      .mockResolvedValueOnce({ batch_id: "b_1", imported: 1, failed: 0, remaining: 0, done: true })
+
+    await userEvent.click(screen.getByRole("button", { name: /apply 2 rows/i }))
+
+    await waitFor(() => expect(apply).toHaveBeenCalledTimes(2))
+    expect(apply).toHaveBeenNthCalledWith(1, "b_1", 50)
+    expect(apply).toHaveBeenNthCalledWith(2, "b_1", 50)
+    expect(await screen.findByText(/imported 2 sessions/i)).toBeInTheDocument()
+    expect(screen.queryByRole("button", { name: "Cancel" })).not.toBeInTheDocument()
+  })
+
+  it("shows live count and percentage while a chunk is in flight, and stops on cancel", async () => {
+    const screen = await stageFile({ Accepted: 2 })
+    getBatch.mockResolvedValue(batch({ Accepted: 2 }))
+    const resolvers: Array<(value: unknown) => void> = []
+    apply.mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          resolvers.push(resolve)
+        }),
+    )
+
+    await userEvent.click(screen.getByRole("button", { name: /apply 2 rows/i }))
+    const cancelButton = await screen.findByRole("button", { name: "Cancel" })
+
+    resolvers[0]({ batch_id: "b_1", imported: 1, failed: 0, remaining: 1, done: false })
+    await screen.findByText("1 / 2 · 50%")
+    await waitFor(() => expect(resolvers).toHaveLength(2))
+
+    await userEvent.click(cancelButton)
+    resolvers[1]({ batch_id: "b_1", imported: 1, failed: 0, remaining: 0, done: false })
+
+    await waitFor(() =>
+      expect(screen.queryByRole("button", { name: "Cancel" })).not.toBeInTheDocument(),
+    )
+    expect(apply).toHaveBeenCalledTimes(2)
+  })
+
+  it("treats a lost connection as recoverable, not data loss", async () => {
+    const screen = await stageFile({ Accepted: 2 })
+    getBatch.mockResolvedValue(batch({ Accepted: 2 }))
+    apply.mockRejectedValueOnce(
+      new ApiError("Request timeout: The request took too long", "TIMEOUT_ERROR", 0),
+    )
+
+    await userEvent.click(screen.getByRole("button", { name: /apply 2 rows/i }))
+
+    expect(
+      await screen.findByText(
+        "Lost the connection partway through, but nothing already written was lost. Click Apply to resume.",
+      ),
+    ).toBeInTheDocument()
   })
 })
