@@ -14,18 +14,21 @@ const ACTIVITY_ICONS: Record<string, React.ElementType> = {
   NOTE: FileText,
 }
 
+/** en-GB: day before month, 24-hour time, so this reads consistently regardless of the viewer's own browser locale. */
+const ACTIVITY_LOCALE = "en-GB"
+
 function formatActivityTime(iso: string): string {
   try {
     const d = new Date(iso)
     const now = new Date()
     const sameDay = d.toDateString() === now.toDateString()
     if (sameDay) {
-      return `Today, ${d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`
+      return `Today, ${d.toLocaleTimeString(ACTIVITY_LOCALE, { hour: "2-digit", minute: "2-digit", hour12: false })}`
     }
     const yesterday = new Date(now)
     yesterday.setDate(yesterday.getDate() - 1)
     if (d.toDateString() === yesterday.toDateString()) return "Yesterday"
-    return d.toLocaleDateString([], {
+    return d.toLocaleDateString(ACTIVITY_LOCALE, {
       month: "short",
       day: "numeric",
       year: d.getFullYear() !== now.getFullYear() ? "numeric" : undefined,
