@@ -137,14 +137,17 @@ See the roadmap and deployment docs for production rollout and future features.
 
 ## Documentation
 
-See the `/docs` folder for detailed documentation:
+Module and review documents for this app are in `docs/`:
 
-- [Module Summary](docs/MODULE_SUMMARY.md) - Platform architecture overview
-- [Audit Integration](docs/AUDIT_INTEGRATION_SUMMARY.md) - Audit logging guide
-- [Backup and Recovery](docs/BACKUP_AND_RECOVERY.md) - Backup, restore, and retention
-- [Rollback Runbook](docs/ROLLBACK_RUNBOOK.md) - Application and database rollback
-- [Monitoring and Alerting](docs/MONITORING_AND_ALERTING.md) - Health checks and alerts
-- [Deployment](docs/DEPLOYMENT.md) - Environment parity and release checklist
+- [Members module](docs/MEMBERS_MODULE.md) - roster aggregate and import
+- [Services module](docs/SERVICES_MODULE.md) - service catalogue and diagnoses
+- [Taxonomy catalogue](docs/TAXONOMY_CATALOGUE.md) - reference data by table
+- [Taxonomy findings](docs/TAXONOMY_FINDINGS.md) - open taxonomy questions
+- [Contract attachments](docs/CONTRACT_ATTACHMENTS.md) - upload and storage
+- [Code quality](docs/code-quality/README.md) - correctness, coverage, structure
+
+Repository-wide migration, review and design records are in the root
+[`docs/`](../../docs/README.md) folder.
 
 ## License
 

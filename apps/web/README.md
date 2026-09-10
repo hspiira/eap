@@ -78,8 +78,14 @@ VITE_APP_ENV=development
 
 ## Documentation
 
-- [Frontend Development Guide](./docs/FRONTEND_DEVELOPMENT_GUIDE.md) - Complete API and implementation guide
-- [Implementation Plan](./docs/IMPLEMENTATION_PLAN.md) - Step-by-step development plan
+- [Dashboard](./docs/DASHBOARD.md) - dashboard composition and data sources
+- [Dashboard roadmap](./docs/DASHBOARD_ROADMAP.md) - planned dashboard work
+- [Design system](./.cursor/rules/DESIGN_SYSTEM.md) - tokens, components, layout
+- [Theme](./src/theme/README.md) - theme tokens and usage
+- [Code quality](./docs/code-quality/README.md) - correctness, DRY, SOLID, cleanup
+
+Repository-wide migration, review and design records are in the root
+[`docs/`](../../docs/README.md) folder.
 
 ## Backend API
 

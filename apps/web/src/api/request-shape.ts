@@ -11,7 +11,6 @@ import type { QueryParams } from "@/types/api"
  * All other endpoints require tenant_id: we add ?tenant_id= and x-tenant-id for every
  * GET/POST/PATCH/DELETE (list, create, update, etc.). Backend requires tenant context
  * for all data fetch and post operations.
- * See docs/FRONTEND_DEVELOPMENT_GUIDE.md – Tenant context.
  */
 export function shouldSkipTenantId(endpoint: string): boolean {
   const pathname = new URL(endpoint, "http://x").pathname
