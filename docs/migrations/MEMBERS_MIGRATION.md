@@ -325,11 +325,13 @@ Nearly half of `Unit`'s groups have fewer than five members, so a utilisation
 report broken down by unit would disclose counselling attendance at a cell
 size that identifies the person. Capture is safe; segmentation is not yet.
 
-The member import preview dialog
-(`apps/web/src/components/members/MemberImportDialog.tsx`) does not show the
-new columns. The file was uncommitted in the shared tree and belongs to
-another agent, so it was left alone. The values still import; they are only
-absent from the preview table.
+~~The member import preview dialog does not show the new columns.~~ Done
+2026-09-10 in a follow-up. `MemberImportRowResponse` returns the same nested
+`employment` block as `MemberResponse`, and the preview table renders one
+column each, but only when the staged batch carries at least one value: 4,616
+of the sample roster's 4,945 rows have none, so unconditional columns would
+add six empty ones to every import. The supported-fields copy previously said
+"Other workforce columns are ignored", which had become false.
 
 ### Verification
 
@@ -343,7 +345,7 @@ The real roster parses to the counts above, `job_classification` dropping to
 306 as the 17 `#N/A` rows normalise to null, and the six columns raise no new
 row issues: all 1,653 remain the pre-existing missing-`Staff_ID` errors.
 
-2,168 API unit tests and 753 web tests pass. Nothing is deployed.
+2,168 API unit tests and 757 web tests pass. Nothing is deployed.
 
 ## Open finding: next-of-kin relationship lookup returns a coroutine (2026-09-08)
 
