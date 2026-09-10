@@ -11268,6 +11268,7 @@ export interface components {
             decision: string;
             /** Display Label */
             display_label: string | null;
+            employment?: components["schemas"]["MemberEmployment"] | null;
             /** Id */
             id: string;
             /** Import Source Id */

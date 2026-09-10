@@ -724,6 +724,19 @@ def _batch_response(
     )
 
 
+def _staged_employment(row: MemberImportRowEntity) -> MemberEmployment | None:
+    """The row's employment values, or None when the roster carried none."""
+    details = EmploymentDetails.build(
+        job_title=row.job_title,
+        job_classification=row.job_classification,
+        skill=row.skill,
+        department=row.department,
+        unit=row.unit,
+        employment_type=row.employment_type,
+    )
+    return MemberEmployment.model_validate(vars(details)) if details else None
+
+
 def _row_response(
     row: MemberImportRowEntity, client_name: str | None = None
 ) -> MemberImportRowResponse:
@@ -737,6 +750,7 @@ def _row_response(
         display_label=row.display_label,
         outcome=row.outcome.value,
         decision=row.decision,
+        employment=_staged_employment(row),
         message=row.message,
         imported_member_id=row.imported_member_id.value if row.imported_member_id else None,
     )

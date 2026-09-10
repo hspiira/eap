@@ -9948,6 +9948,16 @@
             ],
             "title": "Display Label"
           },
+          "employment": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/MemberEmployment"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "id": {
             "title": "Id",
             "type": "string"

@@ -151,6 +151,7 @@ export function MemberImportDialog({ open, onOpenChange, onImported }: MemberImp
   }, [open])
 
   const queued = rows.filter(isQueued)
+  const showEmployment = rows.some((row) => row.employment)
 
   const selectFile = (selected: File | null, handle: FileSystemFileHandle | null = null) => {
     setFile(selected)
@@ -316,8 +317,9 @@ export function MemberImportDialog({ open, onOpenChange, onImported }: MemberImp
           <p className="text-xs text-fg-muted">
             Company Code resolves the client. Supported fields: Company Code, Staff_ID, Staff
             Number, Name of Employee, Email Address, Personal Email, Date of Birth (YYYY-MM-DD),
-            Gender, Phone, National ID, Passport Number, Status, Relation, and Primary Staff ID.
-            Other workforce columns are ignored; files are limited to 10 MB.
+            Gender, Phone, National ID, Passport Number, Status, Relation, and Primary Staff ID. Job
+            Title, Job Classification, Skill, Department, Unit and Contract type are also imported
+            when present. Any other column is ignored; files are limited to 10 MB.
           </p>
 
           {staging ? <p className="text-xs text-fg-muted">Staging rows on the server…</p> : null}
@@ -344,6 +346,16 @@ export function MemberImportDialog({ open, onOpenChange, onImported }: MemberImp
                         Staff no.
                       </TableHead>
                       <TableHead className="h-auto px-2 py-1 text-xs font-medium">Client</TableHead>
+                      {showEmployment
+                        ? EMPLOYMENT_COLUMNS.map((column) => (
+                            <TableHead
+                              key={column.key}
+                              className="h-auto px-2 py-1 text-xs font-medium"
+                            >
+                              {column.label}
+                            </TableHead>
+                          ))
+                        : null}
                       <TableHead className="h-auto px-2 py-1 text-xs font-medium">
                         Decision
                       </TableHead>
@@ -357,6 +369,7 @@ export function MemberImportDialog({ open, onOpenChange, onImported }: MemberImp
                         row={row}
                         applying={applying}
                         applied={applied}
+                        showEmployment={showEmployment}
                         onDecision={updateDecision}
                       />
                     ))}
@@ -433,15 +446,27 @@ function ImportSummary({
   )
 }
 
+/** Optional roster columns, rendered only when a file carries some. */
+const EMPLOYMENT_COLUMNS = [
+  { key: "job_title", label: "Job title" },
+  { key: "job_classification", label: "Classification" },
+  { key: "skill", label: "Skill" },
+  { key: "department", label: "Department" },
+  { key: "unit", label: "Unit" },
+  { key: "employment_type", label: "Contract" },
+] as const
+
 function ImportRowLine({
   row,
   applying,
   applied,
+  showEmployment,
   onDecision,
 }: {
   row: MemberImportRow
   applying: boolean
   applied: boolean
+  showEmployment: boolean
   onDecision: (row: MemberImportRow, decision: MemberImportRowDecision) => void
 }) {
   const status = rowStatus(row, applied)
@@ -459,6 +484,16 @@ function ImportRowLine({
       <TableCell className="max-w-36 truncate px-2 py-1 text-xs text-fg-muted">
         {row.client_name ?? row.client_code ?? "Unresolved"}
       </TableCell>
+      {showEmployment
+        ? EMPLOYMENT_COLUMNS.map((column) => (
+            <TableCell
+              key={column.key}
+              className="max-w-36 truncate px-2 py-1 text-xs text-fg-muted"
+            >
+              {row.employment?.[column.key] ?? "-"}
+            </TableCell>
+          ))
+        : null}
       <TableCell className="px-2 py-1 text-xs">
         {decidable ? (
           <Select

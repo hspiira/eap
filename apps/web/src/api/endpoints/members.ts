@@ -81,6 +81,7 @@ export interface MemberImportRow {
   display_label: string | null
   outcome: MemberImportRowOutcome
   decision: MemberImportRowDecision
+  employment?: MemberEmployment | null
   message?: string | null
   imported_member_id?: string | null
 }

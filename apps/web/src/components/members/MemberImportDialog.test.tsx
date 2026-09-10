@@ -1,0 +1,127 @@
+import { screen, waitFor } from "@testing-library/react"
+import userEvent from "@testing-library/user-event"
+import { beforeEach, describe, expect, it, vi } from "vitest"
+
+import type { MemberImportBatch, MemberImportRow } from "@/api/endpoints/members"
+import { renderWithProviders } from "@/test/utils"
+
+const api = vi.hoisted(() => ({
+  stageImport: vi.fn(),
+  listImportRows: vi.fn(),
+  setImportRowDecision: vi.fn(),
+  applyImport: vi.fn(),
+  getImportTemplate: vi.fn(),
+}))
+vi.mock("@/api/endpoints/members", () => ({ membersApi: api }))
+
+const { MemberImportDialog } = await import("@/components/members/MemberImportDialog")
+
+const EMPLOYMENT_HEADERS = [
+  "Job title",
+  "Classification",
+  "Skill",
+  "Department",
+  "Unit",
+  "Contract",
+]
+
+const BATCH: MemberImportBatch = {
+  id: "batch-1",
+  tenant_id: "tenant-1",
+  file_name: "roster.csv",
+  file_hash: "hash",
+  row_count: 1,
+  status: "Staged",
+  outcome_counts: { New: 1 },
+  staged_by: "user-1",
+  applied_by: null,
+  applied_at: null,
+  created_at: "2026-09-10T00:00:00Z",
+}
+
+function makeRow(overrides: Partial<MemberImportRow> = {}): MemberImportRow {
+  return {
+    id: "row-1",
+    row_number: 2,
+    client_code: "IM",
+    client_name: "Imaginary Bank",
+    import_source_id: "IM-1",
+    staff_number: "1001",
+    display_label: "Amina Namukasa",
+    outcome: "New",
+    decision: "import",
+    ...overrides,
+  }
+}
+
+async function stage(rows: MemberImportRow[]) {
+  api.stageImport.mockResolvedValue({ ...BATCH, row_count: rows.length })
+  api.listImportRows.mockResolvedValue({
+    items: rows,
+    total: rows.length,
+    page: 1,
+    limit: 200,
+    has_more: false,
+  })
+  renderWithProviders(<MemberImportDialog open onOpenChange={() => {}} onImported={() => {}} />)
+  const input = screen.getByLabelText(/csv/i)
+  await userEvent.upload(input, new File(["header\n"], "roster.csv", { type: "text/csv" }))
+  await waitFor(() => expect(api.listImportRows).toHaveBeenCalled())
+}
+
+beforeEach(() => {
+  vi.clearAllMocks()
+})
+
+describe("member import preview", () => {
+  it("omits the employment columns when the roster carried none", async () => {
+    await stage([makeRow()])
+    expect(await screen.findByText("Amina Namukasa")).toBeInTheDocument()
+    for (const header of EMPLOYMENT_HEADERS) {
+      expect(screen.queryByRole("columnheader", { name: header })).not.toBeInTheDocument()
+    }
+  })
+
+  it("shows every employment column once a roster carries them", async () => {
+    await stage([
+      makeRow({
+        employment: {
+          job_title: "Branch Manager",
+          job_classification: "Manager",
+          skill: "Officer",
+          department: "Operations",
+          unit: "Kampala Road branch",
+          employment_type: "Permanent",
+        },
+      }),
+    ])
+    expect(await screen.findByText("Amina Namukasa")).toBeInTheDocument()
+    for (const header of EMPLOYMENT_HEADERS) {
+      expect(screen.getByRole("columnheader", { name: header })).toBeInTheDocument()
+    }
+    expect(screen.getByText("Branch Manager")).toBeInTheDocument()
+    expect(screen.getByText("Operations")).toBeInTheDocument()
+    expect(screen.getByText("Kampala Road branch")).toBeInTheDocument()
+    expect(screen.getByText("Permanent")).toBeInTheDocument()
+  })
+
+  it("keeps the columns aligned when only some rows carry employment", async () => {
+    await stage([
+      makeRow({ id: "row-1", employment: { department: "Treasury" } }),
+      makeRow({ id: "row-2", row_number: 3, display_label: "Joan Aciro" }),
+    ])
+    expect(await screen.findByText("Joan Aciro")).toBeInTheDocument()
+    const [, described, bare] = screen.getAllByRole("row")
+    expect(described.querySelectorAll("td")).toHaveLength(13)
+    expect(bare.querySelectorAll("td")).toHaveLength(13)
+    expect(screen.getByText("Treasury")).toBeInTheDocument()
+  })
+
+  it("tells the uploader these columns are imported", async () => {
+    await stage([makeRow()])
+    expect(
+      screen.getByText(/Job Title, Job Classification, Skill, Department, Unit and Contract type/),
+    ).toBeInTheDocument()
+    expect(screen.queryByText(/Other workforce columns are ignored/)).not.toBeInTheDocument()
+  })
+})

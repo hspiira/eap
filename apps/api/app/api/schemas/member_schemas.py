@@ -284,6 +284,7 @@ class MemberImportRowResponse(BaseModel):
     display_label: str | None
     outcome: str
     decision: str
+    employment: MemberEmployment | None = None
     message: str | None = None
     imported_member_id: str | None = None
 
