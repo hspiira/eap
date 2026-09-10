@@ -46,16 +46,21 @@ class MemberImportRepository(ABC):
     async def set_row_decision(
         self, tenant_id: TenantId, row_id: MemberImportRowId, decision: str
     ) -> None:
-        """Record a person's Import/Skip override for one still-new row."""
+        """Record a reviewer's decision for one New or Duplicate row."""
 
     @abstractmethod
     async def mark_row_imported(
-        self, tenant_id: TenantId, row_id: MemberImportRowId, member_id: str
+        self,
+        tenant_id: TenantId,
+        row_id: MemberImportRowId,
+        member_id: str,
+        message: str | None = None,
     ) -> None:
-        """Record which member a staged row produced.
+        """Record which member a staged row wrote, whether created or updated.
 
         An update, not a second insert: the row already exists and its replay
-        key is unique per tenant.
+        key is unique per tenant. `message` explains a write that resolved to
+        a member without changing anything.
         """
 
     @abstractmethod
@@ -75,7 +80,7 @@ class MemberImportRepository(ABC):
 
     @abstractmethod
     async def release_superseded_rows(self, tenant_id: TenantId, file_hash: str) -> int:
-        """Stop earlier stagings of this same file claiming rows they never imported."""
+        """Stop earlier stagings of this same file holding keys it will recompute."""
 
     @abstractmethod
     async def find_row_by_replay_key(
@@ -96,3 +101,23 @@ class MemberImportRepository(ABC):
     async def outcome_counts(
         self, tenant_id: TenantId, batch_id: MemberImportBatchId
     ) -> dict[str, int]: ...
+
+    @abstractmethod
+    async def list_pending_rows(
+        self, tenant_id: TenantId, batch_id: MemberImportBatchId, *, limit: int
+    ) -> Sequence[MemberImportRowEntity]:
+        """Up to `limit` rows apply would still attempt to write, oldest first.
+
+        New rows decided "import" and matched Duplicate rows decided
+        "update", in both cases with no imported_member_id yet. Re-queries
+        rather than trusting an offset, so a chunked apply resumes correctly
+        regardless of how many earlier chunks already ran.
+        """
+
+    @abstractmethod
+    async def count_pending_rows(self, tenant_id: TenantId, batch_id: MemberImportBatchId) -> int:
+        """How many rows `list_pending_rows` would still return."""
+
+    @abstractmethod
+    async def count_imported_rows(self, tenant_id: TenantId, batch_id: MemberImportBatchId) -> int:
+        """Rows in this batch that have actually written a member so far."""

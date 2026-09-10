@@ -69,7 +69,11 @@ export interface MemberImportBatch {
 }
 
 export type MemberImportRowOutcome = "New" | "Duplicate" | "Invalid" | "Failed"
-export type MemberImportRowDecision = "import" | "skip"
+/**
+ * "import" and "skip" belong to a New row; "update" to a Duplicate that
+ * matched an existing member (`matched_member_id`), and revises that member.
+ */
+export type MemberImportRowDecision = "import" | "skip" | "update"
 
 export interface MemberImportRow {
   id: string
@@ -83,6 +87,8 @@ export interface MemberImportRow {
   decision: MemberImportRowDecision
   employment?: MemberEmployment | null
   message?: string | null
+  /** The member this row matched. Set only on a Duplicate the roster may update. */
+  matched_member_id?: string | null
   imported_member_id?: string | null
 }
 
@@ -149,7 +155,7 @@ export const membersApi = {
     return apiClient.get<MemberImportRowListResponse>(`/members/import/${batchId}/rows`, params)
   },
 
-  /** Override one still-new row's Import/Skip decision before applying. */
+  /** Set one reviewed row's decision before applying. */
   async setImportRowDecision(
     batchId: string,
     rowId: string,

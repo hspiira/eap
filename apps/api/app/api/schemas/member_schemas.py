@@ -294,6 +294,9 @@ class MemberImportRowResponse(BaseModel):
     decision: str
     employment: MemberEmployment | None = None
     message: str | None = None
+    #: The member this row matched. Present only on a duplicate the roster may
+    #: update, which is what puts "update" among its allowed decisions.
+    matched_member_id: str | None = None
     imported_member_id: str | None = None
 
 
@@ -306,9 +309,14 @@ class MemberImportRowListResponse(BaseModel):
 
 
 class MemberImportRowDecisionRequest(BaseModel):
-    """Override one still-new row's Import/Skip decision before applying."""
+    """Set what happens to one reviewed row before the batch is applied.
 
-    decision: Literal["import", "skip"]
+    "import" and "skip" belong to a New row; "update" to a duplicate that
+    matched an existing member. The row itself refuses a decision its outcome
+    does not allow.
+    """
+
+    decision: Literal["import", "skip", "update"]
 
     model_config = ConfigDict(extra="forbid")
 
@@ -322,10 +330,12 @@ class MemberImportAbandonRequest(BaseModel):
 
 
 class MemberImportApplyResponse(BaseModel):
-    """What happened when a staged batch's importable rows were written."""
+    """What this one chunked call wrote. Call again while remaining is above zero."""
 
     batch_id: str
     imported: int
+    updated: int
+    unchanged: int
     failed: int
-    skipped_already_imported: int
-    not_importable: int
+    remaining: int
+    done: bool

@@ -1047,3 +1047,173 @@ staging on this same roster, but no production or load test against a
 roster of that size has been run against this fix. Confirming that requires
 re-running the actual I&M Bank roster through a deployed environment, which
 the owner is best placed to do.
+
+## Decision: a roster row can update the member it matched (2026-09-10)
+
+Until now a re-uploaded roster could only ever create. A row whose `Staff_ID`
+already belonged to a member was classified `Duplicate` and was inert: it
+could not be imported, could not be skipped into anything, and carried no
+decision anyone could change. The header said so plainly, "existing members
+are never overwritten".
+
+That is a narrower rule than the work needs. An HR roster is re-exported and
+re-uploaded as a matter of course, with corrections and newly filled columns
+in it, and under the old rule every one of those corrections had to be
+retyped by hand on each member's own screen. The owner asked whether this was
+a real need or over-engineering. It is a real need: the same file that
+carries new joiners carries updated phone numbers and job titles for everyone
+else, and there was no path for the second half of that file at all.
+
+Decision: a third per-row decision, `update`, available only on a `Duplicate`
+row that resolved to a member. It sits alongside `import`/`skip` in the same
+review-before-apply flow the batch already had, so nothing is written until a
+person has seen the row and chosen it.
+
+### What "update" is allowed to change, and the blank-cell rule
+
+The question that mattered here and is not answerable from the data: when the
+new roster leaves a cell blank that the member already has a value for,
+should the update clear it or leave it alone?
+
+Decision: **blank leaves it alone.** Only a cell the roster actually carries
+can overwrite one. An import adds and corrects; it never clears. The reason
+is that a roster export is routinely partial: an HR system exports the
+columns it owns, and a file that says nothing about `Passport Number` is not
+asserting that the member has no passport. Reading omission as deletion would
+let one narrow re-upload silently destroy data no column in it referred to,
+and that loss is not recoverable from the file that caused it. The cost of
+the rule is real and should be stated: **there is no way to clear a field
+through the importer.** Emptying one stays an explicit act on the member's
+own record. If a client ever needs bulk clearing, it needs its own explicit
+mechanism (a sentinel value, or a "columns present in this file are
+authoritative" mode), not a reinterpretation of blank.
+
+`N/A`, `#N/A`, `na`, `null` and `-` are already normalized to blank by
+`_value` in `member_csv.py`, so they mean "no opinion" here too.
+
+Identity and family structure are deliberately outside what an update
+touches: `client`, `Staff_ID` (`import_source_id`), the member code
+(`employer_member_id`), `relation`, and `primary_employee_member_id`. The
+first three are what the match is made on or are server-issued. The last two
+carry aggregate invariants a per-row apply loop cannot settle: an employee
+with beneficiaries cannot become a dependant without those beneficiaries
+being reassigned first, which `_validate_roster_update` (`members.py:249`)
+enforces on the interactive path and which a bulk loop has no sensible way to
+resolve.
+
+So a row whose `Relation` contradicts the member's **refuses the whole
+update** rather than applying everything except the relationship. Silently
+ignoring a column the roster did fill is the worse failure of the two: the
+uploader would believe the file had been honoured. The row stays `Duplicate`,
+matches no member, and carries the reason. A blank `Relation` takes no
+position and leaves a dependant updatable, rather than defaulting to Employee
+and manufacturing a conflict.
+
+`Status` is applied through the same `_apply_imported_status` transitions a
+new import uses, so a roster marking leavers as Terminated does that on
+re-upload. Blank changes nothing. A transition the domain refuses (Active
+against an already-Terminated member, which `reinstate` rejects) fails that
+one row with the domain's own message rather than being swallowed;
+re-employing someone stays a deliberate act.
+
+### Consequences in the code
+
+- `matched_member_id` on `member_import_rows` (migration `s8u0w2y4a6c8`),
+  set at staging time by `_already_enrolled` and withheld when
+  `update_blocked` finds a reason. It is the single test for "is Update on
+  offer for this row": `MemberImportRowEntity.allowed_decisions` returns
+  `{update, skip}` only when it is set, `{import, skip}` for a New row, and
+  nothing otherwise.
+- Only the `_already_enrolled` `Duplicate` is matchable. The other
+  `Duplicate`, a row whose Staff_ID is still claimed by an unresolved batch
+  (`_already_staged_elsewhere`), resolved to no member and stays as inert as
+  every `Duplicate` used to be.
+- A matched `Duplicate` still **stages as `skip`**. Update is never a
+  default, so a batch nobody reviews writes to no existing member and the
+  previous behaviour is preserved exactly for anyone who ignores the control.
+- `roster_patch` computes only the fields that would actually change, so a
+  re-uploaded unchanged roster writes nothing, saves nothing and audits
+  nothing. Those rows are counted `unchanged` rather than `updated`: a file
+  of 3,000 rows where 2,900 match already should say so, not claim 2,900
+  edits. `MemberImportApplyResponse` carries both counts.
+- Employment details merge field by field (`_merged_employment`), so a roster
+  carrying only `Job Title` does not wipe the `Department` beside it.
+- The update is re-judged at apply time against the member as they now stand,
+  like every other row, and goes through `audit_change` with the pre-update
+  entity as `old_entity`, so the audit record carries a real field diff.
+- Dead code removed while here: `MemberRowChecker.check` took a `decision`
+  argument that no caller had ever passed (`members.py:840` and `:968` are
+  the only two call sites), along with the `_rejected_input` branch and the
+  `state="skipped"` result that only it could reach. `_OUTCOME_BY_STATE` has
+  no `skipped` key, so that branch would have raised `KeyError` in
+  `build_row_entity` had anything reached it.
+
+### Tenth defect, found while doing this: a file-scoped replay key held past a write
+
+`_release` gave up the keys of rows that "never produced a member"
+(`imported_member_id IS NULL`). That predicate is wrong for one key form, and
+the bug predates this feature.
+
+A row with no `Staff_ID` of its own, which a dependant is allowed to have
+since the fifth defect, is keyed `file:{hash}:row:{n}`. That form names one
+row of one file, and staging the same file again recomputes the identical
+string. So once such a row imports successfully it keeps a key its own
+successor will collide with, and re-uploading that identical roster fails the
+whole insert on `uq_member_import_rows_tenant_replay` -- the same
+whole-batch `IntegrityError` the seventh defect fixed, reached by a different
+route. Only the identity form, `key:{client}:{staff_id}`, is a claim worth
+holding past a write.
+
+Fixed by widening the predicate to `imported_member_id IS NULL OR replay_key
+LIKE 'file:%'`. `FILE_PREFIX` now lives in `replay_key.py` beside the other
+two prefixes rather than being spelled out at each site.
+
+This mattered for the feature as well as on its own: an applied `update` row
+sets `imported_member_id` while holding a `file:`-scoped key, so without the
+fix the first re-upload after any update would have hit it every time.
+
+### Verification
+
+Backend, all passing and run locally:
+
+- `tests/unit/api/test_members_routes.py`, 88 tests. Nine are new: staging
+  names the matched member and still defaults to `skip`; staging withholds
+  the match on a contradicting `Relation`; a row claimed by another batch
+  matches nobody; `PATCH` accepts `update` on a matched duplicate and refuses
+  both `update` on an unmatched one and `import` on a matched one; apply
+  writes the roster's values onto the matched member; apply leaves a blank
+  cell's stored value alone; apply counts a no-op row `unchanged` and saves
+  nothing; apply moves the member to the roster's status; apply fails an
+  update whose member has since gone.
+- `tests/unit/api/test_member_roster_update.py`, 26 tests, new. Pins the
+  blank-cell rule field by field (text, email, date of birth, date joined,
+  gender, employment), email normalization before comparison, day-first date
+  reading, per-field employment merge, and every `update_blocked` reason.
+- `tests/unit/infrastructure/test_member_import_migration.py`, 8 tests, two
+  new, and these run against a real PostgreSQL rather than being skipped:
+  a file-scoped key an imported row holds is released on restage; an
+  identity key an imported row holds is not. The first was confirmed to fail
+  (`assert 0 == 1`) with the `_release` fix reverted, so it pins the defect
+  and not just the current behaviour.
+
+Frontend: `MemberImportDialog.test.tsx`, 13 tests, five new, all passing.
+Update/Skip offered on a matched duplicate and Import withheld; no control at
+all on an unmatched one; a matched duplicate is not queued until someone
+chooses Update; choosing it re-labels the apply button "Update N members";
+an applied update reports separately from an import.
+
+Migration `s8u0w2y4a6c8` was applied and reversed against a real PostgreSQL
+(a scratch schema on the local test database), both confirmed against
+`information_schema`: upgrade adds `matched_member_id` as
+`character varying(25)`, `is_nullable = YES`, with
+`fk_member_import_rows_matched_member` referencing `eligible_members` with
+`ON DELETE SET NULL`; downgrade removes the column and the constraint and
+leaves the table exactly as it was. `alembic heads` reports the single head
+`s8u0w2y4a6c8`, so no branch was introduced.
+
+Not verified: no roster has been put through this end to end in a deployed
+environment, and no test exercises a real update against a real database.
+Every behavioural claim above rests on unit tests against mocked
+repositories, except the two replay-key tests and the migration check, which
+run against real SQL. In particular, whether `update_roster_details` and the
+audit diff behave as expected against persisted state is untested here.

@@ -214,6 +214,84 @@ describe("chunked apply", () => {
   })
 })
 
+describe("updating a member the roster already created", () => {
+  const matched = (overrides: Partial<MemberImportRow> = {}) =>
+    makeRow({
+      outcome: "Duplicate",
+      decision: "skip",
+      matched_member_id: "member-1",
+      ...overrides,
+    })
+
+  it("offers Update and Skip on a duplicate that matched a member", async () => {
+    await stage([matched()])
+
+    await userEvent.click(screen.getByRole("combobox", { name: "Decision for row 2" }))
+
+    expect(await screen.findByRole("option", { name: "Update" })).toBeInTheDocument()
+    expect(screen.getByRole("option", { name: "Skip" })).toBeInTheDocument()
+    expect(screen.queryByRole("option", { name: "Import" })).not.toBeInTheDocument()
+  })
+
+  it("leaves a duplicate that matched nobody with no decision to make", async () => {
+    await stage([
+      matched({ matched_member_id: null, message: "Already staged as row 7 of batch b-9" }),
+    ])
+
+    expect(screen.queryByRole("combobox", { name: "Decision for row 2" })).not.toBeInTheDocument()
+    expect(screen.getByText("Already staged as row 7 of batch b-9")).toBeInTheDocument()
+  })
+
+  it("never queues a matched duplicate until someone chooses Update", async () => {
+    await stage([matched()])
+    expect(screen.getByRole("button", { name: "Import 0 rows" })).toBeDisabled()
+  })
+
+  it("counts a row set to Update towards the apply button, naming it as an update", async () => {
+    api.setImportRowDecision.mockResolvedValue(matched({ decision: "update" }))
+    await stage([matched()])
+
+    await userEvent.click(screen.getByRole("combobox", { name: "Decision for row 2" }))
+    await userEvent.click(await screen.findByRole("option", { name: "Update" }))
+
+    await waitFor(() =>
+      expect(api.setImportRowDecision).toHaveBeenCalledWith("batch-1", "row-1", "update"),
+    )
+    expect(await screen.findByRole("button", { name: "Update 1 members" })).toBeEnabled()
+    expect(screen.getByText("Will update")).toBeInTheDocument()
+  })
+
+  it("reports updates apart from imports once the batch is applied", async () => {
+    api.setImportRowDecision.mockResolvedValue(matched({ decision: "update" }))
+    await stage([matched()])
+    await userEvent.click(screen.getByRole("combobox", { name: "Decision for row 2" }))
+    await userEvent.click(await screen.findByRole("option", { name: "Update" }))
+    await waitFor(() => expect(api.setImportRowDecision).toHaveBeenCalled())
+
+    api.listImportRows.mockResolvedValue({
+      items: [matched({ decision: "update", imported_member_id: "member-1" })],
+      total: 1,
+      page: 1,
+      limit: 200,
+      has_more: false,
+    })
+    api.applyImport.mockResolvedValue({
+      batch_id: "batch-1",
+      imported: 0,
+      updated: 1,
+      unchanged: 0,
+      failed: 0,
+      remaining: 0,
+      done: true,
+    })
+
+    await userEvent.click(screen.getByRole("button", { name: "Update 1 members" }))
+
+    expect(await screen.findByText("Updated")).toBeInTheDocument()
+    expect(screen.getByText(/updated/)).toBeInTheDocument()
+  })
+})
+
 describe("restage conflict", () => {
   it("offers to discard the stuck batch and retries staging after confirming", async () => {
     api.stageImport

@@ -81,6 +81,9 @@ class MemberImportMapper:
             relation=model.relation,
             primary_import_source_id=model.primary_import_source_id,
             message=model.message,
+            matched_member_id=(
+                EligibleMemberId(model.matched_member_id) if model.matched_member_id else None
+            ),
             imported_member_id=(
                 EligibleMemberId(model.imported_member_id) if model.imported_member_id else None
             ),
@@ -119,6 +122,9 @@ class MemberImportMapper:
             relation=entity.relation,
             primary_import_source_id=entity.primary_import_source_id,
             message=entity.message,
+            matched_member_id=(
+                entity.matched_member_id.value if entity.matched_member_id else None
+            ),
             imported_member_id=(
                 entity.imported_member_id.value if entity.imported_member_id else None
             ),

@@ -8,8 +8,9 @@ that already landed.
 
 from __future__ import annotations
 
+from copy import deepcopy
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import date, datetime
 
 from pydantic import ValidationError
 
@@ -29,9 +30,8 @@ from app.domain.value_objects.ids import MemberImportBatchId, MemberImportRowId
 from app.domain.value_objects.staffing import EmploymentDetails
 from app.shared.handlers.audit_event_handler import AuditEventHandler
 from app.shared.utils.member_csv import MemberCsvRow, is_employee_relation, parse_roster_date
+from app.shared.utils.replay_key import FILE_PREFIX
 from app.shared.utils.route_audit_helper import audit_change
-
-DECISIONS = {"import", "skip"}
 
 _OUTCOME_BY_STATE = {
     "new": MemberImportRowOutcome.NEW,
@@ -49,7 +49,12 @@ def row_replay_key(row: MemberCsvRow, client_id: ClientId | None, file_hash: str
     """
     if client_id is not None and row.import_source_id:
         return f"key:{client_id.value}:{row.import_source_id}"
-    return f"file:{file_hash}:row:{row.row_number}"
+    return file_scoped_key(file_hash, row.row_number)
+
+
+def file_scoped_key(file_hash: str, row_number: int) -> str:
+    """A key naming one row of one file, claiming no identity."""
+    return f"{FILE_PREFIX}{file_hash}:row:{row_number}"
 
 
 def build_row_entity(
@@ -64,9 +69,10 @@ def build_row_entity(
 ) -> MemberImportRowEntity:
     """Turn one checked roster row into the row a batch persists.
 
-    A duplicate or invalid row can never be imported regardless of decision
-    (`MemberImportRowEntity.set_decision` enforces this), so its stored
-    decision is just a safe default and is never read.
+    Every row that is not New is staged as "skip". An invalid row can never
+    be anything else; a duplicate that matched a member may be moved to
+    "update" by a reviewer, but never starts there, so a batch nobody reviews
+    writes nothing to an existing member.
 
     Only a New row's replay key uses the identity form (`key:{client}:{id}`):
     it is the one row actually claiming that Staff_ID. Any other outcome
@@ -81,7 +87,7 @@ def build_row_entity(
     replay_key = (
         row_replay_key(row, client_id, file_hash)
         if check.state == "new"
-        else f"file:{file_hash}:row:{row.row_number}"
+        else file_scoped_key(file_hash, row.row_number)
     )
     return MemberImportRowEntity(
         id=row_id,
@@ -115,6 +121,7 @@ def build_row_entity(
         relation=row.relation,
         primary_import_source_id=row.primary_import_source_id,
         message=check.message,
+        matched_member_id=check.existing.id if check.existing else None,
     )
 
 
@@ -148,16 +155,126 @@ def csv_row_from_entity(row: MemberImportRowEntity) -> MemberCsvRow:
 
 @dataclass(frozen=True)
 class RowCheck:
-    """What one roster row resolves to before anything is written."""
+    """What one roster row resolves to before anything is written.
+
+    `existing` is set only on a duplicate this roster is allowed to update:
+    the row's Staff_ID already belongs to that member and nothing in the row
+    contradicts them. A duplicate carrying no `existing` cannot be updated,
+    and `message` says why.
+    """
 
     state: str
     message: str | None = None
     client: ClientEntity | None = None
     data: MemberCreate | None = None
+    existing: EligibleMember | None = None
 
     @property
     def importable(self) -> bool:
         return self.state == "new" and self.data is not None
+
+    @property
+    def updatable(self) -> bool:
+        return self.state == "duplicate" and self.existing is not None
+
+
+#: Member fields a roster row may revise, in the order `update_roster_details`
+#: takes them. Identity (client, Staff_ID, member code) and family structure
+#: (relation, primary employee) are deliberately absent: see "Decision: a
+#: roster row can update the member it matched" in
+#: docs/migrations/MEMBERS_MIGRATION.md.
+_ROSTER_DETAIL_FIELDS = (
+    "display_label",
+    "phone",
+    "staff_number",
+    "national_id",
+    "passport_number",
+    "work_email",
+    "personal_email",
+    "gender",
+    "date_of_birth",
+    "coverage_start",
+    "employment",
+)
+
+_ROSTER_TEXT_FIELDS = (
+    "display_label",
+    "phone",
+    "staff_number",
+    "national_id",
+    "passport_number",
+)
+
+
+def _revision(patch: dict[str, object], name: str, value: object, current: object) -> None:
+    """Record `value` as a change to `name`, unless the roster left it blank."""
+    if value is not None and value != current:
+        patch[name] = value
+
+
+def _merged_employment(
+    row: MemberCsvRow, current: EmploymentDetails | None
+) -> EmploymentDetails | None:
+    """The roster's employment values laid over the member's, field by field."""
+    merged = {
+        name: getattr(row, name) or (getattr(current, name, None) if current else None)
+        for name in EmploymentDetails.__dataclass_fields__
+    }
+    return EmploymentDetails.build(**merged)
+
+
+def _roster_date(value: str | None) -> date | None:
+    return parse_roster_date(value) if value else None
+
+
+def roster_patch(row: MemberCsvRow, member: EligibleMember) -> dict[str, object]:
+    """The member fields this roster row would revise.
+
+    A blank cell asserts nothing about the member and leaves the stored value
+    alone; only a value the roster actually carries can overwrite one. An
+    import can therefore add and correct, but never clear: emptying a field
+    stays an explicit act on the member's own record.
+
+    Raises ValueError when a cell the roster did fill cannot be read.
+    """
+    patch: dict[str, object] = {}
+    for name in _ROSTER_TEXT_FIELDS:
+        _revision(patch, name, getattr(row, name), getattr(member, name))
+    for name in ("work_email", "personal_email"):
+        raw = getattr(row, name)
+        _revision(patch, name, Email(raw) if raw else None, getattr(member, name))
+    _revision(
+        patch, "gender", MemberGender(row.gender.title()) if row.gender else None, member.gender
+    )
+    _revision(patch, "date_of_birth", _roster_date(row.date_of_birth), member.date_of_birth)
+    _revision(patch, "coverage_start", _roster_date(row.date_joined), member.coverage_start)
+    _revision(patch, "employment", _merged_employment(row, member.employment), member.employment)
+    return patch
+
+
+def update_blocked(row: MemberCsvRow, member: EligibleMember) -> str | None:
+    """Why this row cannot revise the member it matched, or None when it can.
+
+    A contradicting Relation refuses the whole row rather than quietly
+    revising everything except the relationship: moving a member between
+    Employee and dependant carries invariants a per-row apply loop cannot
+    settle (an employee's beneficiaries have to be reassigned first), and
+    silently ignoring a column the roster did fill is the worse failure.
+    """
+    try:
+        relation = MemberRelation(row.relation) if row.relation else member.relation
+    except ValueError:
+        return f"Relation '{row.relation}' is not a relationship this system records"
+    if relation is not member.relation:
+        return (
+            f"This roster says {relation.value} but the member is recorded as "
+            f"{member.relation.value}; change the relationship on the member record first"
+        )
+    try:
+        roster_patch(row, member)
+    except ValueError as exc:
+        return str(exc)
+    return None
 
 
 def _member_create(
@@ -300,13 +417,11 @@ class MemberRowChecker:
         self,
         row: MemberCsvRow,
         *,
-        decision: str | None = None,
         parse_error: str | None = None,
         file_hash: str | None = None,
     ) -> RowCheck:
-        rejected = _rejected_input(decision, parse_error)
-        if rejected:
-            return rejected
+        if parse_error:
+            return RowCheck(state="invalid", message=parse_error)
 
         client = await self._client_for(row)
         if client is None:
@@ -319,7 +434,7 @@ class MemberRowChecker:
         if repeated:
             return repeated
 
-        enrolled = await self._already_enrolled(client, row, decision)
+        enrolled = await self._already_enrolled(client, row)
         if enrolled:
             return enrolled
 
@@ -332,7 +447,7 @@ class MemberRowChecker:
         if unresolved:
             return unresolved
 
-        return self._checked(row, client, primary_member_id, decision)
+        return self._checked(row, client, primary_member_id)
 
     async def _client_for(self, row: MemberCsvRow) -> ClientEntity | None:
         if not row.client_code:
@@ -373,26 +488,26 @@ class MemberRowChecker:
         self._seen.add(key)
         return None
 
-    async def _already_enrolled(
-        self, client: ClientEntity, row: MemberCsvRow, decision: str | None
-    ) -> RowCheck | None:
+    async def _already_enrolled(self, client: ClientEntity, row: MemberCsvRow) -> RowCheck | None:
         """Whether this row's own Staff_ID already belongs to a real member.
 
         A dependant with no Staff_ID of their own claims nothing here; they
         are identified by Primary Staff ID instead, checked separately.
+
+        The member comes back on the check so a reviewer can choose to revise
+        them from this row. It is withheld, with the reason, when the row
+        contradicts the member it matched: the row is then a duplicate that
+        can only be skipped, as every duplicate once was.
         """
         if not row.import_source_id:
             return None
         existing = await self._member_by_import_id(client, row.import_source_id)
         if existing is None:
             return None
-        if decision not in (None, "skip"):
-            return RowCheck(
-                state="invalid",
-                message="Existing members can only be skipped; they are never overwritten",
-                client=client,
-            )
-        return RowCheck(state="duplicate", client=client)
+        blocked = update_blocked(row, existing)
+        if blocked:
+            return RowCheck(state="duplicate", message=blocked, client=client)
+        return RowCheck(state="duplicate", client=client, existing=existing)
 
     async def _already_staged_elsewhere(
         self, client: ClientEntity, row: MemberCsvRow, file_hash: str
@@ -445,25 +560,13 @@ class MemberRowChecker:
         return primary.id.value, None
 
     def _checked(
-        self,
-        row: MemberCsvRow,
-        client: ClientEntity,
-        primary_member_id: str | None,
-        decision: str | None,
+        self, row: MemberCsvRow, client: ClientEntity, primary_member_id: str | None
     ) -> RowCheck:
         try:
             data = _member_create(row, client, primary_member_id=primary_member_id)
         except (ValueError, ValidationError) as exc:
             return RowCheck(state="invalid", message=str(exc).split("\n", 1)[-1], client=client)
-        return RowCheck(state="skipped" if decision == "skip" else "new", client=client, data=data)
-
-
-def _rejected_input(decision: str | None, parse_error: str | None) -> RowCheck | None:
-    if parse_error:
-        return RowCheck(state="invalid", message=parse_error)
-    if decision is not None and decision not in DECISIONS:
-        return RowCheck(state="invalid", message="Decision must be import or skip")
-    return None
+        return RowCheck(state="new", client=client, data=data)
 
 
 class MemberRowImporter:
@@ -547,8 +650,8 @@ _STATUS_TRANSITIONS = {
 }
 
 
-def _apply_imported_status(member: EligibleMember, status: str | None) -> None:
-    """Move the new member to the status the source records, if it is not there.
+def _apply_imported_status(member: EligibleMember, status: str | None) -> bool:
+    """Move the member to the status the source records. True when it moved.
 
     Enrolment already creates an Active member, so a roster that says Active,
     as a full staff extract does for every row, asked the entity to reinstate
@@ -557,7 +660,58 @@ def _apply_imported_status(member: EligibleMember, status: str | None) -> None:
     """
     wanted = _STATUS_TRANSITIONS.get((status or "Pending").strip().casefold())
     if wanted is None:
-        return
+        return False
     target, transition = wanted
-    if member.status is not target:
-        transition(member)
+    if member.status is target:
+        return False
+    transition(member)
+    return True
+
+
+class MemberRowUpdater:
+    """Revises the member one roster row matched, leaving the transaction to the caller."""
+
+    def __init__(
+        self,
+        current_user: TokenData,
+        member_repo: EligibleMemberRepository,
+        outbox: OutboxRepository,
+    ) -> None:
+        self._user = current_user
+        self._members = member_repo
+        self._outbox = outbox
+
+    async def update(self, row: MemberCsvRow, member: EligibleMember) -> bool:
+        """Write the roster's non-blank values onto `member`. False when nothing changed.
+
+        A row whose every value the member already carries writes nothing at
+        all, so re-uploading an unchanged roster leaves no audit trail of
+        edits that did not happen.
+        """
+        patch = roster_patch(row, member)
+        before = deepcopy(member)
+        if patch:
+            _apply_roster_patch(member, patch)
+        moved = _apply_imported_status(member, row.status)
+        if not patch and not moved:
+            return False
+        member.record_import()
+        await self._members.save(member)
+        await audit_change(member, AuditEventHandler(self._outbox), self._user, old_entity=before)
+        return True
+
+
+def _apply_roster_patch(member: EligibleMember, patch: dict[str, object]) -> None:
+    """Re-state the member's roster details with the patch laid over them.
+
+    `update_roster_details` assigns every field it takes, so an unpatched one
+    has to be passed back as it stands or it would be cleared.
+    """
+    details = {name: patch.get(name, getattr(member, name)) for name in _ROSTER_DETAIL_FIELDS}
+    member.update_roster_details(
+        employer_member_id=member.employer_member_id,
+        relation=member.relation,
+        primary_employee_member_id=member.primary_employee_member_id,
+        coverage_end=member.coverage_end,
+        **details,  # type: ignore[arg-type]
+    )

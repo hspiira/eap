@@ -22,7 +22,9 @@ from app.domain.exceptions import DomainError
 from app.domain.value_objects.core import ClientId, EligibleMemberId, TenantId, UserId
 from app.domain.value_objects.ids import MemberImportBatchId, MemberImportRowId
 
-DECISIONS = frozenset({"import", "skip"})
+DECISIONS = frozenset({"import", "skip", "update"})
+IMPORT_DECISIONS = frozenset({"import", "skip"})
+UPDATE_DECISIONS = frozenset({"update", "skip"})
 
 
 @dataclass
@@ -134,13 +136,29 @@ class MemberImportRowEntity:
     relation: str | None = None
     primary_import_source_id: str | None = None
     message: str | None = None
+    matched_member_id: EligibleMemberId | None = None
     imported_member_id: EligibleMemberId | None = None
 
     def __post_init__(self) -> None:
         if self.row_number < 1:
             raise DomainError("Import row number is 1-based")
         if self.decision not in DECISIONS:
-            raise DomainError("Row decision must be import or skip")
+            raise DomainError("Row decision must be import, skip or update")
+
+    @property
+    def allowed_decisions(self) -> frozenset[str]:
+        """The decisions a reviewer may set on this row.
+
+        A New row is imported or skipped. A Duplicate row that resolved to a
+        member (`matched_member_id`) may instead update that member; the other
+        Duplicate, a row still claimed by an unresolved batch, resolved to no
+        member and stays inert.
+        """
+        if self.outcome is MemberImportRowOutcome.NEW:
+            return IMPORT_DECISIONS
+        if self.outcome is MemberImportRowOutcome.DUPLICATE and self.matched_member_id is not None:
+            return UPDATE_DECISIONS
+        return frozenset()
 
     @property
     def is_importable(self) -> bool:
@@ -151,11 +169,25 @@ class MemberImportRowEntity:
             and self.imported_member_id is None
         )
 
+    @property
+    def is_updatable(self) -> bool:
+        """A matched Duplicate a reviewer chose to update, not yet applied."""
+        return (
+            self.outcome is MemberImportRowOutcome.DUPLICATE
+            and self.matched_member_id is not None
+            and self.decision == "update"
+            and self.imported_member_id is None
+        )
+
     def set_decision(self, decision: str) -> None:
-        if decision not in DECISIONS:
-            raise DomainError("Row decision must be import or skip")
-        if self.outcome is not MemberImportRowOutcome.NEW:
+        allowed = self.allowed_decisions
+        if not allowed:
             raise DomainError(f"A {self.outcome.value.lower()} row cannot be queued for import")
+        if decision not in allowed:
+            choices = " or ".join(sorted(allowed))
+            raise DomainError(
+                f"A {self.outcome.value.lower()} row can only be {choices}, not {decision}"
+            )
         self.decision = decision
 
     def mark_imported(self, member_id: str) -> None:

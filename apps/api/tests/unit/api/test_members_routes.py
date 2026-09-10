@@ -95,6 +95,9 @@ async def api():
     state.imports.find_rows_by_replay_keys.return_value = {}
     state.imports.outcome_counts.return_value = {}
     state.imports.list_rows.return_value = ([], 0)
+    state.imports.list_pending_rows.return_value = []
+    state.imports.count_pending_rows.return_value = 0
+    state.imports.count_imported_rows.return_value = 0
     state.imports.get_batch.return_value = None
     state.imports.get_row.return_value = None
     state.clients.get_by_id.return_value = SimpleNamespace(
@@ -521,8 +524,7 @@ def import_row(row_number=1, outcome=MemberImportRowOutcome.NEW, decision="impor
         client_code="ACME",
         client_id=ClientId("c1"),
         import_source_id=f"HR-{row_number}",
-        display_label="Amina" if row_number == 1 else "Bosco",
-        **overrides,
+        **{"display_label": "Amina" if row_number == 1 else "Bosco", **overrides},
     )
 
 
@@ -547,7 +549,7 @@ async def test_apply_writes_every_importable_row_in_its_own_transaction(api):
         id=ClientId("c1"), name="Acme", code="ACME", tenant_id=TenantId("t1")
     )
     rows = [import_row(1), import_row(2)]
-    api.imports.list_rows.side_effect = [(rows, 2), ([], 2)]
+    api.imports.list_pending_rows.return_value = rows
 
     response = await api.http.post("/members/import/b1/apply")
 
@@ -555,6 +557,7 @@ async def test_apply_writes_every_importable_row_in_its_own_transaction(api):
     body = response.json()
     assert body["imported"] == 2
     assert body["failed"] == 0
+    assert body["done"] is True
     # Two row-level commits, plus one for the batch's own applied-status write.
     assert api.db.commit.await_count == 3
 
@@ -570,7 +573,7 @@ async def test_apply_carries_employment_details_into_the_real_member(api):
         id=ClientId("c1"), name="Acme", code="ACME", tenant_id=TenantId("t1")
     )
     row = import_row(1, job_title="Branch Manager", department="Operations")
-    api.imports.list_rows.side_effect = [([row], 1), ([], 1)]
+    api.imports.list_pending_rows.return_value = [row]
 
     response = await api.http.post("/members/import/b1/apply")
 
@@ -589,7 +592,7 @@ async def test_apply_sets_coverage_start_from_date_joined(api):
         id=ClientId("c1"), name="Acme", code="ACME", tenant_id=TenantId("t1")
     )
     row = import_row(1, date_joined="03/04/2026")
-    api.imports.list_rows.side_effect = [([row], 1), ([], 1)]
+    api.imports.list_pending_rows.return_value = [row]
 
     response = await api.http.post("/members/import/b1/apply")
 
@@ -605,7 +608,7 @@ async def test_apply_leaves_coverage_start_unset_when_date_joined_is_blank(api):
         id=ClientId("c1"), name="Acme", code="ACME", tenant_id=TenantId("t1")
     )
     row = import_row(1)
-    api.imports.list_rows.side_effect = [([row], 1), ([], 1)]
+    api.imports.list_pending_rows.return_value = [row]
 
     response = await api.http.post("/members/import/b1/apply")
 
@@ -620,7 +623,7 @@ async def test_apply_keeps_going_after_a_row_fails(api):
         id=ClientId("c1"), name="Acme", code="ACME", tenant_id=TenantId("t1")
     )
     rows = [import_row(1), import_row(2)]
-    api.imports.list_rows.side_effect = [(rows, 2), ([], 2)]
+    api.imports.list_pending_rows.return_value = rows
     saves = {"n": 0}
 
     async def fail_first(_member):
@@ -648,14 +651,14 @@ async def test_apply_never_overwrites_an_existing_member(api):
     )
     api.members.find_by_import_source_id.return_value = member()
     rows = [import_row(1)]
-    api.imports.list_rows.side_effect = [(rows, 1), ([], 1)]
+    api.imports.list_pending_rows.return_value = rows
 
     response = await api.http.post("/members/import/b1/apply")
 
     assert response.status_code == 200, response.text
     body = response.json()
     assert body["imported"] == 0
-    assert body["not_importable"] == 1
+    assert body["failed"] == 1
     api.members.save.assert_not_awaited()
 
 
@@ -663,13 +666,13 @@ async def test_apply_rejects_a_company_code_outside_the_tenant(api):
     api.imports.get_batch.return_value = staged_batch()
     api.clients.get_by_code.return_value = None
     rows = [import_row(1)]
-    api.imports.list_rows.side_effect = [(rows, 1), ([], 1)]
+    api.imports.list_pending_rows.return_value = rows
 
     response = await api.http.post("/members/import/b1/apply")
 
     assert response.status_code == 200, response.text
     body = response.json()
-    assert body["not_importable"] == 1
+    assert body["failed"] == 1
     api.imports.mark_row_failed.assert_awaited_once()
     assert "does not resolve" in api.imports.mark_row_failed.call_args.args[2]
 
@@ -704,6 +707,226 @@ async def test_set_row_decision_allows_skipping_a_new_row(api):
     api.imports.set_row_decision.assert_awaited_once_with(
         TenantId("t1"), MemberImportRowId("r1"), "skip"
     )
+
+
+# --- Updating a member a re-uploaded roster already created -------------------
+#
+# A Duplicate row used to be inert. It can now carry the decision "update",
+# which revises the member it matched. See "Decision: a roster row can update
+# the member it matched" in docs/migrations/MEMBERS_MIGRATION.md.
+
+
+def _acme(api):
+    api.clients.get_by_code.return_value = SimpleNamespace(
+        id=ClientId("c1"), name="Acme", code="ACME", tenant_id=TenantId("t1")
+    )
+
+
+def matched_row(**overrides):
+    """A staged Duplicate a reviewer has moved to "update"."""
+    overrides.setdefault("decision", "update")
+    overrides.setdefault("matched_member_id", EligibleMemberId("m1"))
+    return import_row(1, outcome=MemberImportRowOutcome.DUPLICATE, **overrides)
+
+
+async def test_stage_names_the_member_a_duplicate_row_matched(api):
+    """Without the match, the review UI has nothing to offer Update on."""
+    _acme(api)
+    api.members.find_by_import_source_ids.return_value = {"HR-1": member()}
+
+    response = await api.http.post(
+        "/members/import",
+        files={
+            "file": (
+                "members.csv",
+                b"Company Code,Staff_ID,Name of Employee\nACME,HR-1,Amina\n",
+                "text/csv",
+            )
+        },
+    )
+
+    assert response.status_code == 201, response.text
+    ((rows,), _) = api.imports.add_rows.call_args
+    assert rows[0].outcome == MemberImportRowOutcome.DUPLICATE
+    assert rows[0].matched_member_id == EligibleMemberId("m1")
+    # Never Update by default: a batch nobody reviews writes to nobody.
+    assert rows[0].decision == "skip"
+
+
+async def test_stage_withholds_the_match_when_the_roster_contradicts_the_relation(api):
+    """Moving a member between Employee and dependant is not a roster's to make."""
+    _acme(api)
+    api.members.find_by_import_source_ids.return_value = {"HR-1": member()}
+
+    response = await api.http.post(
+        "/members/import",
+        files={
+            "file": (
+                "members.csv",
+                b"Company Code,Staff_ID,Name of Employee,Relation,Primary Staff ID\n"
+                b"ACME,HR-1,Amina,Spouse,HR-9\n",
+                "text/csv",
+            )
+        },
+    )
+
+    assert response.status_code == 201, response.text
+    ((rows,), _) = api.imports.add_rows.call_args
+    assert rows[0].outcome == MemberImportRowOutcome.DUPLICATE
+    assert rows[0].matched_member_id is None
+    assert "Spouse" in (rows[0].message or "")
+
+
+async def test_a_row_claimed_by_another_batch_matches_no_member(api):
+    """That Duplicate is a staging collision, not a member; it stays inert."""
+    _acme(api)
+    api.imports.find_rows_by_replay_keys.return_value = {
+        "key:c1:HR-1": SimpleNamespace(row_number=7, batch_id=MemberImportBatchId("stuck-batch"))
+    }
+
+    response = await api.http.post(
+        "/members/import",
+        files={
+            "file": (
+                "members.csv",
+                b"Company Code,Staff_ID,Name of Employee\nACME,HR-1,Amina\n",
+                "text/csv",
+            )
+        },
+    )
+
+    assert response.status_code == 201, response.text
+    ((rows,), _) = api.imports.add_rows.call_args
+    assert rows[0].outcome == MemberImportRowOutcome.DUPLICATE
+    assert rows[0].matched_member_id is None
+
+
+async def test_set_row_decision_allows_update_on_a_matched_duplicate(api):
+    api.imports.get_row.return_value = matched_row(decision="skip")
+
+    response = await api.http.patch("/members/import/b1/rows/r1", json={"decision": "update"})
+
+    assert response.status_code == 200, response.text
+    assert response.json()["decision"] == "update"
+    assert response.json()["matched_member_id"] == "m1"
+    api.imports.set_row_decision.assert_awaited_once_with(
+        TenantId("t1"), MemberImportRowId("r1"), "update"
+    )
+
+
+async def test_set_row_decision_refuses_update_on_a_duplicate_that_matched_nobody(api):
+    api.imports.get_row.return_value = import_row(
+        1, outcome=MemberImportRowOutcome.DUPLICATE, decision="skip"
+    )
+
+    response = await api.http.patch("/members/import/b1/rows/r1", json={"decision": "update"})
+
+    assert response.status_code == 400, response.text
+    api.imports.set_row_decision.assert_not_awaited()
+
+
+async def test_set_row_decision_refuses_import_on_a_matched_duplicate(api):
+    """Update revises that member; it never enrols a second one under their Staff_ID."""
+    api.imports.get_row.return_value = matched_row(decision="skip")
+
+    response = await api.http.patch("/members/import/b1/rows/r1", json={"decision": "import"})
+
+    assert response.status_code == 400, response.text
+    api.imports.set_row_decision.assert_not_awaited()
+
+
+async def test_apply_writes_the_roster_values_onto_the_member_it_matched(api):
+    api.imports.get_batch.return_value = staged_batch()
+    _acme(api)
+    existing = member()
+    api.members.find_by_import_source_id.return_value = existing
+    api.imports.list_pending_rows.return_value = [
+        matched_row(phone="0700111222", work_email="amina@acme.com", job_title="Branch Manager")
+    ]
+
+    response = await api.http.post("/members/import/b1/apply")
+
+    assert response.status_code == 200, response.text
+    body = response.json()
+    assert body["updated"] == 1
+    assert body["imported"] == 0
+    saved = api.members.save.await_args.args[0]
+    assert saved.id == EligibleMemberId("m1")
+    assert saved.phone == "0700111222"
+    assert saved.work_email == Email("amina@acme.com")
+    assert saved.employment is not None
+    assert saved.employment.job_title == "Branch Manager"
+    api.imports.mark_row_imported.assert_awaited_once()
+    assert api.imports.mark_row_imported.await_args.args[2] == "m1"
+
+
+async def test_apply_leaves_a_value_the_roster_left_blank_alone(api):
+    """A blank cell asserts nothing. An import adds and corrects; it never clears."""
+    api.imports.get_batch.return_value = staged_batch()
+    _acme(api)
+    api.members.find_by_import_source_id.return_value = member(
+        phone="0700999888", national_id="CF123456"
+    )
+    api.imports.list_pending_rows.return_value = [matched_row(display_label="Amina Nakato")]
+
+    response = await api.http.post("/members/import/b1/apply")
+
+    assert response.status_code == 200, response.text
+    assert response.json()["updated"] == 1
+    saved = api.members.save.await_args.args[0]
+    assert saved.display_label == "Amina Nakato"
+    assert saved.phone == "0700999888"
+    assert saved.national_id == "CF123456"
+
+
+async def test_apply_counts_a_row_that_revises_nothing_as_unchanged(api):
+    """Re-uploading an unchanged roster must not log an edit that did not happen."""
+    api.imports.get_batch.return_value = staged_batch()
+    _acme(api)
+    api.members.find_by_import_source_id.return_value = member(phone="0700111222")
+    api.imports.list_pending_rows.return_value = [
+        matched_row(display_label="Amina Namukasa", phone="0700111222")
+    ]
+
+    response = await api.http.post("/members/import/b1/apply")
+
+    assert response.status_code == 200, response.text
+    body = response.json()
+    assert body["unchanged"] == 1
+    assert body["updated"] == 0
+    api.members.save.assert_not_awaited()
+    # Only the batch's own applied event; no member-level change to audit.
+    assert api.outbox.enqueue.await_count == 1
+
+
+async def test_apply_moves_the_member_to_the_status_the_roster_records(api):
+    api.imports.get_batch.return_value = staged_batch()
+    _acme(api)
+    api.members.find_by_import_source_id.return_value = member()
+    api.imports.list_pending_rows.return_value = [
+        matched_row(display_label="Amina Namukasa", status="Suspended")
+    ]
+
+    response = await api.http.post("/members/import/b1/apply")
+
+    assert response.status_code == 200, response.text
+    assert response.json()["updated"] == 1
+    assert api.members.save.await_args.args[0].status is EligibilityStatus.SUSPENDED
+
+
+async def test_apply_fails_an_update_whose_member_is_no_longer_there(api):
+    """A batch is re-judged at apply time, so a member deleted meanwhile is not invented."""
+    api.imports.get_batch.return_value = staged_batch()
+    _acme(api)
+    api.members.find_by_import_source_id.return_value = None
+    api.imports.list_pending_rows.return_value = [matched_row()]
+
+    response = await api.http.post("/members/import/b1/apply")
+
+    assert response.status_code == 200, response.text
+    assert response.json()["failed"] == 1
+    api.members.save.assert_not_awaited()
+    assert "No longer updatable" in api.imports.mark_row_failed.await_args.args[2]
 
 
 async def test_abandon_releases_the_batch_replay_keys(api):

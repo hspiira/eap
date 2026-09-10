@@ -107,6 +107,11 @@ class MemberImportRowModel(CuidMixin, TenantMixin, Base, TimestampMixin):
     )
     decision: Mapped[str] = mapped_column(String(10), nullable=False)
     message: Mapped[str | None] = mapped_column(Text, nullable=True)
+    #: The member this row resolved to at staging time. Set only on a Duplicate
+    #: the roster can update; it is what makes "update" an allowed decision.
+    matched_member_id: Mapped[str | None] = mapped_column(
+        String(25), ForeignKey("eligible_members.id", ondelete="SET NULL"), nullable=True
+    )
     imported_member_id: Mapped[str | None] = mapped_column(
         String(25), ForeignKey("eligible_members.id", ondelete="SET NULL"), nullable=True
     )

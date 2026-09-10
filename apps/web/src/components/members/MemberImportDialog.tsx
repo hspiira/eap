@@ -101,17 +101,42 @@ interface ApplyProgress {
   total: number
 }
 
-/** A New row still set to import: the only state that gets written on apply. */
+const DECISION_LABELS: Record<MemberImportRowDecision, string> = {
+  import: "Import",
+  skip: "Skip",
+  update: "Update",
+}
+
+/** A Duplicate that resolved to a member, so this row may revise them. */
+function isMatched(row: MemberImportRow): boolean {
+  return row.outcome === "Duplicate" && Boolean(row.matched_member_id)
+}
+
+/** The decisions this row's outcome allows, or none when nothing can change it. */
+function decisionsFor(row: MemberImportRow): MemberImportRowDecision[] {
+  if (row.outcome === "New") return ["import", "skip"]
+  if (isMatched(row)) return ["update", "skip"]
+  return []
+}
+
+/** A row still set to write something: the only state that gets written on apply. */
 function isQueued(row: MemberImportRow): boolean {
-  return row.outcome === "New" && row.decision === "import"
+  if (row.imported_member_id) return false
+  if (row.outcome === "New") return row.decision === "import"
+  return isMatched(row) && row.decision === "update"
 }
 
 /** Outcomes no decision can change. Null when the row is still the person's to direct. */
 function settledStatus(row: MemberImportRow): RowStatus | null {
-  if (row.imported_member_id) return { label: "Imported", tone: "ok" }
+  if (row.imported_member_id) {
+    if (row.decision !== "update") return { label: "Imported", tone: "ok" }
+    return { label: row.message ?? "Updated", tone: "ok" }
+  }
   if (row.outcome === "Failed") return { label: row.message ?? "Failed", tone: "error" }
   if (row.outcome === "Invalid") return { label: row.message ?? "Invalid", tone: "error" }
-  if (row.outcome === "Duplicate") return { label: "Existing member", tone: "muted" }
+  if (row.outcome === "Duplicate" && !isMatched(row)) {
+    return { label: row.message ?? "Existing member", tone: "muted" }
+  }
   return null
 }
 
@@ -119,6 +144,9 @@ function rowStatus(row: MemberImportRow, applied: boolean): RowStatus {
   const settled = settledStatus(row)
   if (settled) return settled
   if (row.decision === "skip") return { label: applied ? "Skipped" : "Will skip", tone: "muted" }
+  if (row.decision === "update") {
+    return { label: applied ? "Not updated" : "Will update", tone: "ok" }
+  }
   return { label: applied ? "Not imported" : "Ready", tone: "muted" }
 }
 
@@ -242,9 +270,9 @@ function ImportControls({
           Employee, Relation, Primary Staff ID, Staff Number, Email Address, Personal Email, Phone,
           Date of Birth (dd/mm/yyyy or YYYY-MM-DD), Date Joined, Gender, National ID, Passport
           Number, and Status. Leave Date Joined blank if unknown; it is only used to record when
-          cover actually began. Job Title, Job Classification, Skill, Department, Unit and
-          Contract type are also imported when present. Any other column is ignored; files are
-          limited to 10 MB.
+          cover actually began. Job Title, Job Classification, Skill, Department, Unit and Contract
+          type are also imported when present. Any other column is ignored; files are limited to 10
+          MB.
         </p>
       ) : null}
 
@@ -347,6 +375,23 @@ function ImportPreview({
   )
 }
 
+/** What an applied batch actually wrote, counting each kind only when there was one. */
+function appliedSummary(totals: { imported: number; updated: number; unchanged: number }): string {
+  const parts = [`${totals.imported} member rows imported`]
+  if (totals.updated > 0) parts.push(`${totals.updated} updated`)
+  if (totals.unchanged > 0) parts.push(`${totals.unchanged} already up to date`)
+  return parts.join(", ")
+}
+
+/** Names both kinds of write, so a batch of updates is not announced as an import. */
+function applyLabel(queued: MemberImportRow[]): string {
+  const updates = queued.filter((row) => row.decision === "update").length
+  const imports = queued.length - updates
+  if (updates === 0) return `Import ${imports} rows`
+  if (imports === 0) return `Update ${updates} members`
+  return `Import ${imports}, update ${updates}`
+}
+
 function ImportFooter({
   batch,
   queued,
@@ -380,7 +425,7 @@ function ImportFooter({
         onClick={() => void applyImport()}
       >
         <FileInput className="mr-1.5 size-4" />
-        {applying ? "Applying…" : `Import ${queued.length} rows`}
+        {applying ? "Applying…" : applyLabel(queued)}
       </Button>
     </SheetFooter>
   )
@@ -581,7 +626,7 @@ export function MemberImportDialog({ open, onOpenChange, onImported }: MemberImp
       if (totals.imported + totals.updated > 0) onImported()
       if (done) {
         setApplied(true)
-        if (totals.failed === 0) toast.showSuccess(`${totals.imported} member rows imported`)
+        if (totals.failed === 0) toast.showSuccess(appliedSummary(totals))
         else toast.showError(`${totals.failed} row${totals.failed === 1 ? "" : "s"} need attention`)
       }
     } catch (cause) {
@@ -603,8 +648,8 @@ export function MemberImportDialog({ open, onOpenChange, onImported }: MemberImp
         <SheetHeader className="shrink-0 border-b border-fg/10 px-6 py-5 pr-14 text-left">
           <SheetTitle className="text-base text-fg">Import members</SheetTitle>
           <SheetDescription className="text-xs leading-relaxed text-fg/60">
-            Upload a roster, review every row, then apply. Staff_ID is the stable identity key;
-            existing members are never overwritten.
+            Upload a roster, review every row, then apply. Staff_ID is the stable identity key; an
+            existing member is only changed if you set their row to Update.
           </SheetDescription>
         </SheetHeader>
 
@@ -679,12 +724,20 @@ function ImportSummary({
 }) {
   if (applying) return <p className="text-sm text-fg-muted">Applying the import…</p>
   if (applied) {
-    const imported = rows.filter((row) => row.imported_member_id).length
+    const written = rows.filter((row) => row.imported_member_id)
+    const updated = written.filter((row) => row.decision === "update").length
+    const imported = written.length - updated
     const failed = rows.filter((row) => !row.imported_member_id && row.outcome === "Failed").length
+    const skipped = rows.length - written.length - failed
     return (
       <p className="text-sm">
-        <strong>{imported}</strong> imported · <strong>{rows.length - imported - failed}</strong>{" "}
-        skipped · <strong>{failed}</strong> failed
+        <strong>{imported}</strong> imported ·{" "}
+        {updated > 0 ? (
+          <>
+            <strong>{updated}</strong> updated ·{" "}
+          </>
+        ) : null}
+        <strong>{skipped}</strong> skipped · <strong>{failed}</strong> failed
       </p>
     )
   }
@@ -730,7 +783,8 @@ function DecisionCell({
   applied: boolean
   onDecision: (row: MemberImportRow, decision: MemberImportRowDecision) => void
 }) {
-  if (row.outcome !== "New" || applied) {
+  const choices = applied ? [] : decisionsFor(row)
+  if (choices.length === 0) {
     return (
       <TableCell className="px-2 py-1 text-xs">
         <span className="text-fg-muted">-</span>
@@ -751,8 +805,11 @@ function DecisionCell({
           <SelectValue />
         </SelectTrigger>
         <SelectContent>
-          <SelectItem value="import">Import</SelectItem>
-          <SelectItem value="skip">Skip</SelectItem>
+          {choices.map((choice) => (
+            <SelectItem key={choice} value={choice}>
+              {DECISION_LABELS[choice]}
+            </SelectItem>
+          ))}
         </SelectContent>
       </Select>
     </TableCell>
