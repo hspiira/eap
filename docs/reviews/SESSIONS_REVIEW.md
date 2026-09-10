@@ -339,3 +339,151 @@ browser.
 
 Nothing here was verified in a browser, and no import was run. The counts are
 from the file at the hash above and are reproducible from it.
+
+## Stress test: gaps found by reading the current code (2026-09-11)
+
+Written against the state after Phase A-C and the staging/apply wiring
+(`39459c6` and the fixes since it) landed. Scope: the same import path as
+above, read line by line for what could go wrong beyond the S-01..S-08 gaps,
+prompted by the same class of bug already found and fixed twice in the
+sibling member importer this week (a 300s-timeout apply, a wrong-batch pick
+on a shared hash). All of the following are fixed and tested; the code
+citations describe the state before the fix.
+
+### Eleventh defect (critical): apply had no chunking and no per-row isolation
+
+`apply_batch` (`session_imports.py`) ran the whole batch in one
+`@transactional()` request with no `limit`, and `ApplyImportBatchUseCase._apply_rows`
+called `self._writer.record(row, tenant_id)` in a loop with no try/except at
+all. Any single row raising (a wrong-tenant practitioner, a future date, an
+inconsistent delivery context) rolled back every session the same call had
+already written, and the batch never closed. The exact class of bug already
+found and fixed for members this week (the ninth defect in
+`docs/migrations/MEMBERS_MIGRATION.md`), independently present here because
+neither import path shares code with the other.
+
+Fixed the same way: `apply_batch` takes a `limit` query parameter (default
+50, matching the safer chunk size the member fix settled on after its own
+first attempt still timed out in practice), commits per row via `@readonly()`
+plus an injected `after_row` callback, and a row the writer refuses is
+caught, marked `Failed` (a new `ImportRowOutcome`), and the batch continues.
+`SessionImportApplyResponse` is now `{batch_id, imported, failed, remaining,
+done}`, matching the member importer's contract. `SessionImportDialog.tsx`
+loops the chunk calls with a progress bar and a Cancel that stops after, not
+during, the in-flight chunk, again mirroring the member fix. Verified for
+real against a live dev API and Postgres: staged 2 rows, applied with
+`limit=1` twice (`remaining` 1 then 0, `done` false then true), a third
+apply call 409ing on the now-Applied batch.
+
+### Twelfth defect (critical): the file-hash replay key is a function of the file, not the row
+
+`_replay_key` keys an unkeyed batch's rows as `file:{hash}:row:{n}`. The hash
+is the SHA-256 of the raw file bytes, so any edit to the source between
+staging passes, even one unrelated to the row in question, changes every
+row's key. Re-staging is explicitly designed to let rows re-judge once
+reference data improves (the whole point of B1/the "three faults" section
+above), and it does, correctly, when the file is byte-identical. But nothing
+stopped a *slightly edited* re-export from being treated as entirely new
+rows: the ordinary replay-key check would find no match and stage them as
+fresh Accepted rows, writing real duplicate sessions with no error.
+
+**Adopted policy, not a verified requirement — flagging for the product
+owner to confirm.** Added a second check, independent of the replay key: a
+row about to stage as Accepted under the file-hash-row strategy is checked
+against already-imported rows for a match on date, resolved practitioner,
+client, service and member (a source-keyed batch's key survives a file edit,
+so it skips this). A match holds the row as `Conflicting` with a message
+naming the earlier batch and row, rather than silently writing it again or
+silently dropping it. This is the finest grain the extract's columns
+support, since it carries no time-of-day; two genuinely distinct sessions
+can share all five fields on the same day, so a real re-staged edit will
+occasionally need a person to confirm a false positive. Verified for real:
+staged and applied a 2-row file, re-staged an edited copy (one added
+column, same two sessions) under a new hash, and both rows came back
+`Conflicting` naming the original batch and row, instead of writing two more
+sessions. Re-staging the byte-identical original file afterward still came
+back `Duplicate` via the ordinary replay-key path, confirming the new check
+does not interfere with the case that already worked.
+
+### Thirteenth defect (high): staged identities were never re-validated at apply time
+
+`_apply_rows` passed the `member_id`/`client_id`/`service_id` staging
+resolved straight to the writer with no re-check, even though a batch can
+sit staged for days waiting on reference data
+(`docs/operations/DEV_DATA_LOAD.md` describes exactly this). The member
+importer's apply route explicitly re-runs its checker at apply time "because
+a batch can sit staged for a while before it is applied"; this one didn't.
+The practitioner was the one identity already re-checked, inside the write
+path itself.
+
+Fixed: `ApplyImportBatchUseCase._revalidate` re-fetches the client, member
+and service by id before writing, confirms each still exists in this tenant,
+and confirms the member still belongs to the row's client. A row that fails
+this is marked `Failed` with a reason naming which identity went stale,
+rather than crashing the row's write or, worse, silently attributing the
+session to whatever the stale id now happens to resolve to.
+
+### Fourteenth defect (high): a wrongly-resolved but applied session has no correction path
+
+`ServiceSessionEntity` exposes `update_location`, `update_notes`,
+`update_feedback` and `cancel`; nothing lets `client_id`, `member_id` or
+`provider_id` change after creation. Combined with the thirteenth defect:
+if reference data was wrong rather than merely missing (a client alias
+resolved to the wrong client, a Staff_ID collision resolved to the wrong
+person), the resulting session stays misattributed forever. **Not fixed
+here** — a correction path is a real feature (who may reattribute, what gets
+audited, whether it needs its own review queue) and a product decision, not
+a bug fix. Recorded so it is not lost; the member importer's newer
+update-on-reimport path is not an analogue, since it corrects a *member's*
+detail fields, not a session's identity attribution.
+
+### Fifteenth defect (medium): two independent, undocumented date parsers
+
+`provider_import_source.py`'s `_DATE_FORMATS` tries day-first before
+month-first for a slash date, matching the policy `member_csv.py`'s
+`parse_roster_date` documents and tests explicitly, but this file carried no
+comment saying so and no cross-reference. Fixed by adding one; left the
+two parsers separate rather than unifying them, since they differ in
+supported formats (`%d-%b-%Y` here, none in the roster parser) and error
+handling (`None` on failure here, a raised `ValueError` there), and
+unifying them risks changing either importer's behaviour for no gain beyond
+tidiness.
+
+### Sixteenth defect (medium): `find_batch_by_hash` could pick the wrong batch
+
+Same shape as the member importer's fourth defect this week: `SELECT ...
+WHERE tenant_id = ? AND file_hash = ?` with no status filter and no
+`ORDER BY`, then `.scalar()`, which returns whichever row Postgres happens
+to put first when more than one batch shares a hash — confirmed live in
+`evexia_db`, which already holds two Applied and two Abandoned batches for
+the same activity-log hash from the loads `docs/operations/DEV_DATA_LOAD.md`
+describes. Fixed by filtering to `status == 'Staged'` in the query itself,
+mirroring the member repository's version of the same fix.
+
+### Seventeenth defect (medium): a concurrent double-stage raised a raw 500
+
+The conflict check (`find_batch_by_hash`, then insert) is read-then-write,
+not atomic. The partial unique index on `(tenant_id, file_hash) WHERE
+status = 'Staged'` correctly stops a genuine race at the database, but
+nothing caught the resulting `IntegrityError`, so it fell through to the
+generic exception handler as an unhandled 500 rather than the same clean 409
+the sequential path returns. Fixed by catching `IntegrityError` around the
+batch insert and translating it to the existing `IMPORT_ALREADY_STAGED`
+error. This is a systemic gap, not specific to sessions — there is no global
+`IntegrityError` handler anywhere in `app/core` — fixed locally here rather
+than globally, since a blanket handler risks masking a genuinely unexpected
+integrity error elsewhere in the codebase that should surface loudly.
+
+### What was not chased further
+
+Whether `_require_terminal_status` in `historical_session_import.py` can
+actually be triggered by today's normalisation tables was not tested: on the
+reference extract, `map_status` only ever produces `SessionStatus.NO_SHOW`,
+which passes that check, so the path is currently unreachable with real
+data. CSV parsing robustness (encoding, ragged rows, formula injection) was
+read and found already handled (`utf-8-sig` decode with a clean 422 on
+failure, `csv.DictReader` tolerates ragged rows, and nothing here writes a
+CSV back out, so the formula-injection escaping the member importer needed
+for its issue-report download does not apply). Tenant isolation was checked
+and found correct throughout: every staging lookup is scoped by
+`tenant_id` already.
