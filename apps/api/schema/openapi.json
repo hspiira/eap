@@ -9387,6 +9387,19 @@
             "title": "Client Id",
             "type": "string"
           },
+          "coverage_start": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "When this person's cover actually began, if known (e.g. a roster's Date Joined). Left blank, cover is treated as starting when the record was created here, which understates tenure for anyone imported after the fact.",
+            "title": "Coverage Start"
+          },
           "date_of_birth": {
             "anyOf": [
               {

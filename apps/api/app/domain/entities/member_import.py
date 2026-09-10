@@ -120,6 +120,7 @@ class MemberImportRowEntity:
     personal_email: str | None = None
     gender: str | None = None
     date_of_birth: str | None = None
+    date_joined: str | None = None
     phone: str | None = None
     national_id: str | None = None
     passport_number: str | None = None

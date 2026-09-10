@@ -35,6 +35,7 @@ def _row(**overrides: str | None) -> MemberCsvRow:
         "personal_email": None,
         "gender": None,
         "date_of_birth": None,
+        "date_joined": None,
         "phone": None,
         "national_id": None,
         "passport_number": None,
@@ -82,3 +83,8 @@ def test_the_round_trip_preserves_the_whole_row():
     """Guards against a field being added to one half of the round trip only."""
     original = _row()
     assert csv_row_from_entity(_staged(original)) == original
+
+
+def test_date_joined_survives_staging_and_confirmation():
+    rebuilt = csv_row_from_entity(_staged(_row(date_joined="03/04/2026")))
+    assert rebuilt.date_joined == "03/04/2026"

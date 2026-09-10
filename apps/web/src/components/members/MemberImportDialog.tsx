@@ -229,9 +229,11 @@ function ImportControls({
         <p className="text-xs text-fg-muted">
           Company Code resolves the client. Supported fields: Company Code, Staff_ID, Name of
           Employee, Relation, Primary Staff ID, Staff Number, Email Address, Personal Email, Phone,
-          Date of Birth (dd/mm/yyyy or YYYY-MM-DD), Gender, National ID, Passport Number, and
-          Status. Job Title, Job Classification, Skill, Department, Unit and Contract type are also
-          imported when present. Any other column is ignored; files are limited to 10 MB.
+          Date of Birth (dd/mm/yyyy or YYYY-MM-DD), Date Joined, Gender, National ID, Passport
+          Number, and Status. Leave Date Joined blank if unknown; it is only used to record when
+          cover actually began. Job Title, Job Classification, Skill, Department, Unit and
+          Contract type are also imported when present. Any other column is ignored; files are
+          limited to 10 MB.
         </p>
       ) : null}
 

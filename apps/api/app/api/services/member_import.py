@@ -101,6 +101,7 @@ def build_row_entity(
         personal_email=row.personal_email,
         gender=row.gender,
         date_of_birth=row.date_of_birth,
+        date_joined=row.date_joined,
         phone=row.phone,
         national_id=row.national_id,
         passport_number=row.passport_number,
@@ -129,6 +130,7 @@ def csv_row_from_entity(row: MemberImportRowEntity) -> MemberCsvRow:
         personal_email=row.personal_email,
         gender=row.gender,
         date_of_birth=row.date_of_birth,
+        date_joined=row.date_joined,
         phone=row.phone,
         national_id=row.national_id,
         passport_number=row.passport_number,
@@ -174,6 +176,7 @@ def _member_create(
         personal_email=row.personal_email,
         gender=MemberGender(row.gender.title()) if row.gender else None,
         date_of_birth=parse_roster_date(row.date_of_birth) if row.date_of_birth else None,
+        coverage_start=parse_roster_date(row.date_joined) if row.date_joined else None,
         phone=row.phone,
         staff_number=row.staff_number,
         national_id=row.national_id,
@@ -516,6 +519,7 @@ class MemberRowImporter:
             employment=EmploymentDetails.build(**data.employment.model_dump())
             if data.employment
             else None,
+            coverage_start=data.coverage_start,
         )
         _apply_imported_status(member, row.status)
         member.record_import()

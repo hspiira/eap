@@ -582,6 +582,38 @@ async def test_apply_carries_employment_details_into_the_real_member(api):
     assert saved_member.employment.department == "Operations"
 
 
+async def test_apply_sets_coverage_start_from_date_joined(api):
+    """A roster's Date Joined becomes coverage_start, not left at today's import date."""
+    api.imports.get_batch.return_value = staged_batch()
+    api.clients.get_by_code.return_value = SimpleNamespace(
+        id=ClientId("c1"), name="Acme", code="ACME", tenant_id=TenantId("t1")
+    )
+    row = import_row(1, date_joined="03/04/2026")
+    api.imports.list_rows.side_effect = [([row], 1), ([], 1)]
+
+    response = await api.http.post("/members/import/b1/apply")
+
+    assert response.status_code == 200, response.text
+    assert response.json()["imported"] == 1
+    ((saved_member,), _) = api.members.save.call_args
+    assert saved_member.coverage_start == date(2026, 4, 3)
+
+
+async def test_apply_leaves_coverage_start_unset_when_date_joined_is_blank(api):
+    api.imports.get_batch.return_value = staged_batch()
+    api.clients.get_by_code.return_value = SimpleNamespace(
+        id=ClientId("c1"), name="Acme", code="ACME", tenant_id=TenantId("t1")
+    )
+    row = import_row(1)
+    api.imports.list_rows.side_effect = [([row], 1), ([], 1)]
+
+    response = await api.http.post("/members/import/b1/apply")
+
+    assert response.status_code == 200, response.text
+    ((saved_member,), _) = api.members.save.call_args
+    assert saved_member.coverage_start is None
+
+
 async def test_apply_keeps_going_after_a_row_fails(api):
     api.imports.get_batch.return_value = staged_batch()
     api.clients.get_by_code.return_value = SimpleNamespace(
@@ -692,8 +724,8 @@ async def test_member_import_template_is_server_generated(api):
     assert response.headers["content-type"].startswith("text/csv")
     assert response.text.splitlines()[0] == (
         "Company Code,Staff_ID,Staff Number,Name of Employee,Email Address,Personal Email,"
-        "Date of Birth,Gender,Phone,National ID,Passport Number,Job Title,Job Classification,"
-        "Skill,Department,Unit,Contract type,Status,Relation,Primary Staff ID"
+        "Date of Birth,Date Joined,Gender,Phone,National ID,Passport Number,Job Title,"
+        "Job Classification,Skill,Department,Unit,Contract type,Status,Relation,Primary Staff ID"
     )
     assert "Example Member" in response.text
 

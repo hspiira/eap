@@ -111,6 +111,14 @@ class MemberCreate(BaseModel):
     staff_number: SanitizedStr | None = Field(None, max_length=100)
     national_id: SanitizedStr | None = Field(None, max_length=100)
     passport_number: SanitizedStr | None = Field(None, max_length=100)
+    coverage_start: date | None = Field(
+        None,
+        description=(
+            "When this person's cover actually began, if known (e.g. a roster's Date "
+            "Joined). Left blank, cover is treated as starting when the record was "
+            "created here, which understates tenure for anyone imported after the fact."
+        ),
+    )
     employment: MemberEmployment | None = None
 
     model_config = ConfigDict(extra="forbid")

@@ -935,3 +935,43 @@ conversion `_employment()` already does for manual create/update in
 `test_apply_carries_employment_details_into_the_real_member`: fails (`None`)
 on the pre-fix code, passes (`job_title`/`department` both present on the
 saved entity) on the fix.
+
+## Feature: a roster's Date Joined sets coverage_start (2026-09-10)
+
+The owner reported that "member since" style dates read as misleading:
+importing someone today always set their record's start to today, even when
+the owner is about to backdate that person's sessions to 2024. `EligibleMember`
+already has `coverage_start`/`coverage_end` columns and
+`is_currently_eligible()` already reads them (`coverage_start > today` makes
+someone not-yet-eligible; a past `coverage_start` has no effect beyond
+recording when cover began), but nothing let a caller set `coverage_start` on
+create — not the roster importer, not the API schema, not manual creation.
+
+Added a `Date Joined` roster column (aliases `member_since`, `coverage_start`),
+parsed with the same `parse_roster_date` day-first/ISO rule as Date of Birth,
+feeding a new `MemberCreate.coverage_start` field. Left blank, behaviour is
+unchanged: no `coverage_start` is set, same as before this change. Wired
+through both roster import (`MemberRowImporter.enrol`) and manual creation
+(`_enrol` in `members.py`), so the same gap the eighth defect closed for
+`employment` doesn't reopen here for a different field.
+
+`coverage_start` is deliberately **not** editable through the general
+`PATCH /members/{id}` update, matching `import_source_id`: "set once,"
+per `update_member`'s existing `coverage_start=member.coverage_start`
+override, now also excluded from the update's `details` dict so it does not
+collide with that override as a duplicate keyword argument. Revising it after
+creation is a controlled, audited action (or none exists yet), not a general
+profile edit.
+
+Migration `r7t9v1x3z5b7` adds one nullable `String(20)` column,
+`member_import_rows.date_joined`, mirroring `date_of_birth`'s existing shape
+exactly (raw staged text, parsed at check time, no schema change to
+`eligible_members` since `coverage_start` already exists there). Verified
+against the local dev database: `alembic upgrade head`, `downgrade -1`, and
+`upgrade head` again all clean.
+
+Pinned by: a parser test (`Date Joined` mapped, blank when absent), a
+round-trip test alongside the existing employment ones (the same class of bug
+the eighth defect was — a field persisted on stage but not read back at
+confirmation, or vice versa), and two route-level apply tests (`Date Joined`
+becomes `coverage_start`; blank leaves it unset).

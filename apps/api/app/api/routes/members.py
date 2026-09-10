@@ -411,6 +411,7 @@ async def _enrol(
         national_id=data.national_id,
         passport_number=data.passport_number,
         employment=_employment(data.employment),
+        coverage_start=data.coverage_start,
     )
 
 
@@ -579,6 +580,7 @@ async def member_import_template(
             "Email Address",
             "Personal Email",
             "Date of Birth",
+            "Date Joined",
             "Gender",
             "Phone",
             "National ID",
@@ -603,9 +605,9 @@ async def member_import_template(
             "example@company.test",
             "",
             "1990-01-31",
+            "",
             "Female",
             "+256700000000",
-            "",
             "",
             "",
             "",
@@ -1088,9 +1090,10 @@ async def update_member(
     await _validate_roster_update(member, updated, member_repo)
     # update_roster_details mutates in place, so the diff needs the state first.
     before = deepcopy(member)
-    # import_source_id is set once at creation and never revised through this
-    # general roster-details update; it stays whatever the member was created with.
-    details = updated.model_dump(exclude={"client_id", "import_source_id"})
+    # import_source_id and coverage_start are set once (at creation, or import)
+    # and never revised through this general roster-details update; each stays
+    # whatever the member was created with.
+    details = updated.model_dump(exclude={"client_id", "import_source_id", "coverage_start"})
     details["primary_employee_member_id"] = (
         EligibleMemberId(updated.primary_employee_member_id)
         if updated.primary_employee_member_id

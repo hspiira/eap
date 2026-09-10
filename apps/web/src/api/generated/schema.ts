@@ -11084,6 +11084,11 @@ export interface components {
         MemberCreate: {
             /** Client Id */
             client_id: string;
+            /**
+             * Coverage Start
+             * @description When this person's cover actually began, if known (e.g. a roster's Date Joined). Left blank, cover is treated as starting when the record was created here, which understates tenure for anyone imported after the fact.
+             */
+            coverage_start?: string | null;
             /** Date Of Birth */
             date_of_birth?: string | null;
             /** Display Label */

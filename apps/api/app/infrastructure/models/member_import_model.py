@@ -89,6 +89,7 @@ class MemberImportRowModel(CuidMixin, TenantMixin, Base, TimestampMixin):
     personal_email: Mapped[str | None] = mapped_column(String(255), nullable=True)
     gender: Mapped[str | None] = mapped_column(String(50), nullable=True)
     date_of_birth: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    date_joined: Mapped[str | None] = mapped_column(String(20), nullable=True)
     phone: Mapped[str | None] = mapped_column(String(50), nullable=True)
     national_id: Mapped[str | None] = mapped_column(String(100), nullable=True)
     passport_number: Mapped[str | None] = mapped_column(String(100), nullable=True)
