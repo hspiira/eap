@@ -1239,7 +1239,38 @@ dependant file that applies and is then re-staged raises exactly
 test passed either way and did not pin the defect; it was rewritten until it
 failed for the right reason.
 
+Driven in a real browser (Playwright/Chromium) against the running app: an
+isolated API and web dev server on :8001/:3001, a scratch database migrated
+from empty through `s8u0w2y4a6c8`, seeded with one tenant, one admin and one
+client. A first roster enrolled Amina (HR-1, ACME-001) and Bosco (HR-2,
+ACME-002). A second roster then revised Amina's Phone and Job Title, left her
+Email Address and Department blank, added Joan (HR-3) and omitted Bosco
+entirely.
+
+Signed in through the login form, opened Import members, uploaded that second
+roster, and the review table showed HR-1 as a duplicate offering exactly
+Update/Skip and HR-3 as New offering Import/Skip. Choosing Update moved the
+row to "Will update" and relabelled the apply button "Import 1, update 1".
+Applying reported "1 imported · 1 updated · 0 skipped · 0 failed", and the
+members table behind the dialog updated live. The database afterwards:
+
+| Staff_ID | Code | Phone | Job title | Work email | Department |
+|---|---|---|---|---|---|
+| HR-1 | ACME-001 | 0700999888 (revised) | Branch Manager (revised) | amina@acme.com (kept) | Operations (kept) |
+| HR-2 | ACME-002 | 0700333444 | Officer | bosco@acme.com | Treasury |
+| HR-3 | ACME-003 | 0700555666 | Analyst | joan@acme.com | Risk |
+
+So the blank-cell rule holds through the browser and against stored state:
+the two columns the roster left blank kept their values, the two it filled
+were revised, the member code was not reissued, and a member absent from the
+roster was untouched.
+
+One incidental finding, not a defect: the dialog prefers
+`window.showOpenFilePicker` where it exists, which no automated browser can
+drive. The run removed it so the plain `<input type="file">` fallback was
+used, which is the path every non-Chromium user already takes. Any future
+browser test of this dialog needs the same.
+
 Not verified: no roster has been put through the deployed environment, and
 none of this has been run at the scale (3,000+ rows) that produced the ninth
-defect. The frontend is covered by component tests against a rendered dialog,
-not by a browser driving a running app.
+defect.
