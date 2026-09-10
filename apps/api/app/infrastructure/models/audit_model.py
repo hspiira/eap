@@ -13,10 +13,10 @@ from sqlalchemy import JSON, CheckConstraint, DateTime, ForeignKey, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.domain.enums import AuditActionType
-from app.infrastructure.models.base import Base, CuidMixin, TenantMixin, TimestampMixin
+from app.infrastructure.models.base import Base, CuidMixin, TimestampMixin
 
 
-class AuditLogModel(CuidMixin, TenantMixin, Base, TimestampMixin):
+class AuditLogModel(CuidMixin, Base, TimestampMixin):
     """
     SQLAlchemy Model for AuditLog aggregate.
 
@@ -32,6 +32,15 @@ class AuditLogModel(CuidMixin, TenantMixin, Base, TimestampMixin):
             name="audit_action_type_check",
         ),
     )
+
+    tenant_id: Mapped[str] = mapped_column(String(25), nullable=False, index=True)
+    """No foreign key, deliberately.
+
+    An audit row has to outlive the tenant it describes, and a shared
+    reference vocabulary belongs to no tenant at all. `TenantMixin` would
+    give this column an ON DELETE CASCADE, which destroyed the trail with
+    the tenant.
+    """
 
     # User reference
     user_id: Mapped[str | None] = mapped_column(String(25), nullable=True, index=True)

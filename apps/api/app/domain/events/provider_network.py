@@ -107,6 +107,16 @@ class ProviderAliasRejected(DomainEvent):
 
 
 @dataclass(frozen=True)
+class ProviderSpecialtyCreated(DomainEvent):
+    """Platform-level catalogue change; the vocabulary carries no tenant."""
+
+    specialty_id: ProviderSpecialtyId
+    code: str
+    label: str
+    actor: UserId
+
+
+@dataclass(frozen=True)
 class ProviderSpecialtyRetired(DomainEvent):
     """Platform-level catalogue change; the vocabulary carries no tenant."""
 

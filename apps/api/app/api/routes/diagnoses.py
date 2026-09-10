@@ -1,9 +1,10 @@
 """Diagnosis taxonomy routes (Phase 2 #D-Tax)."""
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.dependencies import get_diagnosis_repository
+from app.api.dependencies.audit import get_audit_event_handler
 from app.api.schemas.diagnosis_schemas import (
     DiagnosisAliasResponse,
     DiagnosisAliasUpsert,
@@ -26,9 +27,12 @@ from app.core.authorization import (
 )
 from app.core.database import get_db
 from app.core.security import TokenData, get_current_user
-from app.domain.enums import AliasConfidence, TenantRole
+from app.domain.entities.diagnosis import DiagnosisAlias, TenantOverlay
+from app.domain.enums import AliasConfidence, AuditActionType, TenantRole
 from app.domain.repositories.diagnosis_repository import DiagnosisRepository
+from app.domain.services.diagnosis_alias import normalise_diagnosis_value
 from app.shared.decorators import readonly, transactional
+from app.shared.utils.route_audit_helper import audit_reference_change
 
 router = APIRouter(prefix="/diagnoses", tags=["diagnoses"])
 
@@ -162,8 +166,10 @@ async def _assert_available_type(repo: DiagnosisRepository, type_id: str) -> Non
 @transactional()
 async def create_diagnosis_type(
     data: DiagnosisTypeCreate,
+    request: Request,
     _user: TokenData = Depends(require_platform_admin),
     repo: DiagnosisRepository = Depends(get_diagnosis_repository),
+    audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
 ):
     if await repo.get_type_by_code(data.code):
@@ -174,6 +180,15 @@ async def create_diagnosis_type(
         description=data.description,
         sort_order=data.sort_order,
     )
+    await audit_reference_change(
+        audit_handler,
+        _user,
+        request,
+        action=AuditActionType.CREATE,
+        resource_type="DiagnosisType",
+        resource_id=created.id,
+        after=created,
+    )
     return DiagnosisTypeResponse.model_validate(created)
 
 
@@ -182,35 +197,66 @@ async def create_diagnosis_type(
 async def update_diagnosis_type(
     type_id: str,
     data: DiagnosisTypeUpdate,
+    request: Request,
     _user: TokenData = Depends(require_platform_admin),
     repo: DiagnosisRepository = Depends(get_diagnosis_repository),
+    audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
 ):
-    updated = await repo.update_type(
-        type_id, name=data.name, description=data.description, sort_order=data.sort_order
+    before = await repo.get_type_by_id(type_id)
+    updated = _found(
+        await repo.update_type(
+            type_id, name=data.name, description=data.description, sort_order=data.sort_order
+        ),
+        "Diagnosis type",
     )
-    return DiagnosisTypeResponse.model_validate(_found(updated, "Diagnosis type"))
+    await audit_reference_change(
+        audit_handler,
+        _user,
+        request,
+        action=AuditActionType.UPDATE,
+        resource_type="DiagnosisType",
+        resource_id=updated.id,
+        before=before,
+        after=updated,
+    )
+    return DiagnosisTypeResponse.model_validate(updated)
 
 
 @router.post("/types/{type_id}/active", response_model=DiagnosisTypeResponse)
 @transactional()
 async def set_diagnosis_type_active(
     type_id: str,
+    request: Request,
     is_active: bool = Query(..., description="Activate or retire the type"),
     _user: TokenData = Depends(require_platform_admin),
     repo: DiagnosisRepository = Depends(get_diagnosis_repository),
+    audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
 ):
-    updated = await repo.set_type_active(type_id, is_active=is_active)
-    return DiagnosisTypeResponse.model_validate(_found(updated, "Diagnosis type"))
+    before = await repo.get_type_by_id(type_id)
+    updated = _found(await repo.set_type_active(type_id, is_active=is_active), "Diagnosis type")
+    await audit_reference_change(
+        audit_handler,
+        _user,
+        request,
+        action=AuditActionType.UPDATE,
+        resource_type="DiagnosisType",
+        resource_id=updated.id,
+        before=before,
+        after=updated,
+    )
+    return DiagnosisTypeResponse.model_validate(updated)
 
 
 @router.post("", response_model=DiagnosisResponse, status_code=status.HTTP_201_CREATED)
 @transactional()
 async def create_diagnosis(
     data: DiagnosisCreate,
+    request: Request,
     _user: TokenData = Depends(require_platform_admin),
     repo: DiagnosisRepository = Depends(get_diagnosis_repository),
+    audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
 ):
     if await repo.get_diagnosis_by_code(data.code):
@@ -222,6 +268,15 @@ async def create_diagnosis(
         description=data.description,
         sort_order=data.sort_order,
     )
+    await audit_reference_change(
+        audit_handler,
+        _user,
+        request,
+        action=AuditActionType.CREATE,
+        resource_type="Diagnosis",
+        resource_id=created.id,
+        after=created,
+    )
     return DiagnosisResponse.model_validate(created)
 
 
@@ -230,33 +285,64 @@ async def create_diagnosis(
 async def update_diagnosis(
     diagnosis_id: str,
     data: DiagnosisUpdate,
+    request: Request,
     _user: TokenData = Depends(require_platform_admin),
     repo: DiagnosisRepository = Depends(get_diagnosis_repository),
+    audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
 ):
     if data.type_id is not None:
         await _assert_available_type(repo, data.type_id)
-    updated = await repo.update_diagnosis(
-        diagnosis_id,
-        type_id=data.type_id,
-        name=data.name,
-        description=data.description,
-        sort_order=data.sort_order,
+    before = await repo.get_diagnosis_by_id(diagnosis_id)
+    updated = _found(
+        await repo.update_diagnosis(
+            diagnosis_id,
+            type_id=data.type_id,
+            name=data.name,
+            description=data.description,
+            sort_order=data.sort_order,
+        ),
+        "Diagnosis",
     )
-    return DiagnosisResponse.model_validate(_found(updated, "Diagnosis"))
+    await audit_reference_change(
+        audit_handler,
+        _user,
+        request,
+        action=AuditActionType.UPDATE,
+        resource_type="Diagnosis",
+        resource_id=updated.id,
+        before=before,
+        after=updated,
+    )
+    return DiagnosisResponse.model_validate(updated)
 
 
 @router.post("/{diagnosis_id}/active", response_model=DiagnosisResponse)
 @transactional()
 async def set_diagnosis_active(
     diagnosis_id: str,
+    request: Request,
     is_active: bool = Query(..., description="Activate or retire the diagnosis"),
     _user: TokenData = Depends(require_platform_admin),
     repo: DiagnosisRepository = Depends(get_diagnosis_repository),
+    audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
 ):
-    updated = await repo.set_diagnosis_active(diagnosis_id, is_active=is_active)
-    return DiagnosisResponse.model_validate(_found(updated, "Diagnosis"))
+    before = await repo.get_diagnosis_by_id(diagnosis_id)
+    updated = _found(
+        await repo.set_diagnosis_active(diagnosis_id, is_active=is_active), "Diagnosis"
+    )
+    await audit_reference_change(
+        audit_handler,
+        _user,
+        request,
+        action=AuditActionType.UPDATE,
+        resource_type="Diagnosis",
+        resource_id=updated.id,
+        before=before,
+        after=updated,
+    )
+    return DiagnosisResponse.model_validate(updated)
 
 
 @router.get("/capabilities", response_model=DiagnosisCapabilitiesResponse)
@@ -285,14 +371,23 @@ async def list_diagnosis_settings(
     return [DiagnosisOverlayResponse.model_validate(o) for o in overlay.values()]
 
 
+def _overlay_id(overlay: TenantOverlay) -> str:
+    """The overlay row carries no id of its own; it is keyed by what it overlays."""
+    return f"{overlay.diagnosis_type_id}:{overlay.diagnosis_id or ''}"
+
+
 @router.put("/settings", response_model=DiagnosisOverlayResponse)
 @transactional()
 async def set_diagnosis_setting(
     data: DiagnosisOverlayUpdate,
+    request: Request,
     user: TokenData = Depends(require_tenant_role(TenantRole.ADMIN)),
     repo: DiagnosisRepository = Depends(get_diagnosis_repository),
+    audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
 ):
+    overlay = await repo.tenant_overlay(user.tenant_id)
+    before = overlay.get((data.diagnosis_type_id, data.diagnosis_id))
     saved = await repo.set_tenant_overlay(
         user.tenant_id,
         diagnosis_type_id=data.diagnosis_type_id,
@@ -300,6 +395,17 @@ async def set_diagnosis_setting(
         is_enabled=data.is_enabled,
         sort_order=data.sort_order,
         local_label=data.local_label,
+    )
+    await audit_reference_change(
+        audit_handler,
+        user,
+        request,
+        action=AuditActionType.UPDATE if before is not None else AuditActionType.CREATE,
+        resource_type="DiagnosisSetting",
+        resource_id=_overlay_id(saved),
+        before=before,
+        after=saved,
+        tenant_id=user.tenant_id,
     )
     return DiagnosisOverlayResponse.model_validate(saved)
 
@@ -327,12 +433,20 @@ async def list_diagnosis_aliases(
     return [DiagnosisAliasResponse.model_validate(a) for a in aliases]
 
 
+async def _alias_for(repo: DiagnosisRepository, raw_value: str) -> DiagnosisAlias | None:
+    """The alias a raw value already resolves to, matched on its normalised key."""
+    key = normalise_diagnosis_value(raw_value)
+    return next((a for a in await repo.list_aliases() if a.normalised_key == key), None)
+
+
 @router.put("/aliases", response_model=DiagnosisAliasResponse)
 @transactional()
 async def upsert_diagnosis_alias(
     data: DiagnosisAliasUpsert,
+    request: Request,
     _user: TokenData = Depends(require_platform_admin),
     repo: DiagnosisRepository = Depends(get_diagnosis_repository),
+    audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
 ):
     """Map a legacy spelling onto the taxonomy, keyed on its normalised form."""
@@ -352,11 +466,22 @@ async def upsert_diagnosis_alias(
                 status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
                 detail="Diagnosis does not belong to the given type",
             )
+    before = await _alias_for(repo, data.raw_value)
     saved = await repo.upsert_alias(
         raw_value=data.raw_value,
         diagnosis_type_id=data.diagnosis_type_id,
         diagnosis_id=data.diagnosis_id,
         source=data.source,
         confidence=data.confidence.value,
+    )
+    await audit_reference_change(
+        audit_handler,
+        _user,
+        request,
+        action=AuditActionType.UPDATE if before is not None else AuditActionType.CREATE,
+        resource_type="DiagnosisAlias",
+        resource_id=saved.id,
+        before=before,
+        after=saved,
     )
     return DiagnosisAliasResponse.model_validate(saved)

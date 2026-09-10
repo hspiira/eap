@@ -4,14 +4,27 @@ Audit Integration Utilities
 Helper functions for seamless audit integration in API routes.
 """
 
-from typing import TYPE_CHECKING, Any
+from typing import Any
 
 from fastapi import Request
 
-if TYPE_CHECKING:
-    pass
 from app.domain.value_objects.core import TenantId, UserId
 from app.shared.handlers.audit_event_handler import AuditEventHandler
+
+
+def request_context(request: Request | None) -> tuple[str | None, str | None]:
+    """Caller address and user agent, read through the proxy headers in front of the API."""
+    if request is None:
+        return None, None
+
+    forwarded = request.headers.get("x-forwarded-for")
+    if forwarded:
+        ip_address = forwarded.split(",")[0].strip()
+    else:
+        ip_address = request.headers.get("x-real-ip") or (
+            request.client.host if request.client else None
+        )
+    return ip_address, request.headers.get("user-agent")
 
 
 async def process_entity_events_for_audit(
@@ -39,20 +52,7 @@ async def process_entity_events_for_audit(
     if not events:
         return
 
-    ip_address = None
-    user_agent = None
-    if request:
-        forwarded = request.headers.get("x-forwarded-for")
-        if forwarded:
-            ip_address = forwarded.split(",")[0].strip()
-        else:
-            real_ip = request.headers.get("x-real-ip")
-            if real_ip:
-                ip_address = real_ip
-            elif request.client:
-                ip_address = request.client.host
-
-        user_agent = request.headers.get("user-agent")
+    ip_address, user_agent = request_context(request)
 
     await audit_handler.handle_events(
         entity=entity,

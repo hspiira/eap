@@ -148,6 +148,10 @@ class DiagnosisRepositoryImpl(DiagnosisRepository):
         row = (await self._session.execute(stmt)).scalar_one_or_none()
         return _to_diagnosis(row) if row else None
 
+    async def get_diagnosis_by_id(self, diagnosis_id: str) -> Diagnosis | None:
+        row = await self._session.get(DiagnosisModel, diagnosis_id)
+        return _to_diagnosis(row) if row else None
+
     # === Writes (platform admin only) ===
 
     async def create_type(

@@ -161,49 +161,144 @@ before-and-after is the point of auditing it.
 ## Route-level gaps (2026-09-10 pass)
 
 A second pass compared every `@router.post/put/patch/delete` handler against
-its audit call, rather than entity emissions. The scope question left open
-above has since been answered by the product owner: every event that affects
-or triggers a data change is to be logged. Against that requirement:
+its audit call, rather than against entity emissions. The scope question left
+open above was answered by the product owner: every event that affects or
+triggers a data change is to be logged. Thirty-one handlers across sixteen
+files were found writing nothing, and all of them are now closed. What
+follows is what was wrong and what was decided.
 
-1. **DSAR execution is unaudited.** `request_export` and `request_erasure`
-   audit; `execute_export` (`dsar.py:119`), `cancel_erasure` (`dsar.py:171`)
-   and `execute_erasure` (`dsar.py:192`) do not. Erasure execution is the
-   single most destructive write in the system and leaves no audit row.
-2. **`apply_batch` is unaudited.** `session_imports.py:315` writes every
-   accepted historical session row and closes the batch with no `audit_change`
-   call. Staging and abandoning the same batch are both audited.
-3. **Auth writes nothing.** `auth.py` has four mutation endpoints and zero
-   audit references: `set_initial_password` (a credential change), `login`
-   (writes lockout counters and last-login state, `auth.py:226-244`),
-   `refresh_token` and `logout`. `AuditActionType.LOGIN` and `LOGOUT` exist
-   and `audit_filter.py:40` lists them as always-log, but nothing in the
-   codebase ever emits them. The same holds for `EXPORT` and `IMPORT`.
-4. **Provider specialties are one-quarter audited.** Only `retire_specialty`
-   audits; `create_specialty` (`provider_specialties.py:74`), `add_link`
-   (`:152`) and `remove_link` (`:197`) do not.
-5. **Eleven vocabulary route files mutate with no audit at all:**
-   `case_referral_sources`, `client_tiers`, `diagnoses` (eight mutations,
-   including per-tenant settings and alias overlays), `document_types`,
-   `kpi_categories`, `kpi_measurement_units`, `next_of_kin_relationships`,
-   `presenting_problems`, `service_categories`, `survey_sources`,
-   `utilisation_event_types`. These call repository create/update directly
-   with no domain entity and no events, so adding `audit_change` alone would
-   log nothing; each needs either events on an entity or a direct audit write.
+### The foreign key was destroying the trail
 
-Judgement, not measurement: items 1 to 3 are ranked first on data
-sensitivity. That ordering is an inference from what the endpoints touch,
-not a stakeholder decision.
+`audit_logs.tenant_id` carried `ON DELETE CASCADE` to `tenants.id`
+(`32b395f52e9f`, verified on the running database: `confdeltype = 'c'`).
+Deleting a tenant deleted every record of what had been done inside it, which
+is the history a deletion most needs to be answerable to. The constraint is
+dropped in `e3f5g7h9j1k3`, and `AuditLogModel` now declares `tenant_id`
+itself rather than inheriting `TenantMixin`, so the schema the tests build
+from metadata matches the migrated one.
+
+That key was also silently breaking the one platform-level audit call that
+already existed. `retire_specialty` passed `tenant_id="platform"`, no tenant
+row has that id, and nothing seeds one, so the outbox row it enqueued could
+never be consumed: the worker's insert would fail the foreign key and retry
+under backoff forever. Dropping the key fixes that call site as well as
+enabling the vocabulary work below. `PLATFORM_TENANT` in
+`route_audit_helper.py` replaces the string literal.
+
+### Reference tables needed a second way in
+
+The eleven vocabulary route files write rows through a repository with no
+aggregate behind them, so there is no `entity.events` for `audit_change` to
+drain and adding the call would have logged nothing. `audit_reference_change`
+records a stated action with a before and after snapshot, and
+`AuditEventHandler.record_action` puts it on the same outbox, in the same
+payload shape, drained by the same worker. `audit_change` and the new helper
+share one `_enqueue`, so there is one payload definition rather than two.
+
+Update handlers read the row before mutating it, which is what gives the
+`entity_changes` diff something to compare against. This is safe because
+every one of these repositories returns a detached dataclass from
+`_to_entity(model)` rather than the identity-mapped ORM object; had they
+returned the model, before and after would have been the same object and
+every diff would have come out empty.
+
+### What was decided, not merely implemented
+
+**Failed sign-ins are recorded and committed.** `@transactional` rolls back
+on `HTTPException` and every refused login ends in one, so an audit row
+written on that path would be discarded with it. The login route already
+committed explicitly before raising, for the same reason, to keep the lockout
+counter. The audit write joins that commit. Refused-for-lockout and
+refused-for-suspended-account now commit too; they previously wrote nothing
+at all.
+
+**An attempt naming no known tenant or user is deliberately not recorded.**
+It changes no data, and recording it would let an unauthenticated caller
+write rows into the audit store at will. The login rate limiter already
+counts those attempts. This is the one place where the "log every data
+change" rule is applied literally rather than widened, and it is a judgement
+call worth revisiting if the DPO wants failed enumeration attempts visible.
+
+**Token refresh is audited.** Rotation revokes one credential and issues
+another, which is a data change and is exactly the history a stolen refresh
+token is investigated from. It is also the highest-volume audited event in
+the system, once per access-token expiry per session. If the volume proves
+unwelcome, `AuditFilterService` is where to sample it; note that it currently
+treats LOGIN as critical and never samples it.
+
+**`DSARErasureExecuted` is filed as DELETE, not UPDATE.** The substring rules
+in `map_domain_event_to_audit_action` would have called an erasure an update.
+Rather than rename the event, which is what a query written against the
+existing trail matches on, `_EXPLICIT_ACTIONS` states the two exceptions
+(`DSARErasureExecuted`, `SessionImportBatchApplied`) ahead of the rules. The
+broader "activated means CREATE" problem is still open below; this table is
+where to fix it when that is decided.
+
+**The diagnosis alias catalogue is platform-scoped, not tenant-scoped.**
+`DiagnosisAliasModel` carries no tenant column, unlike
+`TenantDiagnosisSettingModel` beside it, and the route is guarded by
+`require_platform_admin`. Filing an alias edit against the calling admin's
+tenant would hide a shared catalogue change from every other tenant while
+putting it in one tenant's log. `PUT /settings` is genuinely per-tenant and
+does pass the tenant id.
+
+**`ApplyImportBatchUseCase.execute` returns the batch.** It previously
+returned `(ApplyResult, int)` where the int duplicated `result.imported`. The
+audit call needs the entity carrying the event `mark_applied` left on it, and
+re-fetching would return a fresh entity with no events. The redundant int is
+replaced rather than a third element added.
+
+### Evidence
+
+`tests/integration/test_audit_chain_gaps.py` runs HTTP through the outbox and
+the worker to `audit_logs` against real PostgreSQL, five cases: a platform
+vocabulary row reaching `audit_logs` under the platform tenant, a rename
+carrying `Silver -> Silver Plus` into `entity_changes`, a granted sign-in, a
+refused sign-in surviving the rollback, and an unknown tenant writing
+nothing. Run it with `AUDIT_CHAIN_TEST_DATABASE_URL` set to local PostgreSQL;
+without that variable it skips and proves nothing.
+
+Verified on 2026-09-10: 2136 unit tests pass, the 7 existing audit-chain
+cases and the 5 new ones pass against local PostgreSQL, `ruff check` and
+`ruff format --check` are clean, and the pyright gate passes for `app/domain`.
+Not verified: none of this has been deployed, and the worker still has to be
+running for any of it to reach `audit_logs`.
+
+## Found on the way, not fixed
+
+- **A failed DSAR export or erasure persists nothing, including its own
+  failure.** `ExecuteExportUseCase` and `ExecuteErasureUseCase` call
+  `req.fail(reason)`, save, then re-raise; `@transactional` rolls the save
+  back with the exception, so the request stays PROCESSING and the reason is
+  lost. For erasure this can also leave partially tombstoned data with no
+  record. Fixing it means committing the failure before re-raising, the way
+  the login route does. Left alone because it changes transaction semantics
+  on a destructive path and belongs to whoever owns DSAR.
+- **`auth.py:428` passes `str | None` where `save` wants `str`.** Pyright
+  error, pre-existing (it was line 382 before this pass, same error).
+  `refresh_jti` is only non-None when `rotation` is true, which pyright
+  cannot narrow across two separate `if rotation:` blocks. Needs the auth
+  owner to say whether a None jti should skip the save or is unreachable.
+- **Test doubles using `AsyncMock` sessions now emit a `RuntimeWarning`**
+  from `outbox_repository.py:52`, because the audit write reaches
+  `session.add` and `flush` is never awaited on a mock. The tests pass; the
+  doubles want an `AsyncMock` that awaits `flush`.
 
 ## Still open
 
-- The other 93 silent mutators, pending the scope call above.
-- The remaining 93 sit on `UserEntity`, `ServiceEntity`, `PersonEntity`,
+- The other 93 silent mutators. The product owner's answer widens the target
+  to all of them; this pass closed the route-level gaps, which is a different
+  axis. The remaining 93 sit on `UserEntity`, `ServiceEntity`, `PersonEntity`,
   `TenantEntity` and the smaller reference aggregates. None of them holds
   client or clinical data, which is why they are last rather than next.
 - `map_domain_event_to_audit_action` treating "activated" as CREATE.
+  `_EXPLICIT_ACTIONS` is now the place to correct it per event.
 - `apps/web/src/routes/audit.tsx` is a placeholder. The read API exists
   (`/audit/logs`, `/logs/{id}/changes`, `/entity/{type}/{id}/changes`) and
   nothing in the UI calls it.
 - The worker is a separate process nobody runs in dev, so a local database
   accumulates outbox rows and no audit rows. Local `evexia_db` held 3,668
-  undelivered events and 0 audit rows when this was written.
+  undelivered events and 0 audit rows when this was written, and still did on
+  2026-09-10. Nothing above reaches `audit_logs` in any environment where
+  `scripts/outbox_worker.py` is not running, so confirming it is deployed
+  matters more than any coverage number in this document.

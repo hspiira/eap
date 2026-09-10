@@ -15,7 +15,10 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import Protocol
 
-from app.domain.entities.session_import import SessionImportRowEntity
+from app.domain.entities.session_import import (
+    SessionImportBatchEntity,
+    SessionImportRowEntity,
+)
 from app.domain.enums.provider_network import ImportBatchStatus
 from app.domain.exceptions import DomainError, NotFoundError
 from app.domain.repositories.provider_network_repository import SessionImportRepository
@@ -71,11 +74,14 @@ class ApplyImportBatchUseCase:
         actor: UserId,
         *,
         now: datetime,
-    ) -> tuple[ApplyResult, int]:
+    ) -> tuple[ApplyResult, SessionImportBatchEntity]:
         """Write every importable row, then mark the batch applied.
 
         A batch that is not Staged is refused by the aggregate, so applying
         twice cannot write twice even if the first attempt is replayed.
+
+        Returns the batch alongside the counts so the caller can audit the
+        event `mark_applied` left on it.
         """
         batch = await self._imports.get_batch(tenant_id, batch_id)
         if batch is None:
@@ -94,7 +100,7 @@ class ApplyImportBatchUseCase:
         result = await self._apply_rows(tenant_id, batch_id)
         batch.mark_applied(actor, at=now, accepted_count=result.imported)
         await self._imports.save_batch(batch)
-        return result, result.imported
+        return result, batch
 
     async def _apply_rows(self, tenant_id: TenantId, batch_id: SessionImportBatchId) -> ApplyResult:
         imported = skipped = not_importable = 0

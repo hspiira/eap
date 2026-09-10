@@ -314,10 +314,12 @@ async def abandon_batch(
 @transactional()
 async def apply_batch(
     batch_id: str,
+    request: Request,
     tenant_id: str = Query(...),
     current_user: TokenData = Depends(require_same_tenant),
     imports: SessionImportRepository = Depends(get_session_import_repository),
     writer=Depends(get_historical_session_writer),
+    audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
 ):
     """Write every importable row through the historical path, then close the batch.
@@ -327,12 +329,13 @@ async def apply_batch(
     it was passed over, so an unimportable batch is legible without reading
     this code.
     """
-    result, _ = await ApplyImportBatchUseCase(imports, writer).execute(
+    result, batch = await ApplyImportBatchUseCase(imports, writer).execute(
         TenantId(tenant_id),
         SessionImportBatchId(batch_id),
         UserId(current_user.user_id),
         now=utc_now(),
     )
+    await audit_change(batch, audit_handler, current_user, request)
     return SessionImportApplyResponse(
         batch_id=batch_id,
         imported=result.imported,

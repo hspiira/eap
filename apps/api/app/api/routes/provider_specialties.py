@@ -27,6 +27,7 @@ from app.domain.entities.provider_specialty import (
     ProviderSpecialtyEntity,
     ProviderSpecialtyLinkEntity,
 )
+from app.domain.enums import AuditActionType
 from app.domain.exceptions import DomainError, NotFoundError
 from app.domain.repositories.provider_network_repository import ProviderSpecialtyRepository
 from app.domain.value_objects.core import ProviderId, TenantId, UserId
@@ -37,7 +38,11 @@ from app.domain.value_objects.provider_network import (
 from app.shared.decorators import readonly, transactional
 from app.shared.utils.datetime import utc_now
 from app.shared.utils.generators import generate_cuid
-from app.shared.utils.route_audit_helper import audit_change
+from app.shared.utils.route_audit_helper import (
+    PLATFORM_TENANT,
+    audit_change,
+    audit_reference_change,
+)
 
 router = APIRouter(prefix="/provider-specialties", tags=["provider-specialties"])
 
@@ -73,7 +78,10 @@ async def list_specialties(
 @transactional()
 async def create_specialty(
     data: ProviderSpecialtyCreate,
+    request: Request,
+    current_user: TokenData = Depends(require_platform_admin),
     repo: ProviderSpecialtyRepository = Depends(get_provider_specialty_repository),
+    audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
 ):
     now = utc_now()
@@ -84,7 +92,9 @@ async def create_specialty(
         created_at=now,
         updated_at=now,
     )
+    specialty.record_created(UserId(current_user.user_id))
     await repo.save_specialty(specialty)
+    await audit_change(specialty, audit_handler, current_user, request, tenant_id=PLATFORM_TENANT)
     invalidate_reference_cache(_RESOURCE)
     return _response(specialty)
 
@@ -111,7 +121,7 @@ async def retire_specialty(
         )
     specialty.retire(UserId(current_user.user_id), at=utc_now())
     await repo.save_specialty(specialty)
-    await audit_change(specialty, audit_handler, current_user, request, tenant_id="platform")
+    await audit_change(specialty, audit_handler, current_user, request, tenant_id=PLATFORM_TENANT)
     invalidate_reference_cache(_RESOURCE)
     return _response(specialty)
 
@@ -151,9 +161,11 @@ async def list_links(
 @transactional()
 async def add_link(
     data: ProviderSpecialtyLinkCreate,
+    request: Request,
     tenant_id: str = Query(...),
     current_user: TokenData = Depends(require_same_tenant),
     repo: ProviderSpecialtyRepository = Depends(get_provider_specialty_repository),
+    audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
 ):
     """A tenant selects an active catalogue entry for one of its practitioners."""
@@ -177,6 +189,16 @@ async def add_link(
         created_at=utc_now(),
     )
     await repo.add_link(link)
+    await audit_reference_change(
+        audit_handler,
+        current_user,
+        request,
+        action=AuditActionType.CREATE,
+        resource_type="ProviderSpecialtyLink",
+        resource_id=link.id.value,
+        after=link,
+        tenant_id=tenant_id,
+    )
     return ProviderSpecialtyLinkResponse(
         id=link.id.value,
         tenant_id=link.tenant_id.value,
@@ -196,9 +218,11 @@ async def add_link(
 @transactional()
 async def remove_link(
     link_id: str,
+    request: Request,
     tenant_id: str = Query(...),
     current_user: TokenData = Depends(require_same_tenant),
     repo: ProviderSpecialtyRepository = Depends(get_provider_specialty_repository),
+    audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
 ):
     if not await repo.remove_link(TenantId(tenant_id), link_id):
@@ -207,3 +231,12 @@ async def remove_link(
             resource_type="ProviderSpecialtyLink",
             resource_id=link_id,
         )
+    await audit_reference_change(
+        audit_handler,
+        current_user,
+        request,
+        action=AuditActionType.DELETE,
+        resource_type="ProviderSpecialtyLink",
+        resource_id=link_id,
+        tenant_id=tenant_id,
+    )

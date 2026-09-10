@@ -5,10 +5,11 @@ caps and authorization rules, now a table so a new category does not need a
 code deploy and a migration.
 """
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.dependencies import get_service_category_repository
+from app.api.dependencies.audit import get_audit_event_handler
 from app.api.schemas.service_category_schemas import (
     ServiceCategoryCreate,
     ServiceCategoryResponse,
@@ -18,10 +19,12 @@ from app.core.authorization import require_platform_admin
 from app.core.database import get_db
 from app.core.reference_cache import cached_lookup, invalidate_reference_cache
 from app.core.security import TokenData, get_current_user
+from app.domain.enums import AuditActionType
 from app.domain.repositories.service_category_repository import (
     ServiceCategoryRepository,
 )
 from app.shared.decorators import readonly, transactional
+from app.shared.utils.route_audit_helper import audit_reference_change
 
 router = APIRouter(prefix="/service-categories", tags=["service-categories"])
 
@@ -45,8 +48,10 @@ async def list_service_categories(
 @transactional()
 async def create_service_category(
     data: ServiceCategoryCreate,
+    request: Request,
     _user: TokenData = Depends(require_platform_admin),
     repo: ServiceCategoryRepository = Depends(get_service_category_repository),
+    audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
 ):
     if await repo.get_by_code(data.code):
@@ -57,6 +62,15 @@ async def create_service_category(
         description=data.description,
         sort_order=data.sort_order,
     )
+    await audit_reference_change(
+        audit_handler,
+        _user,
+        request,
+        action=AuditActionType.CREATE,
+        resource_type="ServiceCategory",
+        resource_id=created.id,
+        after=created,
+    )
     invalidate_reference_cache(_RESOURCE)
     return ServiceCategoryResponse.model_validate(created)
 
@@ -66,15 +80,28 @@ async def create_service_category(
 async def update_service_category(
     category_id: str,
     data: ServiceCategoryUpdate,
+    request: Request,
     _user: TokenData = Depends(require_platform_admin),
     repo: ServiceCategoryRepository = Depends(get_service_category_repository),
+    audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
 ):
+    before = await repo.get_by_id(category_id)
     updated = await repo.update(
         category_id, name=data.name, description=data.description, sort_order=data.sort_order
     )
     if updated is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, detail="Service category not found")
+    await audit_reference_change(
+        audit_handler,
+        _user,
+        request,
+        action=AuditActionType.UPDATE,
+        resource_type="ServiceCategory",
+        resource_id=updated.id,
+        before=before,
+        after=updated,
+    )
     invalidate_reference_cache(_RESOURCE)
     return ServiceCategoryResponse.model_validate(updated)
 
@@ -83,13 +110,26 @@ async def update_service_category(
 @transactional()
 async def set_service_category_active(
     category_id: str,
+    request: Request,
     is_active: bool = Query(..., description="Activate or retire the category"),
     _user: TokenData = Depends(require_platform_admin),
     repo: ServiceCategoryRepository = Depends(get_service_category_repository),
+    audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
 ):
+    before = await repo.get_by_id(category_id)
     updated = await repo.set_active(category_id, is_active=is_active)
     if updated is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, detail="Service category not found")
+    await audit_reference_change(
+        audit_handler,
+        _user,
+        request,
+        action=AuditActionType.UPDATE,
+        resource_type="ServiceCategory",
+        resource_id=updated.id,
+        before=before,
+        after=updated,
+    )
     invalidate_reference_cache(_RESOURCE)
     return ServiceCategoryResponse.model_validate(updated)

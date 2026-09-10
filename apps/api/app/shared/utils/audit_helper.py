@@ -75,6 +75,19 @@ def _audit_value(value: Any) -> str | None:
     return str(value)
 
 
+_EXPLICIT_ACTIONS = {
+    "DSARErasureExecuted": AuditActionType.DELETE,
+    "SessionImportBatchApplied": AuditActionType.IMPORT,
+}
+"""Events the substring rules below would file wrongly.
+
+Erasure destroys subject data and reads as an UPDATE to the rules; an applied
+import batch writes rows and reads the same way. Both are stated here rather
+than by renaming the event, because the name is what a query written against
+the existing trail matches on.
+"""
+
+
 def map_domain_event_to_audit_action(event_type: str) -> AuditActionType:
     """
     Map domain event type to audit action type.
@@ -85,6 +98,10 @@ def map_domain_event_to_audit_action(event_type: str) -> AuditActionType:
     Returns:
         AuditActionType
     """
+    explicit = _EXPLICIT_ACTIONS.get(event_type)
+    if explicit is not None:
+        return explicit
+
     # Extract base action from event name
     event_lower = event_type.lower()
 

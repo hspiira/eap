@@ -106,6 +106,7 @@ from app.domain.events.privacy import (
     ConsentRevoked,
     DataShareLogged,
     DSARErasureExecuted,
+    DSARRequestCancelled,
     DSARRequestCompleted,
     DSARRequestSubmitted,
 )
@@ -203,6 +204,7 @@ __all__ = [
     "CriticalIncidentPhaseRecorded",
     "DSARErasureExecuted",
     "DSARRequestCompleted",
+    "DSARRequestCancelled",
     "DSARRequestSubmitted",
     "DataShareLogged",
     "DocumentArchived",

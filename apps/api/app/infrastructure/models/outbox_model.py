@@ -13,10 +13,10 @@ from sqlalchemy import DateTime, Index, Integer, String, Text
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column
 
-from app.infrastructure.models.base import Base, CuidMixin, TenantMixin, TimestampMixin
+from app.infrastructure.models.base import Base, CuidMixin, TimestampMixin
 
 
-class OutboxEventModel(CuidMixin, TenantMixin, Base, TimestampMixin):
+class OutboxEventModel(CuidMixin, Base, TimestampMixin):
     """Outbox row representing a domain event awaiting downstream delivery."""
 
     __tablename__ = "outbox_events"
@@ -28,6 +28,10 @@ class OutboxEventModel(CuidMixin, TenantMixin, Base, TimestampMixin):
             postgresql_where="delivered_at IS NULL",
         ),
     )
+
+    tenant_id: Mapped[str] = mapped_column(String(25), nullable=False, index=True)
+    """No foreign key: the queue carries the platform sentinel as well as real
+    tenant ids, and matches what the migration created."""
 
     event_type: Mapped[str] = mapped_column(String(100), nullable=False, index=True)
     payload: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False)

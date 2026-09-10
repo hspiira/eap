@@ -28,6 +28,12 @@ class DSARRequestCompleted(DomainEvent):
 
 
 @dataclass(frozen=True)
+class DSARRequestCancelled(DomainEvent):
+    request_id: "DSARRequestId"
+    request_type: str
+
+
+@dataclass(frozen=True)
 class DSARErasureExecuted(DomainEvent):
     """Raised when subject PII is tombstoned. Carries no PII itself by design."""
 
