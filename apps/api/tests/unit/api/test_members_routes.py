@@ -283,6 +283,81 @@ async def test_stage_flags_a_row_still_claimed_by_another_unresolved_batch(api):
     assert rows[0].replay_key == "duplicate:stuck-batch:key:c1:HR-1"
 
 
+async def test_stage_imports_a_dependant_with_no_staff_id_of_their_own(api):
+    """A dependant is identified by Primary Staff ID, not their own Staff_ID."""
+    api.clients.get_by_code.return_value = SimpleNamespace(
+        id=ClientId("c1"), name="Acme", code="ACME", tenant_id=TenantId("t1")
+    )
+    api.members.find_by_import_source_id.return_value = member("m1")
+
+    response = await api.http.post(
+        "/members/import",
+        files={
+            "file": (
+                "members.csv",
+                b"Company Code,Staff_ID,Name of Employee,Relation,Primary Staff ID\n"
+                b"ACME,,Jane Doe Jr,Child,AC-1\n",
+                "text/csv",
+            )
+        },
+    )
+
+    assert response.status_code == 201, response.text
+    ((rows,), _) = api.imports.add_rows.call_args
+    assert rows[0].outcome == MemberImportRowOutcome.NEW
+    assert rows[0].decision == "import"
+
+
+async def test_stage_rejects_a_dependant_with_neither_id(api):
+    api.clients.get_by_code.return_value = SimpleNamespace(
+        id=ClientId("c1"), name="Acme", code="ACME", tenant_id=TenantId("t1")
+    )
+
+    response = await api.http.post(
+        "/members/import",
+        files={
+            "file": (
+                "members.csv",
+                b"Company Code,Staff_ID,Name of Employee,Relation,Primary Staff ID\n"
+                b"ACME,,Jane Doe Jr,Child,\n",
+                "text/csv",
+            )
+        },
+    )
+
+    assert response.status_code == 201, response.text
+    ((rows,), _) = api.imports.add_rows.call_args
+    assert rows[0].outcome == MemberImportRowOutcome.INVALID
+    assert rows[0].message == "Primary Staff ID is required for a beneficiary"
+
+
+async def test_stage_does_not_treat_two_id_less_dependants_as_duplicates(api):
+    api.clients.get_by_code.return_value = SimpleNamespace(
+        id=ClientId("c1"), name="Acme", code="ACME", tenant_id=TenantId("t1")
+    )
+    api.members.find_by_import_source_id.return_value = member("m1")
+
+    response = await api.http.post(
+        "/members/import",
+        files={
+            "file": (
+                "members.csv",
+                b"Company Code,Staff_ID,Name of Employee,Relation,Primary Staff ID\n"
+                b"ACME,,Jane Doe Jr,Child,AC-1\n"
+                b"ACME,,John Doe Jr,Child,AC-1\n",
+                "text/csv",
+            )
+        },
+    )
+
+    assert response.status_code == 201, response.text
+    ((rows,), _) = api.imports.add_rows.call_args
+    assert [row.outcome for row in rows] == [
+        MemberImportRowOutcome.NEW,
+        MemberImportRowOutcome.NEW,
+    ]
+
+
 async def test_stage_preserves_the_parser_issue_message(api):
     response = await api.http.post(
         "/members/import",

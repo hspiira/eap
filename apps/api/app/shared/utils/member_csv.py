@@ -20,6 +20,16 @@ def _value(row: dict[str, str | None], *keys: str) -> str | None:
     return None
 
 
+def is_employee_relation(relation: str | None) -> bool:
+    """Whether a roster row's Relation column names the employee, not a dependant.
+
+    Blank defaults to Employee, matching the default `_member_create` applies
+    when writing the row. A dependant is identified by their Primary Staff ID
+    instead of their own Staff_ID; only an employee row needs one.
+    """
+    return not relation or relation.strip().casefold() == "employee"
+
+
 @dataclass(frozen=True)
 class MemberCsvRow:
     row_number: int
@@ -100,7 +110,12 @@ def _row_issues(parsed: MemberCsvRow) -> list[dict[str, object]]:
     issues: list[dict[str, object]] = []
     if not parsed.client_code:
         issues.append({"field": "Company Code", "message": "Client code is required"})
-    if not parsed.import_source_id or parsed.import_source_id.endswith("-"):
+    # A dependant is identified by Primary Staff ID, not their own; blank is only
+    # an error for the employee row. A dirty value (still ending in "-") is
+    # wrong data regardless of relation.
+    if (parsed.import_source_id and parsed.import_source_id.endswith("-")) or (
+        not parsed.import_source_id and is_employee_relation(parsed.relation)
+    ):
         issues.append({"field": "Staff_ID", "message": "Stable Staff_ID is required"})
     if not parsed.display_label:
         issues.append({"field": "Name of Employee", "message": "Member name is required"})

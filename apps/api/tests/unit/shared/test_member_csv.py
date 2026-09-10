@@ -9,6 +9,24 @@ def test_parser_requires_explicit_stable_staff_id():
     assert any(issue["field"] == "Staff_ID" for issue in issues)
 
 
+def test_a_dependant_does_not_need_their_own_staff_id():
+    """A dependant is identified by Primary Staff ID; only the employee needs their own."""
+    rows, issues = parse_member_csv(
+        b"Company Code,Staff_ID,Name of Employee,Relation,Primary Staff ID\n"
+        b"ACME,,Jane Doe Jr,Child,AC-1\n"
+    )
+    assert rows[0].import_source_id is None
+    assert not any(issue["field"] == "Staff_ID" for issue in issues)
+
+
+def test_a_dependant_with_a_dirty_staff_id_is_still_flagged():
+    rows, issues = parse_member_csv(
+        b"Company Code,Staff_ID,Name of Employee,Relation,Primary Staff ID\n"
+        b"ACME,IDI-,Jane Doe Jr,Child,AC-1\n"
+    )
+    assert any(issue["field"] == "Staff_ID" for issue in issues)
+
+
 def test_parser_maps_roster_fields_and_rejects_placeholder_ids():
     rows, issues = parse_member_csv(
         b"Company Code,Staff_ID,Name of Employee,Email Address,Status\n"

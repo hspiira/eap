@@ -27,7 +27,7 @@ from app.domain.repositories.outbox_repository import OutboxRepository
 from app.domain.value_objects.core import ClientId, EligibleMemberId, Email, TenantId, UserId
 from app.domain.value_objects.ids import MemberImportBatchId, MemberImportRowId
 from app.shared.handlers.audit_event_handler import AuditEventHandler
-from app.shared.utils.member_csv import MemberCsvRow
+from app.shared.utils.member_csv import MemberCsvRow, is_employee_relation
 from app.shared.utils.replay_key import DUPLICATE_PREFIX, deferred_key
 from app.shared.utils.route_audit_helper import audit_change
 
@@ -273,8 +273,15 @@ class MemberRowChecker:
         return await self._clients.get_by_code(self._tenant_id, row.client_code)
 
     def _claim_staff_id(self, client: ClientEntity, row: MemberCsvRow) -> RowCheck | None:
-        """Records the row's Staff_ID, rejecting a second use of it in the same file."""
-        key = (client.id.value, row.import_source_id or "")
+        """Records the row's Staff_ID, rejecting a second use of it in the same file.
+
+        A blank Staff_ID (a dependant, now that one is allowed to have none)
+        claims nothing: two dependants sharing no ID are not a repeat of the
+        same person, so blank never collides with itself here.
+        """
+        if not row.import_source_id:
+            return None
+        key = (client.id.value, row.import_source_id)
         if key in self._seen:
             return RowCheck(
                 state="invalid",
@@ -287,8 +294,15 @@ class MemberRowChecker:
     async def _already_enrolled(
         self, client: ClientEntity, row: MemberCsvRow, decision: str | None
     ) -> RowCheck | None:
+        """Whether this row's own Staff_ID already belongs to a real member.
+
+        A dependant with no Staff_ID of their own claims nothing here; they
+        are identified by Primary Staff ID instead, checked separately.
+        """
+        if not row.import_source_id:
+            return None
         existing = await self._members.find_by_import_source_id(
-            self._tenant_id, client.id, row.import_source_id or ""
+            self._tenant_id, client.id, row.import_source_id
         )
         if existing is None:
             return None
@@ -331,7 +345,13 @@ class MemberRowChecker:
     ) -> tuple[str | None, RowCheck | None]:
         """The beneficiary's primary employee, or the rejection when it is not on file yet."""
         if not row.primary_import_source_id:
-            return None, None
+            if is_employee_relation(row.relation):
+                return None, None
+            return None, RowCheck(
+                state="invalid",
+                message="Primary Staff ID is required for a beneficiary",
+                client=client,
+            )
         primary = await self._members.find_by_import_source_id(
             self._tenant_id, client.id, row.primary_import_source_id
         )

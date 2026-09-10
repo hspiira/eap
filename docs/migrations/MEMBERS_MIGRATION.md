@@ -406,6 +406,46 @@ collide. Reproduced at the route level in
 (row comes back New) without the fix, passes (Duplicate, named batch and row)
 with it.
 
+## Fifth defect: a dependant could never import without their own Staff_ID
+
+`member_csv.py`'s row-level parse check required every row to carry a Staff_ID,
+with no exception for `Relation`. A real roster's dependants (spouse, child,
+etc.) are identified by `Primary Staff ID`, not their own Staff_ID — the
+manual "Add member" form has never required one for a beneficiary, and
+`MemberCreate.import_source_id` is documented as optional for anyone. The CSV
+path was the one place still treating it as mandatory for every row, which
+meant every dependant lacking their own Staff_ID was permanently `Invalid`
+("Stable Staff_ID is required") regardless of whether `Primary Staff ID`
+correctly resolved to an already-imported employee.
+
+Decision (confirmed 2026-09-10): a row whose `Relation` names anything other
+than Employee (blank defaults to Employee, matching `_member_create`'s own
+default) is exempt from needing its own Staff_ID, but a dirty one (still
+ending in `-`) is still flagged regardless of relation — that is bad data
+either way, not an absent one. In exchange, a dependant now must carry a
+resolvable `Primary Staff ID`: `_primary_member_id` previously treated a blank
+one as "no primary, fine" for every relation, which was correct for an
+employee but would have let an orphaned dependant in with no link to anyone.
+It now rejects a beneficiary row with neither ID: "Primary Staff ID is
+required for a beneficiary."
+
+Two more call sites assumed a Staff_ID was never blank and needed the same
+exemption to avoid a *new* defect from this one's fix:
+- `_claim_staff_id`'s intra-file duplicate guard keyed on `(client_id,
+  Staff_ID or "")`; two dependants with no Staff_ID in the same file would
+  have collided with each other on the shared `""` key. It now only claims a
+  key when Staff_ID is present.
+- `_already_enrolled` looked up `find_by_import_source_id(..., Staff_ID or
+  "")`; harmless against a real Postgres column (`NULL` never equals `''`,
+  so nothing already stored can match), but skipped explicitly anyway to
+  avoid depending on that column's NULL-vs-empty-string semantics.
+
+Pinned by five tests: two in `test_member_csv.py` (blank exempt for a
+dependant, dirty still flagged regardless of relation) and three at the route
+level (dependant with a resolving primary imports as `New`; dependant with
+neither id is `Invalid`; two id-less dependants in one file both come back
+`New`, not `Duplicate` of each other).
+
 ### Verification
 
 Migration `q6s8u0w2y4a6`, applied to the dev database and reversed, both
