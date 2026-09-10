@@ -87,12 +87,30 @@ describe("membersApi", () => {
     })
   })
 
-  it("applies a staged batch with no request body", async () => {
+  it("applies a staged batch with no request body, and a generous timeout", async () => {
     api.post.mockResolvedValue({ batch_id: "batch-1", imported: 1 })
 
     await membersApi.applyImport("batch-1")
 
-    expect(api.post).toHaveBeenCalledWith("/members/import/batch-1/apply")
+    expect(api.post).toHaveBeenCalledWith(
+      "/members/import/batch-1/apply",
+      undefined,
+      expect.objectContaining({ timeout: expect.any(Number) }),
+    )
+    const [, , options] = api.post.mock.calls[0]
+    expect(options.timeout).toBeGreaterThan(30000)
+  })
+
+  it("puts the limit in the query string when applying a chunk", async () => {
+    api.post.mockResolvedValue({ batch_id: "batch-1", imported: 1 })
+
+    await membersApi.applyImport("batch-1", 50)
+
+    expect(api.post).toHaveBeenCalledWith(
+      "/members/import/batch-1/apply?limit=50",
+      undefined,
+      expect.objectContaining({ timeout: expect.any(Number) }),
+    )
   })
 
   it("abandons a staged batch with a reason", async () => {

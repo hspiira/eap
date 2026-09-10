@@ -163,8 +163,8 @@ describe("chunked apply", () => {
     await userEvent.click(screen.getByRole("button", { name: "Import 1 rows" }))
 
     await waitFor(() => expect(api.applyImport).toHaveBeenCalledTimes(2))
-    expect(api.applyImport).toHaveBeenNthCalledWith(1, "batch-1", 200)
-    expect(api.applyImport).toHaveBeenNthCalledWith(2, "batch-1", 200)
+    expect(api.applyImport).toHaveBeenNthCalledWith(1, "batch-1", 50)
+    expect(api.applyImport).toHaveBeenNthCalledWith(2, "batch-1", 50)
     expect(api.listImportRows).toHaveBeenCalledTimes(3) // initial stage + one refresh per chunk
     await screen.findByRole("button", { name: "Done" })
     expect(screen.queryByRole("button", { name: "Cancel" })).not.toBeInTheDocument()
@@ -257,6 +257,34 @@ describe("chunked apply", () => {
         "2 rows checked · 1 ready · 1 already written · 0 skipped · 0 errors",
       )
     })
+  })
+
+  it("treats a lost connection as recoverable, not data loss, and refreshes what already wrote", async () => {
+    const rowOne = makeRow({ id: "row-1" })
+    const rowTwo = makeRow({ id: "row-2", row_number: 3 })
+    await stage([rowOne, rowTwo])
+
+    api.listImportRows.mockResolvedValueOnce({
+      items: [{ ...rowOne, imported_member_id: "member-1" }, rowTwo],
+      total: 2,
+      page: 1,
+      limit: 200,
+      has_more: false,
+    })
+    api.applyImport.mockRejectedValueOnce(
+      new ApiError("Request timeout: The request took too long", "TIMEOUT_ERROR", 0),
+    )
+
+    await userEvent.click(screen.getByRole("button", { name: "Import 2 rows" }))
+
+    expect(
+      await screen.findByText(
+        "Lost the connection partway through, but nothing already written was lost. Click Import to resume.",
+      ),
+    ).toBeInTheDocument()
+    // The row a prior, already-committed chunk wrote still shows as Imported.
+    expect(await screen.findByText("Imported")).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: "Import 1 rows" })).toBeInTheDocument()
   })
 })
 

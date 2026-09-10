@@ -21,11 +21,15 @@ describe("formatDelta", () => {
 })
 
 describe("formatKpi", () => {
-  it("compacts thousands", () => {
+  it("shows the whole figure, never a rounded 'k'", () => {
     expect(formatKpi(null)).toBe("-")
     expect(formatKpi(41)).toBe("41")
-    expect(formatKpi(7103)).toBe("7.1k")
-    expect(formatKpi(33050)).toBe("33k")
+    expect(formatKpi(7103)).toBe("7,103")
+    expect(formatKpi(33050)).toBe("33,050")
+  })
+
+  it("keeps two counts a rounded label would have collapsed together", () => {
+    expect(formatKpi(2500)).not.toBe(formatKpi(3499))
   })
 })
 
