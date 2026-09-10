@@ -229,6 +229,30 @@ async def test_stage_persists_a_batch_and_its_rows(api):
     assert rows[0].decision == "import"
 
 
+async def test_stage_accepts_a_day_first_date_of_birth(api):
+    """03/04/2026 reads as 3 April, matching the region this importer serves."""
+    api.clients.get_by_code.return_value = SimpleNamespace(
+        id=ClientId("c1"), name="Acme", code="ACME", tenant_id=TenantId("t1")
+    )
+
+    response = await api.http.post(
+        "/members/import",
+        files={
+            "file": (
+                "members.csv",
+                b"Company Code,Staff_ID,Name of Employee,Date of Birth\n"
+                b"ACME,HR-1,Amina,03/04/2026\n",
+                "text/csv",
+            )
+        },
+    )
+
+    assert response.status_code == 201, response.text
+    ((rows,), _) = api.imports.add_rows.call_args
+    assert rows[0].outcome == MemberImportRowOutcome.NEW
+    assert rows[0].date_of_birth == "03/04/2026"
+
+
 async def test_stage_batches_lookups_instead_of_one_query_per_row(api):
     """3,000+ rows one row at a time was slow enough to time out a serverless function.
 

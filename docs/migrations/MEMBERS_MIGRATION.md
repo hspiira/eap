@@ -529,6 +529,37 @@ watched both rows compute the identical `key:c1:HR-1` — the exact
 in `test_stage_flags_a_duplicate_row_with_a_default_skip_decision` (an
 already-enrolled duplicate's key never starts with `key:`).
 
+## Decision: Date of Birth accepts day-first input, not only ISO (2026-09-10)
+
+The importer required strict ISO (`YYYY-MM-DD`) for Date of Birth
+(`date.fromisoformat` in `_member_create`); anything else raised `ValueError`,
+caught by `_checked` and surfaced as an `Invalid` row. The owner's users read
+dates day-first (`dd/mm/yyyy`); requiring ISO for every roster was friction
+for no correctness gain, since a spreadsheet-typed `03/04/2026` is exactly as
+easy to get backwards as forwards without a convention to anchor it.
+
+Decision: `parse_roster_date` (`member_csv.py`) tries ISO first (unambiguous,
+and what the downloadable template still uses), then splits on `/` or `-` and
+resolves **day-first**. It only falls back to month-first when the day-first
+reading is not a real calendar date (`12/25/2026` cannot be day 12 of month
+25). There is no way to tell a genuinely ambiguous date apart from a
+transposed one — `03/04/2026` reads as 3 April under this rule, full stop.
+This is an explicit product decision, not a fact derivable from the data:
+confirm with the owner before this importer serves a client whose HR system
+exports month-first by convention, since such a roster would be silently
+misread rather than rejected.
+
+A 2-digit year (`03/04/26`) is rejected outright rather than guessed at.
+
+This only changes what the roster CSV accepts. Manual creation and the API
+schema (`MemberCreate.date_of_birth: date`) are untouched — Pydantic still
+requires ISO for a direct API call, which is correct: JSON has no
+"how the client's spreadsheet was typed" ambiguity to resolve.
+
+Pinned in `test_member_csv.py` (ISO, day-first, dash-separated, the
+month-first fallback, a 2-digit year rejected, and nonsense rejected) and
+`test_stage_accepts_a_day_first_date_of_birth` at the route level.
+
 ### Verification
 
 Migration `q6s8u0w2y4a6`, applied to the dev database and reversed, both

@@ -1,4 +1,36 @@
-from app.shared.utils.member_csv import parse_member_csv
+from datetime import date
+
+import pytest
+
+from app.shared.utils.member_csv import parse_member_csv, parse_roster_date
+
+
+def test_parse_roster_date_accepts_iso_first():
+    assert parse_roster_date("2026-04-03") == date(2026, 4, 3)
+
+
+def test_parse_roster_date_resolves_day_first():
+    """03/04/2026 is 3 April, not March 4: this importer serves a day-first region."""
+    assert parse_roster_date("03/04/2026") == date(2026, 4, 3)
+
+
+def test_parse_roster_date_accepts_dash_separators():
+    assert parse_roster_date("03-04-2026") == date(2026, 4, 3)
+
+
+def test_parse_roster_date_falls_back_to_month_first_when_day_first_is_not_a_real_date():
+    """12/25/2026 cannot be day 12 of month 25, so it must be 25 December."""
+    assert parse_roster_date("12/25/2026") == date(2026, 12, 25)
+
+
+def test_parse_roster_date_rejects_nonsense():
+    with pytest.raises(ValueError, match="Unrecognised date"):
+        parse_roster_date("not a date")
+
+
+def test_parse_roster_date_rejects_a_two_digit_year():
+    with pytest.raises(ValueError, match="Unrecognised date"):
+        parse_roster_date("03/04/26")
 
 
 def test_parser_requires_explicit_stable_staff_id():

@@ -9,7 +9,7 @@ that already landed.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import date, datetime
+from datetime import datetime
 
 from pydantic import ValidationError
 
@@ -27,7 +27,7 @@ from app.domain.repositories.outbox_repository import OutboxRepository
 from app.domain.value_objects.core import ClientId, EligibleMemberId, Email, TenantId, UserId
 from app.domain.value_objects.ids import MemberImportBatchId, MemberImportRowId
 from app.shared.handlers.audit_event_handler import AuditEventHandler
-from app.shared.utils.member_csv import MemberCsvRow, is_employee_relation
+from app.shared.utils.member_csv import MemberCsvRow, is_employee_relation, parse_roster_date
 from app.shared.utils.route_audit_helper import audit_change
 
 DECISIONS = {"import", "skip"}
@@ -172,7 +172,7 @@ def _member_create(
         work_email=row.work_email,
         personal_email=row.personal_email,
         gender=MemberGender(row.gender.title()) if row.gender else None,
-        date_of_birth=date.fromisoformat(row.date_of_birth) if row.date_of_birth else None,
+        date_of_birth=parse_roster_date(row.date_of_birth) if row.date_of_birth else None,
         phone=row.phone,
         staff_number=row.staff_number,
         national_id=row.national_id,
