@@ -1048,6 +1048,37 @@ roster of that size has been run against this fix. Confirming that requires
 re-running the actual I&M Bank roster through a deployed environment, which
 the owner is best placed to do.
 
+Update: driven end to end afterward with Playwright against the running dev
+API and a real Postgres database (not mocks), a throwaway user, and a
+disposable 250-row roster on the `dev` tenant, all cleaned up afterward.
+Confirmed for real: chunked apply progressing 200-then-50 across two calls
+with `remaining`/`done` behaving exactly as the frontend loop assumes; a
+plain re-apply on an `Applied` batch 409ing; day-first Date of Birth and
+Date Joined parsing correctly into a real row; and the joint write path
+(`_write_row` dispatching to `MemberRowUpdater.update`) actually revising a
+real member's job title end to end. This still does not establish anything
+about a 3,000+ row roster's real-world timing; it establishes the mechanism
+itself is correct against a real backend, which the mocked unit tests alone
+could not.
+
+## Tenth defect: the pre-apply summary counted an already-written row as skipped
+
+Found during the Playwright run above: cancel a chunked apply after its
+first 200-row chunk, and the still-Staged batch's summary line read "50
+ready · 200 skipped · 0 errors". Those 200 rows were not skipped, they were
+already written in the chunk that ran before Cancel took effect.
+`ImportSummary`'s not-yet-applied branch (`MemberImportDialog.tsx`) had only
+ever run before a batch could hold any written rows at all, since apply used
+to be all-or-nothing; chunking made "Staged, but partially written" a real,
+reachable state its formula never accounted for, folding `imported_member_id`
+rows into the same bucket as rows a reviewer actively decided to skip.
+
+Fixed by counting rows already carrying `imported_member_id` separately, as
+"already written", subtracted from `skipped` rather than counted within it.
+Pinned by a test that stages two rows, lets one write via a chunk, cancels
+before the second, and asserts the summary reads "2 rows checked · 1 ready ·
+1 already written · 0 skipped · 0 errors".
+
 ## Decision: a roster row can update the member it matched (2026-09-10)
 
 Until now a re-uploaded roster could only ever create. A row whose `Staff_ID`
