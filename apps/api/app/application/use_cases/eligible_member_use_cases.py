@@ -28,6 +28,7 @@ from app.domain.value_objects.core import (
     TenantId,
     UserId,
 )
+from app.domain.value_objects.staffing import EmploymentDetails
 from app.shared.utils.datetime import utc_now
 from app.shared.utils.generators import generate_cuid
 
@@ -65,6 +66,7 @@ class EnrolEligibleMemberUseCase:
         staff_number: str | None = None,
         national_id: str | None = None,
         passport_number: str | None = None,
+        employment: EmploymentDetails | None = None,
     ) -> tuple[EligibleMember, ClinicalSubject]:
         existing = await self._members.find_by_employer_member_id(
             tenant_id, client_id, employer_member_id
@@ -102,6 +104,7 @@ class EnrolEligibleMemberUseCase:
             import_source_id=import_source_id,
             national_id=national_id,
             passport_number=passport_number,
+            employment=employment,
             created_by=created_by,
             created_at=now,
             updated_at=now,

@@ -197,6 +197,21 @@ function MemberDetail({ member }: { member: Member }) {
                       <DetailRow label="Passport" value={member.passport_number} />
                     </DetailGrid>
                   </DetailCard>
+                  {member.employment ? (
+                    <DetailCard title="Employment">
+                      <DetailGrid>
+                        <DetailRow label="Job title" value={member.employment.job_title} />
+                        <DetailRow
+                          label="Classification"
+                          value={member.employment.job_classification}
+                        />
+                        <DetailRow label="Skill" value={member.employment.skill} />
+                        <DetailRow label="Department" value={member.employment.department} />
+                        <DetailRow label="Unit" value={member.employment.unit} />
+                        <DetailRow label="Contract" value={member.employment.employment_type} />
+                      </DetailGrid>
+                    </DetailCard>
+                  ) : null}
                   <MemberNextOfKinCard member={member} />
                 </div>
               </TabPanel>

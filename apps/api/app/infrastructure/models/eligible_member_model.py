@@ -78,6 +78,12 @@ class EligibleMemberModel(CuidMixin, TenantMixin, Base, TimestampMixin):
     import_source_id: Mapped[str | None] = mapped_column(String(255), nullable=True, index=True)
     national_id: Mapped[str | None] = mapped_column(String(100), nullable=True)
     passport_number: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    job_title: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    job_classification: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    skill: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    department: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    unit: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    employment_type: Mapped[str | None] = mapped_column(String(255), nullable=True)
     last_imported_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True
     )

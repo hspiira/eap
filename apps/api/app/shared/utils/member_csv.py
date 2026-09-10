@@ -15,7 +15,7 @@ def _key(value: str) -> str:
 def _value(row: dict[str, str | None], *keys: str) -> str | None:
     for key in keys:
         value = (row.get(key) or "").strip()
-        if value and value.casefold() not in {"n/a", "na", "null", "-"}:
+        if value and value.casefold() not in {"n/a", "#n/a", "na", "null", "-"}:
             return value
     return None
 
@@ -34,6 +34,12 @@ class MemberCsvRow:
     phone: str | None
     national_id: str | None
     passport_number: str | None
+    job_title: str | None
+    job_classification: str | None
+    skill: str | None
+    department: str | None
+    unit: str | None
+    employment_type: str | None
     status: str | None
     relation: str | None
     primary_import_source_id: str | None
@@ -76,6 +82,12 @@ def parse_member_csv(content: bytes) -> tuple[list[MemberCsvRow], list[dict[str,
             phone=_value(row, "phone", "phone_number", "mobile"),
             national_id=_value(row, "national_id", "national_identification_number"),
             passport_number=_value(row, "passport_number", "passport"),
+            job_title=_value(row, "job_title"),
+            job_classification=_value(row, "job_classification", "classification"),
+            skill=_value(row, "skill"),
+            department=_value(row, "department"),
+            unit=_value(row, "unit"),
+            employment_type=_value(row, "contract_type", "employment_type"),
             status=_value(row, "status"),
             relation=_value(row, "relation", "member_relation"),
             primary_import_source_id=_value(row, "primary_staff_id", "primary_import_source_id"),

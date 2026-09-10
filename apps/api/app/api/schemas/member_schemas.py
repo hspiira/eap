@@ -55,6 +55,30 @@ class MemberNextOfKinResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
+class MemberEmployment(BaseModel):
+    """Optional workforce attributes from the employer's roster.
+
+    Free text: the vocabularies are the employer's own. Held for record and
+    segmentation only, and read by no eligibility rule.
+    """
+
+    job_title: OptionalSanitizedStr = Field(None, max_length=255)
+    job_classification: OptionalSanitizedStr = Field(None, max_length=255)
+    skill: OptionalSanitizedStr = Field(None, max_length=255)
+    department: OptionalSanitizedStr = Field(None, max_length=255)
+    unit: OptionalSanitizedStr = Field(None, max_length=255)
+    employment_type: OptionalSanitizedStr = Field(
+        None,
+        max_length=255,
+        description=(
+            "The employee's contract of employment (e.g. Permanent, FTC). "
+            "Unrelated to the client's commercial contract."
+        ),
+    )
+
+    model_config = ConfigDict(extra="forbid")
+
+
 class MemberCreate(BaseModel):
     """Create a covered member; a login account is optional and separate."""
 
@@ -87,6 +111,7 @@ class MemberCreate(BaseModel):
     staff_number: SanitizedStr | None = Field(None, max_length=100)
     national_id: SanitizedStr | None = Field(None, max_length=100)
     passport_number: SanitizedStr | None = Field(None, max_length=100)
+    employment: MemberEmployment | None = None
 
     model_config = ConfigDict(extra="forbid")
 
@@ -128,6 +153,7 @@ class MemberUpdate(BaseModel):
     staff_number: SanitizedStr | None = Field(None, max_length=100)
     national_id: SanitizedStr | None = Field(None, max_length=100)
     passport_number: SanitizedStr | None = Field(None, max_length=100)
+    employment: MemberEmployment | None = None
 
     model_config = ConfigDict(extra="forbid")
 
@@ -168,6 +194,7 @@ class MemberResponse(BaseModel):
     import_source_id: str | None = None
     national_id: str | None = None
     passport_number: str | None = None
+    employment: MemberEmployment | None = None
     last_imported_at: datetime | None
     suspended_at: datetime | None
     terminated_at: datetime | None

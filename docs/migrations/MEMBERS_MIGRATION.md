@@ -252,7 +252,7 @@ preview-first importer. Its safe mapping is:
 | `Passport Number` | `passport_number` | Optional identification field. |
 | `Status` | member status | Map supported lifecycle values; review non-member statuses. |
 | `Staff Number` | import matching aid | Preserve for matching only unless the client confirms it is the canonical ID. |
-| `Job Title`, `Job Classification`, `Skill`, `Department`, `Unit`, `Contract type` | — | Exclude: these are employment-history/workforce fields, not wellness member data. |
+| `Job Title`, `Job Classification`, `Skill`, `Department`, `Unit`, `Contract type` | `employment.*` | ~~Exclude: these are employment-history/workforce fields, not wellness member data.~~ Reopened 2026-09-10, see below. Captured as optional free text. |
 | `Column2`, `Column3` | — | Ignore. |
 
 ~~The import phase must include preview, duplicate review, client resolution,
@@ -261,6 +261,89 @@ Number` is the client's canonical member ID.~~ The importer now provides all of
 those safeguards. `Staff_ID` is the required canonical identifier; rows with
 placeholders or blanks remain errors and `Staff Number` is retained only as
 reference data, never used as an identity fallback.
+
+## Decision reopened: employment details are captured (2026-09-10)
+
+The 2026-09-08 mapping table excluded `Job Title`, `Job Classification`,
+`Skill`, `Department`, `Unit` and `Contract type` as workforce fields rather
+than member data. The owner reopened that decision. They are now captured, all
+optional, and accepted through the roster import for any client.
+
+### What the source data shows
+
+Measured from `/Users/piira/Downloads/persons.csv`, 4,945 rows:
+
+| Column | Populated | Distinct |
+| --- | --- | --- |
+| Job Title | 375 (7.6%) | 192 |
+| Job Classification | 323 (6.5%) | 11 |
+| Skill | 329 (6.7%) | 6 |
+| Department | 329 (6.7%) | 18 |
+| Unit | 329 (6.7%) | 53 |
+| Contract type | 329 (6.7%) | 2 (Permanent, FTC) |
+
+Every populated row belongs to client `IM`, covering 100% of that client's
+rows. No other employer supplies any of them. `Job Classification` carries a
+literal `#N/A` in 17 rows.
+
+### Decisions
+
+1. **Free text, not reference tables.** The vocabularies are the employer's own
+   org chart (`SME Banking`, `Kampala Road branch`, `Executive Office`), not
+   shared platform taxonomy. A per-client reference table would hold one
+   client's values and, per `docs/gaps/TAXONOMY_MANAGEMENT_GAP.md`, could only
+   be maintained by script. Revisit if a second client supplies them.
+2. **Grouped in a value object.** `EmploymentDetails`
+   (`apps/api/app/domain/value_objects/staffing.py`) holds the six fields,
+   flattened to six nullable `VARCHAR(255)` columns on `eligible_members` and
+   `member_import_rows`. `update_roster_details` already took 14 keyword
+   arguments; six more flat parameters would have made it unreadable.
+3. **Named `employment_type`, not `contract_type`.** The source column is the
+   employee's contract of employment (Permanent, FTC). `contract_type` would
+   read as the client's commercial contract, which is a different aggregate
+   with its own `PricingModel`.
+4. **No eligibility meaning.** No domain rule reads these fields; they are
+   record and segmentation only. Pinned by
+   `tests/unit/domain/test_member_employment_details.py`.
+5. **`#N/A` normalises to null.** Added to the placeholder set the parser
+   already applied to `N/A`, `NA`, `null` and `-`, so the 17 dirty rows store
+   nothing rather than the literal. Not an import error: the owner chose to
+   accept these columns for any client without new validation failures.
+
+### Not done, and deliberately
+
+**These fields must stay out of report aggregation until PRIV-01 has
+small-cell suppression.** `docs/reviews/MODULES_REPAIR_PLAN.md:230` records
+that aggregates return values without it. Group sizes for client `IM`:
+
+| Field | Groups | Median size | Groups under 5 |
+| --- | --- | --- | --- |
+| Department | 18 | 7 | 6 (20 members) |
+| Unit | 53 | 5 | 24 (62 members) |
+
+Nearly half of `Unit`'s groups have fewer than five members, so a utilisation
+report broken down by unit would disclose counselling attendance at a cell
+size that identifies the person. Capture is safe; segmentation is not yet.
+
+The member import preview dialog
+(`apps/web/src/components/members/MemberImportDialog.tsx`) does not show the
+new columns. The file was uncommitted in the shared tree and belongs to
+another agent, so it was left alone. The values still import; they are only
+absent from the preview table.
+
+### Verification
+
+Migration `q6s8u0w2y4a6`, applied to the dev database and reversed, both
+confirmed against `information_schema`. Merge revision `p5r7t9v1x3z5` first
+resolves a pre-existing two-head divergence (`e3f5g7h9j1k3` and
+`n3q5s7u9w1y3`, both branched from `d8x1y3z5a7c9` on 2026-09-10) that made
+`alembic upgrade head` ambiguous.
+
+The real roster parses to the counts above, `job_classification` dropping to
+306 as the 17 `#N/A` rows normalise to null, and the six columns raise no new
+row issues: all 1,653 remain the pre-existing missing-`Staff_ID` errors.
+
+2,168 API unit tests and 753 web tests pass. Nothing is deployed.
 
 ## Open finding: next-of-kin relationship lookup returns a coroutine (2026-09-08)
 

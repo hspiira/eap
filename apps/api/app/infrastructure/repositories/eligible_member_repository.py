@@ -73,6 +73,12 @@ class EligibleMemberRepositoryImpl(EligibleMemberRepository):
             existing.import_source_id = new_model.import_source_id
             existing.national_id = new_model.national_id
             existing.passport_number = new_model.passport_number
+            existing.job_title = new_model.job_title
+            existing.job_classification = new_model.job_classification
+            existing.skill = new_model.skill
+            existing.department = new_model.department
+            existing.unit = new_model.unit
+            existing.employment_type = new_model.employment_type
             existing.last_imported_at = new_model.last_imported_at
             existing.suspended_at = new_model.suspended_at
             existing.terminated_at = new_model.terminated_at

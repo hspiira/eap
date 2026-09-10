@@ -13,7 +13,7 @@ from datetime import date, datetime
 
 from pydantic import ValidationError
 
-from app.api.schemas.member_schemas import MemberCreate
+from app.api.schemas.member_schemas import MemberCreate, MemberEmployment
 from app.application.use_cases.eligible_member_use_cases import EnrolEligibleMemberUseCase
 from app.core.security import TokenData
 from app.domain.entities.client import ClientEntity
@@ -88,6 +88,12 @@ def build_row_entity(
         phone=row.phone,
         national_id=row.national_id,
         passport_number=row.passport_number,
+        job_title=row.job_title,
+        job_classification=row.job_classification,
+        skill=row.skill,
+        department=row.department,
+        unit=row.unit,
+        employment_type=row.employment_type,
         status=row.status,
         relation=row.relation,
         primary_import_source_id=row.primary_import_source_id,
@@ -110,6 +116,12 @@ def csv_row_from_entity(row: MemberImportRowEntity) -> MemberCsvRow:
         phone=row.phone,
         national_id=row.national_id,
         passport_number=row.passport_number,
+        job_title=row.job_title,
+        job_classification=row.job_classification,
+        skill=row.skill,
+        department=row.department,
+        unit=row.unit,
+        employment_type=row.employment_type,
         status=row.status,
         relation=row.relation,
         primary_import_source_id=row.primary_import_source_id,
@@ -150,6 +162,14 @@ def _member_create(
         staff_number=row.staff_number,
         national_id=row.national_id,
         passport_number=row.passport_number,
+        employment=MemberEmployment(
+            job_title=row.job_title,
+            job_classification=row.job_classification,
+            skill=row.skill,
+            department=row.department,
+            unit=row.unit,
+            employment_type=row.employment_type,
+        ),
         relation=MemberRelation(row.relation or MemberRelation.EMPLOYEE.value),
         primary_employee_member_id=primary_member_id,
     )

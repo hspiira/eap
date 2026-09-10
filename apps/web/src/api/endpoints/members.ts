@@ -1,4 +1,10 @@
-import type { Member, MemberNextOfKin, MemberStats, ServiceSession } from "@/types/entities"
+import type {
+  Member,
+  MemberEmployment,
+  MemberNextOfKin,
+  MemberStats,
+  ServiceSession,
+} from "@/types/entities"
 import type {
   EligibilityStatus,
   MemberGender,
@@ -26,6 +32,7 @@ export interface MemberCreateRequest {
   staff_number?: string | null
   national_id?: string | null
   passport_number?: string | null
+  employment?: MemberEmployment | null
 }
 
 export type MemberUpdateRequest = Partial<Omit<MemberCreateRequest, "client_id">>

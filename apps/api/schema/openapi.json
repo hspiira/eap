@@ -9419,6 +9419,16 @@
             "description": "Do not set on create; the server always issues {client code}-001, -002, and so on. Reused internally to revalidate a PATCH that changes it.",
             "title": "Employer Member Id"
           },
+          "employment": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/MemberEmployment"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "gender": {
             "anyOf": [
               {
@@ -9620,6 +9630,87 @@
           "relation"
         ],
         "title": "MemberDuplicateMember",
+        "type": "object"
+      },
+      "MemberEmployment": {
+        "additionalProperties": false,
+        "description": "Optional workforce attributes from the employer's roster.\n\nFree text: the vocabularies are the employer's own. Held for record and\nsegmentation only, and read by no eligibility rule.",
+        "properties": {
+          "department": {
+            "anyOf": [
+              {
+                "maxLength": 255,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Department"
+          },
+          "employment_type": {
+            "anyOf": [
+              {
+                "maxLength": 255,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The employee's contract of employment (e.g. Permanent, FTC). Unrelated to the client's commercial contract.",
+            "title": "Employment Type"
+          },
+          "job_classification": {
+            "anyOf": [
+              {
+                "maxLength": 255,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Job Classification"
+          },
+          "job_title": {
+            "anyOf": [
+              {
+                "maxLength": 255,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Job Title"
+          },
+          "skill": {
+            "anyOf": [
+              {
+                "maxLength": 255,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Skill"
+          },
+          "unit": {
+            "anyOf": [
+              {
+                "maxLength": 255,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Unit"
+          }
+        },
+        "title": "MemberEmployment",
         "type": "object"
       },
       "MemberGender": {
@@ -10260,6 +10351,16 @@
             "title": "Employer Member Id",
             "type": "string"
           },
+          "employment": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/MemberEmployment"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "gender": {
             "anyOf": [
               {
@@ -10530,6 +10631,16 @@
               }
             ],
             "title": "Employer Member Id"
+          },
+          "employment": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/MemberEmployment"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "gender": {
             "anyOf": [
@@ -28943,6 +29054,28 @@
           }
         ],
         "summary": "Health"
+      }
+    },
+    "/health/outbox": {
+      "get": {
+        "description": "Whether the outbox worker is keeping up.\n\nReports unhealthy on the age of the oldest undelivered event, not on\ndepth. Nothing watched this before, and the worker being stopped showed\nup only as an empty audit_logs that nothing reads.",
+        "operationId": "outbox_health_health_outbox_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Outbox Health"
       }
     },
     "/industries/": {

@@ -48,6 +48,7 @@ from app.api.schemas.member_schemas import (
     MemberDuplicateCandidate,
     MemberDuplicateListResponse,
     MemberDuplicateMember,
+    MemberEmployment,
     MemberImportAbandonRequest,
     MemberImportApplyResponse,
     MemberImportBatchResponse,
@@ -116,6 +117,7 @@ from app.domain.value_objects.core import (
     TenantId,
     UserId,
 )
+from app.domain.value_objects.staffing import EmploymentDetails
 from app.shared.decorators import readonly, transactional
 from app.shared.handlers.audit_event_handler import AuditEventHandler
 from app.shared.utils.datetime import utc_now
@@ -124,6 +126,12 @@ from app.shared.utils.member_csv import MemberCsvRow, parse_member_csv
 from app.shared.utils.route_audit_helper import audit_change
 
 router = APIRouter(prefix="/members", tags=["members"])
+
+
+def _employment(data: MemberEmployment | None) -> EmploymentDetails | None:
+    if data is None:
+        return None
+    return EmploymentDetails.build(**data.model_dump())
 
 
 def _response(member: EligibleMember, client_name: str | None = None) -> MemberResponse:
@@ -151,6 +159,9 @@ def _response(member: EligibleMember, client_name: str | None = None) -> MemberR
         import_source_id=member.import_source_id,
         national_id=member.national_id,
         passport_number=member.passport_number,
+        employment=(
+            MemberEmployment.model_validate(vars(member.employment)) if member.employment else None
+        ),
         last_imported_at=member.last_imported_at,
         suspended_at=member.suspended_at,
         terminated_at=member.terminated_at,
@@ -399,6 +410,7 @@ async def _enrol(
         import_source_id=data.import_source_id,
         national_id=data.national_id,
         passport_number=data.passport_number,
+        employment=_employment(data.employment),
     )
 
 
@@ -1060,6 +1072,7 @@ async def update_member(
     details["personal_email"] = (
         Email(str(updated.personal_email)) if updated.personal_email else None
     )
+    details["employment"] = _employment(updated.employment)
     member.update_roster_details(
         **details, coverage_start=member.coverage_start, coverage_end=member.coverage_end
     )

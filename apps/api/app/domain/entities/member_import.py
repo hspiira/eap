@@ -123,6 +123,12 @@ class MemberImportRowEntity:
     phone: str | None = None
     national_id: str | None = None
     passport_number: str | None = None
+    job_title: str | None = None
+    job_classification: str | None = None
+    skill: str | None = None
+    department: str | None = None
+    unit: str | None = None
+    employment_type: str | None = None
     status: str | None = None
     relation: str | None = None
     primary_import_source_id: str | None = None

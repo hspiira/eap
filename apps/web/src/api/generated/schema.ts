@@ -3054,6 +3054,30 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/health/outbox": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Outbox Health
+         * @description Whether the outbox worker is keeping up.
+         *
+         *     Reports unhealthy on the age of the oldest undelivered event, not on
+         *     depth. Nothing watched this before, and the worker being stopped showed
+         *     up only as an empty audit_logs that nothing reads.
+         */
+        get: operations["outbox_health_health_outbox_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/industries/": {
         parameters: {
             query?: never;
@@ -11069,6 +11093,7 @@ export interface components {
              * @description Do not set on create; the server always issues {client code}-001, -002, and so on. Reused internally to revalidate a PATCH that changes it.
              */
             employer_member_id?: string | null;
+            employment?: components["schemas"]["MemberEmployment"] | null;
             gender?: components["schemas"]["MemberGender"] | null;
             /**
              * Import Source Id
@@ -11118,6 +11143,30 @@ export interface components {
             /** Id */
             id: string;
             relation: components["schemas"]["MemberRelation"];
+        };
+        /**
+         * MemberEmployment
+         * @description Optional workforce attributes from the employer's roster.
+         *
+         *     Free text: the vocabularies are the employer's own. Held for record and
+         *     segmentation only, and read by no eligibility rule.
+         */
+        MemberEmployment: {
+            /** Department */
+            department?: string | null;
+            /**
+             * Employment Type
+             * @description The employee's contract of employment (e.g. Permanent, FTC). Unrelated to the client's commercial contract.
+             */
+            employment_type?: string | null;
+            /** Job Classification */
+            job_classification?: string | null;
+            /** Job Title */
+            job_title?: string | null;
+            /** Skill */
+            skill?: string | null;
+            /** Unit */
+            unit?: string | null;
         };
         /**
          * MemberGender
@@ -11350,6 +11399,7 @@ export interface components {
             display_label: string | null;
             /** Employer Member Id */
             employer_member_id: string;
+            employment?: components["schemas"]["MemberEmployment"] | null;
             gender: components["schemas"]["MemberGender"] | null;
             /** Id */
             id: string;
@@ -11415,6 +11465,7 @@ export interface components {
             display_label?: string | null;
             /** Employer Member Id */
             employer_member_id?: string | null;
+            employment?: components["schemas"]["MemberEmployment"] | null;
             gender?: components["schemas"]["MemberGender"] | null;
             /** National Id */
             national_id?: string | null;
@@ -20912,6 +20963,26 @@ export interface operations {
         };
     };
     health_health_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    outbox_health_health_outbox_get: {
         parameters: {
             query?: never;
             header?: never;
