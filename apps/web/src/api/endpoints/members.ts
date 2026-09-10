@@ -69,7 +69,11 @@ export interface MemberImportBatch {
 }
 
 export type MemberImportRowOutcome = "New" | "Duplicate" | "Invalid" | "Failed"
-export type MemberImportRowDecision = "import" | "skip"
+/**
+ * "import" and "skip" belong to a New row; "update" to a Duplicate that
+ * matched an existing member (`matched_member_id`), and revises that member.
+ */
+export type MemberImportRowDecision = "import" | "skip" | "update"
 
 export interface MemberImportRow {
   id: string
@@ -83,6 +87,8 @@ export interface MemberImportRow {
   decision: MemberImportRowDecision
   employment?: MemberEmployment | null
   message?: string | null
+  /** The member this row matched. Set only on a Duplicate the roster may update. */
+  matched_member_id?: string | null
   imported_member_id?: string | null
 }
 
@@ -94,13 +100,15 @@ export interface MemberImportRowListResponse {
   has_more: boolean
 }
 
-/** What happened when a staged batch's importable rows were written. */
+/** What one chunked apply call wrote. Call again while `remaining` is above zero. */
 export interface MemberImportApplyResult {
   batch_id: string
   imported: number
+  updated: number
+  unchanged: number
   failed: number
-  skipped_already_imported: number
-  not_importable: number
+  remaining: number
+  done: boolean
 }
 
 export interface MemberDuplicateMember {
@@ -147,7 +155,7 @@ export const membersApi = {
     return apiClient.get<MemberImportRowListResponse>(`/members/import/${batchId}/rows`, params)
   },
 
-  /** Override one still-new row's Import/Skip decision before applying. */
+  /** Set one reviewed row's decision before applying. */
   async setImportRowDecision(
     batchId: string,
     rowId: string,
@@ -162,9 +170,13 @@ export const membersApi = {
     return apiClient.post<MemberImportBatch>(`/members/import/${batchId}/abandon`, { reason })
   },
 
-  /** Write every still-importable row, one at a time, then close the batch. */
-  async applyImport(batchId: string): Promise<MemberImportApplyResult> {
-    return apiClient.post<MemberImportApplyResult>(`/members/import/${batchId}/apply`)
+  /**
+   * Write up to `limit` still-pending rows. Call again while the result's
+   * `done` is false; the batch only closes once a call finds nothing left.
+   */
+  async applyImport(batchId: string, limit?: number): Promise<MemberImportApplyResult> {
+    const query = limit ? `?limit=${limit}` : ""
+    return apiClient.post<MemberImportApplyResult>(`/members/import/${batchId}/apply${query}`)
   },
 
   async list(params?: MemberListParams): Promise<PaginatedResponse<Member>> {

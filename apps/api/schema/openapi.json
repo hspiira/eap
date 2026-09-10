@@ -9387,6 +9387,19 @@
             "title": "Client Id",
             "type": "string"
           },
+          "coverage_start": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "When this person's cover actually began, if known (e.g. a roster's Date Joined). Left blank, cover is treated as starting when the record was created here, which understates tenure for anyone imported after the fact.",
+            "title": "Coverage Start"
+          },
           "date_of_birth": {
             "anyOf": [
               {
@@ -9739,11 +9752,15 @@
         "type": "object"
       },
       "MemberImportApplyResponse": {
-        "description": "What happened when a staged batch's importable rows were written.",
+        "description": "What this one chunked call wrote. Call again while remaining is above zero.",
         "properties": {
           "batch_id": {
             "title": "Batch Id",
             "type": "string"
+          },
+          "done": {
+            "title": "Done",
+            "type": "boolean"
           },
           "failed": {
             "title": "Failed",
@@ -9753,21 +9770,27 @@
             "title": "Imported",
             "type": "integer"
           },
-          "not_importable": {
-            "title": "Not Importable",
+          "remaining": {
+            "title": "Remaining",
             "type": "integer"
           },
-          "skipped_already_imported": {
-            "title": "Skipped Already Imported",
+          "unchanged": {
+            "title": "Unchanged",
+            "type": "integer"
+          },
+          "updated": {
+            "title": "Updated",
             "type": "integer"
           }
         },
         "required": [
           "batch_id",
           "imported",
+          "updated",
+          "unchanged",
           "failed",
-          "skipped_already_imported",
-          "not_importable"
+          "remaining",
+          "done"
         ],
         "title": "MemberImportApplyResponse",
         "type": "object"
@@ -9855,12 +9878,13 @@
       },
       "MemberImportRowDecisionRequest": {
         "additionalProperties": false,
-        "description": "Override one still-new row's Import/Skip decision before applying.",
+        "description": "Set what happens to one reviewed row before the batch is applied.\n\n\"import\" and \"skip\" belong to a New row; \"update\" to a duplicate that\nmatched an existing member. The row itself refuses a decision its outcome\ndoes not allow.",
         "properties": {
           "decision": {
             "enum": [
               "import",
-              "skip"
+              "skip",
+              "update"
             ],
             "title": "Decision",
             "type": "string"
@@ -9983,6 +10007,17 @@
               }
             ],
             "title": "Imported Member Id"
+          },
+          "matched_member_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Matched Member Id"
           },
           "message": {
             "anyOf": [
@@ -31594,7 +31629,7 @@
     },
     "/members/import/{batch_id}/apply": {
       "post": {
-        "description": "Write every still-importable row, one at a time, then close the batch.\n\nApplying a second time is refused, so a replayed request cannot write\ntwice. A row that fails to write does not stop the rest; the rows\nalready written stay written.",
+        "description": "Write up to `limit` still-pending rows, one at a time, in their own transaction.\n\nA roster of thousands of rows cannot be written in a single call without\nrisking a platform request timeout, since each row costs its own\nround trip and commit. Call this repeatedly while `remaining` in the\nresponse is above zero; `list_pending_rows` re-queries what is left each\ntime rather than trusting an offset, so a client that stops calling\n(a closed tab, a timeout) leaves the batch safely Staged for the next\ncall to continue from exactly where the last one left off, with nothing\nskipped or written twice. The batch only closes -- flips to Applied,\nfires its audit event -- once a call finds nothing left to write.",
         "operationId": "apply_member_import_members_import__batch_id__apply_post",
         "parameters": [
           {
@@ -31604,6 +31639,20 @@
             "schema": {
               "title": "Batch Id",
               "type": "string"
+            }
+          },
+          {
+            "description": "Max rows to write in this call. Keep calling while the response's remaining is above zero; the batch only closes once nothing is left.",
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 100,
+              "description": "Max rows to write in this call. Keep calling while the response's remaining is above zero; the batch only closes once nothing is left.",
+              "maximum": 500,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
             }
           }
         ],
@@ -31734,7 +31783,7 @@
     },
     "/members/import/{batch_id}/rows/{row_id}": {
       "patch": {
-        "description": "Override one still-new row's Import/Skip decision before applying.",
+        "description": "Set one reviewed row's decision before the batch is applied.\n\nA New row takes import or skip; a duplicate that matched a member takes\nupdate or skip. Any other row refuses every decision.",
         "operationId": "set_member_import_row_decision_members_import__batch_id__rows__row_id__patch",
         "parameters": [
           {

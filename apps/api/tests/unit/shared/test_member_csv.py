@@ -82,6 +82,18 @@ def test_parser_maps_member_profile_fields():
     assert rows[0].passport_number == "B123"
 
 
+def test_parser_maps_date_joined_and_leaves_it_blank_when_absent():
+    rows, issues = parse_member_csv(
+        b"Company Code,Staff_ID,Name of Employee,Date Joined\nACME,AC-1,Jane Doe,03/04/2026\n"
+    )
+    assert issues == []
+    assert rows[0].date_joined == "03/04/2026"
+
+    rows, issues = parse_member_csv(b"Company Code,Staff_ID,Name of Employee\nACME,AC-2,John Doe\n")
+    assert issues == []
+    assert rows[0].date_joined is None
+
+
 def test_parser_maps_the_optional_employment_columns():
     rows, issues = parse_member_csv(
         b"Company Code,Staff_ID,Name of Employee,Job Title,Job Classification,Skill,"

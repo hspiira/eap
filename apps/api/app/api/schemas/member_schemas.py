@@ -111,6 +111,14 @@ class MemberCreate(BaseModel):
     staff_number: SanitizedStr | None = Field(None, max_length=100)
     national_id: SanitizedStr | None = Field(None, max_length=100)
     passport_number: SanitizedStr | None = Field(None, max_length=100)
+    coverage_start: date | None = Field(
+        None,
+        description=(
+            "When this person's cover actually began, if known (e.g. a roster's Date "
+            "Joined). Left blank, cover is treated as starting when the record was "
+            "created here, which understates tenure for anyone imported after the fact."
+        ),
+    )
     employment: MemberEmployment | None = None
 
     model_config = ConfigDict(extra="forbid")
@@ -286,6 +294,9 @@ class MemberImportRowResponse(BaseModel):
     decision: str
     employment: MemberEmployment | None = None
     message: str | None = None
+    #: The member this row matched. Present only on a duplicate the roster may
+    #: update, which is what puts "update" among its allowed decisions.
+    matched_member_id: str | None = None
     imported_member_id: str | None = None
 
 
@@ -298,9 +309,14 @@ class MemberImportRowListResponse(BaseModel):
 
 
 class MemberImportRowDecisionRequest(BaseModel):
-    """Override one still-new row's Import/Skip decision before applying."""
+    """Set what happens to one reviewed row before the batch is applied.
 
-    decision: Literal["import", "skip"]
+    "import" and "skip" belong to a New row; "update" to a duplicate that
+    matched an existing member. The row itself refuses a decision its outcome
+    does not allow.
+    """
+
+    decision: Literal["import", "skip", "update"]
 
     model_config = ConfigDict(extra="forbid")
 
@@ -314,10 +330,12 @@ class MemberImportAbandonRequest(BaseModel):
 
 
 class MemberImportApplyResponse(BaseModel):
-    """What happened when a staged batch's importable rows were written."""
+    """What this one chunked call wrote. Call again while remaining is above zero."""
 
     batch_id: str
     imported: int
+    updated: int
+    unchanged: int
     failed: int
-    skipped_already_imported: int
-    not_importable: int
+    remaining: int
+    done: bool

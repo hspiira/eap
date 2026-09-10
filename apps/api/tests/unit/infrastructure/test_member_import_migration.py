@@ -161,6 +161,74 @@ async def test_a_replay_key_is_unique_per_tenant(migration_db):
         )
 
 
+async def _insert_row(connection, row_id: str, row_number: int, **values) -> None:
+    columns = {
+        "id": row_id,
+        "tenant_id": "t1",
+        "batch_id": "b1",
+        "row_number": row_number,
+        "outcome": "New",
+        "decision": "import",
+        "imported_member_id": None,
+        **values,
+    }
+    names = ", ".join(columns)
+    binds = ", ".join(f":{name}" for name in columns)
+    await connection.execute(
+        text(f"INSERT INTO member_import_rows ({names}) VALUES ({binds})"), columns
+    )
+
+
+async def test_restaging_a_file_reclaims_a_file_scoped_key_an_imported_row_holds(migration_db):
+    """A dependant with no Staff_ID of their own is keyed by file and row number.
+
+    That key is recomputed identically the next time the same file is staged,
+    so a row still holding one after it imported collides with its own
+    successor on (tenant_id, replay_key) and takes the whole insert down with
+    it. Only the identity form, `key:{client}:{staff_id}`, is a claim worth
+    keeping past a write.
+    """
+    connection, migration = migration_db
+    await connection.run_sync(lambda conn: migrate(conn, migration.upgrade))
+    await connection.execute(text("INSERT INTO eligible_members VALUES ('m1')"))
+    await _insert_batch(connection, "b1", "sha256:same", "Applied")
+    await _insert_row(
+        connection,
+        "r1",
+        1,
+        replay_key="file:sha256:same:row:2",
+        imported_member_id="m1",
+    )
+
+    session = AsyncSession(bind=connection, expire_on_commit=False)
+    released = await MemberImportRepositoryImpl(session).release_superseded_rows(
+        TenantId("t1"), "sha256:same"
+    )
+
+    assert released == 1
+    key = await connection.scalar(text("SELECT replay_key FROM member_import_rows WHERE id = 'r1'"))
+    assert key == "released:b1:file:sha256:same:row:2"
+
+
+async def test_an_imported_row_keeps_the_staff_id_it_claimed(migration_db):
+    """The identity key is the whole point of a replay key; releasing it would
+    let the next staging of the same file enrol that member a second time."""
+    connection, migration = migration_db
+    await connection.run_sync(lambda conn: migrate(conn, migration.upgrade))
+    await connection.execute(text("INSERT INTO eligible_members VALUES ('m1')"))
+    await _insert_batch(connection, "b1", "sha256:same", "Applied")
+    await _insert_row(connection, "r1", 1, replay_key="key:c1:HR-1", imported_member_id="m1")
+
+    session = AsyncSession(bind=connection, expire_on_commit=False)
+    released = await MemberImportRepositoryImpl(session).release_superseded_rows(
+        TenantId("t1"), "sha256:same"
+    )
+
+    assert released == 0
+    key = await connection.scalar(text("SELECT replay_key FROM member_import_rows WHERE id = 'r1'"))
+    assert key == "key:c1:HR-1"
+
+
 async def test_downgrade_removes_both_tables(migration_db):
     connection, migration = migration_db
     await connection.run_sync(lambda conn: migrate(conn, migration.upgrade))

@@ -914,3 +914,394 @@ Discoveries recorded, not fixed here (out of scope for this change):
   call is a silent no-op today. Member import does not repeat this: `stage_member_import`
   calls `batch.mark_staged(at=now)` before persisting, so the equivalent
   `MemberImportBatchStaged` event actually fires.
+
+## Eighth defect: applying a roster silently dropped employment (2026-09-10)
+
+A member applied from a roster row with Job Title, Department, etc. always
+ended up with no employment record, even though the same data displayed
+correctly in the staging preview (which reads the staged row's own
+persisted columns, untouched by apply). `MemberRowImporter.enrol`
+(`member_import.py`) builds `check.data` (a `MemberCreate`, which does carry
+`employment`) but calls `EnrolEligibleMemberUseCase.execute(...)` with an
+explicit keyword-argument list that never included `employment` — the
+parameter defaults to `None` and the use case builds the real
+`EligibleMember` accordingly. Nothing raised: a missing keyword argument
+with a default is not an error.
+
+Fixed by passing `employment=EmploymentDetails.build(**data.employment.model_dump())
+if data.employment else None` alongside the rest of `enrol`'s call, the same
+conversion `_employment()` already does for manual create/update in
+`members.py`. Pinned in
+`test_apply_carries_employment_details_into_the_real_member`: fails (`None`)
+on the pre-fix code, passes (`job_title`/`department` both present on the
+saved entity) on the fix.
+
+## Feature: a roster's Date Joined sets coverage_start (2026-09-10)
+
+The owner reported that "member since" style dates read as misleading:
+importing someone today always set their record's start to today, even when
+the owner is about to backdate that person's sessions to 2024. `EligibleMember`
+already has `coverage_start`/`coverage_end` columns and
+`is_currently_eligible()` already reads them (`coverage_start > today` makes
+someone not-yet-eligible; a past `coverage_start` has no effect beyond
+recording when cover began), but nothing let a caller set `coverage_start` on
+create — not the roster importer, not the API schema, not manual creation.
+
+Added a `Date Joined` roster column (aliases `member_since`, `coverage_start`),
+parsed with the same `parse_roster_date` day-first/ISO rule as Date of Birth,
+feeding a new `MemberCreate.coverage_start` field. Left blank, behaviour is
+unchanged: no `coverage_start` is set, same as before this change. Wired
+through both roster import (`MemberRowImporter.enrol`) and manual creation
+(`_enrol` in `members.py`), so the same gap the eighth defect closed for
+`employment` doesn't reopen here for a different field.
+
+`coverage_start` is deliberately **not** editable through the general
+`PATCH /members/{id}` update, matching `import_source_id`: "set once,"
+per `update_member`'s existing `coverage_start=member.coverage_start`
+override, now also excluded from the update's `details` dict so it does not
+collide with that override as a duplicate keyword argument. Revising it after
+creation is a controlled, audited action (or none exists yet), not a general
+profile edit.
+
+Migration `r7t9v1x3z5b7` adds one nullable `String(20)` column,
+`member_import_rows.date_joined`, mirroring `date_of_birth`'s existing shape
+exactly (raw staged text, parsed at check time, no schema change to
+`eligible_members` since `coverage_start` already exists there). Verified
+against the local dev database: `alembic upgrade head`, `downgrade -1`, and
+`upgrade head` again all clean.
+
+Pinned by: a parser test (`Date Joined` mapped, blank when absent), a
+round-trip test alongside the existing employment ones (the same class of bug
+the eighth defect was — a field persisted on stage but not read back at
+confirmation, or vice versa), and two route-level apply tests (`Date Joined`
+becomes `coverage_start`; blank leaves it unset).
+
+## Ninth defect: applying a roster timed out the same way staging once did, and its fix (2026-09-10)
+
+The owner reported that of 3,000+ staged rows, only about 190 were actually
+applied, with `No session found in parameter 'db' for list_members` in the
+logs. Cause: `apply_member_import` wrote every importable row of the batch in
+one request, one row per commit, the same shape the sixth defect fixed for
+staging. A roster large enough to write for several minutes exceeds the
+platform's request timeout mid-loop; the request is killed, the surrounding
+`AsyncSession` is torn down, and whatever background work was mid-flight (a
+vocabulary lookup cache refresh, in this case) finds its session already
+gone. Nothing rolls back the rows already committed in earlier iterations of
+that same request, so the batch is left holding a partial write with no
+record of where it stopped.
+
+Fix: made apply chunked and resumable, matching the batching precedent
+already set for staging.
+
+- `MemberImportRepository` gained `list_pending_rows(tenant_id, batch_id,
+  limit)`, `count_pending_rows`, and `count_imported_rows`. `list_pending_rows`
+  re-queries what is left by outcome/decision/`imported_member_id` each call
+  rather than trusting a caller-supplied offset, so a chunk that never
+  returns (closed tab, another timeout) leaves the batch safely resumable
+  from exactly where it stopped, with nothing skipped or written twice.
+- `POST /members/import/{batch_id}/apply` takes a `limit` query parameter
+  (default 100, max 500) and writes at most that many rows per call, each in
+  its own commit as before. The response reports what that one call wrote
+  (`imported`, `updated`, `unchanged`, `failed`), how many rows are still
+  `remaining`, and whether the batch is `done`. The batch only flips to
+  Applied and fires its audit event once a call finds nothing left to write.
+  A client is expected to keep calling while `remaining` is above zero.
+- The frontend (`MemberImportDialog`) loops `applyImport` in 200-row chunks,
+  accumulating the running totals and refreshing the row table after every
+  chunk, so the review table updates as the batch progresses rather than
+  only once at the end. A compact status bar between the table and the
+  sheet's footer shows the file name, a live count/total, and a percentage
+  while a chunk is in flight, with a Cancel button that stops the loop after
+  the in-flight chunk finishes (never mid-request); cancelling leaves the
+  batch Staged with whatever was already written, resumable by pressing
+  Import again.
+
+This lands in the same files another session was actively extending to let
+a re-imported roster update, not only create, a matching member (`decision:
+"update"`, `MemberRowUpdater`, `matched_member_id`). The two designs compose:
+`list_pending_rows` already covers both a New row decided "import" and a
+matched Duplicate row decided "update"; `_write_row` in `members.py` (renamed
+from `_apply_row`) dispatches on `row.decision` to `MemberRowImporter.enrol`
+or `MemberRowUpdater.update` accordingly. Picked up and completed one part of
+that other session's in-progress edit left mid-save: `_write_row` was
+referenced but undefined, and `MemberImportApplyResponse` was constructed
+with `updated`/`unchanged` fields the schema did not yet declare, silently
+dropping them (Pydantic v2 ignores unrecognized constructor kwargs by
+default). Added the two fields to the schema and finished `_write_row` using
+the already-complete `MemberRowChecker.updatable`/`existing` and
+`MemberRowUpdater.update` from that session's own work, without changing its
+design.
+
+Verified: the full backend unit suite (2,189 passed) and full frontend unit
+suite (766 passed) both pass against the combined state, including two new
+frontend tests exercising the chunked loop directly (`chunked apply` describe
+block in `MemberImportDialog.test.tsx`): one asserting `applyImport` is
+polled until `done`, refreshing the table each time; one asserting the
+progress bar's live count/percentage text and that Cancel stops the loop
+after, not during, the in-flight chunk.
+
+Not verified: whether this closes the specific production incident reported
+(190 of 3,000+ rows applied). The timeout hypothesis matches the logged
+error and the same class of bug the sixth defect already confirmed for
+staging on this same roster, but no production or load test against a
+roster of that size has been run against this fix. Confirming that requires
+re-running the actual I&M Bank roster through a deployed environment, which
+the owner is best placed to do.
+
+Update: driven end to end afterward with Playwright against the running dev
+API and a real Postgres database (not mocks), a throwaway user, and a
+disposable 250-row roster on the `dev` tenant, all cleaned up afterward.
+Confirmed for real: chunked apply progressing 200-then-50 across two calls
+with `remaining`/`done` behaving exactly as the frontend loop assumes; a
+plain re-apply on an `Applied` batch 409ing; day-first Date of Birth and
+Date Joined parsing correctly into a real row; and the joint write path
+(`_write_row` dispatching to `MemberRowUpdater.update`) actually revising a
+real member's job title end to end. This still does not establish anything
+about a 3,000+ row roster's real-world timing; it establishes the mechanism
+itself is correct against a real backend, which the mocked unit tests alone
+could not.
+
+## Tenth defect: the pre-apply summary counted an already-written row as skipped
+
+Found during the Playwright run above: cancel a chunked apply after its
+first 200-row chunk, and the still-Staged batch's summary line read "50
+ready · 200 skipped · 0 errors". Those 200 rows were not skipped, they were
+already written in the chunk that ran before Cancel took effect.
+`ImportSummary`'s not-yet-applied branch (`MemberImportDialog.tsx`) had only
+ever run before a batch could hold any written rows at all, since apply used
+to be all-or-nothing; chunking made "Staged, but partially written" a real,
+reachable state its formula never accounted for, folding `imported_member_id`
+rows into the same bucket as rows a reviewer actively decided to skip.
+
+Fixed by counting rows already carrying `imported_member_id` separately, as
+"already written", subtracted from `skipped` rather than counted within it.
+Pinned by a test that stages two rows, lets one write via a chunk, cancels
+before the second, and asserts the summary reads "2 rows checked · 1 ready ·
+1 already written · 0 skipped · 0 errors".
+
+## Decision: a roster row can update the member it matched (2026-09-10)
+
+Until now a re-uploaded roster could only ever create. A row whose `Staff_ID`
+already belonged to a member was classified `Duplicate` and was inert: it
+could not be imported, could not be skipped into anything, and carried no
+decision anyone could change. The header said so plainly, "existing members
+are never overwritten".
+
+That is a narrower rule than the work needs. An HR roster is re-exported and
+re-uploaded as a matter of course, with corrections and newly filled columns
+in it, and under the old rule every one of those corrections had to be
+retyped by hand on each member's own screen. The owner asked whether this was
+a real need or over-engineering. It is a real need: the same file that
+carries new joiners carries updated phone numbers and job titles for everyone
+else, and there was no path for the second half of that file at all.
+
+Decision: a third per-row decision, `update`, available only on a `Duplicate`
+row that resolved to a member. It sits alongside `import`/`skip` in the same
+review-before-apply flow the batch already had, so nothing is written until a
+person has seen the row and chosen it.
+
+### What "update" is allowed to change, and the blank-cell rule
+
+The question that mattered here and is not answerable from the data: when the
+new roster leaves a cell blank that the member already has a value for,
+should the update clear it or leave it alone?
+
+Decision: **blank leaves it alone.** Only a cell the roster actually carries
+can overwrite one. An import adds and corrects; it never clears. The reason
+is that a roster export is routinely partial: an HR system exports the
+columns it owns, and a file that says nothing about `Passport Number` is not
+asserting that the member has no passport. Reading omission as deletion would
+let one narrow re-upload silently destroy data no column in it referred to,
+and that loss is not recoverable from the file that caused it. The cost of
+the rule is real and should be stated: **there is no way to clear a field
+through the importer.** Emptying one stays an explicit act on the member's
+own record. If a client ever needs bulk clearing, it needs its own explicit
+mechanism (a sentinel value, or a "columns present in this file are
+authoritative" mode), not a reinterpretation of blank.
+
+`N/A`, `#N/A`, `na`, `null` and `-` are already normalized to blank by
+`_value` in `member_csv.py`, so they mean "no opinion" here too.
+
+Identity and family structure are deliberately outside what an update
+touches: `client`, `Staff_ID` (`import_source_id`), the member code
+(`employer_member_id`), `relation`, and `primary_employee_member_id`. The
+first three are what the match is made on or are server-issued. The last two
+carry aggregate invariants a per-row apply loop cannot settle: an employee
+with beneficiaries cannot become a dependant without those beneficiaries
+being reassigned first, which `_validate_roster_update` (`members.py:249`)
+enforces on the interactive path and which a bulk loop has no sensible way to
+resolve.
+
+So a row whose `Relation` contradicts the member's **refuses the whole
+update** rather than applying everything except the relationship. Silently
+ignoring a column the roster did fill is the worse failure of the two: the
+uploader would believe the file had been honoured. The row stays `Duplicate`,
+matches no member, and carries the reason. A blank `Relation` takes no
+position and leaves a dependant updatable, rather than defaulting to Employee
+and manufacturing a conflict.
+
+`Status` is applied through the same `_apply_imported_status` transitions a
+new import uses, so a roster marking leavers as Terminated does that on
+re-upload. Blank changes nothing. A transition the domain refuses (Active
+against an already-Terminated member, which `reinstate` rejects) fails that
+one row with the domain's own message rather than being swallowed;
+re-employing someone stays a deliberate act.
+
+### Consequences in the code
+
+- `matched_member_id` on `member_import_rows` (migration `s8u0w2y4a6c8`),
+  set at staging time by `_already_enrolled` and withheld when
+  `update_blocked` finds a reason. It is the single test for "is Update on
+  offer for this row": `MemberImportRowEntity.allowed_decisions` returns
+  `{update, skip}` only when it is set, `{import, skip}` for a New row, and
+  nothing otherwise.
+- Only the `_already_enrolled` `Duplicate` is matchable. The other
+  `Duplicate`, a row whose Staff_ID is still claimed by an unresolved batch
+  (`_already_staged_elsewhere`), resolved to no member and stays as inert as
+  every `Duplicate` used to be.
+- A matched `Duplicate` still **stages as `skip`**. Update is never a
+  default, so a batch nobody reviews writes to no existing member and the
+  previous behaviour is preserved exactly for anyone who ignores the control.
+- `roster_patch` computes only the fields that would actually change, so a
+  re-uploaded unchanged roster writes nothing, saves nothing and audits
+  nothing. Those rows are counted `unchanged` rather than `updated`: a file
+  of 3,000 rows where 2,900 match already should say so, not claim 2,900
+  edits. `MemberImportApplyResponse` carries both counts.
+- Employment details merge field by field (`_merged_employment`), so a roster
+  carrying only `Job Title` does not wipe the `Department` beside it.
+- The update is re-judged at apply time against the member as they now stand,
+  like every other row, and goes through `audit_change` with the pre-update
+  entity as `old_entity`, so the audit record carries a real field diff.
+- Dead code removed while here: `MemberRowChecker.check` took a `decision`
+  argument that no caller had ever passed (`members.py:840` and `:968` are
+  the only two call sites), along with the `_rejected_input` branch and the
+  `state="skipped"` result that only it could reach. `_OUTCOME_BY_STATE` has
+  no `skipped` key, so that branch would have raised `KeyError` in
+  `build_row_entity` had anything reached it.
+
+### Tenth defect, found while doing this: a file-scoped replay key held past a write
+
+`_release` gave up the keys of rows that "never produced a member"
+(`imported_member_id IS NULL`). That predicate is wrong for one key form, and
+the bug predates this feature.
+
+A row with no `Staff_ID` of its own, which a dependant is allowed to have
+since the fifth defect, is keyed `file:{hash}:row:{n}`. That form names one
+row of one file, and staging the same file again recomputes the identical
+string. So once such a row imports successfully it keeps a key its own
+successor will collide with, and re-uploading that identical roster fails the
+whole insert on `uq_member_import_rows_tenant_replay` -- the same
+whole-batch `IntegrityError` the seventh defect fixed, reached by a different
+route. Only the identity form, `key:{client}:{staff_id}`, is a claim worth
+holding past a write.
+
+Fixed by widening the predicate to `imported_member_id IS NULL OR replay_key
+LIKE 'file:%'`. `FILE_PREFIX` now lives in `replay_key.py` beside the other
+two prefixes rather than being spelled out at each site.
+
+This mattered for the feature as well as on its own: an applied `update` row
+sets `imported_member_id` while holding a `file:`-scoped key, so without the
+fix the first re-upload after any update would have hit it every time.
+
+### Verification
+
+Backend, all passing and run locally:
+
+- `tests/unit/api/test_members_routes.py`, 88 tests. Eleven are new: staging
+  names the matched member and still defaults to `skip`; staging withholds
+  the match on a contradicting `Relation`; a row claimed by another batch
+  matches nobody; `PATCH` accepts `update` on a matched duplicate and refuses
+  both `update` on an unmatched one and `import` on a matched one; apply
+  writes the roster's values onto the matched member; apply leaves a blank
+  cell's stored value alone; apply counts a no-op row `unchanged` and saves
+  nothing; apply moves the member to the roster's status; apply fails an
+  update whose member has since gone.
+- `tests/unit/api/test_member_roster_update.py`, 26 tests, new. Pins the
+  blank-cell rule field by field (text, email, date of birth, date joined,
+  gender, employment), email normalization before comparison, day-first date
+  reading, per-field employment merge, and every `update_blocked` reason.
+- `tests/unit/infrastructure/test_member_import_migration.py`, 8 tests, two
+  new, and these run against a real PostgreSQL rather than being skipped:
+  a file-scoped key an imported row holds is released on restage; an
+  identity key an imported row holds is not. The first was confirmed to fail
+  (`assert 0 == 1`) with the `_release` fix reverted, so it pins the defect
+  and not just the current behaviour.
+
+Frontend: `MemberImportDialog.test.tsx`, 13 tests, five new, all passing.
+Update/Skip offered on a matched duplicate and Import withheld; no control at
+all on an unmatched one; a matched duplicate is not queued until someone
+chooses Update; choosing it re-labels the apply button "Update N members";
+an applied update reports separately from an import.
+
+Migration `s8u0w2y4a6c8` was applied and reversed against a real PostgreSQL
+(a scratch schema on the local test database), both confirmed against
+`information_schema`: upgrade adds `matched_member_id` as
+`character varying(25)`, `is_nullable = YES`, with
+`fk_member_import_rows_matched_member` referencing `eligible_members` with
+`ON DELETE SET NULL`; downgrade removes the column and the constraint and
+leaves the table exactly as it was. `alembic heads` reports the single head
+`s8u0w2y4a6c8`, so no branch was introduced.
+
+End to end: `tests/e2e/test_member_roster_update_api.py`, 14 tests, new, run
+against a real PostgreSQL through the actual routes rather than mocked
+repositories. A first roster enrols a member; a second matches them and
+offers Update; applying without choosing Update leaves them untouched;
+choosing it writes the roster's values; a blank Email Address and Department
+do not clear the stored ones; the member code and Staff_ID survive; an
+unchanged roster reports `unchanged` and writes no audit record; the roster's
+Status moves the member; and the refusals (contradicting Relation, Update on
+an unmatched row, Import on a matched one) all hold over HTTP.
+
+The audit was checked against stored outbox events, and behaves better than
+first assumed: an update raises exactly one `EligibleMemberUpdated` whose
+`field_changes` names `phone` and `last_imported_at` and nothing else, with
+`is_special_category: true` and the values themselves `[redacted]`. The audit
+records which field moved, not what it moved to, which is correct for
+special-category personal data. An unchanged row raises no such event at all.
+
+The tenth defect was also reproduced end to end, which took two files rather
+than one: a dependant sharing a file with their primary is `Invalid` on first
+staging, because the primary is not a member yet, so such a row never imports
+and never holds a key. With the primary enrolled by an earlier file, a
+dependant file that applies and is then re-staged raises exactly
+`UniqueViolationError ... uq_member_import_rows_tenant_replay, Key
+(tenant_id, replay_key)=(..., file:sha256:...:row:2) already exists` with the
+`_release` fix reverted, and stages cleanly with it. A first attempt at this
+test passed either way and did not pin the defect; it was rewritten until it
+failed for the right reason.
+
+Driven in a real browser (Playwright/Chromium) against the running app: an
+isolated API and web dev server on :8001/:3001, a scratch database migrated
+from empty through `s8u0w2y4a6c8`, seeded with one tenant, one admin and one
+client. A first roster enrolled Amina (HR-1, ACME-001) and Bosco (HR-2,
+ACME-002). A second roster then revised Amina's Phone and Job Title, left her
+Email Address and Department blank, added Joan (HR-3) and omitted Bosco
+entirely.
+
+Signed in through the login form, opened Import members, uploaded that second
+roster, and the review table showed HR-1 as a duplicate offering exactly
+Update/Skip and HR-3 as New offering Import/Skip. Choosing Update moved the
+row to "Will update" and relabelled the apply button "Import 1, update 1".
+Applying reported "1 imported · 1 updated · 0 skipped · 0 failed", and the
+members table behind the dialog updated live. The database afterwards:
+
+| Staff_ID | Code | Phone | Job title | Work email | Department |
+|---|---|---|---|---|---|
+| HR-1 | ACME-001 | 0700999888 (revised) | Branch Manager (revised) | amina@acme.com (kept) | Operations (kept) |
+| HR-2 | ACME-002 | 0700333444 | Officer | bosco@acme.com | Treasury |
+| HR-3 | ACME-003 | 0700555666 | Analyst | joan@acme.com | Risk |
+
+So the blank-cell rule holds through the browser and against stored state:
+the two columns the roster left blank kept their values, the two it filled
+were revised, the member code was not reissued, and a member absent from the
+roster was untouched.
+
+One incidental finding, not a defect: the dialog prefers
+`window.showOpenFilePicker` where it exists, which no automated browser can
+drive. The run removed it so the plain `<input type="file">` fallback was
+used, which is the path every non-Chromium user already takes. Any future
+browser test of this dialog needs the same.
+
+Not verified: no roster has been put through the deployed environment, and
+none of this has been run at the scale (3,000+ rows) that produced the ninth
+defect.

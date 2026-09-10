@@ -17,6 +17,10 @@ from __future__ import annotations
 RELEASED_PREFIX = "released:"
 DUPLICATE_PREFIX = "duplicate:"
 
+#: Keys of this form name one row of one file rather than claiming an identity,
+#: so they are always given up once that file is staged again.
+FILE_PREFIX = "file:"
+
 
 def deferred_key(prefix: str, batch_id: str, replay_key: str) -> str:
     """A key that points at `batch_id` instead of claiming the source row."""

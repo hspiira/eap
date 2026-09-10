@@ -10,6 +10,7 @@ import hashlib
 import io
 from collections.abc import Sequence
 from copy import deepcopy
+from dataclasses import dataclass
 from typing import Literal
 
 from fastapi import (
@@ -69,6 +70,7 @@ from app.api.schemas.service_session_schemas import ServiceSessionListResponse
 from app.api.services.member_import import (
     MemberRowChecker,
     MemberRowImporter,
+    MemberRowUpdater,
     build_row_entity,
     csv_row_from_entity,
     issue_member_code,
@@ -411,6 +413,7 @@ async def _enrol(
         national_id=data.national_id,
         passport_number=data.passport_number,
         employment=_employment(data.employment),
+        coverage_start=data.coverage_start,
     )
 
 
@@ -579,6 +582,7 @@ async def member_import_template(
             "Email Address",
             "Personal Email",
             "Date of Birth",
+            "Date Joined",
             "Gender",
             "Phone",
             "National ID",
@@ -603,9 +607,9 @@ async def member_import_template(
             "example@company.test",
             "",
             "1990-01-31",
+            "",
             "Female",
             "+256700000000",
-            "",
             "",
             "",
             "",
@@ -702,19 +706,30 @@ async def _read_roster(
     return content, rows, issues
 
 
-def _importer(
+@dataclass(frozen=True)
+class _RowWriters:
+    """The two ways an applied row reaches a member: create one, or revise one."""
+
+    importer: MemberRowImporter
+    updater: MemberRowUpdater
+
+
+def _writers(
     current_user: TokenData,
     member_repo: EligibleMemberRepository,
     subject_repo: ClinicalSubjectRepository,
     link_repo: EligibleMemberClinicalLinkRepository,
     outbox: OutboxRepository,
-) -> MemberRowImporter:
-    return MemberRowImporter(
-        current_user,
-        EnrolEligibleMemberUseCase(member_repo, subject_repo, link_repo),
-        member_repo,
-        outbox,
-        _tenant_secret(current_user.tenant_id),
+) -> _RowWriters:
+    return _RowWriters(
+        importer=MemberRowImporter(
+            current_user,
+            EnrolEligibleMemberUseCase(member_repo, subject_repo, link_repo),
+            member_repo,
+            outbox,
+            _tenant_secret(current_user.tenant_id),
+        ),
+        updater=MemberRowUpdater(current_user, member_repo, outbox),
     )
 
 
@@ -764,6 +779,7 @@ def _row_response(
         decision=row.decision,
         employment=_staged_employment(row),
         message=row.message,
+        matched_member_id=row.matched_member_id.value if row.matched_member_id else None,
         imported_member_id=row.imported_member_id.value if row.imported_member_id else None,
     )
 
@@ -909,7 +925,11 @@ async def set_member_import_row_decision(
     imports: MemberImportRepository = Depends(get_member_import_repository),
     db: AsyncSession = Depends(get_db),
 ):
-    """Override one still-new row's Import/Skip decision before applying."""
+    """Set one reviewed row's decision before the batch is applied.
+
+    A New row takes import or skip; a duplicate that matched a member takes
+    update or skip. Any other row refuses every decision.
+    """
     tenant = TenantId(current_user.tenant_id)
     row = await imports.get_row(tenant, MemberImportBatchId(batch_id), MemberImportRowId(row_id))
     if row is None:
@@ -946,15 +966,15 @@ async def abandon_member_import(
     return _batch_response(batch, await imports.outcome_counts(tenant, batch.id))
 
 
-async def _apply_row(
+async def _write_row(
     row: MemberImportRowEntity,
     checker: MemberRowChecker,
-    importer: MemberRowImporter,
+    writers: _RowWriters,
     imports: MemberImportRepository,
     tenant_id: TenantId,
     db: AsyncSession,
 ) -> str:
-    """Re-check and write one importable row in its own transaction.
+    """Re-check and write one pending row in its own transaction.
 
     A batch can sit staged for a while before it is applied, so the row is
     judged again against the roster as it stands now rather than trusted from
@@ -964,56 +984,63 @@ async def _apply_row(
     """
     csv_row = csv_row_from_entity(row)
     check = await checker.check(csv_row)
-    if check.state != "new" or check.data is None or check.client is None:
-        await imports.mark_row_failed(
-            tenant_id, row.id, check.message or f"No longer importable ({check.state})"
-        )
-        await db.commit()
-        return "not_importable"
     try:
-        member = await importer.enrol(csv_row, check.data, check.client.code)
+        if row.decision == "update":
+            if not check.updatable or check.existing is None:
+                await imports.mark_row_failed(
+                    tenant_id, row.id, check.message or f"No longer updatable ({check.state})"
+                )
+                await db.commit()
+                return "failed"
+            changed = await writers.updater.update(csv_row, check.existing)
+            await imports.mark_row_imported(
+                tenant_id,
+                row.id,
+                check.existing.id.value,
+                message=None if changed else "No changes: roster matches the member already",
+            )
+            await db.commit()
+            return "updated" if changed else "unchanged"
+        if not check.importable or check.data is None or check.client is None:
+            await imports.mark_row_failed(
+                tenant_id, row.id, check.message or f"No longer importable ({check.state})"
+            )
+            await db.commit()
+            return "failed"
+        member = await writers.importer.enrol(csv_row, check.data, check.client.code)
         await imports.mark_row_imported(tenant_id, row.id, member.id.value)
         await db.commit()
+        return "imported"
     except (EvexiaException, IntegrityError, ValueError) as exc:
         await db.rollback()
         await imports.mark_row_failed(tenant_id, row.id, str(exc).split("\n", 1)[-1])
         await db.commit()
         return "failed"
-    return "imported"
-
-
-_APPLY_TALLY_KEYS = {
-    "imported": "imported",
-    "failed": "failed",
-    "not_importable": "not_importable",
-}
 
 
 async def _apply_rows(
     tenant_id: TenantId,
     batch_id: MemberImportBatchId,
     checker: MemberRowChecker,
-    importer: MemberRowImporter,
+    writers: _RowWriters,
     imports: MemberImportRepository,
     db: AsyncSession,
+    *,
+    limit: int,
 ) -> dict[str, int]:
-    tally = {"imported": 0, "failed": 0, "skipped_already_imported": 0, "not_importable": 0}
-    offset = 0
-    while True:
-        rows, total = await imports.list_rows(tenant_id, batch_id, limit=200, offset=offset)
-        if not rows:
-            break
-        for row in rows:
-            if row.imported_member_id is not None:
-                tally["skipped_already_imported"] += 1
-            elif not row.is_importable:
-                tally["not_importable"] += 1
-            else:
-                state = await _apply_row(row, checker, importer, imports, tenant_id, db)
-                tally[_APPLY_TALLY_KEYS[state]] += 1
-        offset += len(rows)
-        if offset >= total:
-            break
+    """Write up to `limit` still-pending rows, one at a time.
+
+    Fetches only rows `apply_member_import` has not yet resolved (a New row
+    decided "import", a matched Duplicate decided "update", neither yet
+    written) instead of paging through the whole batch, so a later chunk of a
+    large batch costs one query for exactly what is left, not a re-scan of
+    everything already written.
+    """
+    tally = {"imported": 0, "updated": 0, "unchanged": 0, "failed": 0}
+    rows = await imports.list_pending_rows(tenant_id, batch_id, limit=limit)
+    for row in rows:
+        state = await _write_row(row, checker, writers, imports, tenant_id, db)
+        tally[state] += 1
     return tally
 
 
@@ -1022,6 +1049,13 @@ async def _apply_rows(
 async def apply_member_import(
     batch_id: str,
     request: Request,
+    limit: int = Query(
+        100,
+        ge=1,
+        le=500,
+        description="Max rows to write in this call. Keep calling while the response's "
+        "remaining is above zero; the batch only closes once nothing is left.",
+    ),
     current_user: TokenData = Depends(require_not_viewer),
     imports: MemberImportRepository = Depends(get_member_import_repository),
     member_repo: EligibleMemberRepository = Depends(get_eligible_member_repository),
@@ -1033,11 +1067,17 @@ async def apply_member_import(
     outbox: OutboxRepository = Depends(get_outbox_repository),
     db: AsyncSession = Depends(get_db),
 ):
-    """Write every still-importable row, one at a time, then close the batch.
+    """Write up to `limit` still-pending rows, one at a time, in their own transaction.
 
-    Applying a second time is refused, so a replayed request cannot write
-    twice. A row that fails to write does not stop the rest; the rows
-    already written stay written.
+    A roster of thousands of rows cannot be written in a single call without
+    risking a platform request timeout, since each row costs its own
+    round trip and commit. Call this repeatedly while `remaining` in the
+    response is above zero; `list_pending_rows` re-queries what is left each
+    time rather than trusting an offset, so a client that stops calling
+    (a closed tab, a timeout) leaves the batch safely Staged for the next
+    call to continue from exactly where the last one left off, with nothing
+    skipped or written twice. The batch only closes -- flips to Applied,
+    fires its audit event -- once a call finds nothing left to write.
     """
     batch = await _require_import_batch(imports, current_user.tenant_id, batch_id)
     if batch.status is not ImportBatchStatus.STAGED:
@@ -1048,13 +1088,26 @@ async def apply_member_import(
         )
     tenant = TenantId(current_user.tenant_id)
     checker = MemberRowChecker(current_user.tenant_id, client_repo, member_repo, imports)
-    importer = _importer(current_user, member_repo, subject_repo, link_repo, outbox)
-    tally = await _apply_rows(tenant, batch.id, checker, importer, imports, db)
-    batch.mark_applied(UserId(current_user.user_id), at=utc_now(), accepted_count=tally["imported"])
-    await imports.save_batch(batch)
+    writers = _writers(current_user, member_repo, subject_repo, link_repo, outbox)
+    tally = await _apply_rows(tenant, batch.id, checker, writers, imports, db, limit=limit)
+    remaining = await imports.count_pending_rows(tenant, batch.id)
+    if remaining == 0:
+        accepted_count = await imports.count_imported_rows(tenant, batch.id)
+        batch.mark_applied(
+            UserId(current_user.user_id), at=utc_now(), accepted_count=accepted_count
+        )
+        await imports.save_batch(batch)
+        await _audit(batch, outbox=outbox, current_user=current_user, request=request)
     await db.commit()
-    await _audit(batch, outbox=outbox, current_user=current_user, request=request)
-    return MemberImportApplyResponse(batch_id=batch_id, **tally)
+    return MemberImportApplyResponse(
+        batch_id=batch_id,
+        imported=tally["imported"],
+        updated=tally["updated"],
+        unchanged=tally["unchanged"],
+        failed=tally["failed"],
+        remaining=remaining,
+        done=remaining == 0,
+    )
 
 
 def _csv_cell(value: str | None) -> str | None:
@@ -1088,9 +1141,10 @@ async def update_member(
     await _validate_roster_update(member, updated, member_repo)
     # update_roster_details mutates in place, so the diff needs the state first.
     before = deepcopy(member)
-    # import_source_id is set once at creation and never revised through this
-    # general roster-details update; it stays whatever the member was created with.
-    details = updated.model_dump(exclude={"client_id", "import_source_id"})
+    # import_source_id and coverage_start are set once (at creation, or import)
+    # and never revised through this general roster-details update; each stays
+    # whatever the member was created with.
+    details = updated.model_dump(exclude={"client_id", "import_source_id", "coverage_start"})
     details["primary_employee_member_id"] = (
         EligibleMemberId(updated.primary_employee_member_id)
         if updated.primary_employee_member_id

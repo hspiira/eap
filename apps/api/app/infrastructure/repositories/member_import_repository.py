@@ -2,7 +2,8 @@
 
 from collections.abc import Sequence
 
-from sqlalchemy import func, select, update
+from sqlalchemy import and_ as sa_and
+from sqlalchemy import func, or_, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.domain.entities.member_import import MemberImportBatchEntity, MemberImportRowEntity
@@ -15,7 +16,7 @@ from app.infrastructure.models.member_import_model import (
     MemberImportBatchModel,
     MemberImportRowModel,
 )
-from app.shared.utils.replay_key import RELEASED_PREFIX
+from app.shared.utils.replay_key import FILE_PREFIX, RELEASED_PREFIX
 
 
 async def _count(session: AsyncSession, statement) -> int:
@@ -110,15 +111,22 @@ class MemberImportRepositoryImpl(MemberImportRepository):
             .where(
                 MemberImportRowModel.id == row_id.value,
                 MemberImportRowModel.tenant_id == tenant_id.value,
-                MemberImportRowModel.outcome == "New",
+                MemberImportRowModel.outcome.in_(("New", "Duplicate")),
             )
             .values(decision=decision)
         )
         await self.session.flush()
 
     async def mark_row_imported(
-        self, tenant_id: TenantId, row_id: MemberImportRowId, member_id: str
+        self,
+        tenant_id: TenantId,
+        row_id: MemberImportRowId,
+        member_id: str,
+        message: str | None = None,
     ) -> None:
+        values: dict[str, str] = {"imported_member_id": member_id}
+        if message is not None:
+            values["message"] = message
         await self.session.execute(
             update(MemberImportRowModel)
             .where(
@@ -126,7 +134,7 @@ class MemberImportRepositoryImpl(MemberImportRepository):
                 MemberImportRowModel.tenant_id == tenant_id.value,
                 MemberImportRowModel.imported_member_id.is_(None),
             )
-            .values(imported_member_id=member_id)
+            .values(**values)
         )
         await self.session.flush()
 
@@ -159,13 +167,25 @@ class MemberImportRepositoryImpl(MemberImportRepository):
         )
 
     async def _release(self, tenant_id: TenantId, scope) -> int:
-        """Give up the keys of rows in `scope` that never produced a member."""
+        """Give up the keys of rows in `scope` that hold no identity claim.
+
+        Two kinds qualify. A row that produced no member never claimed
+        anything. So did a row keyed `file:{hash}:row:{n}`, whatever it went
+        on to write: that form names one row of one file rather than a
+        Staff_ID, and staging the same file again recomputes the identical
+        string, so a row still holding one collides with its own successor on
+        the (tenant_id, replay_key) index. Only the identity form,
+        `key:{client}:{staff_id}`, is a claim worth keeping past a write.
+        """
         result = await self.session.execute(
             update(MemberImportRowModel)
             .where(
                 MemberImportRowModel.tenant_id == tenant_id.value,
                 scope,
-                MemberImportRowModel.imported_member_id.is_(None),
+                or_(
+                    MemberImportRowModel.imported_member_id.is_(None),
+                    MemberImportRowModel.replay_key.like(f"{FILE_PREFIX}%"),
+                ),
                 MemberImportRowModel.replay_key.not_like(f"{RELEASED_PREFIX}%"),
             )
             .values(
@@ -214,3 +234,56 @@ class MemberImportRepositoryImpl(MemberImportRepository):
             .group_by(MemberImportRowModel.outcome)
         )
         return {str(outcome): int(count) for outcome, count in rows}
+
+    def _pending_rows_filter(self, tenant_id: TenantId, batch_id: MemberImportBatchId):
+        return (
+            MemberImportRowModel.tenant_id == tenant_id.value,
+            MemberImportRowModel.batch_id == batch_id.value,
+            MemberImportRowModel.imported_member_id.is_(None),
+            or_(
+                sa_and(
+                    MemberImportRowModel.outcome == "New",
+                    MemberImportRowModel.decision == "import",
+                ),
+                sa_and(
+                    MemberImportRowModel.outcome == "Duplicate",
+                    MemberImportRowModel.decision == "update",
+                    MemberImportRowModel.matched_member_id.is_not(None),
+                ),
+            ),
+        )
+
+    async def list_pending_rows(
+        self, tenant_id: TenantId, batch_id: MemberImportBatchId, *, limit: int
+    ) -> Sequence[MemberImportRowEntity]:
+        models = await self.session.scalars(
+            select(MemberImportRowModel)
+            .where(*self._pending_rows_filter(tenant_id, batch_id))
+            .order_by(MemberImportRowModel.row_number)
+            .limit(limit)
+        )
+        return [MemberImportMapper.row_to_entity(model) for model in models]
+
+    async def count_pending_rows(self, tenant_id: TenantId, batch_id: MemberImportBatchId) -> int:
+        return int(
+            await self.session.scalar(
+                select(func.count())
+                .select_from(MemberImportRowModel)
+                .where(*self._pending_rows_filter(tenant_id, batch_id))
+            )
+            or 0
+        )
+
+    async def count_imported_rows(self, tenant_id: TenantId, batch_id: MemberImportBatchId) -> int:
+        return int(
+            await self.session.scalar(
+                select(func.count())
+                .select_from(MemberImportRowModel)
+                .where(
+                    MemberImportRowModel.tenant_id == tenant_id.value,
+                    MemberImportRowModel.batch_id == batch_id.value,
+                    MemberImportRowModel.imported_member_id.is_not(None),
+                )
+            )
+            or 0
+        )

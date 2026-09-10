@@ -3716,11 +3716,17 @@ export interface paths {
         put?: never;
         /**
          * Apply Member Import
-         * @description Write every still-importable row, one at a time, then close the batch.
+         * @description Write up to `limit` still-pending rows, one at a time, in their own transaction.
          *
-         *     Applying a second time is refused, so a replayed request cannot write
-         *     twice. A row that fails to write does not stop the rest; the rows
-         *     already written stay written.
+         *     A roster of thousands of rows cannot be written in a single call without
+         *     risking a platform request timeout, since each row costs its own
+         *     round trip and commit. Call this repeatedly while `remaining` in the
+         *     response is above zero; `list_pending_rows` re-queries what is left each
+         *     time rather than trusting an offset, so a client that stops calling
+         *     (a closed tab, a timeout) leaves the batch safely Staged for the next
+         *     call to continue from exactly where the last one left off, with nothing
+         *     skipped or written twice. The batch only closes -- flips to Applied,
+         *     fires its audit event -- once a call finds nothing left to write.
          */
         post: operations["apply_member_import_members_import__batch_id__apply_post"];
         delete?: never;
@@ -3761,7 +3767,10 @@ export interface paths {
         head?: never;
         /**
          * Set Member Import Row Decision
-         * @description Override one still-new row's Import/Skip decision before applying.
+         * @description Set one reviewed row's decision before the batch is applied.
+         *
+         *     A New row takes import or skip; a duplicate that matched a member takes
+         *     update or skip. Any other row refuses every decision.
          */
         patch: operations["set_member_import_row_decision_members_import__batch_id__rows__row_id__patch"];
         trace?: never;
@@ -11084,6 +11093,11 @@ export interface components {
         MemberCreate: {
             /** Client Id */
             client_id: string;
+            /**
+             * Coverage Start
+             * @description When this person's cover actually began, if known (e.g. a roster's Date Joined). Left blank, cover is treated as starting when the record was created here, which understates tenure for anyone imported after the fact.
+             */
+            coverage_start?: string | null;
             /** Date Of Birth */
             date_of_birth?: string | null;
             /** Display Label */
@@ -11184,19 +11198,23 @@ export interface components {
         };
         /**
          * MemberImportApplyResponse
-         * @description What happened when a staged batch's importable rows were written.
+         * @description What this one chunked call wrote. Call again while remaining is above zero.
          */
         MemberImportApplyResponse: {
             /** Batch Id */
             batch_id: string;
+            /** Done */
+            done: boolean;
             /** Failed */
             failed: number;
             /** Imported */
             imported: number;
-            /** Not Importable */
-            not_importable: number;
-            /** Skipped Already Imported */
-            skipped_already_imported: number;
+            /** Remaining */
+            remaining: number;
+            /** Unchanged */
+            unchanged: number;
+            /** Updated */
+            updated: number;
         };
         /**
          * MemberImportBatchResponse
@@ -11233,14 +11251,18 @@ export interface components {
         };
         /**
          * MemberImportRowDecisionRequest
-         * @description Override one still-new row's Import/Skip decision before applying.
+         * @description Set what happens to one reviewed row before the batch is applied.
+         *
+         *     "import" and "skip" belong to a New row; "update" to a duplicate that
+         *     matched an existing member. The row itself refuses a decision its outcome
+         *     does not allow.
          */
         MemberImportRowDecisionRequest: {
             /**
              * Decision
              * @enum {string}
              */
-            decision: "import" | "skip";
+            decision: "import" | "skip" | "update";
         };
         /** MemberImportRowListResponse */
         MemberImportRowListResponse: {
@@ -11275,6 +11297,8 @@ export interface components {
             import_source_id: string | null;
             /** Imported Member Id */
             imported_member_id?: string | null;
+            /** Matched Member Id */
+            matched_member_id?: string | null;
             /** Message */
             message?: string | null;
             /** Outcome */
@@ -22338,7 +22362,10 @@ export interface operations {
     };
     apply_member_import_members_import__batch_id__apply_post: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description Max rows to write in this call. Keep calling while the response's remaining is above zero; the batch only closes once nothing is left. */
+                limit?: number;
+            };
             header?: never;
             path: {
                 batch_id: string;

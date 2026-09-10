@@ -67,6 +67,7 @@ class MemberImportMapper:
             personal_email=model.personal_email,
             gender=model.gender,
             date_of_birth=model.date_of_birth,
+            date_joined=model.date_joined,
             phone=model.phone,
             national_id=model.national_id,
             passport_number=model.passport_number,
@@ -80,6 +81,9 @@ class MemberImportMapper:
             relation=model.relation,
             primary_import_source_id=model.primary_import_source_id,
             message=model.message,
+            matched_member_id=(
+                EligibleMemberId(model.matched_member_id) if model.matched_member_id else None
+            ),
             imported_member_id=(
                 EligibleMemberId(model.imported_member_id) if model.imported_member_id else None
             ),
@@ -104,6 +108,7 @@ class MemberImportMapper:
             personal_email=entity.personal_email,
             gender=entity.gender,
             date_of_birth=entity.date_of_birth,
+            date_joined=entity.date_joined,
             phone=entity.phone,
             national_id=entity.national_id,
             passport_number=entity.passport_number,
@@ -117,6 +122,9 @@ class MemberImportMapper:
             relation=entity.relation,
             primary_import_source_id=entity.primary_import_source_id,
             message=entity.message,
+            matched_member_id=(
+                entity.matched_member_id.value if entity.matched_member_id else None
+            ),
             imported_member_id=(
                 entity.imported_member_id.value if entity.imported_member_id else None
             ),

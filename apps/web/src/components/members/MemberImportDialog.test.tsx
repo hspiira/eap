@@ -137,6 +137,207 @@ describe("member import preview", () => {
   })
 })
 
+describe("chunked apply", () => {
+  it("polls the apply endpoint until done, refreshing the table after each chunk", async () => {
+    await stage([makeRow()])
+    api.applyImport
+      .mockResolvedValueOnce({
+        batch_id: "batch-1",
+        imported: 0,
+        updated: 0,
+        unchanged: 0,
+        failed: 0,
+        remaining: 1,
+        done: false,
+      })
+      .mockResolvedValueOnce({
+        batch_id: "batch-1",
+        imported: 1,
+        updated: 0,
+        unchanged: 0,
+        failed: 0,
+        remaining: 0,
+        done: true,
+      })
+
+    await userEvent.click(screen.getByRole("button", { name: "Import 1 rows" }))
+
+    await waitFor(() => expect(api.applyImport).toHaveBeenCalledTimes(2))
+    expect(api.applyImport).toHaveBeenNthCalledWith(1, "batch-1", 200)
+    expect(api.applyImport).toHaveBeenNthCalledWith(2, "batch-1", 200)
+    expect(api.listImportRows).toHaveBeenCalledTimes(3) // initial stage + one refresh per chunk
+    await screen.findByRole("button", { name: "Done" })
+    expect(screen.queryByRole("button", { name: "Cancel" })).not.toBeInTheDocument()
+  })
+
+  it("shows live count and percentage while a chunk is in flight, and stops on cancel", async () => {
+    await stage([makeRow({ id: "row-1" }), makeRow({ id: "row-2", row_number: 3 })])
+    const resolvers: Array<(value: unknown) => void> = []
+    api.applyImport.mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          resolvers.push(resolve)
+        }),
+    )
+
+    await userEvent.click(screen.getByRole("button", { name: "Import 2 rows" }))
+    const cancelButton = await screen.findByRole("button", { name: "Cancel" })
+
+    resolvers[0]({
+      batch_id: "batch-1",
+      imported: 1,
+      updated: 0,
+      unchanged: 0,
+      failed: 0,
+      remaining: 1,
+      done: false,
+    })
+    await screen.findByText("1 / 2 · 50%")
+    await waitFor(() => expect(resolvers).toHaveLength(2))
+
+    // Cancel takes effect after the in-flight chunk finishes, not mid-request.
+    await userEvent.click(cancelButton)
+    resolvers[1]({
+      batch_id: "batch-1",
+      imported: 1,
+      updated: 0,
+      unchanged: 0,
+      failed: 0,
+      remaining: 0,
+      done: false,
+    })
+
+    await waitFor(() =>
+      expect(screen.queryByRole("button", { name: "Cancel" })).not.toBeInTheDocument(),
+    )
+    expect(api.applyImport).toHaveBeenCalledTimes(2)
+  })
+
+  it("counts a row written before a cancel as written, not skipped, in the summary", async () => {
+    const rowOne = makeRow({ id: "row-1" })
+    const rowTwo = makeRow({ id: "row-2", row_number: 3 })
+    await stage([rowOne, rowTwo])
+
+    api.listImportRows.mockResolvedValueOnce({
+      items: [{ ...rowOne, imported_member_id: "member-1" }, rowTwo],
+      total: 2,
+      page: 1,
+      limit: 200,
+      has_more: false,
+    })
+    let resolveChunk: (value: unknown) => void = () => {}
+    api.applyImport.mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          resolveChunk = resolve
+        }),
+    )
+
+    await userEvent.click(screen.getByRole("button", { name: "Import 2 rows" }))
+    const cancelButton = await screen.findByRole("button", { name: "Cancel" })
+    await userEvent.click(cancelButton)
+    resolveChunk({
+      batch_id: "batch-1",
+      imported: 1,
+      updated: 0,
+      unchanged: 0,
+      failed: 0,
+      remaining: 1,
+      done: false,
+    })
+    await waitFor(() =>
+      expect(screen.queryByRole("button", { name: "Cancel" })).not.toBeInTheDocument(),
+    )
+
+    await waitFor(() => {
+      const summary = screen.getByText(
+        (_, node) => node?.tagName === "P" && Boolean(node.textContent?.includes("rows checked")),
+      )
+      expect(summary.textContent).toBe(
+        "2 rows checked · 1 ready · 1 already written · 0 skipped · 0 errors",
+      )
+    })
+  })
+})
+
+describe("updating a member the roster already created", () => {
+  const matched = (overrides: Partial<MemberImportRow> = {}) =>
+    makeRow({
+      outcome: "Duplicate",
+      decision: "skip",
+      matched_member_id: "member-1",
+      ...overrides,
+    })
+
+  it("offers Update and Skip on a duplicate that matched a member", async () => {
+    await stage([matched()])
+
+    await userEvent.click(screen.getByRole("combobox", { name: "Decision for row 2" }))
+
+    expect(await screen.findByRole("option", { name: "Update" })).toBeInTheDocument()
+    expect(screen.getByRole("option", { name: "Skip" })).toBeInTheDocument()
+    expect(screen.queryByRole("option", { name: "Import" })).not.toBeInTheDocument()
+  })
+
+  it("leaves a duplicate that matched nobody with no decision to make", async () => {
+    await stage([
+      matched({ matched_member_id: null, message: "Already staged as row 7 of batch b-9" }),
+    ])
+
+    expect(screen.queryByRole("combobox", { name: "Decision for row 2" })).not.toBeInTheDocument()
+    expect(screen.getByText("Already staged as row 7 of batch b-9")).toBeInTheDocument()
+  })
+
+  it("never queues a matched duplicate until someone chooses Update", async () => {
+    await stage([matched()])
+    expect(screen.getByRole("button", { name: "Import 0 rows" })).toBeDisabled()
+  })
+
+  it("counts a row set to Update towards the apply button, naming it as an update", async () => {
+    api.setImportRowDecision.mockResolvedValue(matched({ decision: "update" }))
+    await stage([matched()])
+
+    await userEvent.click(screen.getByRole("combobox", { name: "Decision for row 2" }))
+    await userEvent.click(await screen.findByRole("option", { name: "Update" }))
+
+    await waitFor(() =>
+      expect(api.setImportRowDecision).toHaveBeenCalledWith("batch-1", "row-1", "update"),
+    )
+    expect(await screen.findByRole("button", { name: "Update 1 members" })).toBeEnabled()
+    expect(screen.getByText("Will update")).toBeInTheDocument()
+  })
+
+  it("reports updates apart from imports once the batch is applied", async () => {
+    api.setImportRowDecision.mockResolvedValue(matched({ decision: "update" }))
+    await stage([matched()])
+    await userEvent.click(screen.getByRole("combobox", { name: "Decision for row 2" }))
+    await userEvent.click(await screen.findByRole("option", { name: "Update" }))
+    await waitFor(() => expect(api.setImportRowDecision).toHaveBeenCalled())
+
+    api.listImportRows.mockResolvedValue({
+      items: [matched({ decision: "update", imported_member_id: "member-1" })],
+      total: 1,
+      page: 1,
+      limit: 200,
+      has_more: false,
+    })
+    api.applyImport.mockResolvedValue({
+      batch_id: "batch-1",
+      imported: 0,
+      updated: 1,
+      unchanged: 0,
+      failed: 0,
+      remaining: 0,
+      done: true,
+    })
+
+    await userEvent.click(screen.getByRole("button", { name: "Update 1 members" }))
+
+    expect(await screen.findByText("Updated")).toBeInTheDocument()
+    expect(screen.getByText(/updated/)).toBeInTheDocument()
+  })
+})
+
 describe("restage conflict", () => {
   it("offers to discard the stuck batch and retries staging after confirming", async () => {
     api.stageImport

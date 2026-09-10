@@ -75,6 +75,7 @@ class MemberCsvRow:
     personal_email: str | None
     gender: str | None
     date_of_birth: str | None
+    date_joined: str | None
     phone: str | None
     national_id: str | None
     passport_number: str | None
@@ -124,6 +125,7 @@ def _parse_row(row_number: int, row: dict[str, str | None]) -> MemberCsvRow:
         personal_email=_value(row, "personal_email", "personal_email_address"),
         gender=_value(row, "gender"),
         date_of_birth=_value(row, "date_of_birth", "dob"),
+        date_joined=_value(row, "date_joined", "member_since", "coverage_start"),
         phone=_value(row, "phone", "phone_number", "mobile"),
         national_id=_value(row, "national_id", "national_identification_number"),
         passport_number=_value(row, "passport_number", "passport"),
