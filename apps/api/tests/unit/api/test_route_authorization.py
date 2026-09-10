@@ -44,7 +44,7 @@ INTENTIONALLY_PUBLIC = {
     ("POST", "/survey-campaigns/{campaign_id}/webhook"): "signed provider webhook",
     ("GET", "/tenants/check-code/{code}"): "signup-time code availability",
     # Provider module, owned by the provider worktrees. Tracked, not approved:
-    # see MODULES_REPAIR_PLAN.md, stream 1 ownership block.
+    # see docs/reviews/MODULES_REPAIR_PLAN.md, stream 1 ownership block.
     ("GET", "/provider-specialties"): "PENDING: provider owner to gate this read",
 }
 

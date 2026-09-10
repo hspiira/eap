@@ -1,8 +1,9 @@
 # Provider migration execution handoff
 
-Use with `PROVIDERS_MIGRATION.md`. The user requested three-agent implementation
-followed by independent review. These prompts authorize implementation of that
-plan; they do not assert that it is already implemented, tested, or deployed.
+Use with `docs/migrations/PROVIDERS_MIGRATION.md`. The user requested
+three-agent implementation followed by independent review. These prompts
+authorize implementation of that plan; they do not assert that it is already
+implemented, tested, or deployed.
 
 ## Team and working agreement
 
@@ -31,8 +32,9 @@ protected/default branch, or deploy as part of these prompts.
 - **Agent 1: provider core and integration.** Own existing backend files,
   practitioner identity/profile/eligibility operations, lifecycle authorization
   and audit, existing session/outreach routes and schemas, shared dependency and
-  model registries, provider CI wiring, and `PROVIDERS_MIGRATION.md` progress.
-  Own new core provider migrations and corresponding tests.
+  model registries, provider CI wiring, and
+  `docs/migrations/PROVIDERS_MIGRATION.md` progress. Own new core provider
+  migrations and corresponding tests.
 - **Agent 2: organisations, vocabulary and historical import.** Own new backend
   organisation, affiliation, specialty, alias, and historical staging/import
   modules, their new migrations and tests. Send required edits to existing
@@ -88,10 +90,11 @@ never a shared database whose fixtures create/drop other agents' tables.
 ## Prompt for agent 1: provider core and integration
 
 You are the provider-core implementer and integration owner. Read AGENTS.md,
-CLAUDE.md, PROVIDERS_MIGRATION.md and PROVIDERS_EXECUTION.md first. Create an
-isolated worktree on a codex/ branch from the documentation handoff commit.
-Announce your identity and ownership to the other provider tasks. Use graft for
-context and call/reference tracing. Do not spawn subagents.
+CLAUDE.md, docs/migrations/PROVIDERS_MIGRATION.md and
+docs/handoffs/PROVIDERS_EXECUTION.md first. Create an isolated worktree on a
+codex/ branch from the documentation handoff commit. Announce your identity and
+ownership to the other provider tasks. Use graft for context and call/reference
+tracing. Do not spawn subagents.
 
 Implement the adopted provider-core decisions and own integration of the other
 two agents. Start with phase 1's authorization, audit and composite-constraint
@@ -114,13 +117,14 @@ policy with organisation approval and dated affiliation checks. Delegate generat
 OpenAPI/frontend artifacts to agent 3; do not edit their outputs. Agent 2 owns new
 organisation/vocabulary/import modules and agent 3 owns frontend files.
 
-Commit coherent pieces, send contract/migration updates to the other agents,
-and integrate their commits into your feature branch. Keep PROVIDERS_MIGRATION.md
-accurate: completed implementation, test results and migration application are
-separate facts. Do not mark another agent's tasks complete without their evidence.
-Coordinate migration parents and use isolated test databases/schemas. Run the
-relevant backend checks and the full PostgreSQL migration chain; require the
-provider migration CI job to execute rather than skip its tests.
+Commit coherent pieces, send contract/migration updates to the other agents, and
+integrate their commits into your feature branch. Keep
+docs/migrations/PROVIDERS_MIGRATION.md accurate: completed implementation, test
+results and migration application are separate facts. Do not mark another
+agent's tasks complete without their evidence. Coordinate migration parents and
+use isolated test databases/schemas. Run the relevant backend checks and the
+full PostgreSQL migration chain; require the provider migration CI job to
+execute rather than skip its tests.
 
 Your final handoff must identify the integration branch/worktree, base and head
 commits, included agent commits, changed API contracts, migration order, exact
@@ -132,10 +136,11 @@ its concrete findings before claiming completion.
 ## Prompt for agent 2: organisations and historical data support
 
 You own new backend organisation, affiliation, vocabulary, alias and historical
-import modules. Read AGENTS.md, CLAUDE.md, PROVIDERS_MIGRATION.md and
-PROVIDERS_EXECUTION.md first. Start an isolated codex/ worktree from the handoff
-commit. Announce your identity/ownership to the other provider tasks and use graft
-before source work. Do not spawn subagents.
+import modules. Read AGENTS.md, CLAUDE.md,
+docs/migrations/PROVIDERS_MIGRATION.md and docs/handoffs/PROVIDERS_EXECUTION.md
+first. Start an isolated codex/ worktree from the handoff commit. Announce your
+identity/ownership to the other provider tasks and use graft before source work.
+Do not spawn subagents.
 
 Implement tenant-owned organisations and dated affiliations with concurrent firms,
 non-overlapping periods for the same pair, immutable endpoints and retained
@@ -177,10 +182,10 @@ review task for review; resolve its findings in coordination with the file owner
 ## Prompt for agent 3: frontend and contracts
 
 You own the provider frontend, generated contracts and integrated user-flow
-verification. Read AGENTS.md, CLAUDE.md, PROVIDERS_MIGRATION.md,
-PROVIDERS_EXECUTION.md and applicable web/design rules. Use an isolated codex/
-worktree from the handoff commit. Announce your identity/ownership and use graft
-for repository context. Do not spawn subagents.
+verification. Read AGENTS.md, CLAUDE.md, docs/migrations/PROVIDERS_MIGRATION.md,
+docs/handoffs/PROVIDERS_EXECUTION.md and applicable web/design rules. Use an
+isolated codex/ worktree from the handoff commit. Announce your
+identity/ownership and use graft for repository context. Do not spawn subagents.
 
 Coordinate API contracts early with agents 1 and 2. Implement practitioner
 create/edit with owned names and optional contact/account data, Admin-only

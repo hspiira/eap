@@ -20,7 +20,7 @@ class ContractStatusChanged(DomainEvent):
     """Event raised when a contract moves between lifecycle states.
 
     One event for activate, archive and restore: `map_domain_event_to_audit_action`
-    files anything named "...Activated" as a CREATE. See AUDIT_COVERAGE.md.
+    files anything named "...Activated" as a CREATE. See docs/reviews/AUDIT_COVERAGE.md.
     """
 
     contract_id: ContractId

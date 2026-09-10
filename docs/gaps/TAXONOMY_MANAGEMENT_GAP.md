@@ -2,9 +2,9 @@
 
 Recorded 2026-09-08. Scope: how the platform's shared reference taxonomies
 (diagnosis types, diagnoses, service categories, services) get created and
-changed after the initial import. Distinct from `IMPORT_REVIEW_UI_GAP.md`,
-which covers reviewing a batch of imported rows, not maintaining the taxonomy
-itself afterwards.
+changed after the initial import. Distinct from
+`docs/gaps/IMPORT_REVIEW_UI_GAP.md`, which covers reviewing a batch of imported
+rows, not maintaining the taxonomy itself afterwards.
 
 ## Current state
 

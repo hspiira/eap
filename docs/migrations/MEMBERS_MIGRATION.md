@@ -1,9 +1,8 @@
 # Members module migration
 
 This is the working handoff log for the persons → members migration. It is
-intentionally untracked while the migration is in progress. Future agents
-should update this file as each phase is completed; completed items are struck
-through rather than removed.
+tracked in git. Future agents should update this file as each phase is
+completed; completed items are struck through rather than removed.
 
 ## Product boundary
 

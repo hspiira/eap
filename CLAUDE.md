@@ -70,8 +70,9 @@ without being asked.
 
 ## Provider module
 
-- Follow `PROVIDERS_MIGRATION.md` for provider work. Keep its decisions and
-  phase evidence current; reopen a decision explicitly before replacing it.
+- Follow `docs/migrations/PROVIDERS_MIGRATION.md` for provider work. Keep its
+  decisions and phase evidence current; reopen a decision explicitly before
+  replacing it.
 - Keep practitioner identity, user accounts, organisation affiliations, and
   supplier contracts distinct. Preserve historical session attribution.
 - Enforce tenant relationships in application validation and database

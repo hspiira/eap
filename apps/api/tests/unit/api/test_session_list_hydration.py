@@ -1,6 +1,6 @@
 """The session list carries names, not just ids, and rejects unknown sorts.
 
-C1 and C2 of SESSIONS_IMPLEMENTATION.md. The list returned bare identifiers, so
+C1 and C2 of docs/handoffs/SESSIONS_IMPLEMENTATION.md. The list returned bare identifiers, so
 the UI issued one member fetch per row, and a company-wide session, which has
 no member, could not name its client at all. The base repository also ignored
 an unknown sort column and quietly sorted by id, so a typo produced a silently

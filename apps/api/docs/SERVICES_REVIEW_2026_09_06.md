@@ -1,8 +1,8 @@
 # Services and diagnoses: state of play, 2026-09-06
 
 A review of `apps/api/docs/SERVICES_MODULE.md` and the untracked
-`SERVICES_MIGRATION.md` against the code as it stands, and what I recommend
-doing next.
+`docs/migrations/SERVICES_MIGRATION.md` against the code as it stands, and what
+I recommend doing next.
 
 **Status: all four recommendations have since been implemented.** Section 3 is
 kept as written, with the commit that closed each one noted inline, because the
@@ -32,8 +32,8 @@ implemented" summary is fair.
 
 ### 2.1 Entitlement drawdown is unreachable from the product (highest value)
 
-`SERVICES_MIGRATION.md` marks phase 2 complete and says "both paths now exist".
-The backend path does. The product path does not.
+`docs/migrations/SERVICES_MIGRATION.md` marks phase 2 complete and says "both
+paths now exist". The backend path does. The product path does not.
 
 `ServiceSessionCompleteRequest.case_id` (`service_session_schemas.py:64`) is the
 only trigger for automatic drawdown. Both frontend callers omit it:
@@ -61,8 +61,8 @@ case* can name it. That needs no bridge and no pseudonymity compromise.
 
 ### 2.2 The fail-open platform gate is in two files, not one
 
-`SERVICES_MIGRATION.md` records the sidebar gate at `AppSidebar.tsx:100` as a
-discovery. The same fail-open logic is duplicated in
+`docs/migrations/SERVICES_MIGRATION.md` records the sidebar gate at
+`AppSidebar.tsx:100` as a discovery. The same fail-open logic is duplicated in
 `components/common/RequirePlatformAdmin.tsx:34`, whose own docstring states the
 behaviour as intended: "When the env var is empty (dev/single-tenant) we skip
 the check entirely."

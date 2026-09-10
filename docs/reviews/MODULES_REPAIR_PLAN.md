@@ -5,9 +5,10 @@ recorded; fixes are not implemented by this review. This document covers the EAP
 application outside the active provider migration. Revalidate affected files
 against the provider integration branch before implementing a repair.
 
-Use `PROVIDERS_MIGRATION.md` for provider decisions and ownership. Keep the
-existing member and service migration records as their respective sources of
-truth. This plan does not reopen their accepted identity or taxonomy decisions.
+Use `docs/migrations/PROVIDERS_MIGRATION.md` for provider decisions and
+ownership. Keep the existing member and service migration records as their
+respective sources of truth. This plan does not reopen their accepted identity
+or taxonomy decisions.
 
 ## Outcome and scope
 
@@ -304,7 +305,7 @@ the gate, confirms Admin and User are untouched, confirms reads and anonymous
 requests are untouched, and pins the allowlist so growth is deliberate. Removing
 the registration fails eight of those tests. Unit 1731 passed, coverage 67.48%.
 Integration and e2e 500 passed, 1 failed, that failure being the pre-existing
-provider audit test recorded in `PROVIDERS_MIGRATION.md`.
+provider audit test recorded in `docs/migrations/PROVIDERS_MIGRATION.md`.
 
 **Left open, deliberately.** The 100 routes now rely on the blanket gate rather
 than on a role stated at the route. That is a weaker statement of intent than
@@ -745,8 +746,8 @@ the path or query. Use the dependency where a route takes a tenant argument, and
 
 **Not claimed by stream 1.** The provider module, held by `wt-agent1`,
 `wt-agent2` and `wt-agent3`. See also the red provider CI test recorded under
-"Remaining risks and ownership" in `PROVIDERS_MIGRATION.md`: the api job cannot
-go green until its owner fixes it, independently of this plan.
+"Remaining risks and ownership" in `docs/migrations/PROVIDERS_MIGRATION.md`: the
+api job cannot go green until its owner fixes it, independently of this plan.
 
 ## Execution ownership
 

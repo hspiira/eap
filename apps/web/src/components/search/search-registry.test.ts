@@ -73,7 +73,7 @@ describe("actions", () => {
   })
 
   it("exposes no wellness nugget command", () => {
-    // WELLNESS_NUGGETS_DECISION.md is not implemented; offering it would be a
+    // docs/design/WELLNESS_NUGGETS_DECISION.md is not implemented; offering it would be a
     // command that does nothing.
     const text = JSON.stringify(SEARCH_ACTIONS)
     expect(/nugget/i.test(text)).toBe(false)

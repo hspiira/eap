@@ -1,10 +1,10 @@
 # Provider frontend and contract handoff
 
-Frontend record for the provider migration. Use with `PROVIDERS_MIGRATION.md`,
-which holds the design decisions, and `PROVIDERS_EXECUTION.md`, which holds
-ownership and the dependency gates. Only the provider-core task updates the
-shared migration checklist; this document covers the frontend and generated
-contracts only.
+Frontend record for the provider migration. Use with
+`docs/migrations/PROVIDERS_MIGRATION.md`, which holds the design decisions, and
+`docs/handoffs/PROVIDERS_EXECUTION.md`, which holds ownership and the dependency
+gates. Only the provider-core task updates the shared migration checklist; this
+document covers the frontend and generated contracts only.
 
 Implemented, tested against mocks, verified against a real backend, and
 deployed are separate claims and are separated below.
@@ -166,9 +166,10 @@ catalogue endpoint itself answers 200.
   web app issues. It did not drive the browser, so it establishes that the
   contract behaves as the UI expects, not that the rendered screens behave
   correctly end to end. The component tests cover the rendering side.
-- Nothing has been checked against a deployed environment. The database used
-  was created empty for this purpose; target-environment contents and applied
-  revisions remain unverified, as `PROVIDERS_MIGRATION.md` records.
+- Nothing has been checked against a deployed environment. The database used was
+  created empty for this purpose; target-environment contents and applied
+  revisions remain unverified, as `docs/migrations/PROVIDERS_MIGRATION.md`
+  records.
 - The specialty catalogue is empty on a fresh database, so linking a specialty
   is covered only by mocked tests.
 

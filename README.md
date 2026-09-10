@@ -175,6 +175,13 @@ that rewrote them with CRLF would fail those gates:
 | `apps/web/src/api/generated/schema.ts` | `pnpm contracts` | `contract` job |
 | `apps/web/src/routeTree.gen.ts` | `pnpm build:web` | `web` job |
 
+### Documentation
+
+Migration decisions, review findings and design records that span both apps are
+in [`docs/`](docs/README.md), grouped by kind. Documentation for a single app
+lives with it, in `apps/api/docs/` and `apps/web/docs/`. Working rules for
+agents are in `AGENTS.md` and `CLAUDE.md`.
+
 ## Known gaps
 
 - Backend type coverage is ratcheting. `app/domain` is a strict zero-error
