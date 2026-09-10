@@ -2,7 +2,7 @@ import { useState } from "react"
 
 import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { Link } from "@tanstack/react-router"
-import { Pencil, Plus, Trash2 } from "lucide-react"
+import { Plus, SquarePen, Trash2 } from "lucide-react"
 
 import { membersApi } from "@/api/endpoints/members"
 import { DetailCard, RailSection } from "@/components/common/DetailPrimitives"
@@ -113,7 +113,7 @@ export function MemberNextOfKinCard({ member }: { member: Member }) {
                       onClick={() => openNextOfKinForm(contact)}
                       aria-label={`Edit ${contact.name}`}
                     >
-                      <Pencil className="size-3.5" />
+                      <SquarePen className="size-3.5" />
                     </Button>
                     <Button
                       type="button"

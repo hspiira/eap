@@ -6,9 +6,9 @@ import {
   ArrowLeft,
   BadgeCheck,
   KeyRound,
-  Pencil,
   ShieldCheck,
   ShieldOff,
+  SquarePen,
   UserCog,
 } from "lucide-react"
 
@@ -167,7 +167,7 @@ function UserDetailPage() {
               className="h-7 gap-1.5 px-2.5"
               onClick={() => setEditOpen(true)}
             >
-              <Pencil className="size-3.5" />
+              <SquarePen className="size-3.5" />
               Edit
             </Button>
           )}

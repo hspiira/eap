@@ -1,6 +1,6 @@
 import { useState } from "react"
 
-import { ChevronRight, CornerDownRight, Pencil, X } from "lucide-react"
+import { ChevronRight, CornerDownRight, SquarePen, X } from "lucide-react"
 
 import { IndustryFormSheet } from "@/components/IndustryFormSheet"
 import { Button } from "@/components/ui/button"
@@ -41,7 +41,7 @@ export function IndustryDetailsCard({
           className="h-7 gap-1.5 px-2.5"
           onClick={() => setEditOpen(true)}
         >
-          <Pencil className="size-3.5" />
+          <SquarePen className="size-3.5" />
           Edit
         </Button>
         <Button

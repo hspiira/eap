@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react"
 
 import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { createFileRoute, useNavigate } from "@tanstack/react-router"
-import { Building2, Pencil } from "lucide-react"
+import { Building2, SquarePen } from "lucide-react"
 
 import { clientsApi } from "@/api/endpoints/clients"
 import { contactsApi } from "@/api/endpoints/contacts"
@@ -365,7 +365,7 @@ function ClientDetailPage() {
           className="h-7 gap-1.5 px-2.5"
           onClick={() => setEditOpen(true)}
         >
-          <Pencil className="size-3.5" />
+          <SquarePen className="size-3.5" />
           Edit
         </Button>
       }

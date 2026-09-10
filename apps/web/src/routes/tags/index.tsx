@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react"
 
 import { createFileRoute, Link } from "@tanstack/react-router"
-import { Download, ExternalLink, MoreHorizontal, Pencil, Plus, Tag } from "lucide-react"
+import { Download, ExternalLink, MoreHorizontal, Plus, SquarePen, Tag } from "lucide-react"
 
 import { clientTagsApi } from "@/api/endpoints/client-tags"
 import { EmptyState } from "@/components/common/EmptyState"
@@ -214,7 +214,7 @@ function TagRow({ row, onEdit }: { row: ClientTag; onEdit: () => void }) {
             aria-label={`Edit ${row.name}`}
             className="size-7 p-0 text-fg/65"
           >
-            <Pencil className="size-3.5" />
+            <SquarePen className="size-3.5" />
           </Button>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -230,7 +230,7 @@ function TagRow({ row, onEdit }: { row: ClientTag; onEdit: () => void }) {
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
               <DropdownMenuItem onSelect={onEdit} className="gap-2">
-                <Pencil className="size-3.5" />
+                <SquarePen className="size-3.5" />
                 Edit
               </DropdownMenuItem>
               <DropdownMenuItem asChild>

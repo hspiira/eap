@@ -2,7 +2,7 @@ import { useCallback, useState } from "react"
 
 import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { createFileRoute, useNavigate } from "@tanstack/react-router"
-import { ArrowLeft, CalendarClock, Pencil } from "lucide-react"
+import { ArrowLeft, CalendarClock, SquarePen } from "lucide-react"
 
 import { diagnosesApi } from "@/api/endpoints/diagnoses"
 import { membersApi } from "@/api/endpoints/members"
@@ -206,7 +206,7 @@ function ServiceSessionDetailPage() {
             className="h-7 gap-1.5 px-2.5"
             onClick={() => setEditOpen(true)}
           >
-            <Pencil className="size-3.5" />
+            <SquarePen className="size-3.5" />
             Edit
           </Button>
         </>

@@ -2,7 +2,7 @@ import { useCallback, useState } from "react"
 
 import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router"
-import { ArrowLeft, Pencil, Users } from "lucide-react"
+import { ArrowLeft, SquarePen, Users } from "lucide-react"
 
 import { membersApi } from "@/api/endpoints/members"
 import {
@@ -118,7 +118,7 @@ function MemberDetail({ member }: { member: Member }) {
               className="h-7 rounded-none gap-1.5 px-2.5"
               onClick={() => setEditing(true)}
             >
-              <Pencil className="size-3.5" />
+              <SquarePen className="size-3.5" />
               Edit
             </Button>
           ) : null}
