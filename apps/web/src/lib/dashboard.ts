@@ -91,11 +91,14 @@ export function useOnboardingCounts(enabled: boolean): OnboardingCounts {
   }
 }
 
+/**
+ * The whole figure, grouped. These tiles are read as counts to act on, and a
+ * rounded "3k" hides the difference between 2,500 and 3,499; every other card
+ * on the dashboard already shows its total in full.
+ */
 export function formatKpi(value: number | null): string {
   if (value === null) return "-"
-  if (value < 1000) return value.toString()
-  if (value < 10_000) return (value / 1000).toFixed(1).replace(/\.0$/, "") + "k"
-  return Math.round(value / 1000) + "k"
+  return value.toLocaleString()
 }
 
 export interface KpiDelta {

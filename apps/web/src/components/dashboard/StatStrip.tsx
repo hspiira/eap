@@ -74,7 +74,10 @@ function StatCell({ stat, withDivider }: { stat: StatSpec; withDivider: boolean 
           <Skeleton className="h-7 w-12" />
         ) : (
           <span
-            className={cn("text-2xl font-semibold", stat.error ? "text-fg-subtle" : "text-fg")}
+            className={cn(
+              "text-2xl font-semibold tabular-nums",
+              stat.error ? "text-fg-subtle" : "text-fg",
+            )}
             title={stat.error ? "Failed to load" : undefined}
           >
             {stat.error ? "-" : stat.value}
