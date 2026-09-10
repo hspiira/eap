@@ -190,6 +190,30 @@ class TestReferenceVocabulary:
         assert edited["name"] == ("Silver", "Silver Plus")
 
 
+class TestEventTime:
+    async def test_the_trail_records_when_it_happened_not_when_it_drained(self, api, chain_db):
+        """The outbox delays delivery, and an outage delays it by the outage.
+
+        Stamping the audit row at drain time makes every date filter on
+        `/audit/logs` answer with the worker's schedule instead of the
+        tenant's history.
+        """
+        response = await api.post(
+            "/client-tiers",
+            json={"code": "bronze", "name": "Bronze", "description": None, "sort_order": 3},
+        )
+        assert response.status_code == 201, response.text
+
+        async with chain_db() as session:
+            queued = (await session.execute(select(OutboxEventModel))).scalars().all()
+            event_time = queued[0].occurred_at
+
+        assert await _drain(chain_db) == 1
+
+        logs = await _logs(chain_db)
+        assert logs[0].occurred_at == event_time
+
+
 class TestAuthentication:
     async def test_a_granted_sign_in_is_recorded(self, api, chain_db):
         response = await api.post(
