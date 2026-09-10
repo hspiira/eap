@@ -443,7 +443,8 @@ async def test_member_import_template_is_server_generated(api):
     assert response.headers["content-type"].startswith("text/csv")
     assert response.text.splitlines()[0] == (
         "Company Code,Staff_ID,Staff Number,Name of Employee,Email Address,Personal Email,"
-        "Date of Birth,Gender,Phone,National ID,Passport Number,Status,Relation,Primary Staff ID"
+        "Date of Birth,Gender,Phone,National ID,Passport Number,Job Title,Job Classification,"
+        "Skill,Department,Unit,Contract type,Status,Relation,Primary Staff ID"
     )
     assert "Example Member" in response.text
 

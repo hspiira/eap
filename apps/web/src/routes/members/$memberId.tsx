@@ -193,7 +193,10 @@ function MemberDetail({ member }: { member: Member }) {
                   <DetailCard title="Identification">
                     <DetailGrid>
                       <DetailRow label="Staff ID" value={member.import_source_id} />
-                      <DetailRow label="Staff number (reference only)" value={member.staff_number} />
+                      <DetailRow
+                        label="Staff number (reference only)"
+                        value={member.staff_number}
+                      />
                       <DetailRow label="National ID" value={member.national_id} />
                       <DetailRow label="Passport" value={member.passport_number} />
                     </DetailGrid>
