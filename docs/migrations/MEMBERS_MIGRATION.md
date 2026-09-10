@@ -241,7 +241,7 @@ preview-first importer. Its safe mapping is:
 | Sample column | Member field | Decision |
 | --- | --- | --- |
 | `Company Code` | client lookup | Required tenant-scoped client code; `Company` is informational and is not used as an identity fallback. |
-| `Staff_ID` | `employer_member_id` | Use the stable company-supplied identifier; do not create a second `external_id`. |
+| `Staff_ID` | ~~`employer_member_id`~~ `import_source_id` | ~~Use the stable company-supplied identifier; do not create a second `external_id`.~~ Superseded 2026-09-09 by `b881e8b5`: `employer_member_id` is now always server-issued from the per-client sequence, for every relation. `Staff_ID` maps to the separate `import_source_id` column instead, which exists exactly for this purpose ("do not create a second `external_id`" is honoured by reusing this field, not `employer_member_id`). |
 | `Name of Employee` | `display_label` | Required member name. |
 | `Email Address` | `work_email` | Normalize `N/A` and blanks to null. |
 | `Personal Email` | `personal_email` | Optional personal contact; normalize `N/A` and blanks to null. |
@@ -642,7 +642,7 @@ not because the precedent was followed loosely.
 | --- | --- | --- |
 | `POST /members/import` | current `POST /members/import` (preview) | Stage: hash, reject only if same tenant+hash batch is still `Staged`, persist batch + one row per CSV row with a computed outcome. Returns `MemberImportBatchResponse`. |
 | `GET /members/import/{batch_id}` | — | Batch status, row_count, outcome counts. |
-| `GET /members/import/{batch_id}/rows` | — | Paginated, filterable by outcome/decision. |
+| `GET /members/import/{batch_id}/rows` | — | Paginated, filterable by outcome/decision. Shipped with only an `outcome` filter (`members.py:871`); no `decision` query param exists. Low impact: `MemberImportDialog.tsx`'s `fetchAllRows` pages through every row unfiltered and filters client-side, so nothing depends on the missing param, but a future consumer reading only this table would expect one. |
 | `PATCH /members/import/{batch_id}/rows/{row_id}` | — | New. Set a row's decision. |
 | `POST /members/import/{batch_id}/apply` | current `POST /members/import/commit` | No body but `batch_id`. Applies rows with `decision=import` and `outcome=New` one at a time, immediately persisting `imported_member_id` per row (row atomicity preserved), then marks the batch `Applied`. |
 | `POST /members/import/{batch_id}/abandon` | — | Records a reason, marks `Abandoned`, frees the file hash per the corrected partial index. |
