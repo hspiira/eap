@@ -28,12 +28,6 @@ it in passing.
 
 Work breakdowns and agent handoffs. Ownership, branches and dependency gates.
 
-- [PROVIDERS_EXECUTION.md](handoffs/PROVIDERS_EXECUTION.md) - three-agent
-  execution plan and working agreement for the provider migration.
-- [PROVIDERS_INTEGRATION_HANDOFF.md](handoffs/PROVIDERS_INTEGRATION_HANDOFF.md) -
-  what the provider integration branch contained at handoff.
-- [PROVIDERS_FRONTEND.md](handoffs/PROVIDERS_FRONTEND.md) - provider frontend
-  and generated contracts.
 - [SESSIONS_IMPLEMENTATION.md](handoffs/SESSIONS_IMPLEMENTATION.md) - session
   module task breakdown, sized one task per agent.
 
@@ -82,6 +76,19 @@ document from the evidence it rests on.
 - [DEV_DATA_LOAD.md](operations/DEV_DATA_LOAD.md) - what was loaded into the dev
   database from the client workbooks, in order, with the counts each pass
   produced.
+
+## archive/
+
+Finished work, kept for the record and still cited as evidence. Not current: do
+not follow its instructions, branches or worktree paths. See
+[archive/README.md](archive/README.md).
+
+- The three-worktree execution of the provider migration
+  ([PROVIDERS_EXECUTION.md](archive/PROVIDERS_EXECUTION.md),
+  [PROVIDERS_INTEGRATION_HANDOFF.md](archive/PROVIDERS_INTEGRATION_HANDOFF.md),
+  [PROVIDERS_FRONTEND.md](archive/PROVIDERS_FRONTEND.md)), merged into
+  `chore/monorepo`. The decisions themselves stay in
+  [migrations/PROVIDERS_MIGRATION.md](migrations/PROVIDERS_MIGRATION.md).
 
 ## Related
 

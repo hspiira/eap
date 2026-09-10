@@ -253,7 +253,7 @@ documents card, provenance and activity tab are all existing endpoints.
   "null · null" in `ProviderPicker` (fall back to "Unassessed").
 - Expose the record-status filter.
 - The alias review queue and practitioner import remain deliberately without UI
-  (`docs/handoffs/PROVIDERS_FRONTEND.md:301-316`); this proposal does not reopen
+  (`docs/archive/PROVIDERS_FRONTEND.md:301-316`); this proposal does not reopen
   that decision, but the 142 unmapped aliases and 109 NeedsReview rows recorded
   in `docs/gaps/IMPORT_REVIEW_UI_GAP.md` will eventually force it.
 

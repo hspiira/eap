@@ -8,7 +8,7 @@ changed is recorded under "Phase 1 to 4 verification". Track this document in
 git. Update it with each implementation commit; strike completed tasks through
 rather than deleting them. Implemented, tested, and applied to a database are
 separate claims. Execution ownership and agent prompts are in
-`docs/handoffs/PROVIDERS_EXECUTION.md`.
+`docs/archive/PROVIDERS_EXECUTION.md`.
 
 ## Status at a glance
 

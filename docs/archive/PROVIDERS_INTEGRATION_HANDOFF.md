@@ -1,5 +1,10 @@
 # Provider migration: integration handoff
 
+**Archived 2026-09-10.** This work is merged into `chore/monorepo`; the
+worktrees and branches below no longer exist. Kept as a record of what was
+done and verified. Current provider decisions are in
+`docs/migrations/PROVIDERS_MIGRATION.md`.
+
 From the provider-core and integration agent, for the review task
 `Review providers migration`, ID `01a076a5-c023-74a2-b32c-c49bb68f0387`.
 

@@ -1,5 +1,10 @@
 # Provider migration execution handoff
 
+**Archived 2026-09-10.** This work is merged into `chore/monorepo`; the
+worktrees and branches below no longer exist. Kept as a record of what was
+done and verified. Current provider decisions are in
+`docs/migrations/PROVIDERS_MIGRATION.md`.
+
 Use with `docs/migrations/PROVIDERS_MIGRATION.md`. The user requested
 three-agent implementation followed by independent review. These prompts
 authorize implementation of that plan; they do not assert that it is already
@@ -91,7 +96,7 @@ never a shared database whose fixtures create/drop other agents' tables.
 
 You are the provider-core implementer and integration owner. Read AGENTS.md,
 CLAUDE.md, docs/migrations/PROVIDERS_MIGRATION.md and
-docs/handoffs/PROVIDERS_EXECUTION.md first. Create an isolated worktree on a
+docs/archive/PROVIDERS_EXECUTION.md first. Create an isolated worktree on a
 codex/ branch from the documentation handoff commit. Announce your identity and
 ownership to the other provider tasks. Use graft for context and call/reference
 tracing. Do not spawn subagents.
@@ -137,7 +142,7 @@ its concrete findings before claiming completion.
 
 You own new backend organisation, affiliation, vocabulary, alias and historical
 import modules. Read AGENTS.md, CLAUDE.md,
-docs/migrations/PROVIDERS_MIGRATION.md and docs/handoffs/PROVIDERS_EXECUTION.md
+docs/migrations/PROVIDERS_MIGRATION.md and docs/archive/PROVIDERS_EXECUTION.md
 first. Start an isolated codex/ worktree from the handoff commit. Announce your
 identity/ownership to the other provider tasks and use graft before source work.
 Do not spawn subagents.
@@ -183,7 +188,7 @@ review task for review; resolve its findings in coordination with the file owner
 
 You own the provider frontend, generated contracts and integrated user-flow
 verification. Read AGENTS.md, CLAUDE.md, docs/migrations/PROVIDERS_MIGRATION.md,
-docs/handoffs/PROVIDERS_EXECUTION.md and applicable web/design rules. Use an
+docs/archive/PROVIDERS_EXECUTION.md and applicable web/design rules. Use an
 isolated codex/ worktree from the handoff commit. Announce your
 identity/ownership and use graft for repository context. Do not spawn subagents.
 

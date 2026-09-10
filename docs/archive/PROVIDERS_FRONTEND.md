@@ -1,8 +1,13 @@
 # Provider frontend and contract handoff
 
+**Archived 2026-09-10.** This work is merged into `chore/monorepo`; the
+worktrees and branches below no longer exist. Kept as a record of what was
+done and verified. Current provider decisions are in
+`docs/migrations/PROVIDERS_MIGRATION.md`.
+
 Frontend record for the provider migration. Use with
 `docs/migrations/PROVIDERS_MIGRATION.md`, which holds the design decisions, and
-`docs/handoffs/PROVIDERS_EXECUTION.md`, which holds ownership and the dependency
+`docs/archive/PROVIDERS_EXECUTION.md`, which holds ownership and the dependency
 gates. Only the provider-core task updates the shared migration checklist; this
 document covers the frontend and generated contracts only.
 
