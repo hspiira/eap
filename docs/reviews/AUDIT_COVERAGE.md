@@ -158,6 +158,42 @@ Redaction is per resource, not blanket: a client rename still records
 `Acme Corp -> Acme Holdings`, because that is ordinary business data and the
 before-and-after is the point of auditing it.
 
+## Route-level gaps (2026-09-10 pass)
+
+A second pass compared every `@router.post/put/patch/delete` handler against
+its audit call, rather than entity emissions. The scope question left open
+above has since been answered by the product owner: every event that affects
+or triggers a data change is to be logged. Against that requirement:
+
+1. **DSAR execution is unaudited.** `request_export` and `request_erasure`
+   audit; `execute_export` (`dsar.py:119`), `cancel_erasure` (`dsar.py:171`)
+   and `execute_erasure` (`dsar.py:192`) do not. Erasure execution is the
+   single most destructive write in the system and leaves no audit row.
+2. **`apply_batch` is unaudited.** `session_imports.py:315` writes every
+   accepted historical session row and closes the batch with no `audit_change`
+   call. Staging and abandoning the same batch are both audited.
+3. **Auth writes nothing.** `auth.py` has four mutation endpoints and zero
+   audit references: `set_initial_password` (a credential change), `login`
+   (writes lockout counters and last-login state, `auth.py:226-244`),
+   `refresh_token` and `logout`. `AuditActionType.LOGIN` and `LOGOUT` exist
+   and `audit_filter.py:40` lists them as always-log, but nothing in the
+   codebase ever emits them. The same holds for `EXPORT` and `IMPORT`.
+4. **Provider specialties are one-quarter audited.** Only `retire_specialty`
+   audits; `create_specialty` (`provider_specialties.py:74`), `add_link`
+   (`:152`) and `remove_link` (`:197`) do not.
+5. **Eleven vocabulary route files mutate with no audit at all:**
+   `case_referral_sources`, `client_tiers`, `diagnoses` (eight mutations,
+   including per-tenant settings and alias overlays), `document_types`,
+   `kpi_categories`, `kpi_measurement_units`, `next_of_kin_relationships`,
+   `presenting_problems`, `service_categories`, `survey_sources`,
+   `utilisation_event_types`. These call repository create/update directly
+   with no domain entity and no events, so adding `audit_change` alone would
+   log nothing; each needs either events on an entity or a direct audit write.
+
+Judgement, not measurement: items 1 to 3 are ranked first on data
+sensitivity. That ordering is an inference from what the endpoints touch,
+not a stakeholder decision.
+
 ## Still open
 
 - The other 93 silent mutators, pending the scope call above.
