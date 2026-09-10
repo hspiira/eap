@@ -212,6 +212,50 @@ describe("chunked apply", () => {
     )
     expect(api.applyImport).toHaveBeenCalledTimes(2)
   })
+
+  it("counts a row written before a cancel as written, not skipped, in the summary", async () => {
+    const rowOne = makeRow({ id: "row-1" })
+    const rowTwo = makeRow({ id: "row-2", row_number: 3 })
+    await stage([rowOne, rowTwo])
+
+    api.listImportRows.mockResolvedValueOnce({
+      items: [{ ...rowOne, imported_member_id: "member-1" }, rowTwo],
+      total: 2,
+      page: 1,
+      limit: 200,
+      has_more: false,
+    })
+    let resolveChunk: (value: unknown) => void = () => {}
+    api.applyImport.mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          resolveChunk = resolve
+        }),
+    )
+
+    await userEvent.click(screen.getByRole("button", { name: "Import 2 rows" }))
+    const cancelButton = await screen.findByRole("button", { name: "Cancel" })
+    await userEvent.click(cancelButton)
+    resolveChunk({
+      batch_id: "batch-1",
+      imported: 1,
+      updated: 0,
+      unchanged: 0,
+      failed: 0,
+      remaining: 1,
+      done: false,
+    })
+    await waitFor(() => expect(screen.queryByRole("button", { name: "Cancel" })).not.toBeInTheDocument())
+
+    await waitFor(() => {
+      const summary = screen.getByText(
+        (_, node) => node?.tagName === "P" && Boolean(node.textContent?.includes("rows checked")),
+      )
+      expect(summary.textContent).toBe(
+        "2 rows checked · 1 ready · 1 already written · 0 skipped · 0 errors",
+      )
+    })
+  })
 })
 
 describe("updating a member the roster already created", () => {

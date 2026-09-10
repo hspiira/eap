@@ -742,10 +742,17 @@ function ImportSummary({
     )
   }
   const invalid = rows.filter((row) => row.outcome === "Invalid").length
+  const written = rows.filter((row) => row.imported_member_id).length
+  const skipped = rows.length - queued - invalid - written
   return (
     <p className="text-sm">
       <strong>{rows.length}</strong> rows checked · <strong>{queued}</strong> ready ·{" "}
-      <strong>{rows.length - queued - invalid}</strong> skipped · <strong>{invalid}</strong> errors
+      {written > 0 ? (
+        <>
+          <strong>{written}</strong> already written ·{" "}
+        </>
+      ) : null}
+      <strong>{skipped}</strong> skipped · <strong>{invalid}</strong> errors
     </p>
   )
 }
