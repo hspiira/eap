@@ -248,8 +248,18 @@ function ImportPreview({
             <TableRow className="border-fg/10">
               <TableHead className="h-auto px-2 py-1 text-xs font-medium">#</TableHead>
               <TableHead className="h-auto px-2 py-1 text-xs font-medium">Name</TableHead>
-              <TableHead className="h-auto px-2 py-1 text-xs font-medium">Staff ID</TableHead>
-              <TableHead className="h-auto px-2 py-1 text-xs font-medium">Staff no.</TableHead>
+              <TableHead
+                className="h-auto px-2 py-1 text-xs font-medium"
+                title="The roster's stable identifier. Matches this row to an existing member on re-import."
+              >
+                Staff ID
+              </TableHead>
+              <TableHead
+                className="h-auto px-2 py-1 text-xs font-medium"
+                title="Reference only. Not used to match members."
+              >
+                Staff no.
+              </TableHead>
               <TableHead className="h-auto px-2 py-1 text-xs font-medium">Client</TableHead>
               {showEmployment
                 ? EMPLOYMENT_COLUMNS.map((column) => (
