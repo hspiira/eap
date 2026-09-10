@@ -42,6 +42,24 @@ from app.shared.utils.datetime import utc_now
 _link_audit_logger = logging.getLogger("evexia.privacy.subject_link")
 
 
+def _mergeable_pair(
+    source: EligibleMemberModel | None, target: EligibleMemberModel | None
+) -> tuple[EligibleMemberModel, EligibleMemberModel]:
+    """The two rows, once every reason not to merge them has been ruled out."""
+    if source is None or target is None:
+        raise ConflictError("Both members must exist in the current tenant")
+    if source.client_id != target.client_id:
+        raise ConflictError("Members must belong to the same client")
+    if source.relation != target.relation or (
+        source.relation != MemberRelation.EMPLOYEE
+        and source.primary_employee_member_id != target.primary_employee_member_id
+    ):
+        raise ConflictError("Members must have the same relationship context")
+    if source.user_id and target.user_id:
+        raise ConflictError("Unlink one member account before merging")
+    return source, target
+
+
 class EligibleMemberRepositoryImpl(EligibleMemberRepository):
     def __init__(self, session: AsyncSession):
         self._session = session
@@ -349,18 +367,7 @@ class EligibleMemberRepositoryImpl(EligibleMemberRepository):
             .all()
         )
         members = {row.id: row for row in rows}
-        source, target = members.get(source_id.value), members.get(target_id.value)
-        if source is None or target is None:
-            raise ConflictError("Both members must exist in the current tenant")
-        if source.client_id != target.client_id:
-            raise ConflictError("Members must belong to the same client")
-        if source.relation != target.relation or (
-            source.relation != MemberRelation.EMPLOYEE
-            and source.primary_employee_member_id != target.primary_employee_member_id
-        ):
-            raise ConflictError("Members must have the same relationship context")
-        if source.user_id and target.user_id:
-            raise ConflictError("Unlink one member account before merging")
+        source, target = _mergeable_pair(members.get(source_id.value), members.get(target_id.value))
 
         contacts = (
             await self._session.execute(

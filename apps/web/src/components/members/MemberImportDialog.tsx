@@ -90,11 +90,18 @@ function isQueued(row: MemberImportRow): boolean {
   return row.outcome === "New" && row.decision === "import"
 }
 
-function rowStatus(row: MemberImportRow, applied: boolean): RowStatus {
+/** Outcomes no decision can change. Null when the row is still the person's to direct. */
+function settledStatus(row: MemberImportRow): RowStatus | null {
   if (row.imported_member_id) return { label: "Imported", tone: "ok" }
   if (row.outcome === "Failed") return { label: row.message ?? "Failed", tone: "error" }
   if (row.outcome === "Invalid") return { label: row.message ?? "Invalid", tone: "error" }
   if (row.outcome === "Duplicate") return { label: "Existing member", tone: "muted" }
+  return null
+}
+
+function rowStatus(row: MemberImportRow, applied: boolean): RowStatus {
+  const settled = settledStatus(row)
+  if (settled) return settled
   if (row.decision === "skip") return { label: applied ? "Skipped" : "Will skip", tone: "muted" }
   return { label: applied ? "Not imported" : "Ready", tone: "muted" }
 }
@@ -125,6 +132,203 @@ async function fetchAllRows(batchId: string): Promise<MemberImportRow[]> {
     if (!response.has_more) return items
     page += 1
   }
+}
+
+function ImportControls({
+  file,
+  fileHandle,
+  applying,
+  staging,
+  error,
+  onPick,
+  onRefresh,
+  onSelectFile,
+  onDownloadTemplate,
+}: {
+  file: File | null
+  fileHandle: FileSystemFileHandle | null
+  applying: boolean
+  staging: boolean
+  error: string | null
+  onPick: () => void
+  onRefresh: () => void
+  onSelectFile: (file: File | null) => void
+  onDownloadTemplate: () => void
+}) {
+  return (
+    <>
+      <div className="flex flex-wrap items-center gap-2">
+        <Label htmlFor="member-import-file" className="shrink-0">
+          CSV file
+        </Label>
+        {supportsFilePicker ? (
+          <>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              disabled={applying}
+              className="h-9 min-w-52 flex-1 justify-start truncate font-normal"
+              onClick={onPick}
+            >
+              {file ? file.name : "Choose file…"}
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              size="icon"
+              disabled={!fileHandle || applying || staging}
+              title="Re-read this file from disk"
+              aria-label="Refresh CSV from disk"
+              className="h-9 w-9 shrink-0"
+              onClick={onRefresh}
+            >
+              <RefreshCw className="size-3.5" />
+            </Button>
+          </>
+        ) : (
+          <Input
+            id="member-import-file"
+            type="file"
+            accept=".csv,text/csv"
+            disabled={applying}
+            className="h-9 min-w-52 flex-1"
+            onChange={(event) => onSelectFile(event.target.files?.[0] ?? null)}
+          />
+        )}
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          className="h-9 shrink-0"
+          onClick={onDownloadTemplate}
+        >
+          <Download className="mr-1.5 size-3.5" />
+          Template
+        </Button>
+      </div>
+      <p className="text-xs text-fg-muted">
+        Company Code resolves the client. Supported fields: Company Code, Staff_ID, Staff Number,
+        Name of Employee, Email Address, Personal Email, Date of Birth (YYYY-MM-DD), Gender, Phone,
+        National ID, Passport Number, Status, Relation, and Primary Staff ID. Job Title, Job
+        Classification, Skill, Department, Unit and Contract type are also imported when present.
+        Any other column is ignored; files are limited to 10 MB.
+      </p>
+
+      {staging ? <p className="text-xs text-fg-muted">Staging rows on the server…</p> : null}
+      {error ? <p className="text-xs text-destructive">{error}</p> : null}
+    </>
+  )
+}
+
+function ImportPreview({
+  batch,
+  rows,
+  queued,
+  applying,
+  applied,
+  showEmployment,
+  updateDecision,
+}: {
+  batch: MemberImportBatch | null
+  rows: MemberImportRow[]
+  queued: MemberImportRow[]
+  applying: boolean
+  applied: boolean
+  showEmployment: boolean
+  updateDecision: (row: MemberImportRow, decision: MemberImportRowDecision) => void
+}) {
+  if (!batch) return null
+  return (
+    <div className="space-y-3 border-t border-fg/10 pt-4">
+      <ImportSummary rows={rows} queued={queued.length} applying={applying} applied={applied} />
+      <div className="max-h-[28rem] overflow-auto rounded-sm border border-fg/10">
+        <Table className="text-left text-xs">
+          <TableHeader className="sticky top-0 bg-surface text-fg-muted">
+            <TableRow className="border-fg/10">
+              <TableHead className="h-auto px-2 py-1 text-xs font-medium">#</TableHead>
+              <TableHead className="h-auto px-2 py-1 text-xs font-medium">Name</TableHead>
+              <TableHead className="h-auto px-2 py-1 text-xs font-medium">Staff ID</TableHead>
+              <TableHead className="h-auto px-2 py-1 text-xs font-medium">Staff no.</TableHead>
+              <TableHead className="h-auto px-2 py-1 text-xs font-medium">Client</TableHead>
+              {showEmployment
+                ? EMPLOYMENT_COLUMNS.map((column) => (
+                    <TableHead key={column.key} className="h-auto px-2 py-1 text-xs font-medium">
+                      {column.label}
+                    </TableHead>
+                  ))
+                : null}
+              <TableHead className="h-auto px-2 py-1 text-xs font-medium">Decision</TableHead>
+              <TableHead className="h-auto px-2 py-1 text-xs font-medium">Status</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {rows.map((row) => (
+              <ImportRowLine
+                key={row.id}
+                row={row}
+                applying={applying}
+                applied={applied}
+                showEmployment={showEmployment}
+                onDecision={updateDecision}
+              />
+            ))}
+          </TableBody>
+        </Table>
+      </div>
+      {rows.some((row) => row.outcome === "Invalid" || row.outcome === "Failed") ? (
+        <Button
+          type="button"
+          variant="link"
+          size="sm"
+          className="h-auto gap-1 px-0 text-xs"
+          onClick={() => downloadIssues(rows)}
+        >
+          <Download className="size-3" />
+          Download issue report
+        </Button>
+      ) : null}
+    </div>
+  )
+}
+
+function ImportFooter({
+  batch,
+  queued,
+  staging,
+  applying,
+  applied,
+  onOpenChange,
+  applyImport,
+}: {
+  batch: MemberImportBatch | null
+  queued: MemberImportRow[]
+  staging: boolean
+  applying: boolean
+  applied: boolean
+  onOpenChange: (open: boolean) => void
+  applyImport: () => void
+}) {
+  return (
+    <SheetFooter className="shrink-0 justify-end gap-2 border-t border-fg/10 bg-surface px-6 py-3">
+      <Button
+        type="button"
+        variant="outline"
+        disabled={applying}
+        onClick={() => onOpenChange(false)}
+      >
+        {applied ? "Done" : "Close"}
+      </Button>
+      <Button
+        type="button"
+        disabled={!batch || staging || applying || applied || queued.length === 0}
+        onClick={() => void applyImport()}
+      >
+        <FileInput className="mr-1.5 size-4" />
+        {applying ? "Applying…" : `Import ${queued.length} rows`}
+      </Button>
+    </SheetFooter>
+  )
 }
 
 export function MemberImportDialog({ open, onOpenChange, onImported }: MemberImportDialogProps) {
@@ -264,152 +468,37 @@ export function MemberImportDialog({ open, onOpenChange, onImported }: MemberImp
         </SheetHeader>
 
         <div className="min-h-0 flex-1 space-y-4 overflow-y-auto px-6 py-5">
-          <div className="flex flex-wrap items-center gap-2">
-            <Label htmlFor="member-import-file" className="shrink-0">
-              CSV file
-            </Label>
-            {supportsFilePicker ? (
-              <>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  disabled={applying}
-                  className="h-9 min-w-52 flex-1 justify-start truncate font-normal"
-                  onClick={() => void pickFile()}
-                >
-                  {file ? file.name : "Choose file…"}
-                </Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="icon"
-                  disabled={!fileHandle || applying || staging}
-                  title="Re-read this file from disk"
-                  aria-label="Refresh CSV from disk"
-                  className="h-9 w-9 shrink-0"
-                  onClick={() => void refreshFile()}
-                >
-                  <RefreshCw className="size-3.5" />
-                </Button>
-              </>
-            ) : (
-              <Input
-                id="member-import-file"
-                type="file"
-                accept=".csv,text/csv"
-                disabled={applying}
-                className="h-9 min-w-52 flex-1"
-                onChange={(event) => selectFile(event.target.files?.[0] ?? null)}
-              />
-            )}
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              className="h-9 shrink-0"
-              onClick={() => void downloadTemplate()}
-            >
-              <Download className="mr-1.5 size-3.5" />
-              Template
-            </Button>
-          </div>
-          <p className="text-xs text-fg-muted">
-            Company Code resolves the client. Supported fields: Company Code, Staff_ID, Staff
-            Number, Name of Employee, Email Address, Personal Email, Date of Birth (YYYY-MM-DD),
-            Gender, Phone, National ID, Passport Number, Status, Relation, and Primary Staff ID. Job
-            Title, Job Classification, Skill, Department, Unit and Contract type are also imported
-            when present. Any other column is ignored; files are limited to 10 MB.
-          </p>
-
-          {staging ? <p className="text-xs text-fg-muted">Staging rows on the server…</p> : null}
-          {error ? <p className="text-xs text-destructive">{error}</p> : null}
-
-          {batch ? (
-            <div className="space-y-3 border-t border-fg/10 pt-4">
-              <ImportSummary
-                rows={rows}
-                queued={queued.length}
-                applying={applying}
-                applied={applied}
-              />
-              <div className="max-h-[28rem] overflow-auto rounded-sm border border-fg/10">
-                <Table className="text-left text-xs">
-                  <TableHeader className="sticky top-0 bg-surface text-fg-muted">
-                    <TableRow className="border-fg/10">
-                      <TableHead className="h-auto px-2 py-1 text-xs font-medium">#</TableHead>
-                      <TableHead className="h-auto px-2 py-1 text-xs font-medium">Name</TableHead>
-                      <TableHead className="h-auto px-2 py-1 text-xs font-medium">
-                        Staff ID
-                      </TableHead>
-                      <TableHead className="h-auto px-2 py-1 text-xs font-medium">
-                        Staff no.
-                      </TableHead>
-                      <TableHead className="h-auto px-2 py-1 text-xs font-medium">Client</TableHead>
-                      {showEmployment
-                        ? EMPLOYMENT_COLUMNS.map((column) => (
-                            <TableHead
-                              key={column.key}
-                              className="h-auto px-2 py-1 text-xs font-medium"
-                            >
-                              {column.label}
-                            </TableHead>
-                          ))
-                        : null}
-                      <TableHead className="h-auto px-2 py-1 text-xs font-medium">
-                        Decision
-                      </TableHead>
-                      <TableHead className="h-auto px-2 py-1 text-xs font-medium">Status</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {rows.map((row) => (
-                      <ImportRowLine
-                        key={row.id}
-                        row={row}
-                        applying={applying}
-                        applied={applied}
-                        showEmployment={showEmployment}
-                        onDecision={updateDecision}
-                      />
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
-              {rows.some((row) => row.outcome === "Invalid" || row.outcome === "Failed") ? (
-                <Button
-                  type="button"
-                  variant="link"
-                  size="sm"
-                  className="h-auto gap-1 px-0 text-xs"
-                  onClick={() => downloadIssues(rows)}
-                >
-                  <Download className="size-3" />
-                  Download issue report
-                </Button>
-              ) : null}
-            </div>
-          ) : null}
+          <ImportControls
+            file={file}
+            fileHandle={fileHandle}
+            applying={applying}
+            staging={staging}
+            error={error}
+            onPick={() => void pickFile()}
+            onRefresh={() => void refreshFile()}
+            onSelectFile={selectFile}
+            onDownloadTemplate={() => void downloadTemplate()}
+          />
+          <ImportPreview
+            batch={batch}
+            rows={rows}
+            queued={queued}
+            applying={applying}
+            applied={applied}
+            showEmployment={showEmployment}
+            updateDecision={updateDecision}
+          />
         </div>
 
-        <SheetFooter className="shrink-0 justify-end gap-2 border-t border-fg/10 bg-surface px-6 py-3">
-          <Button
-            type="button"
-            variant="outline"
-            disabled={applying}
-            onClick={() => onOpenChange(false)}
-          >
-            {applied ? "Done" : "Close"}
-          </Button>
-          <Button
-            type="button"
-            disabled={!batch || staging || applying || applied || queued.length === 0}
-            onClick={() => void applyImport()}
-          >
-            <FileInput className="mr-1.5 size-4" />
-            {applying ? "Applying…" : `Import ${queued.length} rows`}
-          </Button>
-        </SheetFooter>
+        <ImportFooter
+          batch={batch}
+          queued={queued}
+          staging={staging}
+          applying={applying}
+          applied={applied}
+          onOpenChange={onOpenChange}
+          applyImport={() => void applyImport()}
+        />
       </SheetContent>
     </Sheet>
   )
@@ -456,6 +545,58 @@ const EMPLOYMENT_COLUMNS = [
   { key: "employment_type", label: "Contract" },
 ] as const
 
+function EmploymentCells({ row }: { row: MemberImportRow }) {
+  return (
+    <>
+      {EMPLOYMENT_COLUMNS.map((column) => (
+        <TableCell key={column.key} className="max-w-36 truncate px-2 py-1 text-xs text-fg-muted">
+          {row.employment?.[column.key] ?? "-"}
+        </TableCell>
+      ))}
+    </>
+  )
+}
+
+function DecisionCell({
+  row,
+  applying,
+  applied,
+  onDecision,
+}: {
+  row: MemberImportRow
+  applying: boolean
+  applied: boolean
+  onDecision: (row: MemberImportRow, decision: MemberImportRowDecision) => void
+}) {
+  if (row.outcome !== "New" || applied) {
+    return (
+      <TableCell className="px-2 py-1 text-xs">
+        <span className="text-fg-muted">-</span>
+      </TableCell>
+    )
+  }
+  return (
+    <TableCell className="px-2 py-1 text-xs">
+      <Select
+        value={row.decision}
+        disabled={applying}
+        onValueChange={(value) => onDecision(row, value as MemberImportRowDecision)}
+      >
+        <SelectTrigger
+          aria-label={`Decision for row ${row.row_number}`}
+          className="h-7 rounded-sm border-fg/15 bg-bg px-2 text-xs text-fg"
+        >
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="import">Import</SelectItem>
+          <SelectItem value="skip">Skip</SelectItem>
+        </SelectContent>
+      </Select>
+    </TableCell>
+  )
+}
+
 function ImportRowLine({
   row,
   applying,
@@ -470,7 +611,6 @@ function ImportRowLine({
   onDecision: (row: MemberImportRow, decision: MemberImportRowDecision) => void
 }) {
   const status = rowStatus(row, applied)
-  const decidable = row.outcome === "New" && !applied
   return (
     <TableRow className="border-fg/8">
       <TableCell className="px-2 py-1 text-xs text-fg-muted">{row.row_number}</TableCell>
@@ -484,38 +624,8 @@ function ImportRowLine({
       <TableCell className="max-w-36 truncate px-2 py-1 text-xs text-fg-muted">
         {row.client_name ?? row.client_code ?? "Unresolved"}
       </TableCell>
-      {showEmployment
-        ? EMPLOYMENT_COLUMNS.map((column) => (
-            <TableCell
-              key={column.key}
-              className="max-w-36 truncate px-2 py-1 text-xs text-fg-muted"
-            >
-              {row.employment?.[column.key] ?? "-"}
-            </TableCell>
-          ))
-        : null}
-      <TableCell className="px-2 py-1 text-xs">
-        {decidable ? (
-          <Select
-            value={row.decision}
-            disabled={applying}
-            onValueChange={(value) => onDecision(row, value as MemberImportRowDecision)}
-          >
-            <SelectTrigger
-              aria-label={`Decision for row ${row.row_number}`}
-              className="h-7 rounded-sm border-fg/15 bg-bg px-2 text-xs text-fg"
-            >
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="import">Import</SelectItem>
-              <SelectItem value="skip">Skip</SelectItem>
-            </SelectContent>
-          </Select>
-        ) : (
-          <span className="text-fg-muted">-</span>
-        )}
-      </TableCell>
+      {showEmployment ? <EmploymentCells row={row} /> : null}
+      <DecisionCell row={row} applying={applying} applied={applied} onDecision={onDecision} />
       <TableCell className={`max-w-52 truncate px-2 py-1 text-xs ${TONE_CLASS[status.tone]}`}>
         {status.label}
       </TableCell>

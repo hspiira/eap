@@ -231,22 +231,38 @@ class MemberRowChecker:
         decision: str | None = None,
         parse_error: str | None = None,
     ) -> RowCheck:
-        if parse_error:
-            return RowCheck(state="invalid", message=parse_error)
-        if decision is not None and decision not in DECISIONS:
-            return RowCheck(state="invalid", message="Decision must be import or skip")
+        rejected = _rejected_input(decision, parse_error)
+        if rejected:
+            return rejected
 
-        client = (
-            await self._clients.get_by_code(self._tenant_id, row.client_code or "")
-            if row.client_code
-            else None
-        )
+        client = await self._client_for(row)
         if client is None:
             return RowCheck(
                 state="invalid",
                 message="Company Code does not resolve to a client in this tenant",
             )
 
+        repeated = self._claim_staff_id(client, row)
+        if repeated:
+            return repeated
+
+        enrolled = await self._already_enrolled(client, row, decision)
+        if enrolled:
+            return enrolled
+
+        primary_member_id, unresolved = await self._primary_member_id(client, row)
+        if unresolved:
+            return unresolved
+
+        return self._checked(row, client, primary_member_id, decision)
+
+    async def _client_for(self, row: MemberCsvRow) -> ClientEntity | None:
+        if not row.client_code:
+            return None
+        return await self._clients.get_by_code(self._tenant_id, row.client_code)
+
+    def _claim_staff_id(self, client: ClientEntity, row: MemberCsvRow) -> RowCheck | None:
+        """Records the row's Staff_ID, rejecting a second use of it in the same file."""
         key = (client.id.value, row.import_source_id or "")
         if key in self._seen:
             return RowCheck(
@@ -255,40 +271,61 @@ class MemberRowChecker:
                 client=client,
             )
         self._seen.add(key)
+        return None
 
+    async def _already_enrolled(
+        self, client: ClientEntity, row: MemberCsvRow, decision: str | None
+    ) -> RowCheck | None:
         existing = await self._members.find_by_import_source_id(
             self._tenant_id, client.id, row.import_source_id or ""
         )
-        if existing is not None:
-            if decision not in (None, "skip"):
-                return RowCheck(
-                    state="invalid",
-                    message="Existing members can only be skipped; they are never overwritten",
-                    client=client,
-                )
-            return RowCheck(state="duplicate", client=client)
-
-        primary_member_id = None
-        if row.primary_import_source_id:
-            primary = await self._members.find_by_import_source_id(
-                self._tenant_id, client.id, row.primary_import_source_id
+        if existing is None:
+            return None
+        if decision not in (None, "skip"):
+            return RowCheck(
+                state="invalid",
+                message="Existing members can only be skipped; they are never overwritten",
+                client=client,
             )
-            if primary is None:
-                return RowCheck(
-                    state="invalid",
-                    message="Primary employee's Staff_ID was not found; import the employee first",
-                    client=client,
-                )
-            primary_member_id = primary.id.value
+        return RowCheck(state="duplicate", client=client)
 
+    async def _primary_member_id(
+        self, client: ClientEntity, row: MemberCsvRow
+    ) -> tuple[str | None, RowCheck | None]:
+        """The beneficiary's primary employee, or the rejection when it is not on file yet."""
+        if not row.primary_import_source_id:
+            return None, None
+        primary = await self._members.find_by_import_source_id(
+            self._tenant_id, client.id, row.primary_import_source_id
+        )
+        if primary is None:
+            return None, RowCheck(
+                state="invalid",
+                message="Primary employee's Staff_ID was not found; import the employee first",
+                client=client,
+            )
+        return primary.id.value, None
+
+    def _checked(
+        self,
+        row: MemberCsvRow,
+        client: ClientEntity,
+        primary_member_id: str | None,
+        decision: str | None,
+    ) -> RowCheck:
         try:
             data = _member_create(row, client, primary_member_id=primary_member_id)
         except (ValueError, ValidationError) as exc:
             return RowCheck(state="invalid", message=str(exc).split("\n", 1)[-1], client=client)
+        return RowCheck(state="skipped" if decision == "skip" else "new", client=client, data=data)
 
-        if decision == "skip":
-            return RowCheck(state="skipped", client=client, data=data)
-        return RowCheck(state="new", client=client, data=data)
+
+def _rejected_input(decision: str | None, parse_error: str | None) -> RowCheck | None:
+    if parse_error:
+        return RowCheck(state="invalid", message=parse_error)
+    if decision is not None and decision not in DECISIONS:
+        return RowCheck(state="invalid", message="Decision must be import or skip")
+    return None
 
 
 class MemberRowImporter:
