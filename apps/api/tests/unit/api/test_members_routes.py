@@ -84,6 +84,7 @@ async def api():
     state.members.get_by_id.return_value = member()
     state.members.find_by_employer_member_id.return_value = None
     state.members.find_by_import_source_id.return_value = None
+    state.members.find_by_import_source_ids.return_value = {}
     state.members.next_member_sequence.return_value = 1
     state.members.list_for_primary.return_value = []
     state.members.list_all.return_value = []
@@ -91,6 +92,7 @@ async def api():
     state.members.find_by_user_id.return_value = None
     state.imports.find_batch_by_hash.return_value = None
     state.imports.find_row_by_replay_key.return_value = None
+    state.imports.find_rows_by_replay_keys.return_value = {}
     state.imports.outcome_counts.return_value = {}
     state.imports.list_rows.return_value = ([], 0)
     state.imports.get_batch.return_value = None
@@ -227,11 +229,45 @@ async def test_stage_persists_a_batch_and_its_rows(api):
     assert rows[0].decision == "import"
 
 
+async def test_stage_batches_lookups_instead_of_one_query_per_row(api):
+    """3,000+ rows one row at a time was slow enough to time out a serverless function.
+
+    A roster this size overwhelmingly repeats one client code; staging it
+    must not re-resolve the client, or re-query membership/replay keys, once
+    per row.
+    """
+    api.clients.get_by_code.return_value = SimpleNamespace(
+        id=ClientId("c1"), name="Acme", code="ACME", tenant_id=TenantId("t1")
+    )
+    rows_csv = "\n".join(f"ACME,HR-{n},Employee {n}" for n in range(1, 51))
+
+    response = await api.http.post(
+        "/members/import",
+        files={
+            "file": (
+                "members.csv",
+                f"Company Code,Staff_ID,Name of Employee\n{rows_csv}\n".encode(),
+                "text/csv",
+            )
+        },
+    )
+
+    assert response.status_code == 201, response.text
+    ((rows,), _) = api.imports.add_rows.call_args
+    assert len(rows) == 50
+    assert all(row.outcome == MemberImportRowOutcome.NEW for row in rows)
+    api.clients.get_by_code.assert_awaited_once()
+    api.members.find_by_import_source_ids.assert_awaited_once()
+    api.members.find_by_import_source_id.assert_not_awaited()
+    api.imports.find_rows_by_replay_keys.assert_awaited_once()
+    api.imports.find_row_by_replay_key.assert_not_awaited()
+
+
 async def test_stage_flags_a_duplicate_row_with_a_default_skip_decision(api):
     api.clients.get_by_code.return_value = SimpleNamespace(
         id=ClientId("c1"), name="Acme", code="ACME", tenant_id=TenantId("t1")
     )
-    api.members.find_by_import_source_id.return_value = member()
+    api.members.find_by_import_source_ids.return_value = {"HR-1": member()}
 
     response = await api.http.post(
         "/members/import",
@@ -248,6 +284,41 @@ async def test_stage_flags_a_duplicate_row_with_a_default_skip_decision(api):
     ((rows,), _) = api.imports.add_rows.call_args
     assert rows[0].outcome == MemberImportRowOutcome.DUPLICATE
     assert rows[0].decision == "skip"
+    # Not "key:c1:HR-1": that string is already held by the real member's
+    # original import row, and reusing it here would collide on insert.
+    assert not rows[0].replay_key.startswith("key:")
+
+
+async def test_stage_gives_repeated_duplicates_of_the_same_id_distinct_keys(api):
+    """Production crash: re-staging a roster with a repeated Staff_ID raised a raw
+
+    UniqueViolationError instead of two clean classifications. Every non-New
+    outcome for the same Staff_ID must get its own collision-free key, not
+    just the first one.
+    """
+    api.clients.get_by_code.return_value = SimpleNamespace(
+        id=ClientId("c1"), name="Acme", code="ACME", tenant_id=TenantId("t1")
+    )
+    api.members.find_by_import_source_ids.return_value = {"HR-1": member()}
+
+    response = await api.http.post(
+        "/members/import",
+        files={
+            "file": (
+                "members.csv",
+                b"Company Code,Staff_ID,Name of Employee\nACME,HR-1,Amina\nACME,HR-1,Amina Again\n",
+                "text/csv",
+            )
+        },
+    )
+
+    assert response.status_code == 201, response.text
+    ((rows,), _) = api.imports.add_rows.call_args
+    assert rows[0].outcome == MemberImportRowOutcome.DUPLICATE
+    assert rows[1].outcome == MemberImportRowOutcome.INVALID
+    assert rows[0].replay_key != rows[1].replay_key
+    assert not rows[0].replay_key.startswith("key:")
+    assert not rows[1].replay_key.startswith("key:")
 
 
 async def test_stage_flags_a_row_still_claimed_by_another_unresolved_batch(api):
@@ -260,9 +331,9 @@ async def test_stage_flags_a_row_still_claimed_by_another_unresolved_batch(api):
     api.clients.get_by_code.return_value = SimpleNamespace(
         id=ClientId("c1"), name="Acme", code="ACME", tenant_id=TenantId("t1")
     )
-    api.imports.find_row_by_replay_key.return_value = SimpleNamespace(
-        row_number=7, batch_id=MemberImportBatchId("stuck-batch")
-    )
+    api.imports.find_rows_by_replay_keys.return_value = {
+        "key:c1:HR-1": SimpleNamespace(row_number=7, batch_id=MemberImportBatchId("stuck-batch"))
+    }
 
     response = await api.http.post(
         "/members/import",
@@ -280,7 +351,10 @@ async def test_stage_flags_a_row_still_claimed_by_another_unresolved_batch(api):
     assert rows[0].outcome == MemberImportRowOutcome.DUPLICATE
     assert rows[0].decision == "skip"
     assert rows[0].message == "Already staged as row 7 of batch stuck-batch"
-    assert rows[0].replay_key == "duplicate:stuck-batch:key:c1:HR-1"
+    # Not the identity key ("key:c1:HR-1"): that string is already held by the
+    # row in the stuck batch, and reusing it here would collide on insert.
+    assert rows[0].replay_key.startswith("file:")
+    assert rows[0].replay_key.endswith(":row:2")
 
 
 async def test_stage_imports_a_dependant_with_no_staff_id_of_their_own(api):
@@ -288,7 +362,7 @@ async def test_stage_imports_a_dependant_with_no_staff_id_of_their_own(api):
     api.clients.get_by_code.return_value = SimpleNamespace(
         id=ClientId("c1"), name="Acme", code="ACME", tenant_id=TenantId("t1")
     )
-    api.members.find_by_import_source_id.return_value = member("m1")
+    api.members.find_by_import_source_ids.return_value = {"AC-1": member("m1")}
 
     response = await api.http.post(
         "/members/import",
@@ -335,7 +409,7 @@ async def test_stage_does_not_treat_two_id_less_dependants_as_duplicates(api):
     api.clients.get_by_code.return_value = SimpleNamespace(
         id=ClientId("c1"), name="Acme", code="ACME", tenant_id=TenantId("t1")
     )
-    api.members.find_by_import_source_id.return_value = member("m1")
+    api.members.find_by_import_source_ids.return_value = {"AC-1": member("m1")}
 
     response = await api.http.post(
         "/members/import",

@@ -337,6 +337,22 @@ class EligibleMemberRepositoryImpl(EligibleMemberRepository):
         row = (await self._session.execute(stmt)).scalar_one_or_none()
         return EligibleMemberMapper.to_entity(row) if row else None
 
+    async def find_by_import_source_ids(
+        self,
+        tenant_id: TenantId,
+        client_id: ClientId,
+        import_source_ids: list[str],
+    ) -> dict[str, EligibleMember]:
+        if not import_source_ids:
+            return {}
+        stmt = select(EligibleMemberModel).where(
+            EligibleMemberModel.tenant_id == tenant_id.value,
+            EligibleMemberModel.client_id == client_id.value,
+            EligibleMemberModel.import_source_id.in_(import_source_ids),
+        )
+        rows = (await self._session.execute(stmt)).scalars().all()
+        return {row.import_source_id: EligibleMemberMapper.to_entity(row) for row in rows}
+
     async def find_by_user_id(self, tenant_id: TenantId, user_id: UserId) -> EligibleMember | None:
         row = (
             await self._session.execute(

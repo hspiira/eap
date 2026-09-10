@@ -92,6 +92,20 @@ class EligibleMemberRepository(BaseRepository[EligibleMember, EligibleMemberId])
         import_source_id: str,
     ) -> EligibleMember | None: ...
 
+    async def find_by_import_source_ids(
+        self,
+        tenant_id: TenantId,
+        client_id: ClientId,
+        import_source_ids: list[str],
+    ) -> dict[str, EligibleMember]:
+        """Every real member among the given ids, keyed by their import_source_id.
+
+        Batches what would otherwise be one `find_by_import_source_id` call
+        per roster row: staging thousands of rows one at a time is slow
+        enough to time out a serverless function.
+        """
+        ...
+
     async def find_by_user_id(
         self, tenant_id: TenantId, user_id: UserId
     ) -> EligibleMember | None: ...

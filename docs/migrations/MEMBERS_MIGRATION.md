@@ -446,6 +446,89 @@ level (dependant with a resolving primary imports as `New`; dependant with
 neither id is `Invalid`; two id-less dependants in one file both come back
 `New`, not `Duplicate` of each other).
 
+## Sixth defect: staging thousands of rows timed out a serverless function
+
+Production hit `Vercel Runtime Timeout Error: Task timed out after 300 seconds`
+staging a 3,000+ row roster. `MemberRowChecker.check()` could issue up to four
+sequential DB round trips per row — client lookup, already-enrolled, staged-
+elsewhere (added by the fourth defect above), primary employee — all inside a
+plain `for` loop with no batching or caching. A roster this size overwhelmingly
+repeats one or a few client codes (the sample roster is 100% client `IM`), so
+the same client was re-queried by code on every single row; a 3,000-row file
+could mean 9,000+ sequential round trips before the bulk insert even runs.
+
+Parallelizing across rows was considered and rejected: every repo call in a
+request shares one `AsyncSession`, which SQLAlchemy documents as unsafe for
+concurrent use from multiple coroutines. The fix is batching instead:
+
+- `MemberRowChecker` now memoizes every lookup on the instance
+  (`_clients_by_code`, `_members_by_id`, `_staged_rows_by_key`), so a repeated
+  key answers from memory instead of a second query.
+- A new `preload(rows, file_hash)` method fills those same caches in a
+  handful of batched queries before the per-row loop runs: one
+  `get_by_code` per *distinct* client code, one `find_by_import_source_ids`
+  per distinct client (batches both a row's own Staff_ID and every row's
+  Primary Staff ID into a single `IN (...)` query), and one
+  `find_rows_by_replay_keys` for the whole file. Two new repository methods
+  (`EligibleMemberRepository.find_by_import_source_ids`,
+  `MemberImportRepository.find_rows_by_replay_keys`) back these; both take a
+  list of ids/keys and return a dict keyed by what was found, mirroring their
+  existing singular counterparts.
+- `stage_member_import` calls `preload()` once, right after constructing the
+  checker, before the per-row loop.
+- `apply`'s per-row re-check deliberately does not call `preload()` — it
+  needs live data, not a bulk snapshot taken at stage time — but still
+  benefits from the same memoization within its own run (e.g. several
+  dependants sharing one primary employee resolve from one query, not one
+  each).
+
+Reproduced and pinned in `test_stage_batches_lookups_instead_of_one_query_per_row`:
+50 rows sharing one client code; asserts `get_by_code` and
+`find_by_import_source_ids`/`find_rows_by_replay_keys` are each awaited
+exactly once, and the old singular per-row methods are never awaited at all.
+Confirmed failing against the pre-fix code first (50 calls to `get_by_code`,
+one per row), then passing against the fix.
+
+## Seventh defect: a repeated Staff_ID in one file crashed staging
+
+Using the sixth defect's fix in production surfaced a second, sharper crash
+staging a real 326-row roster: the same `UniqueViolationError` on
+`uq_member_import_rows_tenant_replay`, this time between two rows in the
+*same* insert. The fourth defect's fix gave a row already claimed by another
+batch a "deferred" key, `duplicate:{other_batch_id}:{original_key}` — but
+that key is a pure function of the Staff_ID and the *other* batch's id, not
+of this row. Two rows sharing a Staff_ID in one file compute the identical
+deferred key: the first genuine "already staged elsewhere" duplicate, and the
+second an intra-file repeat that `_claim_staff_id` also classifies against
+the same Staff_ID. Both tried to insert the same string.
+
+The actual scope was wider than that one path: `_already_enrolled`'s
+duplicate (a re-uploaded roster naming someone already a real member) and
+`_claim_staff_id`'s intra-file-repeat `Invalid` never had special key
+handling at all — both fell through to `row_replay_key`'s identity form,
+`key:{client}:{id}`, the exact string some other row (the real member's
+original import row, or the first occurrence in this file) already legally
+holds. Any of these was one re-uploaded roster away from the same crash;
+the fourth defect's fix simply made the first one common enough to hit.
+
+Fixed at the one place all of them funnel through: `build_row_entity` now
+gives only a `New` row the identity key. Every other outcome — Duplicate or
+Invalid, whatever check produced it — gets the file-and-row-number fallback
+already used for a blank Staff_ID (`file:{file_hash}:row:{row_number}`),
+which cannot collide with anything: it is scoped to this exact file and this
+exact row. This let the `deferred_key`/`DUPLICATE_PREFIX` machinery added for
+the fourth defect be deleted entirely — `RowCheck` no longer carries a
+`replay_key` override at all, since no check needs to compute one anymore.
+
+Confirmed against the reported case directly: reverted the fix locally,
+re-ran a hand-built test staging the same Staff_ID twice in one file, and
+watched both rows compute the identical `key:c1:HR-1` — the exact
+`UniqueViolationError` the crash log reported. Pinned in
+`test_stage_gives_repeated_duplicates_of_the_same_id_distinct_keys`
+(repeated Staff_ID gets two distinct, non-identity keys) and a new assertion
+in `test_stage_flags_a_duplicate_row_with_a_default_skip_decision` (an
+already-enrolled duplicate's key never starts with `key:`).
+
 ### Verification
 
 Migration `q6s8u0w2y4a6`, applied to the dev database and reversed, both
