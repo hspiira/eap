@@ -300,6 +300,9 @@ class SessionImportStagingService:
         Decision 2 forbids reading an absent organisation as direct delivery, so
         a row with no supplier evidence is staged as unknown rather than direct.
         """
+        conflict = await self._same_looking_session(tenant_id, row, resolution, subject)
+        if conflict is not None:
+            return self._held(row, ImportRowOutcome.CONFLICTING, (conflict,), replay_key)
         if row.organisation_affiliation_id is None:
             return self._staged(
                 row,
@@ -347,6 +350,52 @@ class SessionImportStagingService:
         replay_key: str,
     ) -> StagedRow:
         return self._staged(row, outcome, DeliveryContext.UNKNOWN, None, None, reasons, replay_key)
+
+    async def _same_looking_session(
+        self,
+        tenant_id: TenantId,
+        row: SourceRow,
+        resolution: NameResolution,
+        subject: "_Subject",
+    ) -> str | None:
+        """Flags a row that looks like it names an already-imported session.
+
+        Only runs for a batch keyed by `file:{hash}:row:{n}`, because that key
+        is a function of the file's bytes: any edit to the source between
+        staging passes, even one unrelated to this row, changes every row's
+        replay key and defeats the ordinary duplicate check above entirely. A
+        source-keyed batch's key survives a file edit, so it does not need
+        this. See "Tenth defect" / the session import stress-test findings in
+        docs/reviews/SESSIONS_REVIEW.md for the scenario this closes.
+
+        Matches on date, practitioner, client, service and member: the finest
+        grain this extract's columns support, since it carries no
+        time-of-day. Two genuinely distinct sessions can share all of these
+        on the same day, so this holds the row for a person to confirm rather
+        than silently calling it a duplicate or silently importing it twice.
+        This is an adopted policy, not a verified one: the product owner
+        should confirm the match grain is right once real re-staged data
+        exercises it.
+        """
+        if row.source_record_key or resolution.provider_id is None or row.session_date is None:
+            return None
+        if subject.client_id is None or subject.service_id is None:
+            return None
+        existing = await self._imports.find_imported_row_matching(
+            tenant_id,
+            session_date=row.session_date,
+            provider_id=resolution.provider_id,
+            client_id=subject.client_id,
+            service_id=subject.service_id,
+            member_id=subject.member_id,
+        )
+        if existing is None:
+            return None
+        return (
+            f"Same date, practitioner, client and service as an already-imported session "
+            f"from batch {existing.batch_id.value} row {existing.row_number}. Confirm this is "
+            "a separate session, not the same one restaged under a different file hash."
+        )
 
     def _staged(
         self,

@@ -8,6 +8,7 @@ historical acceptance, which decision 7 keeps apart.
 import hashlib
 
 from fastapi import APIRouter, Depends, Query, Request, UploadFile, status
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.dependencies import (
@@ -45,7 +46,7 @@ from app.domain.entities.session_import import (
     SessionImportBatchEntity,
     SessionImportRowEntity,
 )
-from app.domain.enums.provider_network import ImportBatchStatus, ImportRowOutcome
+from app.domain.enums.provider_network import ImportRowOutcome
 from app.domain.enums.tenancy import TenantRole
 from app.domain.exceptions import DomainError, NotFoundError
 from app.domain.repositories.client_repository import ClientRepository
@@ -139,12 +140,6 @@ async def stage_import(
     tenant = TenantId(tenant_id)
 
     existing = await imports.find_batch_by_hash(tenant, file_hash)
-    if existing is not None and existing.status is not ImportBatchStatus.STAGED:
-        # Only an undecided batch holds its file against a second staging. Once
-        # one is applied or abandoned, staging the extract again is how rows
-        # that could not be resolved on thinner reference data get re-judged;
-        # rows the earlier batch already accounted for come back as duplicates.
-        existing = None
     if existing is not None:
         message = f"This file was already staged as batch {existing.id.value}"
         raise DomainError(
@@ -174,7 +169,22 @@ async def stage_import(
         created_at=now,
         updated_at=now,
     )
-    await imports.save_batch(batch)
+    try:
+        await imports.save_batch(batch)
+    except IntegrityError as exc:
+        # The pre-check above is read-then-write, not atomic: two concurrent
+        # stagings of the same file can both pass it and race to this insert.
+        # The partial unique index on (tenant_id, file_hash) WHERE Staged
+        # stops the second one at the database, so translate that into the
+        # same clean conflict the sequential path already returns instead of
+        # letting it surface as an unhandled 500.
+        message = "This file was already staged as another batch"
+        raise DomainError(
+            message,
+            error_code="IMPORT_ALREADY_STAGED",
+            http_status=409,
+            details={"file": message},
+        ) from exc
 
     service = SessionImportStagingService(
         ProviderAliasReconciliationService(aliases),
@@ -311,34 +321,58 @@ async def abandon_batch(
     response_model=SessionImportApplyResponse,
     dependencies=[Depends(require_tenant_role(TenantRole.ADMIN))],
 )
-@transactional()
+@readonly()
 async def apply_batch(
     batch_id: str,
     request: Request,
     tenant_id: str = Query(...),
+    limit: int = Query(
+        50,
+        ge=1,
+        le=200,
+        description="Max rows to write in this call. Keep calling while the response's "
+        "remaining is above zero; the batch only closes once nothing is left.",
+    ),
     current_user: TokenData = Depends(require_same_tenant),
     imports: SessionImportRepository = Depends(get_session_import_repository),
     writer=Depends(get_historical_session_writer),
+    clients: ClientRepository = Depends(get_client_repository),
+    members: EligibleMemberRepository = Depends(get_eligible_member_repository),
+    services: ServiceRepository = Depends(get_service_repository),
     audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
 ):
-    """Write every importable row through the historical path, then close the batch.
+    """Write up to `limit` still-pending rows, one at a time, in their own commit.
 
-    Applying a second time is refused, so a replayed request cannot write
-    twice. Only Accepted rows are written; every other row states per row why
-    it was passed over, so an unimportable batch is legible without reading
-    this code.
+    A batch large enough to write for minutes cannot be written in a single
+    request without risking a platform timeout, and a single transaction
+    around all of it loses every row already written the moment any later
+    row fails or the call times out. Call this repeatedly while `remaining`
+    in the response is above zero; a client that stops calling (a closed
+    tab, a timeout) leaves the batch safely Staged for the next call to
+    continue from exactly where the last one left off. The batch only closes
+    -- flips to Applied, fires its audit event -- once a call finds nothing
+    left to write. Applying an already-Applied batch is refused, so a
+    replayed request cannot write twice.
     """
-    result, batch = await ApplyImportBatchUseCase(imports, writer).execute(
-        TenantId(tenant_id),
+    tenant = TenantId(tenant_id)
+    result, batch = await ApplyImportBatchUseCase(
+        imports, writer, clients, members, services
+    ).execute(
+        tenant,
         SessionImportBatchId(batch_id),
         UserId(current_user.user_id),
         now=utc_now(),
+        limit=limit,
+        after_row=db.commit,
     )
-    await audit_change(batch, audit_handler, current_user, request)
+    if result.done:
+        await audit_change(batch, audit_handler, current_user, request)
+        await db.commit()
     return SessionImportApplyResponse(
         batch_id=batch_id,
         imported=result.imported,
-        skipped_already_imported=result.skipped_already_imported,
-        not_importable=result.not_importable,
+        failed=result.failed,
+        remaining=result.remaining,
+        done=result.done,
     )

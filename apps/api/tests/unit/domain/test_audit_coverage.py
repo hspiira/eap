@@ -78,7 +78,11 @@ import app.domain.entities as entities_pkg
 # carries its own imported_member_id or failure message as persisted detail.
 # set_decision is a person's in-review Import/Skip override on a row that has
 # not been written yet; nothing has happened to audit until apply runs.
-KNOWN_SILENT_MUTATORS = 95
+# 95 -> 96 with SessionImportRowEntity.mark_failed, the same bookkeeping as
+# mark_imported above and as MemberImportRowEntity.mark_failed: the batch's
+# apply already emits, and a failed row's reason is persisted detail on the
+# row rather than a second, per-row event that would flood audit_logs.
+KNOWN_SILENT_MUTATORS = 96
 
 
 def _entity_classes():

@@ -7988,7 +7988,8 @@
           "UnresolvedClient",
           "UnresolvedMember",
           "UnresolvedService",
-          "Rejected"
+          "Rejected",
+          "Failed"
         ],
         "title": "ImportRowOutcome",
         "type": "string"
@@ -15558,30 +15559,35 @@
         "type": "object"
       },
       "SessionImportApplyResponse": {
-        "description": "Outcome of applying a batch. `imported` is the only write count.",
+        "description": "What this one chunked call wrote. Call again while `remaining` is above zero.",
         "properties": {
           "batch_id": {
             "title": "Batch Id",
             "type": "string"
           },
+          "done": {
+            "title": "Done",
+            "type": "boolean"
+          },
+          "failed": {
+            "title": "Failed",
+            "type": "integer"
+          },
           "imported": {
             "title": "Imported",
             "type": "integer"
           },
-          "not_importable": {
-            "title": "Not Importable",
-            "type": "integer"
-          },
-          "skipped_already_imported": {
-            "title": "Skipped Already Imported",
+          "remaining": {
+            "title": "Remaining",
             "type": "integer"
           }
         },
         "required": [
           "batch_id",
           "imported",
-          "skipped_already_imported",
-          "not_importable"
+          "failed",
+          "remaining",
+          "done"
         ],
         "title": "SessionImportApplyResponse",
         "type": "object"
@@ -39536,7 +39542,7 @@
     },
     "/session-imports/{batch_id}/apply": {
       "post": {
-        "description": "Write every importable row through the historical path, then close the batch.\n\nApplying a second time is refused, so a replayed request cannot write\ntwice. Only Accepted rows are written; every other row states per row why\nit was passed over, so an unimportable batch is legible without reading\nthis code.",
+        "description": "Write up to `limit` still-pending rows, one at a time, in their own commit.\n\nA batch large enough to write for minutes cannot be written in a single\nrequest without risking a platform timeout, and a single transaction\naround all of it loses every row already written the moment any later\nrow fails or the call times out. Call this repeatedly while `remaining`\nin the response is above zero; a client that stops calling (a closed\ntab, a timeout) leaves the batch safely Staged for the next call to\ncontinue from exactly where the last one left off. The batch only closes\n-- flips to Applied, fires its audit event -- once a call finds nothing\nleft to write. Applying an already-Applied batch is refused, so a\nreplayed request cannot write twice.",
         "operationId": "apply_batch_session_imports__batch_id__apply_post",
         "parameters": [
           {
@@ -39555,6 +39561,20 @@
             "schema": {
               "title": "Tenant Id",
               "type": "string"
+            }
+          },
+          {
+            "description": "Max rows to write in this call. Keep calling while the response's remaining is above zero; the batch only closes once nothing is left.",
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 50,
+              "description": "Max rows to write in this call. Keep calling while the response's remaining is above zero; the batch only closes once nothing is left.",
+              "maximum": 200,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
             }
           }
         ],

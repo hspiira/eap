@@ -5708,12 +5708,18 @@ export interface paths {
         put?: never;
         /**
          * Apply Batch
-         * @description Write every importable row through the historical path, then close the batch.
+         * @description Write up to `limit` still-pending rows, one at a time, in their own commit.
          *
-         *     Applying a second time is refused, so a replayed request cannot write
-         *     twice. Only Accepted rows are written; every other row states per row why
-         *     it was passed over, so an unimportable batch is legible without reading
-         *     this code.
+         *     A batch large enough to write for minutes cannot be written in a single
+         *     request without risking a platform timeout, and a single transaction
+         *     around all of it loses every row already written the moment any later
+         *     row fails or the call times out. Call this repeatedly while `remaining`
+         *     in the response is above zero; a client that stops calling (a closed
+         *     tab, a timeout) leaves the batch safely Staged for the next call to
+         *     continue from exactly where the last one left off. The batch only closes
+         *     -- flips to Applied, fires its audit event -- once a call finds nothing
+         *     left to write. Applying an already-Applied batch is refused, so a
+         *     replayed request cannot write twice.
          */
         post: operations["apply_batch_session_imports__batch_id__apply_post"];
         delete?: never;
@@ -10338,7 +10344,7 @@ export interface components {
          * @description Per-row result of a staged historical import.
          * @enum {string}
          */
-        ImportRowOutcome: "Accepted" | "Duplicate" | "Conflicting" | "MissingPractitioner" | "UnmappedPractitioner" | "AmbiguousPractitioner" | "UnresolvedClient" | "UnresolvedMember" | "UnresolvedService" | "Rejected";
+        ImportRowOutcome: "Accepted" | "Duplicate" | "Conflicting" | "MissingPractitioner" | "UnmappedPractitioner" | "AmbiguousPractitioner" | "UnresolvedClient" | "UnresolvedMember" | "UnresolvedService" | "Rejected" | "Failed";
         /** IncidentClose */
         IncidentClose: {
             /**
@@ -13616,17 +13622,19 @@ export interface components {
         };
         /**
          * SessionImportApplyResponse
-         * @description Outcome of applying a batch. `imported` is the only write count.
+         * @description What this one chunked call wrote. Call again while `remaining` is above zero.
          */
         SessionImportApplyResponse: {
             /** Batch Id */
             batch_id: string;
+            /** Done */
+            done: boolean;
+            /** Failed */
+            failed: number;
             /** Imported */
             imported: number;
-            /** Not Importable */
-            not_importable: number;
-            /** Skipped Already Imported */
-            skipped_already_imported: number;
+            /** Remaining */
+            remaining: number;
         };
         /** SessionImportBatchResponse */
         SessionImportBatchResponse: {
@@ -26659,6 +26667,8 @@ export interface operations {
         parameters: {
             query: {
                 tenant_id: string;
+                /** @description Max rows to write in this call. Keep calling while the response's remaining is above zero; the batch only closes once nothing is left. */
+                limit?: number;
             };
             header?: never;
             path: {

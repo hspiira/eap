@@ -196,7 +196,11 @@ class SessionImportRepository(ABC):
     async def find_batch_by_hash(
         self, tenant_id: TenantId, file_hash: str
     ) -> SessionImportBatchEntity | None:
-        """Used to detect a replay of the same file before staging it again."""
+        """The Staged batch holding this hash, if any, used to detect a
+        conflicting replay before staging the same file again. Only Staged
+        matters: once a batch is applied or abandoned, staging the same file
+        is how its rows re-judge against improved reference data.
+        """
 
     @abstractmethod
     async def save_batch(self, batch: SessionImportBatchEntity) -> None: ...
@@ -254,3 +258,50 @@ class SessionImportRepository(ABC):
         self, tenant_id: TenantId, batch_id: SessionImportBatchId
     ) -> dict[str, int]:
         """Accepted, duplicate, conflicting and review counts for the batch."""
+
+    @abstractmethod
+    async def mark_row_failed(self, tenant_id: TenantId, row_id: str, reason: str) -> None:
+        """Record that writing an Accepted row raised at apply time. Terminal, never retried."""
+
+    @abstractmethod
+    async def list_pending_rows(
+        self, tenant_id: TenantId, batch_id: SessionImportBatchId, *, limit: int
+    ) -> Sequence[SessionImportRowEntity]:
+        """Up to `limit` rows apply would still attempt to write, oldest first.
+
+        Accepted and not yet imported. Re-queries rather than trusting an
+        offset, so a chunked apply resumes correctly regardless of how many
+        earlier chunks already ran.
+        """
+
+    @abstractmethod
+    async def count_pending_rows(self, tenant_id: TenantId, batch_id: SessionImportBatchId) -> int:
+        """How many rows `list_pending_rows` would still return."""
+
+    @abstractmethod
+    async def count_imported_rows(self, tenant_id: TenantId, batch_id: SessionImportBatchId) -> int:
+        """Rows in this batch that have actually written a session so far."""
+
+    @abstractmethod
+    async def find_imported_row_matching(
+        self,
+        tenant_id: TenantId,
+        *,
+        session_date: date,
+        provider_id: ProviderId,
+        client_id: str,
+        service_id: str,
+        member_id: str | None,
+    ) -> SessionImportRowEntity | None:
+        """An already-imported row with the same real-world identity, if any.
+
+        Guards the file-hash-row replay key, which is a function of the
+        file's bytes rather than a row's content: any edit to the source
+        file between staging passes, even one unrelated to this row, changes
+        every row's replay key and defeats the ordinary duplicate check
+        entirely. This matches on the finest grain the extract's columns
+        support (date, practitioner, client, service, member); it carries no
+        time-of-day, so two genuinely distinct sessions can share all of
+        these on the same day. Staging holds a match for review rather than
+        treating it as a certain duplicate for that reason.
+        """

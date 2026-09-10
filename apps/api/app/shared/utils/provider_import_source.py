@@ -25,6 +25,13 @@ _INTERVENTION_COLUMNS = ("intervention",)
 _CLIENT_TYPE_COLUMNS = ("client type",)
 _RATE_COLUMNS = ("rate (ugx)",)
 _SESSION_NUMBER_COLUMNS = ("session #", "session number")
+#: ISO first, then day-first (`03/04/2026` is 3 April), matching the region
+#: this system serves. Month-first exists only for a slash date day-first
+#: cannot parse (`13/25/2026`), which a real calendar day never produces, so
+#: it is effectively unreachable here. Same policy as, and independent of,
+#: `parse_roster_date` in `member_csv.py`: both decide the same ambiguity for
+#: their own importer, so a future change to this policy needs updating in
+#: both places.
 _DATE_FORMATS = ("%Y-%m-%d", "%d/%m/%Y", "%m/%d/%Y", "%d-%b-%Y", "%d-%b-%y")
 
 

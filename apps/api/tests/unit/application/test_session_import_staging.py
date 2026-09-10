@@ -60,6 +60,7 @@ def _service(*, resolution=None, affiliation=None, existing_row=None, member="de
     affiliations.get_valid_affiliation.return_value = affiliation
     imports = AsyncMock()
     imports.find_row_by_replay_key.return_value = existing_row
+    imports.find_imported_row_matching.return_value = None
     clients = AsyncMock()
     clients.get_by_name_or_alias.return_value = SimpleNamespace(
         id=ClientId("cli-1"), name="Stanbic Bank", tenant_id=TENANT
@@ -287,6 +288,49 @@ class TestReplay:
         await _stage(service, _row())
         service._aliases.resolve.assert_not_awaited()
         service._affiliations.get_valid_affiliation.assert_not_awaited()
+
+
+class TestContentDuplicateAcrossFileHashes:
+    """A row that looks like an already-imported session, restaged under a
+    different file hash, must not silently write a second copy of it.
+
+    The file-hash-row replay key is a function of the file's bytes: any edit
+    to the source between staging passes changes every row's key and defeats
+    the ordinary replay-key duplicate check in TestReplay above entirely.
+    """
+
+    async def test_a_row_matching_an_already_imported_one_is_held_as_conflicting(self):
+        already_imported = AsyncMock()
+        already_imported.row_number = 3
+        already_imported.batch_id = SessionImportBatchId("b-old")
+        service, imports = _service()
+        imports.find_imported_row_matching.return_value = already_imported
+        staged = await _stage(service, _row())
+        assert staged.outcome is ImportRowOutcome.CONFLICTING
+        assert "batch b-old row 3" in staged.reasons[0]
+
+    async def test_a_source_keyed_row_never_runs_the_content_check(self):
+        """A source key survives a file edit, so it does not need this guard."""
+        service, imports = _service()
+        await _stage(service, _row(source_record_key="LOG-9"))
+        imports.find_imported_row_matching.assert_not_awaited()
+
+    async def test_no_match_leaves_the_row_to_stage_normally(self):
+        service, _ = _service()
+        staged = await _stage(service, _row())
+        assert staged.outcome is ImportRowOutcome.ACCEPTED
+
+    async def test_the_match_is_scoped_by_client_service_provider_date_and_member(self):
+        service, imports = _service()
+        await _stage(service, _row())
+        imports.find_imported_row_matching.assert_awaited_once_with(
+            TENANT,
+            session_date=date(2025, 4, 2),
+            provider_id=PROV,
+            client_id="cli-1",
+            service_id="svc-1",
+            member_id="mem-1",
+        )
 
 
 def _keyed_rows(*keys: str | None) -> list[SourceRow]:
