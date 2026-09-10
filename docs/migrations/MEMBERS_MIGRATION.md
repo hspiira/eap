@@ -1176,7 +1176,7 @@ fix the first re-upload after any update would have hit it every time.
 
 Backend, all passing and run locally:
 
-- `tests/unit/api/test_members_routes.py`, 88 tests. Nine are new: staging
+- `tests/unit/api/test_members_routes.py`, 88 tests. Eleven are new: staging
   names the matched member and still defaults to `skip`; staging withholds
   the match on a contradicting `Relation`; a row claimed by another batch
   matches nobody; `PATCH` accepts `update` on a matched duplicate and refuses
