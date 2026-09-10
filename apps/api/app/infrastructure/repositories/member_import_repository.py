@@ -6,6 +6,7 @@ from sqlalchemy import func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.domain.entities.member_import import MemberImportBatchEntity, MemberImportRowEntity
+from app.domain.enums.provider_network import ImportBatchStatus
 from app.domain.repositories.member_import_repository import MemberImportRepository
 from app.domain.value_objects.core import TenantId
 from app.domain.value_objects.ids import MemberImportBatchId, MemberImportRowId
@@ -40,10 +41,21 @@ class MemberImportRepositoryImpl(MemberImportRepository):
     async def find_batch_by_hash(
         self, tenant_id: TenantId, file_hash: str
     ) -> MemberImportBatchEntity | None:
+        """The Staged batch holding this hash, if any.
+
+        A hash can belong to several historical batches (an old one abandoned
+        or applied, a newer one staged), since only a Staged batch holds the
+        hash's partial unique index. Filtering by status here, rather than
+        fetching an arbitrary match and checking it in Python, is required:
+        an unfiltered query has no ORDER BY and can return the wrong one,
+        letting a second stage attempt reach the INSERT and fail on the
+        index instead of the clean 409 this check exists to raise.
+        """
         model = await self.session.scalar(
             select(MemberImportBatchModel).where(
                 MemberImportBatchModel.tenant_id == tenant_id.value,
                 MemberImportBatchModel.file_hash == file_hash,
+                MemberImportBatchModel.status == ImportBatchStatus.STAGED.value,
             )
         )
         return MemberImportMapper.batch_to_entity(model) if model else None
