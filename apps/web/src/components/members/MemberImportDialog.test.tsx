@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest"
 
 import type { MemberImportBatch, MemberImportRow } from "@/api/endpoints/members"
 import { renderWithProviders } from "@/test/utils"
+import { ApiError } from "@/types/api"
 
 const api = vi.hoisted(() => ({
   stageImport: vi.fn(),
@@ -11,6 +12,7 @@ const api = vi.hoisted(() => ({
   setImportRowDecision: vi.fn(),
   applyImport: vi.fn(),
   getImportTemplate: vi.fn(),
+  abandonImport: vi.fn(),
 }))
 vi.mock("@/api/endpoints/members", () => ({ membersApi: api }))
 
@@ -123,5 +125,47 @@ describe("member import preview", () => {
       screen.getByText(/Job Title, Job Classification, Skill, Department, Unit and Contract type/),
     ).toBeInTheDocument()
     expect(screen.queryByText(/Other workforce columns are ignored/)).not.toBeInTheDocument()
+  })
+})
+
+describe("restage conflict", () => {
+  it("offers to discard the stuck batch and retries staging after confirming", async () => {
+    api.stageImport
+      .mockRejectedValueOnce(
+        new ApiError(
+          "This file was already staged as batch b-1",
+          "IMPORT_ALREADY_STAGED",
+          409,
+          undefined,
+          undefined,
+          [{ field: "batch_id", message: "b-1", code: null }],
+        ),
+      )
+      .mockResolvedValueOnce({ ...BATCH, row_count: 1 })
+    api.listImportRows.mockResolvedValue({
+      items: [makeRow()],
+      total: 1,
+      page: 1,
+      limit: 200,
+      has_more: false,
+    })
+    api.abandonImport.mockResolvedValue({ ...BATCH, id: "b-1", status: "Abandoned" })
+
+    renderWithProviders(<MemberImportDialog open onOpenChange={() => {}} onImported={() => {}} />)
+    const input = screen.getByLabelText(/csv/i)
+    await userEvent.upload(input, new File(["header\n"], "roster.csv", { type: "text/csv" }))
+
+    const discardLink = await screen.findByText("Discard the stuck batch and retry")
+    await userEvent.click(discardLink)
+    await userEvent.click(await screen.findByRole("button", { name: "Discard and retry" }))
+
+    await waitFor(() =>
+      expect(api.abandonImport).toHaveBeenCalledWith(
+        "b-1",
+        "Discarded from the import dialog after a restage conflict",
+      ),
+    )
+    expect(api.stageImport).toHaveBeenCalledTimes(2)
+    expect(await screen.findByText("Amina Namukasa")).toBeInTheDocument()
   })
 })

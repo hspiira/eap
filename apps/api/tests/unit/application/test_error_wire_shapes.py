@@ -48,7 +48,10 @@ _IDENTIFIER = re.compile(r"^[A-Za-z0-9_-]+$")
 # category confusion as the defects fixed here, but it predates this migration,
 # it is shared by every not-found response, and repairing it changes all of
 # them. Exempted visibly rather than silently, and referred to review.
-_DIAGNOSTIC_FIELDS = {"resource_type", "resource_id"}
+# batch_id joins them for the same reason: IMPORT_ALREADY_STAGED needs the
+# conflicting batch's id so a client can offer to resume or discard it, and
+# a cuid cannot itself read as a sentence.
+_DIAGNOSTIC_FIELDS = {"resource_type", "resource_id", "batch_id"}
 
 
 def _is_prose(message: str) -> bool:
@@ -100,7 +103,7 @@ def _errors() -> list[DomainError]:
             "This file was already staged as batch b-1",
             error_code="IMPORT_ALREADY_STAGED",
             http_status=409,
-            details={"file": "This file was already staged as batch b-1"},
+            details={"file": "This file was already staged as batch b-1", "batch_id": "b-1"},
         ),
     ]
 

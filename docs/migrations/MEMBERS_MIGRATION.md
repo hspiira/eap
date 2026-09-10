@@ -333,6 +333,58 @@ of the sample roster's 4,945 rows have none, so unconditional columns would
 add six empty ones to every import. The supported-fields copy previously said
 "Other workforce columns are ignored", which had become false.
 
+## Bug found and fixed: a stuck Staged batch, and a wrong-row restage (2026-09-10)
+
+Discovered against the local dev database while testing the follow-ups above:
+a batch staged and never applied or abandoned blocked every future restage of
+that exact file with a 409, and the dialog had no way to discard it. Fixed by
+adding a "Discard the stuck batch and retry" action (`MemberImportDialog.tsx`),
+backed by the existing `POST /members/import/{id}/abandon` endpoint. The 409's
+`details` now carries the conflicting `batch_id` so the client can act on it;
+`batch_id` joins `resource_type`/`resource_id` in `test_error_wire_shapes.py`'s
+diagnostic-field exemption, since a cuid cannot itself read as a sentence.
+
+Using that new discard action immediately surfaced a second, more serious bug:
+restaging the same file a second time raised a raw 500
+(`UniqueViolationError` on `uq_member_import_batches_tenant_file_hash`)
+instead of the clean 409. `MemberImportRepositoryImpl.find_batch_by_hash`
+queried by `(tenant_id, file_hash)` alone, with no status filter and no
+`ORDER BY`; once a hash belongs to more than one historical batch (routine
+now that a batch can be discarded and restaged), `session.scalar()` can return
+an arbitrary one. It returned the abandoned batch, so the route's "already
+staged" check saw a non-Staged batch, fell through to `INSERT`, and the
+partial unique index (`WHERE status = 'Staged'`) rejected it as unhandled.
+Fixed by filtering the query to `status = 'Staged'` directly, matching what
+the index actually protects. Reproduced and pinned in
+`tests/unit/infrastructure/test_member_import_migration.py`
+(`test_find_batch_by_hash_picks_the_staged_one_when_others_share_it`): fails
+against the old query (`b1`, the abandoned batch), passes against the fixed
+one (`b2`, the staged one).
+
+**Not fixed here, and worth a look:** `session_imports.py` and
+`practitioner_imports.py` call the identical unfiltered
+`find_batch_by_hash` shape on their own repositories
+(`provider_network_repository.py:408`, `practitioner_import_repository.py:37`)
+against the same kind of partial-unique-index schema. Neither has a reported
+failure, and discarding a batch is a newer, member-only affordance that makes
+the multiple-batches-per-hash case routine rather than rare, so they were left
+alone rather than expanding this fix into an unrelated module. Whoever adds a
+discard/retry action to either flow should apply the same status filter first.
+
+A third bug surfaced testing the same discard/retry path end to end: once a
+restage succeeded, the preview never populated any rows. `MemberImportDialog`'s
+`fetchAllRows` pages `GET /members/import/{id}/rows` at `limit=200`, but the
+route declared `pagination(default_limit=50)` with no `max_limit` override, so
+it inherits the shared default cap of 100 and 422s on the very first request.
+This has been broken since the route was introduced
+(`bb8b631f`): every unit test mocks `imports.list_rows` directly, bypassing
+FastAPI's query validation, so nothing ever exercised the real HTTP contract
+between this endpoint and its only caller. Fixed by passing
+`max_limit=200`, matching the precedent already set by
+`care_callbacks.py:671`. Added `test_list_import_rows_accepts_the_200_page_size_the_dialog_uses`,
+the route's first HTTP-level test; confirmed it fails on the old signature
+with the same 422 the live server produced.
+
 ### Verification
 
 Migration `q6s8u0w2y4a6`, applied to the dev database and reversed, both

@@ -279,6 +279,25 @@ async def test_stage_rejects_restaging_a_file_still_awaiting_a_decision(api):
 
     assert response.status_code == 409, response.text
     api.imports.save_batch.assert_not_awaited()
+    body = response.json()
+    assert body["error"] == "IMPORT_ALREADY_STAGED"
+    assert {"field": "batch_id", "message": "b1", "code": None} in body["details"]
+
+
+async def test_list_import_rows_accepts_the_200_page_size_the_dialog_uses(api):
+    """MemberImportDialog.tsx pages through fetchAllRows at limit=200.
+
+    Left at the pagination default (max_limit=100), that request 422s before
+    a single row can be shown, so nobody staging a roster of more than one
+    page could ever see it. No route test caught this because the mocked
+    `imports.list_rows` bypasses FastAPI's query validation entirely.
+    """
+    api.imports.list_rows.return_value = ([import_row(1)], 1)
+
+    response = await api.http.get("/members/import/b1/rows", params={"limit": 200})
+
+    assert response.status_code == 200, response.text
+    assert response.json()["limit"] == 200
 
 
 def import_row(row_number=1, outcome=MemberImportRowOutcome.NEW, decision="import", **overrides):

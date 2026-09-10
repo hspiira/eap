@@ -10,8 +10,11 @@ from alembic.runtime.migration import MigrationContext
 from sqlalchemy import inspect, text
 from sqlalchemy.engine import make_url
 from sqlalchemy.exc import IntegrityError
-from sqlalchemy.ext.asyncio import create_async_engine
+from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.schema import CreateSchema, DropSchema
+
+from app.domain.value_objects.core import TenantId
+from app.infrastructure.repositories.member_import_repository import MemberImportRepositoryImpl
 
 
 @pytest_asyncio.fixture
@@ -112,6 +115,29 @@ async def test_an_applied_batch_does_not_block_restaging_the_same_file(migration
     await _insert_batch(connection, "b1", "sha256:same", "Applied")
     # Should not raise: only a still-Staged batch holds the hash.
     await _insert_batch(connection, "b2", "sha256:same", "Staged")
+
+
+async def test_find_batch_by_hash_picks_the_staged_one_when_others_share_it(migration_db):
+    """A restage attempt must see the batch the unique index actually blocks on.
+
+    An unfiltered query has no ORDER BY, so with an abandoned batch and a
+    staged one sharing a hash, an arbitrary one can come back first. Picking
+    the abandoned one would let a second stage attempt fall through the
+    "already staged" check and hit the index at INSERT time as a raw
+    IntegrityError instead of the intended 409.
+    """
+    connection, migration = migration_db
+    await connection.run_sync(lambda conn: migrate(conn, migration.upgrade))
+    await _insert_batch(connection, "b1", "sha256:same", "Abandoned")
+    await _insert_batch(connection, "b2", "sha256:same", "Staged")
+
+    session = AsyncSession(bind=connection, expire_on_commit=False)
+    found = await MemberImportRepositoryImpl(session).find_batch_by_hash(
+        TenantId("t1"), "sha256:same"
+    )
+
+    assert found is not None
+    assert found.id.value == "b2"
 
 
 async def test_a_replay_key_is_unique_per_tenant(migration_db):
