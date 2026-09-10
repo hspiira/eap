@@ -22,11 +22,13 @@ from app.domain.entities.member_import import MemberImportRowEntity
 from app.domain.enums import EligibilityStatus, MemberGender, MemberImportRowOutcome, MemberRelation
 from app.domain.repositories.client_repository import ClientRepository
 from app.domain.repositories.eligible_member_repository import EligibleMemberRepository
+from app.domain.repositories.member_import_repository import MemberImportRepository
 from app.domain.repositories.outbox_repository import OutboxRepository
 from app.domain.value_objects.core import ClientId, EligibleMemberId, Email, TenantId, UserId
 from app.domain.value_objects.ids import MemberImportBatchId, MemberImportRowId
 from app.shared.handlers.audit_event_handler import AuditEventHandler
-from app.shared.utils.member_csv import MemberCsvRow
+from app.shared.utils.member_csv import MemberCsvRow, is_employee_relation
+from app.shared.utils.replay_key import DUPLICATE_PREFIX, deferred_key
 from app.shared.utils.route_audit_helper import audit_change
 
 DECISIONS = {"import", "skip"}
@@ -72,7 +74,7 @@ def build_row_entity(
         batch_id=batch_id,
         tenant_id=tenant_id,
         row_number=row.row_number,
-        replay_key=row_replay_key(row, client_id, file_hash),
+        replay_key=check.replay_key or row_replay_key(row, client_id, file_hash),
         outcome=_OUTCOME_BY_STATE[check.state],
         decision="import" if check.state == "new" else "skip",
         created_at=now,
@@ -136,6 +138,7 @@ class RowCheck:
     message: str | None = None
     client: ClientEntity | None = None
     data: MemberCreate | None = None
+    replay_key: str | None = None
 
     @property
     def importable(self) -> bool:
@@ -218,10 +221,12 @@ class MemberRowChecker:
         tenant_id: str,
         client_repo: ClientRepository,
         member_repo: EligibleMemberRepository,
+        imports_repo: MemberImportRepository,
     ) -> None:
         self._tenant_id = TenantId(tenant_id)
         self._clients = client_repo
         self._members = member_repo
+        self._imports = imports_repo
         self._seen: set[tuple[str, str]] = set()
 
     async def check(
@@ -230,6 +235,7 @@ class MemberRowChecker:
         *,
         decision: str | None = None,
         parse_error: str | None = None,
+        file_hash: str | None = None,
     ) -> RowCheck:
         rejected = _rejected_input(decision, parse_error)
         if rejected:
@@ -250,6 +256,11 @@ class MemberRowChecker:
         if enrolled:
             return enrolled
 
+        if file_hash is not None:
+            staged_elsewhere = await self._already_staged_elsewhere(client, row, file_hash)
+            if staged_elsewhere:
+                return staged_elsewhere
+
         primary_member_id, unresolved = await self._primary_member_id(client, row)
         if unresolved:
             return unresolved
@@ -262,8 +273,15 @@ class MemberRowChecker:
         return await self._clients.get_by_code(self._tenant_id, row.client_code)
 
     def _claim_staff_id(self, client: ClientEntity, row: MemberCsvRow) -> RowCheck | None:
-        """Records the row's Staff_ID, rejecting a second use of it in the same file."""
-        key = (client.id.value, row.import_source_id or "")
+        """Records the row's Staff_ID, rejecting a second use of it in the same file.
+
+        A blank Staff_ID (a dependant, now that one is allowed to have none)
+        claims nothing: two dependants sharing no ID are not a repeat of the
+        same person, so blank never collides with itself here.
+        """
+        if not row.import_source_id:
+            return None
+        key = (client.id.value, row.import_source_id)
         if key in self._seen:
             return RowCheck(
                 state="invalid",
@@ -276,8 +294,15 @@ class MemberRowChecker:
     async def _already_enrolled(
         self, client: ClientEntity, row: MemberCsvRow, decision: str | None
     ) -> RowCheck | None:
+        """Whether this row's own Staff_ID already belongs to a real member.
+
+        A dependant with no Staff_ID of their own claims nothing here; they
+        are identified by Primary Staff ID instead, checked separately.
+        """
+        if not row.import_source_id:
+            return None
         existing = await self._members.find_by_import_source_id(
-            self._tenant_id, client.id, row.import_source_id or ""
+            self._tenant_id, client.id, row.import_source_id
         )
         if existing is None:
             return None
@@ -289,12 +314,44 @@ class MemberRowChecker:
             )
         return RowCheck(state="duplicate", client=client)
 
+    async def _already_staged_elsewhere(
+        self, client: ClientEntity, row: MemberCsvRow, file_hash: str
+    ) -> RowCheck | None:
+        """A live row in another batch already claims this Staff_ID's replay key.
+
+        `_claim_staff_id` only catches a repeat within this same file; a batch
+        left Staged from an earlier, unrelated upload holds its rows' keys
+        until it is applied or abandoned. Without this check, staging a
+        second roster that overlaps with one still claims the same
+        (tenant_id, replay_key) the first insert took, and the whole bulk
+        insert for this file fails with an unhandled IntegrityError instead
+        of classifying the one row that collides.
+        """
+        if not row.import_source_id:
+            return None
+        key = row_replay_key(row, client.id, file_hash)
+        existing = await self._imports.find_row_by_replay_key(self._tenant_id, key)
+        if existing is None:
+            return None
+        return RowCheck(
+            state="duplicate",
+            message=f"Already staged as row {existing.row_number} of batch {existing.batch_id.value}",
+            client=client,
+            replay_key=deferred_key(DUPLICATE_PREFIX, existing.batch_id.value, key),
+        )
+
     async def _primary_member_id(
         self, client: ClientEntity, row: MemberCsvRow
     ) -> tuple[str | None, RowCheck | None]:
         """The beneficiary's primary employee, or the rejection when it is not on file yet."""
         if not row.primary_import_source_id:
-            return None, None
+            if is_employee_relation(row.relation):
+                return None, None
+            return None, RowCheck(
+                state="invalid",
+                message="Primary Staff ID is required for a beneficiary",
+                client=client,
+            )
         primary = await self._members.find_by_import_source_id(
             self._tenant_id, client.id, row.primary_import_source_id
         )

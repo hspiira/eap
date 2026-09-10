@@ -241,7 +241,7 @@ preview-first importer. Its safe mapping is:
 | Sample column | Member field | Decision |
 | --- | --- | --- |
 | `Company Code` | client lookup | Required tenant-scoped client code; `Company` is informational and is not used as an identity fallback. |
-| `Staff_ID` | `employer_member_id` | Use the stable company-supplied identifier; do not create a second `external_id`. |
+| `Staff_ID` | ~~`employer_member_id`~~ `import_source_id` | ~~Use the stable company-supplied identifier; do not create a second `external_id`.~~ Superseded 2026-09-09 by `b881e8b5`: `employer_member_id` is now always server-issued from the per-client sequence, for every relation. `Staff_ID` maps to the separate `import_source_id` column instead, which exists exactly for this purpose ("do not create a second `external_id`" is honoured by reusing this field, not `employer_member_id`). |
 | `Name of Employee` | `display_label` | Required member name. |
 | `Email Address` | `work_email` | Normalize `N/A` and blanks to null. |
 | `Personal Email` | `personal_email` | Optional personal contact; normalize `N/A` and blanks to null. |
@@ -384,6 +384,67 @@ between this endpoint and its only caller. Fixed by passing
 `care_callbacks.py:671`. Added `test_list_import_rows_accepts_the_200_page_size_the_dialog_uses`,
 the route's first HTTP-level test; confirmed it fails on the old signature
 with the same 422 the live server produced.
+
+A fourth bug reached production directly: staging a real roster raised a raw
+500, `UniqueViolationError` on `uq_member_import_rows_tenant_replay`, for a
+Staff_ID already held by a row in an earlier batch nobody had applied or
+abandoned. `member_import_repository` already exposes `find_row_by_replay_key`
+(used by `member_import_repository.py:181`), and `session_import_staging.py:166`
+and `practitioner_import_staging.py:107` both call it before inserting a row,
+exactly to classify this case as a graceful Duplicate rather than let the
+database catch it. `stage_member_import` never called it — an incomplete port
+from the `bb8b631f` precedent, invisible for the same reason as the previous
+two: nothing staged an overlapping roster in a unit test. `MemberRowChecker`
+now takes the import repository and performs this lookup, but only while
+staging (`file_hash` passed); the apply-time re-check omits it, since the row
+being re-checked already holds the exact key it would be checking against. A
+collision gets a deferred key, `duplicate:{batch}:{key}` via
+`app.shared.utils.replay_key.deferred_key`, the same shape session_import
+already uses, so persisting the Duplicate classification cannot itself
+collide. Reproduced at the route level in
+`test_stage_flags_a_row_still_claimed_by_another_unresolved_batch`: fails
+(row comes back New) without the fix, passes (Duplicate, named batch and row)
+with it.
+
+## Fifth defect: a dependant could never import without their own Staff_ID
+
+`member_csv.py`'s row-level parse check required every row to carry a Staff_ID,
+with no exception for `Relation`. A real roster's dependants (spouse, child,
+etc.) are identified by `Primary Staff ID`, not their own Staff_ID — the
+manual "Add member" form has never required one for a beneficiary, and
+`MemberCreate.import_source_id` is documented as optional for anyone. The CSV
+path was the one place still treating it as mandatory for every row, which
+meant every dependant lacking their own Staff_ID was permanently `Invalid`
+("Stable Staff_ID is required") regardless of whether `Primary Staff ID`
+correctly resolved to an already-imported employee.
+
+Decision (confirmed 2026-09-10): a row whose `Relation` names anything other
+than Employee (blank defaults to Employee, matching `_member_create`'s own
+default) is exempt from needing its own Staff_ID, but a dirty one (still
+ending in `-`) is still flagged regardless of relation — that is bad data
+either way, not an absent one. In exchange, a dependant now must carry a
+resolvable `Primary Staff ID`: `_primary_member_id` previously treated a blank
+one as "no primary, fine" for every relation, which was correct for an
+employee but would have let an orphaned dependant in with no link to anyone.
+It now rejects a beneficiary row with neither ID: "Primary Staff ID is
+required for a beneficiary."
+
+Two more call sites assumed a Staff_ID was never blank and needed the same
+exemption to avoid a *new* defect from this one's fix:
+- `_claim_staff_id`'s intra-file duplicate guard keyed on `(client_id,
+  Staff_ID or "")`; two dependants with no Staff_ID in the same file would
+  have collided with each other on the shared `""` key. It now only claims a
+  key when Staff_ID is present.
+- `_already_enrolled` looked up `find_by_import_source_id(..., Staff_ID or
+  "")`; harmless against a real Postgres column (`NULL` never equals `''`,
+  so nothing already stored can match), but skipped explicitly anyway to
+  avoid depending on that column's NULL-vs-empty-string semantics.
+
+Pinned by five tests: two in `test_member_csv.py` (blank exempt for a
+dependant, dirty still flagged regardless of relation) and three at the route
+level (dependant with a resolving primary imports as `New`; dependant with
+neither id is `Invalid`; two id-less dependants in one file both come back
+`New`, not `Duplicate` of each other).
 
 ### Verification
 
@@ -581,7 +642,7 @@ not because the precedent was followed loosely.
 | --- | --- | --- |
 | `POST /members/import` | current `POST /members/import` (preview) | Stage: hash, reject only if same tenant+hash batch is still `Staged`, persist batch + one row per CSV row with a computed outcome. Returns `MemberImportBatchResponse`. |
 | `GET /members/import/{batch_id}` | — | Batch status, row_count, outcome counts. |
-| `GET /members/import/{batch_id}/rows` | — | Paginated, filterable by outcome/decision. |
+| `GET /members/import/{batch_id}/rows` | — | Paginated, filterable by outcome/decision. Shipped with only an `outcome` filter (`members.py:871`); no `decision` query param exists. Low impact: `MemberImportDialog.tsx`'s `fetchAllRows` pages through every row unfiltered and filters client-side, so nothing depends on the missing param, but a future consumer reading only this table would expect one. |
 | `PATCH /members/import/{batch_id}/rows/{row_id}` | — | New. Set a row's decision. |
 | `POST /members/import/{batch_id}/apply` | current `POST /members/import/commit` | No body but `batch_id`. Applies rows with `decision=import` and `outcome=New` one at a time, immediately persisting `imported_member_id` per row (row atomicity preserved), then marks the batch `Applied`. |
 | `POST /members/import/{batch_id}/abandon` | — | Records a reason, marks `Abandoned`, frees the file hash per the corrected partial index. |

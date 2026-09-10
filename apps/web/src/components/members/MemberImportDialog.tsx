@@ -87,6 +87,9 @@ const TONE_CLASS: Record<Tone, string> = {
   error: "text-destructive",
 }
 
+/** Headers never wrap; the table scrolls horizontally instead when columns run out of room. */
+const HEAD_CLASS = "h-auto whitespace-nowrap px-2 py-1 text-xs font-medium"
+
 /** A New row still set to import: the only state that gets written on apply. */
 function isQueued(row: MemberImportRow): boolean {
   return row.outcome === "New" && row.decision === "import"
@@ -273,30 +276,27 @@ function ImportPreview({
         <Table className="text-left text-xs">
           <TableHeader className="sticky top-0 bg-surface text-fg-muted">
             <TableRow className="border-fg/10">
-              <TableHead className="h-auto px-2 py-1 text-xs font-medium">#</TableHead>
-              <TableHead className="h-auto px-2 py-1 text-xs font-medium">Name</TableHead>
+              <TableHead className={HEAD_CLASS}>#</TableHead>
+              <TableHead className={HEAD_CLASS}>Name</TableHead>
               <TableHead
-                className="h-auto px-2 py-1 text-xs font-medium"
+                className={HEAD_CLASS}
                 title="The roster's stable identifier. Matches this row to an existing member on re-import."
               >
                 Staff ID
               </TableHead>
-              <TableHead
-                className="h-auto px-2 py-1 text-xs font-medium"
-                title="Reference only. Not used to match members."
-              >
+              <TableHead className={HEAD_CLASS} title="Reference only. Not used to match members.">
                 Staff no.
               </TableHead>
-              <TableHead className="h-auto px-2 py-1 text-xs font-medium">Client</TableHead>
+              <TableHead className={HEAD_CLASS}>Client</TableHead>
               {showEmployment
                 ? EMPLOYMENT_COLUMNS.map((column) => (
-                    <TableHead key={column.key} className="h-auto px-2 py-1 text-xs font-medium">
+                    <TableHead key={column.key} className={HEAD_CLASS}>
                       {column.label}
                     </TableHead>
                   ))
                 : null}
-              <TableHead className="h-auto px-2 py-1 text-xs font-medium">Decision</TableHead>
-              <TableHead className="h-auto px-2 py-1 text-xs font-medium">Status</TableHead>
+              <TableHead className={HEAD_CLASS}>Decision</TableHead>
+              <TableHead className={HEAD_CLASS}>Status</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
