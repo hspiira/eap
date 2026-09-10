@@ -245,7 +245,9 @@ describe("chunked apply", () => {
       remaining: 1,
       done: false,
     })
-    await waitFor(() => expect(screen.queryByRole("button", { name: "Cancel" })).not.toBeInTheDocument())
+    await waitFor(() =>
+      expect(screen.queryByRole("button", { name: "Cancel" })).not.toBeInTheDocument(),
+    )
 
     await waitFor(() => {
       const summary = screen.getByText(
