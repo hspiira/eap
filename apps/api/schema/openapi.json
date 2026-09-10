@@ -1096,33 +1096,6 @@
         "title": "Body_import_clients_clients_import_post",
         "type": "object"
       },
-      "Body_import_members_members_import_post": {
-        "properties": {
-          "decisions_json": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "description": "Row decisions from the preview",
-            "title": "Decisions Json"
-          },
-          "file": {
-            "contentMediaType": "application/octet-stream",
-            "description": "UTF-8 client member roster CSV",
-            "title": "File",
-            "type": "string"
-          }
-        },
-        "required": [
-          "file"
-        ],
-        "title": "Body_import_members_members_import_post",
-        "type": "object"
-      },
       "Body_queue_client_import_clients_import_jobs_post": {
         "properties": {
           "decisions_json": {
@@ -1170,6 +1143,21 @@
           "file"
         ],
         "title": "Body_stage_import_session_imports_post",
+        "type": "object"
+      },
+      "Body_stage_member_import_members_import_post": {
+        "properties": {
+          "file": {
+            "contentMediaType": "application/octet-stream",
+            "description": "UTF-8 client member roster CSV",
+            "title": "File",
+            "type": "string"
+          }
+        },
+        "required": [
+          "file"
+        ],
+        "title": "Body_stage_member_import_members_import_post",
         "type": "object"
       },
       "Body_upload_contract_attachment_documents_contracts__contract_id__attachments_post": {
@@ -9643,93 +9631,29 @@
         "title": "MemberGender",
         "type": "string"
       },
-      "MemberImportCommitRequest": {
+      "MemberImportAbandonRequest": {
         "additionalProperties": false,
-        "description": "A slice of confirmed rows. Each row is committed on its own.",
+        "description": "Why nobody will apply this batch. It goes on the record, so it is required.",
         "properties": {
-          "rows": {
-            "items": {
-              "$ref": "#/components/schemas/MemberImportCommitRow"
-            },
-            "maxItems": 100,
-            "minItems": 1,
-            "title": "Rows",
-            "type": "array"
+          "reason": {
+            "maxLength": 500,
+            "title": "Reason",
+            "type": "string"
           }
         },
         "required": [
-          "rows"
+          "reason"
         ],
-        "title": "MemberImportCommitRequest",
+        "title": "MemberImportAbandonRequest",
         "type": "object"
       },
-      "MemberImportCommitResponse": {
+      "MemberImportApplyResponse": {
+        "description": "What happened when a staged batch's importable rows were written.",
         "properties": {
-          "results": {
-            "items": {
-              "$ref": "#/components/schemas/MemberImportRowResult"
-            },
-            "title": "Results",
-            "type": "array"
-          }
-        },
-        "required": [
-          "results"
-        ],
-        "title": "MemberImportCommitResponse",
-        "type": "object"
-      },
-      "MemberImportCommitRow": {
-        "additionalProperties": false,
-        "description": "One row the client confirmed for import, replayed from the preview.",
-        "properties": {
-          "row": {
-            "minimum": 1.0,
-            "title": "Row",
-            "type": "integer"
-          },
-          "values": {
-            "$ref": "#/components/schemas/MemberImportRowValues"
-          }
-        },
-        "required": [
-          "row",
-          "values"
-        ],
-        "title": "MemberImportCommitRow",
-        "type": "object"
-      },
-      "MemberImportIssue": {
-        "properties": {
-          "field": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Field"
-          },
-          "message": {
-            "title": "Message",
+          "batch_id": {
+            "title": "Batch Id",
             "type": "string"
           },
-          "row": {
-            "title": "Row",
-            "type": "integer"
-          }
-        },
-        "required": [
-          "row",
-          "message"
-        ],
-        "title": "MemberImportIssue",
-        "type": "object"
-      },
-      "MemberImportResponse": {
-        "properties": {
           "failed": {
             "title": "Failed",
             "type": "integer"
@@ -9738,35 +9662,163 @@
             "title": "Imported",
             "type": "integer"
           },
-          "issues": {
-            "items": {
-              "$ref": "#/components/schemas/MemberImportIssue"
-            },
-            "title": "Issues",
-            "type": "array"
+          "not_importable": {
+            "title": "Not Importable",
+            "type": "integer"
           },
-          "rows": {
-            "items": {
-              "$ref": "#/components/schemas/MemberImportRowPreview"
-            },
-            "title": "Rows",
-            "type": "array"
-          },
-          "skipped": {
-            "title": "Skipped",
+          "skipped_already_imported": {
+            "title": "Skipped Already Imported",
             "type": "integer"
           }
         },
         "required": [
+          "batch_id",
           "imported",
-          "skipped",
           "failed",
-          "rows"
+          "skipped_already_imported",
+          "not_importable"
         ],
-        "title": "MemberImportResponse",
+        "title": "MemberImportApplyResponse",
         "type": "object"
       },
-      "MemberImportRowPreview": {
+      "MemberImportBatchResponse": {
+        "description": "One staged roster upload and its outcome counts.",
+        "properties": {
+          "applied_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Applied At"
+          },
+          "applied_by": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Applied By"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "file_hash": {
+            "title": "File Hash",
+            "type": "string"
+          },
+          "file_name": {
+            "title": "File Name",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "outcome_counts": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "title": "Outcome Counts",
+            "type": "object"
+          },
+          "row_count": {
+            "title": "Row Count",
+            "type": "integer"
+          },
+          "staged_by": {
+            "title": "Staged By",
+            "type": "string"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          },
+          "tenant_id": {
+            "title": "Tenant Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "tenant_id",
+          "file_name",
+          "file_hash",
+          "row_count",
+          "status",
+          "outcome_counts",
+          "staged_by",
+          "created_at"
+        ],
+        "title": "MemberImportBatchResponse",
+        "type": "object"
+      },
+      "MemberImportRowDecisionRequest": {
+        "additionalProperties": false,
+        "description": "Override one still-new row's Import/Skip decision before applying.",
+        "properties": {
+          "decision": {
+            "enum": [
+              "import",
+              "skip"
+            ],
+            "title": "Decision",
+            "type": "string"
+          }
+        },
+        "required": [
+          "decision"
+        ],
+        "title": "MemberImportRowDecisionRequest",
+        "type": "object"
+      },
+      "MemberImportRowListResponse": {
+        "properties": {
+          "has_more": {
+            "title": "Has More",
+            "type": "boolean"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/MemberImportRowResponse"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "limit": {
+            "title": "Limit",
+            "type": "integer"
+          },
+          "page": {
+            "title": "Page",
+            "type": "integer"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "items",
+          "total",
+          "page",
+          "limit",
+          "has_more"
+        ],
+        "title": "MemberImportRowListResponse",
+        "type": "object"
+      },
+      "MemberImportRowResponse": {
+        "description": "One staged row: what it resolved to, and what a person decided about it.",
         "properties": {
           "client_code": {
             "anyOf": [
@@ -9790,9 +9842,8 @@
             ],
             "title": "Client Name"
           },
-          "default_action": {
-            "default": "import",
-            "title": "Default Action",
+          "decision": {
+            "title": "Decision",
             "type": "string"
           },
           "display_label": {
@@ -9806,6 +9857,10 @@
             ],
             "title": "Display Label"
           },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
           "import_source_id": {
             "anyOf": [
               {
@@ -9816,6 +9871,17 @@
               }
             ],
             "title": "Import Source Id"
+          },
+          "imported_member_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Imported Member Id"
           },
           "message": {
             "anyOf": [
@@ -9828,8 +9894,12 @@
             ],
             "title": "Message"
           },
-          "row": {
-            "title": "Row",
+          "outcome": {
+            "title": "Outcome",
+            "type": "string"
+          },
+          "row_number": {
+            "title": "Row Number",
             "type": "integer"
           },
           "staff_number": {
@@ -9842,234 +9912,18 @@
               }
             ],
             "title": "Staff Number"
-          },
-          "state": {
-            "title": "State",
-            "type": "string"
-          },
-          "values": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/MemberImportRowValues"
-              },
-              {
-                "type": "null"
-              }
-            ]
           }
         },
         "required": [
-          "row",
+          "id",
+          "row_number",
           "client_code",
-          "client_name",
           "import_source_id",
           "display_label",
-          "state"
+          "outcome",
+          "decision"
         ],
-        "title": "MemberImportRowPreview",
-        "type": "object"
-      },
-      "MemberImportRowResult": {
-        "description": "What happened to a single row once it was written.",
-        "properties": {
-          "member_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Member Id"
-          },
-          "message": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Message"
-          },
-          "row": {
-            "title": "Row",
-            "type": "integer"
-          },
-          "state": {
-            "title": "State",
-            "type": "string"
-          }
-        },
-        "required": [
-          "row",
-          "state"
-        ],
-        "title": "MemberImportRowResult",
-        "type": "object"
-      },
-      "MemberImportRowValues": {
-        "additionalProperties": false,
-        "description": "The raw CSV values for one roster row, as the parser read them.\n\nThe preview echoes these back so the confirmation step can send one row at a\ntime without re-uploading the file.",
-        "properties": {
-          "client_code": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Client Code"
-          },
-          "date_of_birth": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Date Of Birth"
-          },
-          "display_label": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Display Label"
-          },
-          "gender": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Gender"
-          },
-          "import_source_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Import Source Id"
-          },
-          "national_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "National Id"
-          },
-          "passport_number": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Passport Number"
-          },
-          "personal_email": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Personal Email"
-          },
-          "phone": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Phone"
-          },
-          "primary_import_source_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Primary Import Source Id"
-          },
-          "relation": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Relation"
-          },
-          "staff_number": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Staff Number"
-          },
-          "status": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Status"
-          },
-          "work_email": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Work Email"
-          }
-        },
-        "title": "MemberImportRowValues",
+        "title": "MemberImportRowResponse",
         "type": "object"
       },
       "MemberListResponse": {
@@ -31420,38 +31274,24 @@
     },
     "/members/import": {
       "post": {
-        "description": "Check a roster row by row, and on confirmation import each row on its own.",
-        "operationId": "import_members_members_import_post",
-        "parameters": [
-          {
-            "description": "Preview only; set false to create members",
-            "in": "query",
-            "name": "dry_run",
-            "required": false,
-            "schema": {
-              "default": true,
-              "description": "Preview only; set false to create members",
-              "title": "Dry Run",
-              "type": "boolean"
-            }
-          }
-        ],
+        "description": "Stage a roster for review. Writes no members; apply does that.\n\nRestaging a roster whose batch is still awaiting a decision is a\nconflict, not a second batch. Restaging one already applied or abandoned\nis how a corrected file re-judges against the roster as it now stands.",
+        "operationId": "stage_member_import_members_import_post",
         "requestBody": {
           "content": {
             "multipart/form-data": {
               "schema": {
-                "$ref": "#/components/schemas/Body_import_members_members_import_post"
+                "$ref": "#/components/schemas/Body_stage_member_import_members_import_post"
               }
             }
           },
           "required": true
         },
         "responses": {
-          "200": {
+          "201": {
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/MemberImportResponse"
+                  "$ref": "#/components/schemas/MemberImportBatchResponse"
                 }
               }
             },
@@ -31473,54 +31313,7 @@
             "HTTPBearer": []
           }
         ],
-        "summary": "Import Members",
-        "tags": [
-          "members"
-        ]
-      }
-    },
-    "/members/import/commit": {
-      "post": {
-        "description": "Import a slice of previewed rows, re-checking and committing each one alone.\n\nThe client sends the roster in slices so it can show progress. A row that\nfails is reported and skipped; the rows already written stay written.",
-        "operationId": "commit_member_import_members_import_commit_post",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/MemberImportCommitRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/MemberImportCommitResponse"
-                }
-              }
-            },
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ],
-        "summary": "Commit Member Import",
+        "summary": "Stage Member Import",
         "tags": [
           "members"
         ]
@@ -31546,6 +31339,318 @@
           }
         ],
         "summary": "Download the member CSV import template",
+        "tags": [
+          "members"
+        ]
+      }
+    },
+    "/members/import/{batch_id}": {
+      "get": {
+        "operationId": "get_member_import_batch_members_import__batch_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "batch_id",
+            "required": true,
+            "schema": {
+              "title": "Batch Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MemberImportBatchResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Get Member Import Batch",
+        "tags": [
+          "members"
+        ]
+      }
+    },
+    "/members/import/{batch_id}/abandon": {
+      "post": {
+        "description": "Close a batch nobody will apply, with the reason on the record.\n\nFrees the file hash and this batch's rows' Staff_IDs, so the roster can\nbe staged again once whatever blocked it is fixed.",
+        "operationId": "abandon_member_import_members_import__batch_id__abandon_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "batch_id",
+            "required": true,
+            "schema": {
+              "title": "Batch Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MemberImportAbandonRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MemberImportBatchResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Abandon Member Import",
+        "tags": [
+          "members"
+        ]
+      }
+    },
+    "/members/import/{batch_id}/apply": {
+      "post": {
+        "description": "Write every still-importable row, one at a time, then close the batch.\n\nApplying a second time is refused, so a replayed request cannot write\ntwice. A row that fails to write does not stop the rest; the rows\nalready written stay written.",
+        "operationId": "apply_member_import_members_import__batch_id__apply_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "batch_id",
+            "required": true,
+            "schema": {
+              "title": "Batch Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MemberImportApplyResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Apply Member Import",
+        "tags": [
+          "members"
+        ]
+      }
+    },
+    "/members/import/{batch_id}/rows": {
+      "get": {
+        "operationId": "list_member_import_rows_members_import__batch_id__rows_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "batch_id",
+            "required": true,
+            "schema": {
+              "title": "Batch Id",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Filter the review queue",
+            "in": "query",
+            "name": "outcome",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter the review queue",
+              "title": "Outcome"
+            }
+          },
+          {
+            "description": "Page number",
+            "in": "query",
+            "name": "page",
+            "required": false,
+            "schema": {
+              "default": 1,
+              "description": "Page number",
+              "minimum": 1,
+              "title": "Page",
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Items per page",
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 50,
+              "description": "Items per page",
+              "maximum": 100,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MemberImportRowListResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "List Member Import Rows",
+        "tags": [
+          "members"
+        ]
+      }
+    },
+    "/members/import/{batch_id}/rows/{row_id}": {
+      "patch": {
+        "description": "Override one still-new row's Import/Skip decision before applying.",
+        "operationId": "set_member_import_row_decision_members_import__batch_id__rows__row_id__patch",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "batch_id",
+            "required": true,
+            "schema": {
+              "title": "Batch Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "row_id",
+            "required": true,
+            "schema": {
+              "title": "Row Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MemberImportRowDecisionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MemberImportRowResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Set Member Import Row Decision",
         "tags": [
           "members"
         ]

@@ -1,17 +1,16 @@
-import { useEffect, useMemo, useState } from "react"
+import { useEffect, useState } from "react"
 
-import { Download, FileInput } from "lucide-react"
+import { Download, FileInput, RefreshCw } from "lucide-react"
 
 import {
-  type MemberImportResult,
+  type MemberImportBatch,
   type MemberImportRow,
-  type MemberImportRowResult,
+  type MemberImportRowDecision,
   membersApi,
 } from "@/api/endpoints/members"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Progress } from "@/components/ui/progress"
 import {
   Select,
   SelectContent,
@@ -38,10 +37,35 @@ import {
 import { useToast } from "@/contexts/ToastContext"
 import { normalizeErrorMessage } from "@/lib/errors"
 
-/** Rows per request. Small enough that the progress bar moves, large enough to not thrash. */
-const BATCH_SIZE = 25
+/** Only Chromium browsers support a re-readable file handle; others fall back to a plain input. */
+const supportsFilePicker =
+  typeof window !== "undefined" && typeof window.showOpenFilePicker === "function"
 
-type Decision = "import" | "skip"
+interface FilePickerAcceptType {
+  description?: string
+  accept: Record<string, string[]>
+}
+
+interface OpenFilePickerOptions {
+  types?: FilePickerAcceptType[]
+  excludeAcceptAllOption?: boolean
+  multiple?: boolean
+}
+
+interface FileSystemHandlePermissionDescriptor {
+  mode?: "read" | "readwrite"
+}
+
+declare global {
+  interface FileSystemFileHandle {
+    queryPermission(descriptor?: FileSystemHandlePermissionDescriptor): Promise<PermissionState>
+    requestPermission(descriptor?: FileSystemHandlePermissionDescriptor): Promise<PermissionState>
+  }
+  interface Window {
+    showOpenFilePicker?: (options?: OpenFilePickerOptions) => Promise<FileSystemFileHandle[]>
+  }
+}
+
 type Tone = "muted" | "ok" | "error"
 
 interface MemberImportDialogProps {
@@ -61,29 +85,28 @@ const TONE_CLASS: Record<Tone, string> = {
   error: "text-destructive",
 }
 
-const RESULT_STATUS: Record<MemberImportRowResult["state"], RowStatus> = {
-  imported: { label: "Imported", tone: "ok" },
-  skipped: { label: "Skipped", tone: "muted" },
-  duplicate: { label: "Existing member", tone: "muted" },
-  invalid: { label: "Invalid", tone: "error" },
-  failed: { label: "Failed", tone: "error" },
+/** A New row still set to import: the only state that gets written on apply. */
+function isQueued(row: MemberImportRow): boolean {
+  return row.outcome === "New" && row.decision === "import"
 }
 
-function downloadIssues(
-  issues: MemberImportResult["issues"],
-  positions: Map<number, number>,
-): void {
+function rowStatus(row: MemberImportRow, applied: boolean): RowStatus {
+  if (row.imported_member_id) return { label: "Imported", tone: "ok" }
+  if (row.outcome === "Failed") return { label: row.message ?? "Failed", tone: "error" }
+  if (row.outcome === "Invalid") return { label: row.message ?? "Invalid", tone: "error" }
+  if (row.outcome === "Duplicate") return { label: "Existing member", tone: "muted" }
+  if (row.decision === "skip") return { label: applied ? "Skipped" : "Will skip", tone: "muted" }
+  return { label: applied ? "Not imported" : "Ready", tone: "muted" }
+}
+
+function downloadIssues(rows: MemberImportRow[]): void {
   const escape = (value: string) => `"${value.replaceAll('"', '""')}"`
+  const flagged = rows.filter((row) => row.outcome === "Invalid" || row.outcome === "Failed")
   const csv = [
-    ["#", "csv_row", "field", "message"],
-    ...issues.map((issue) => [
-      String(positions.get(issue.row) ?? issue.row),
-      String(issue.row),
-      issue.field ?? "",
-      issue.message,
-    ]),
+    ["row", "message"],
+    ...flagged.map((row) => [String(row.row_number), row.message ?? ""]),
   ]
-    .map((row) => row.map(escape).join(","))
+    .map((line) => line.map(escape).join(","))
     .join("\n")
   const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }))
   const anchor = document.createElement("a")
@@ -93,89 +116,101 @@ function downloadIssues(
   URL.revokeObjectURL(url)
 }
 
-function decisionsFor(rows: MemberImportRow[]): Record<number, Decision> {
-  return Object.fromEntries(rows.map((row) => [row.row, row.default_action]))
-}
-
-/** A row the user has left set to import, and that the server found nothing wrong with. */
-function isQueued(row: MemberImportRow, decision: Decision): boolean {
-  return row.state === "new" && decision === "import" && row.values != null
-}
-
-function rowStatus(
-  row: MemberImportRow,
-  decision: Decision,
-  result: MemberImportRowResult | undefined,
-  running: boolean,
-): RowStatus {
-  if (result) {
-    const status = RESULT_STATUS[result.state]
-    return result.message ? { ...status, label: result.message } : status
+async function fetchAllRows(batchId: string): Promise<MemberImportRow[]> {
+  const items: MemberImportRow[] = []
+  let page = 1
+  for (;;) {
+    const response = await membersApi.listImportRows(batchId, { page, limit: 200 })
+    items.push(...response.items)
+    if (!response.has_more) return items
+    page += 1
   }
-  if (row.state === "invalid") return { label: row.message ?? "Invalid", tone: "error" }
-  if (row.state === "duplicate") return { label: "Existing member", tone: "muted" }
-  if (decision === "skip") return { label: "Will skip", tone: "muted" }
-  return { label: running ? "Waiting…" : "Ready", tone: "muted" }
 }
 
 export function MemberImportDialog({ open, onOpenChange, onImported }: MemberImportDialogProps) {
   const toast = useToast()
   const [file, setFile] = useState<File | null>(null)
-  const [preview, setPreview] = useState<MemberImportResult | null>(null)
-  const [decisions, setDecisions] = useState<Record<number, Decision>>({})
-  const [results, setResults] = useState<Record<number, MemberImportRowResult>>({})
-  const [checking, setChecking] = useState(false)
-  const [running, setRunning] = useState(false)
-  const [done, setDone] = useState(false)
+  const [fileHandle, setFileHandle] = useState<FileSystemFileHandle | null>(null)
+  const [batch, setBatch] = useState<MemberImportBatch | null>(null)
+  const [rows, setRows] = useState<MemberImportRow[]>([])
+  const [staging, setStaging] = useState(false)
+  const [applying, setApplying] = useState(false)
+  const [applied, setApplied] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     if (open) return
     setFile(null)
-    setPreview(null)
-    setDecisions({})
-    setResults({})
-    setChecking(false)
-    setRunning(false)
-    setDone(false)
+    setFileHandle(null)
+    setBatch(null)
+    setRows([])
+    setStaging(false)
+    setApplying(false)
+    setApplied(false)
     setError(null)
   }, [open])
 
-  const rows = preview?.rows ?? []
-  const decisionFor = (row: MemberImportRow): Decision => decisions[row.row] ?? row.default_action
-  const queued = useMemo(
-    () => rows.filter((row) => isQueued(row, decisions[row.row] ?? row.default_action)),
-    [rows, decisions],
-  )
-  /** Rows are numbered from 1 in the table; the CSV line number stays the wire key. */
-  const positions = useMemo(() => new Map(rows.map((row, index) => [row.row, index + 1])), [rows])
-  const finished = Object.keys(results).length
-  const tally = Object.values(results).reduce(
-    (totals, result) => ({ ...totals, [result.state]: (totals[result.state] ?? 0) + 1 }),
-    {} as Record<string, number>,
-  )
+  const queued = rows.filter(isQueued)
 
-  const selectFile = (selected: File | null) => {
+  const selectFile = (selected: File | null, handle: FileSystemFileHandle | null = null) => {
     setFile(selected)
-    setPreview(null)
-    setDecisions({})
-    setResults({})
-    setDone(false)
+    setFileHandle(handle)
+    setBatch(null)
+    setRows([])
+    setApplied(false)
     setError(null)
     if (!selected) return
-    setChecking(true)
+    setStaging(true)
     void membersApi
-      .importRoster(selected, true)
-      .then((checked) => {
-        setPreview(checked)
-        setDecisions(decisionsFor(checked.rows))
+      .stageImport(selected)
+      .then(async (staged) => {
+        setBatch(staged)
+        setRows(await fetchAllRows(staged.id))
       })
-      .catch((cause) => setError(normalizeErrorMessage(cause, "Could not check the CSV")))
-      .finally(() => setChecking(false))
+      .catch((cause) => setError(normalizeErrorMessage(cause, "Could not stage the CSV")))
+      .finally(() => setStaging(false))
   }
 
-  const updateDecision = (row: number, value: Decision) => {
-    setDecisions((current) => ({ ...current, [row]: value }))
+  const pickFile = async () => {
+    if (!window.showOpenFilePicker) return
+    try {
+      const [handle] = await window.showOpenFilePicker({
+        types: [{ description: "CSV", accept: { "text/csv": [".csv"] } }],
+        excludeAcceptAllOption: false,
+        multiple: false,
+      })
+      selectFile(await handle.getFile(), handle)
+    } catch (cause) {
+      if (cause instanceof DOMException && cause.name === "AbortError") return
+      setError(normalizeErrorMessage(cause, "Could not open the CSV file"))
+    }
+  }
+
+  /** Re-reads the same handle from disk, so local edits show up without reopening the picker. */
+  const refreshFile = async () => {
+    if (!fileHandle) return
+    try {
+      const permission = await fileHandle.queryPermission({ mode: "read" })
+      if (
+        permission !== "granted" &&
+        (await fileHandle.requestPermission({ mode: "read" })) !== "granted"
+      ) {
+        setError("Permission to re-read the file was denied")
+        return
+      }
+      selectFile(await fileHandle.getFile(), fileHandle)
+    } catch (cause) {
+      setError(normalizeErrorMessage(cause, "Could not refresh the CSV file"))
+    }
+  }
+
+  const updateDecision = (row: MemberImportRow, decision: MemberImportRowDecision) => {
+    if (!batch) return
+    setRows((current) => current.map((r) => (r.id === row.id ? { ...r, decision } : r)))
+    void membersApi.setImportRowDecision(batch.id, row.id, decision).catch((cause) => {
+      toast.showError(normalizeErrorMessage(cause, "Could not update the row"))
+      setRows((current) => current.map((r) => (r.id === row.id ? row : r)))
+    })
   }
 
   const downloadTemplate = async () => {
@@ -192,37 +227,24 @@ export function MemberImportDialog({ open, onOpenChange, onImported }: MemberImp
     }
   }
 
-  /** Send the confirmed rows in slices so each row's outcome lands as it happens. */
-  const importRows = async () => {
-    setRunning(true)
-    setResults({})
+  const applyImport = async () => {
+    if (!batch) return
+    setApplying(true)
     setError(null)
-    let imported = 0
     try {
-      for (let start = 0; start < queued.length; start += BATCH_SIZE) {
-        const slice = queued.slice(start, start + BATCH_SIZE)
-        const response = await membersApi.commitImport(
-          slice.map((row) => ({ row: row.row, values: row.values! })),
-        )
-        imported += response.results.filter((result) => result.state === "imported").length
-        setResults((current) => ({
-          ...current,
-          ...Object.fromEntries(response.results.map((result) => [result.row, result])),
-        }))
-      }
-      setDone(true)
-      if (imported > 0) onImported()
-      if (imported === queued.length) toast.showSuccess(`${imported} member rows imported`)
-      else toast.showError(`${queued.length - imported} of ${queued.length} rows need attention`)
+      const result = await membersApi.applyImport(batch.id)
+      setRows(await fetchAllRows(batch.id))
+      setApplied(true)
+      if (result.imported > 0) onImported()
+      const attention = result.failed + result.not_importable
+      if (attention === 0) toast.showSuccess(`${result.imported} member rows imported`)
+      else toast.showError(`${attention} row${attention === 1 ? "" : "s"} need attention`)
     } catch (cause) {
-      setError(normalizeErrorMessage(cause, "Could not import members"))
-      if (imported > 0) onImported()
+      setError(normalizeErrorMessage(cause, "Could not apply the import"))
     } finally {
-      setRunning(false)
+      setApplying(false)
     }
   }
-
-  const progress = queued.length > 0 ? Math.round((finished / queued.length) * 100) : 0
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -235,9 +257,8 @@ export function MemberImportDialog({ open, onOpenChange, onImported }: MemberImp
         <SheetHeader className="shrink-0 border-b border-fg/10 px-6 py-5 pr-14 text-left">
           <SheetTitle className="text-base text-fg">Import members</SheetTitle>
           <SheetDescription className="text-xs leading-relaxed text-fg/60">
-            Upload a roster, review every row, then confirm. Each row is imported on its own, so a
-            row that fails leaves the rest untouched. Staff_ID is the stable identity key; existing
-            members are never overwritten.
+            Upload a roster, review every row, then apply. Staff_ID is the stable identity key;
+            existing members are never overwritten.
           </SheetDescription>
         </SheetHeader>
 
@@ -246,14 +267,41 @@ export function MemberImportDialog({ open, onOpenChange, onImported }: MemberImp
             <Label htmlFor="member-import-file" className="shrink-0">
               CSV file
             </Label>
-            <Input
-              id="member-import-file"
-              type="file"
-              accept=".csv,text/csv"
-              disabled={running}
-              className="h-9 min-w-52 flex-1"
-              onChange={(event) => selectFile(event.target.files?.[0] ?? null)}
-            />
+            {supportsFilePicker ? (
+              <>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  disabled={applying}
+                  className="h-9 min-w-52 flex-1 justify-start truncate font-normal"
+                  onClick={() => void pickFile()}
+                >
+                  {file ? file.name : "Choose file…"}
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  disabled={!fileHandle || applying || staging}
+                  title="Re-read this file from disk"
+                  aria-label="Refresh CSV from disk"
+                  className="h-9 w-9 shrink-0"
+                  onClick={() => void refreshFile()}
+                >
+                  <RefreshCw className="size-3.5" />
+                </Button>
+              </>
+            ) : (
+              <Input
+                id="member-import-file"
+                type="file"
+                accept=".csv,text/csv"
+                disabled={applying}
+                className="h-9 min-w-52 flex-1"
+                onChange={(event) => selectFile(event.target.files?.[0] ?? null)}
+              />
+            )}
             <Button
               type="button"
               variant="outline"
@@ -272,20 +320,16 @@ export function MemberImportDialog({ open, onOpenChange, onImported }: MemberImp
             Other workforce columns are ignored; files are limited to 10 MB.
           </p>
 
-          {checking ? <p className="text-xs text-fg-muted">Checking rows on the server…</p> : null}
+          {staging ? <p className="text-xs text-fg-muted">Staging rows on the server…</p> : null}
           {error ? <p className="text-xs text-destructive">{error}</p> : null}
 
-          {preview ? (
+          {batch ? (
             <div className="space-y-3 border-t border-fg/10 pt-4">
-              <ImportProgress
-                total={queued.length}
-                finished={finished}
-                percent={progress}
-                running={running}
-                done={done}
-                tally={tally}
-                checked={preview.rows.length}
-                invalid={preview.failed}
+              <ImportSummary
+                rows={rows}
+                queued={queued.length}
+                applying={applying}
+                applied={applied}
               />
               <div className="max-h-[28rem] overflow-auto rounded-sm border border-fg/10">
                 <Table className="text-left text-xs">
@@ -307,28 +351,25 @@ export function MemberImportDialog({ open, onOpenChange, onImported }: MemberImp
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {rows.map((row, index) => (
-                      <ImportRow
-                        key={row.row}
+                    {rows.map((row) => (
+                      <ImportRowLine
+                        key={row.id}
                         row={row}
-                        position={index + 1}
-                        decision={decisionFor(row)}
-                        result={results[row.row]}
-                        running={running}
-                        locked={running || done}
+                        applying={applying}
+                        applied={applied}
                         onDecision={updateDecision}
                       />
                     ))}
                   </TableBody>
                 </Table>
               </div>
-              {preview.issues.length > 0 ? (
+              {rows.some((row) => row.outcome === "Invalid" || row.outcome === "Failed") ? (
                 <Button
                   type="button"
                   variant="link"
                   size="sm"
                   className="h-auto gap-1 px-0 text-xs"
-                  onClick={() => downloadIssues(preview.issues, positions)}
+                  onClick={() => downloadIssues(rows)}
                 >
                   <Download className="size-3" />
                   Download issue report
@@ -342,18 +383,18 @@ export function MemberImportDialog({ open, onOpenChange, onImported }: MemberImp
           <Button
             type="button"
             variant="outline"
-            disabled={running}
+            disabled={applying}
             onClick={() => onOpenChange(false)}
           >
-            {done ? "Done" : "Close"}
+            {applied ? "Done" : "Close"}
           </Button>
           <Button
             type="button"
-            disabled={!file || !preview || checking || running || done || queued.length === 0}
-            onClick={() => void importRows()}
+            disabled={!batch || staging || applying || applied || queued.length === 0}
+            onClick={() => void applyImport()}
           >
             <FileInput className="mr-1.5 size-4" />
-            {running ? `Importing ${finished}/${queued.length}…` : `Import ${queued.length} rows`}
+            {applying ? "Applying…" : `Import ${queued.length} rows`}
           </Button>
         </SheetFooter>
       </SheetContent>
@@ -361,73 +402,53 @@ export function MemberImportDialog({ open, onOpenChange, onImported }: MemberImp
   )
 }
 
-function ImportProgress({
-  total,
-  finished,
-  percent,
-  running,
-  done,
-  tally,
-  checked,
-  invalid,
+function ImportSummary({
+  rows,
+  queued,
+  applying,
+  applied,
 }: {
-  total: number
-  finished: number
-  percent: number
-  running: boolean
-  done: boolean
-  tally: Record<string, number>
-  checked: number
-  invalid: number
+  rows: MemberImportRow[]
+  queued: number
+  applying: boolean
+  applied: boolean
 }) {
-  if (!running && !done) {
+  if (applying) return <p className="text-sm text-fg-muted">Applying the import…</p>
+  if (applied) {
+    const imported = rows.filter((row) => row.imported_member_id).length
+    const failed = rows.filter((row) => !row.imported_member_id && row.outcome === "Failed").length
     return (
       <p className="text-sm">
-        <strong>{checked}</strong> rows checked · <strong>{total}</strong> ready ·{" "}
-        <strong>{checked - total - invalid}</strong> skipped · <strong>{invalid}</strong> errors
+        <strong>{imported}</strong> imported · <strong>{rows.length - imported - failed}</strong>{" "}
+        skipped · <strong>{failed}</strong> failed
       </p>
     )
   }
+  const invalid = rows.filter((row) => row.outcome === "Invalid").length
   return (
-    <div className="space-y-2">
-      <div className="flex justify-between text-xs text-fg-muted">
-        <span>{done ? "Import complete" : "Importing rows one at a time"}</span>
-        <span>
-          {finished}/{total} rows · {percent}%
-        </span>
-      </div>
-      <Progress value={percent} />
-      <p className="text-sm">
-        <strong>{tally.imported ?? 0}</strong> imported ·{" "}
-        <strong>{(tally.skipped ?? 0) + (tally.duplicate ?? 0)}</strong> skipped ·{" "}
-        <strong>{(tally.failed ?? 0) + (tally.invalid ?? 0)}</strong> failed
-      </p>
-    </div>
+    <p className="text-sm">
+      <strong>{rows.length}</strong> rows checked · <strong>{queued}</strong> ready ·{" "}
+      <strong>{rows.length - queued - invalid}</strong> skipped · <strong>{invalid}</strong> errors
+    </p>
   )
 }
 
-function ImportRow({
+function ImportRowLine({
   row,
-  position,
-  decision,
-  result,
-  running,
-  locked,
+  applying,
+  applied,
   onDecision,
 }: {
   row: MemberImportRow
-  position: number
-  decision: Decision
-  result: MemberImportRowResult | undefined
-  running: boolean
-  locked: boolean
-  onDecision: (row: number, value: Decision) => void
+  applying: boolean
+  applied: boolean
+  onDecision: (row: MemberImportRow, decision: MemberImportRowDecision) => void
 }) {
-  const status = rowStatus(row, decision, result, running)
-  const decidable = row.state === "new"
+  const status = rowStatus(row, applied)
+  const decidable = row.outcome === "New" && !applied
   return (
     <TableRow className="border-fg/8">
-      <TableCell className="px-2 py-1 text-xs text-fg-muted">{position}</TableCell>
+      <TableCell className="px-2 py-1 text-xs text-fg-muted">{row.row_number}</TableCell>
       <TableCell className="max-w-44 truncate px-2 py-1 text-xs text-fg">
         {row.display_label ?? "Unnamed"}
       </TableCell>
@@ -441,12 +462,12 @@ function ImportRow({
       <TableCell className="px-2 py-1 text-xs">
         {decidable ? (
           <Select
-            value={decision}
-            disabled={locked}
-            onValueChange={(value) => onDecision(row.row, value as Decision)}
+            value={row.decision}
+            disabled={applying}
+            onValueChange={(value) => onDecision(row, value as MemberImportRowDecision)}
           >
             <SelectTrigger
-              aria-label={`Decision for row ${position}`}
+              aria-label={`Decision for row ${row.row_number}`}
               className="h-7 rounded-sm border-fg/15 bg-bg px-2 text-xs text-fg"
             >
               <SelectValue />

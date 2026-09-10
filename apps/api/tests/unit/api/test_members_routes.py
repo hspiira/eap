@@ -14,6 +14,7 @@ from app.api.dependencies import (
     get_clinical_subject_repository,
     get_eligible_member_clinical_link_repository,
     get_eligible_member_repository,
+    get_member_import_repository,
     get_member_next_of_kin_repository,
     get_next_of_kin_relationship_repository,
     get_outbox_repository,
@@ -25,13 +26,17 @@ from app.core.database import get_db
 from app.core.exception_handlers import register_exception_handlers
 from app.core.security import TokenData, get_current_user
 from app.domain.entities.eligible_member import EligibleMember
+from app.domain.entities.member_import import MemberImportBatchEntity, MemberImportRowEntity
 from app.domain.entities.member_next_of_kin import MemberNextOfKin
-from app.domain.enums import EligibilityStatus, MemberRelation, TenantRole
+from app.domain.enums import EligibilityStatus, MemberImportRowOutcome, MemberRelation, TenantRole
+from app.domain.enums.provider_network import ImportBatchStatus
 from app.domain.repositories.eligible_member_repository import MemberRosterStats
 from app.domain.value_objects.core import (
     ClientId,
     EligibleMemberId,
     Email,
+    MemberImportBatchId,
+    MemberImportRowId,
     MemberNextOfKinId,
     TenantId,
     UserId,
@@ -73,6 +78,7 @@ async def api():
         outbox=AsyncMock(),
         users=AsyncMock(),
         sessions=AsyncMock(),
+        imports=AsyncMock(),
         db=AsyncMock(),
     )
     state.members.get_by_id.return_value = member()
@@ -83,6 +89,11 @@ async def api():
     state.members.list_all.return_value = []
     state.members.count.return_value = 0
     state.members.find_by_user_id.return_value = None
+    state.imports.find_batch_by_hash.return_value = None
+    state.imports.outcome_counts.return_value = {}
+    state.imports.list_rows.return_value = ([], 0)
+    state.imports.get_batch.return_value = None
+    state.imports.get_row.return_value = None
     state.clients.get_by_id.return_value = SimpleNamespace(
         tenant_id=TenantId("t1"), name="Acme", code="ACM"
     )
@@ -106,6 +117,7 @@ async def api():
         get_outbox_repository: state.outbox,
         get_user_repository: state.users,
         get_service_session_repository: state.sessions,
+        get_member_import_repository: state.imports,
         get_db: state.db,
     }
     for dependency, value in dependencies.items():
@@ -185,14 +197,43 @@ async def test_create_records_optional_identification_numbers(api):
     assert body["passport_number"] == "B0987654"
 
 
-async def test_roster_preview_exposes_duplicate_as_safe_default_skip(api):
+async def test_stage_persists_a_batch_and_its_rows(api):
+    api.clients.get_by_code.return_value = SimpleNamespace(
+        id=ClientId("c1"), name="Acme", code="ACME", tenant_id=TenantId("t1")
+    )
+    api.imports.outcome_counts.return_value = {"New": 1}
+
+    response = await api.http.post(
+        "/members/import",
+        files={
+            "file": (
+                "members.csv",
+                b"Company Code,Staff_ID,Name of Employee\nACME,HR-1,Amina\n",
+                "text/csv",
+            )
+        },
+    )
+
+    assert response.status_code == 201, response.text
+    body = response.json()
+    assert body["row_count"] == 1
+    assert body["status"] == "Staged"
+    assert body["outcome_counts"] == {"New": 1}
+    api.imports.save_batch.assert_awaited_once()
+    ((rows,), _) = api.imports.add_rows.call_args
+    assert len(rows) == 1
+    assert rows[0].outcome == MemberImportRowOutcome.NEW
+    assert rows[0].decision == "import"
+
+
+async def test_stage_flags_a_duplicate_row_with_a_default_skip_decision(api):
     api.clients.get_by_code.return_value = SimpleNamespace(
         id=ClientId("c1"), name="Acme", code="ACME", tenant_id=TenantId("t1")
     )
     api.members.find_by_import_source_id.return_value = member()
 
     response = await api.http.post(
-        "/members/import?dry_run=true",
+        "/members/import",
         files={
             "file": (
                 "members.csv",
@@ -202,44 +243,15 @@ async def test_roster_preview_exposes_duplicate_as_safe_default_skip(api):
         },
     )
 
-    assert response.status_code == 200, response.text
-    body = response.json()
-    assert body["imported"] == 0
-    assert body["skipped"] == 1
-    assert body["rows"][0]["state"] == "duplicate"
-    assert body["rows"][0]["default_action"] == "skip"
+    assert response.status_code == 201, response.text
+    ((rows,), _) = api.imports.add_rows.call_args
+    assert rows[0].outcome == MemberImportRowOutcome.DUPLICATE
+    assert rows[0].decision == "skip"
 
 
-async def test_roster_preview_honours_explicit_skip_for_new_rows(api):
-    api.clients.get_by_code.return_value = SimpleNamespace(
-        id=ClientId("c1"), name="Acme", code="ACME", tenant_id=TenantId("t1")
-    )
-
+async def test_stage_preserves_the_parser_issue_message(api):
     response = await api.http.post(
-        "/members/import?dry_run=true",
-        data={"decisions_json": '{"2":"skip"}'},
-        files={
-            "file": (
-                "members.csv",
-                b"Company Code,Staff_ID,Name of Employee\nACME,HR-1,Amina\n",
-                "text/csv",
-            )
-        },
-    )
-
-    assert response.status_code == 200, response.text
-    body = response.json()
-    assert body["imported"] == 0
-    assert body["skipped"] == 1
-    assert body["rows"][0]["state"] == "skipped"
-
-
-async def test_roster_preview_preserves_parser_issue_fields(api):
-    api.clients.get_by_code.return_value = SimpleNamespace(
-        id=ClientId("c1"), name="Acme", code="ACME", tenant_id=TenantId("t1")
-    )
-    response = await api.http.post(
-        "/members/import?dry_run=true",
+        "/members/import",
         files={
             "file": (
                 "members.csv",
@@ -249,83 +261,85 @@ async def test_roster_preview_preserves_parser_issue_fields(api):
         },
     )
 
-    assert response.status_code == 200, response.text
-    assert response.json()["issues"] == [
-        {"row": 2, "field": "Staff_ID", "message": "Stable Staff_ID is required"}
-    ]
+    assert response.status_code == 201, response.text
+    ((rows,), _) = api.imports.add_rows.call_args
+    assert rows[0].outcome == MemberImportRowOutcome.INVALID
+    assert rows[0].message == "Stable Staff_ID is required"
 
 
-def commit_row(row=2, **values):
-    return {
-        "row": row,
-        "values": {
-            "client_code": "ACME",
-            "import_source_id": "HR-1",
-            "display_label": "Amina",
-            **values,
-        },
-    }
-
-
-async def test_roster_preview_returns_the_values_the_commit_step_replays(api):
-    api.clients.get_by_code.return_value = SimpleNamespace(
-        id=ClientId("c1"), name="Acme", code="ACME", tenant_id=TenantId("t1")
+async def test_stage_rejects_restaging_a_file_still_awaiting_a_decision(api):
+    api.imports.find_batch_by_hash.return_value = SimpleNamespace(
+        id=MemberImportBatchId("b1"), status=ImportBatchStatus.STAGED
     )
 
     response = await api.http.post(
-        "/members/import?dry_run=true",
-        files={
-            "file": (
-                "members.csv",
-                b"Company Code,Staff_ID,Name of Employee\nACME,HR-1,Amina\n",
-                "text/csv",
-            )
-        },
+        "/members/import",
+        files={"file": ("members.csv", b"Company Code,Staff_ID,Name of Employee\n", "text/csv")},
     )
 
-    assert response.status_code == 200, response.text
-    assert response.json()["rows"][0]["values"] == {
-        "client_code": "ACME",
-        "import_source_id": "HR-1",
-        "staff_number": None,
-        "display_label": "Amina",
-        "work_email": None,
-        "personal_email": None,
-        "gender": None,
-        "date_of_birth": None,
-        "phone": None,
-        "national_id": None,
-        "passport_number": None,
-        "status": None,
-        "relation": None,
-        "primary_import_source_id": None,
-    }
+    assert response.status_code == 409, response.text
+    api.imports.save_batch.assert_not_awaited()
 
 
-async def test_import_commit_writes_every_row_in_its_own_transaction(api):
+def import_row(row_number=1, outcome=MemberImportRowOutcome.NEW, decision="import", **overrides):
+    now = utc_now()
+    return MemberImportRowEntity(
+        id=MemberImportRowId(f"r{row_number}"),
+        batch_id=MemberImportBatchId("b1"),
+        tenant_id=TenantId("t1"),
+        row_number=row_number,
+        replay_key=f"key:c1:HR-{row_number}",
+        outcome=outcome,
+        decision=decision,
+        created_at=now,
+        client_code="ACME",
+        client_id=ClientId("c1"),
+        import_source_id=f"HR-{row_number}",
+        display_label="Amina" if row_number == 1 else "Bosco",
+        **overrides,
+    )
+
+
+def staged_batch(**overrides):
+    now = utc_now()
+    return MemberImportBatchEntity(
+        id=MemberImportBatchId("b1"),
+        tenant_id=TenantId("t1"),
+        file_name="members.csv",
+        file_hash="sha256:abc",
+        row_count=2,
+        staged_by=UserId("u1"),
+        created_at=now,
+        updated_at=now,
+        **overrides,
+    )
+
+
+async def test_apply_writes_every_importable_row_in_its_own_transaction(api):
+    api.imports.get_batch.return_value = staged_batch()
     api.clients.get_by_code.return_value = SimpleNamespace(
         id=ClientId("c1"), name="Acme", code="ACME", tenant_id=TenantId("t1")
     )
+    rows = [import_row(1), import_row(2)]
+    api.imports.list_rows.side_effect = [(rows, 2), ([], 2)]
 
-    response = await api.http.post(
-        "/members/import/commit",
-        json={
-            "rows": [
-                commit_row(2),
-                commit_row(3, import_source_id="HR-2", display_label="Bosco"),
-            ]
-        },
-    )
+    response = await api.http.post("/members/import/b1/apply")
 
     assert response.status_code == 200, response.text
-    assert [row["state"] for row in response.json()["results"]] == ["imported", "imported"]
-    assert api.db.commit.await_count == 2
+    body = response.json()
+    assert body["imported"] == 2
+    assert body["failed"] == 0
+    # Two row-level commits, plus one for the batch's own applied-status write.
+    assert api.db.commit.await_count == 3
 
 
-async def test_import_commit_keeps_going_after_a_row_fails(api):
+async def test_apply_keeps_going_after_a_row_fails(api):
+    api.imports.get_batch.return_value = staged_batch()
     api.clients.get_by_code.return_value = SimpleNamespace(
         id=ClientId("c1"), name="Acme", code="ACME", tenant_id=TenantId("t1")
     )
+    rows = [import_row(1), import_row(2)]
+    api.imports.list_rows.side_effect = [(rows, 2), ([], 2)]
     saves = {"n": 0}
 
     async def fail_first(_member):
@@ -335,48 +349,91 @@ async def test_import_commit_keeps_going_after_a_row_fails(api):
 
     api.members.save.side_effect = fail_first
 
-    response = await api.http.post(
-        "/members/import/commit",
-        json={
-            "rows": [
-                commit_row(2),
-                commit_row(3, import_source_id="HR-2", display_label="Bosco"),
-            ]
-        },
-    )
+    response = await api.http.post("/members/import/b1/apply")
 
     assert response.status_code == 200, response.text
-    results = response.json()["results"]
-    assert results[0]["state"] == "failed"
-    assert results[0]["message"] == "member is not writable"
-    assert results[1]["state"] == "imported"
+    body = response.json()
+    assert body["imported"] == 1
+    assert body["failed"] == 1
+    api.imports.mark_row_failed.assert_awaited_once()
+    assert api.imports.mark_row_failed.call_args.args[2] == "member is not writable"
     assert api.db.rollback.await_count == 1
-    assert api.db.commit.await_count == 1
 
 
-async def test_import_commit_never_overwrites_an_existing_member(api):
+async def test_apply_never_overwrites_an_existing_member(api):
+    api.imports.get_batch.return_value = staged_batch()
     api.clients.get_by_code.return_value = SimpleNamespace(
         id=ClientId("c1"), name="Acme", code="ACME", tenant_id=TenantId("t1")
     )
     api.members.find_by_import_source_id.return_value = member()
+    rows = [import_row(1)]
+    api.imports.list_rows.side_effect = [(rows, 1), ([], 1)]
 
-    response = await api.http.post("/members/import/commit", json={"rows": [commit_row()]})
+    response = await api.http.post("/members/import/b1/apply")
 
     assert response.status_code == 200, response.text
-    assert response.json()["results"][0]["state"] == "duplicate"
-    api.db.commit.assert_not_awaited()
+    body = response.json()
+    assert body["imported"] == 0
+    assert body["not_importable"] == 1
+    api.members.save.assert_not_awaited()
 
 
-async def test_import_commit_rejects_a_company_code_outside_the_tenant(api):
+async def test_apply_rejects_a_company_code_outside_the_tenant(api):
+    api.imports.get_batch.return_value = staged_batch()
     api.clients.get_by_code.return_value = None
+    rows = [import_row(1)]
+    api.imports.list_rows.side_effect = [(rows, 1), ([], 1)]
 
-    response = await api.http.post("/members/import/commit", json={"rows": [commit_row()]})
+    response = await api.http.post("/members/import/b1/apply")
 
     assert response.status_code == 200, response.text
-    result = response.json()["results"][0]
-    assert result["state"] == "invalid"
-    assert "does not resolve" in result["message"]
-    api.db.commit.assert_not_awaited()
+    body = response.json()
+    assert body["not_importable"] == 1
+    api.imports.mark_row_failed.assert_awaited_once()
+    assert "does not resolve" in api.imports.mark_row_failed.call_args.args[2]
+
+
+async def test_apply_refuses_a_batch_that_is_not_staged(api):
+    api.imports.get_batch.return_value = staged_batch(status=ImportBatchStatus.APPLIED)
+
+    response = await api.http.post("/members/import/b1/apply")
+
+    assert response.status_code == 409, response.text
+    api.members.save.assert_not_awaited()
+
+
+async def test_set_row_decision_rejects_a_duplicate_row(api):
+    api.imports.get_row.return_value = import_row(
+        1, outcome=MemberImportRowOutcome.DUPLICATE, decision="skip"
+    )
+
+    response = await api.http.patch("/members/import/b1/rows/r1", json={"decision": "import"})
+
+    assert response.status_code == 400, response.text
+    api.imports.set_row_decision.assert_not_awaited()
+
+
+async def test_set_row_decision_allows_skipping_a_new_row(api):
+    api.imports.get_row.return_value = import_row(1)
+
+    response = await api.http.patch("/members/import/b1/rows/r1", json={"decision": "skip"})
+
+    assert response.status_code == 200, response.text
+    assert response.json()["decision"] == "skip"
+    api.imports.set_row_decision.assert_awaited_once_with(
+        TenantId("t1"), MemberImportRowId("r1"), "skip"
+    )
+
+
+async def test_abandon_releases_the_batch_replay_keys(api):
+    api.imports.get_batch.return_value = staged_batch()
+
+    response = await api.http.post("/members/import/b1/abandon", json={"reason": "wrong file"})
+
+    assert response.status_code == 200, response.text
+    api.imports.release_replay_keys.assert_awaited_once_with(
+        TenantId("t1"), MemberImportBatchId("b1")
+    )
 
 
 async def test_member_import_template_is_server_generated(api):

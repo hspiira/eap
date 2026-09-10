@@ -78,6 +78,7 @@ def _audit_value(value: Any) -> str | None:
 _EXPLICIT_ACTIONS = {
     "DSARErasureExecuted": AuditActionType.DELETE,
     "SessionImportBatchApplied": AuditActionType.IMPORT,
+    "MemberImportBatchApplied": AuditActionType.IMPORT,
 }
 """Events the substring rules below would file wrongly.
 

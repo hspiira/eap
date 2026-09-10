@@ -71,7 +71,14 @@ import app.domain.entities as entities_pkg
 # and OutreachRecord. They are already in CLINICAL_RESOURCE_TYPES, so the
 # redaction rule covered them the moment they emitted. Amending a signed note
 # is the one that matters most and recorded nothing at all.
-KNOWN_SILENT_MUTATORS = 93
+# 93 -> 95 with the member import staging batch. MemberImportRowEntity.
+# mark_imported and mark_failed are the same bookkeeping as
+# SessionImportRowEntity.mark_imported above: applying a batch emits
+# MemberImportBatchApplied with the actor and accepted count, and each row
+# carries its own imported_member_id or failure message as persisted detail.
+# set_decision is a person's in-review Import/Skip override on a row that has
+# not been written yet; nothing has happened to audit until apply runs.
+KNOWN_SILENT_MUTATORS = 95
 
 
 def _entity_classes():

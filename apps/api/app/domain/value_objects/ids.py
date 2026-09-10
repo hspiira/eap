@@ -206,6 +206,16 @@ class EligibleMemberId(Id):
 
 
 @dataclass(frozen=True)
+class MemberImportBatchId(Id):
+    pass
+
+
+@dataclass(frozen=True)
+class MemberImportRowId(Id):
+    pass
+
+
+@dataclass(frozen=True)
 class ClinicalSubjectId(Id):
     pass
 

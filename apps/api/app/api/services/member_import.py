@@ -9,29 +9,96 @@ that already landed.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import date
+from datetime import date, datetime
 
 from pydantic import ValidationError
 
-from app.api.schemas.member_schemas import MemberCreate, MemberImportRowValues
+from app.api.schemas.member_schemas import MemberCreate
 from app.application.use_cases.eligible_member_use_cases import EnrolEligibleMemberUseCase
 from app.core.security import TokenData
 from app.domain.entities.client import ClientEntity
 from app.domain.entities.eligible_member import EligibleMember
-from app.domain.enums import EligibilityStatus, MemberGender, MemberRelation
+from app.domain.entities.member_import import MemberImportRowEntity
+from app.domain.enums import EligibilityStatus, MemberGender, MemberImportRowOutcome, MemberRelation
 from app.domain.repositories.client_repository import ClientRepository
 from app.domain.repositories.eligible_member_repository import EligibleMemberRepository
 from app.domain.repositories.outbox_repository import OutboxRepository
 from app.domain.value_objects.core import ClientId, EligibleMemberId, Email, TenantId, UserId
+from app.domain.value_objects.ids import MemberImportBatchId, MemberImportRowId
 from app.shared.handlers.audit_event_handler import AuditEventHandler
 from app.shared.utils.member_csv import MemberCsvRow
 from app.shared.utils.route_audit_helper import audit_change
 
 DECISIONS = {"import", "skip"}
 
+_OUTCOME_BY_STATE = {
+    "new": MemberImportRowOutcome.NEW,
+    "duplicate": MemberImportRowOutcome.DUPLICATE,
+    "invalid": MemberImportRowOutcome.INVALID,
+}
 
-def row_values(row: MemberCsvRow) -> MemberImportRowValues:
-    return MemberImportRowValues(
+
+def row_replay_key(row: MemberCsvRow, client_id: ClientId | None, file_hash: str) -> str:
+    """A stable key when Staff_ID is present, else one scoped to this exact file and row.
+
+    The fallback lets a blank-Staff_ID row stage without colliding with its
+    neighbours in the same file; it does not re-identify the same person
+    across a later file, which is a known limitation, not a bug.
+    """
+    if client_id is not None and row.import_source_id:
+        return f"key:{client_id.value}:{row.import_source_id}"
+    return f"file:{file_hash}:row:{row.row_number}"
+
+
+def build_row_entity(
+    row: MemberCsvRow,
+    check: RowCheck,
+    *,
+    row_id: MemberImportRowId,
+    batch_id: MemberImportBatchId,
+    tenant_id: TenantId,
+    file_hash: str,
+    now: datetime,
+) -> MemberImportRowEntity:
+    """Turn one checked roster row into the row a batch persists.
+
+    A duplicate or invalid row can never be imported regardless of decision
+    (`MemberImportRowEntity.set_decision` enforces this), so its stored
+    decision is just a safe default and is never read.
+    """
+    client_id = check.client.id if check.client else None
+    return MemberImportRowEntity(
+        id=row_id,
+        batch_id=batch_id,
+        tenant_id=tenant_id,
+        row_number=row.row_number,
+        replay_key=row_replay_key(row, client_id, file_hash),
+        outcome=_OUTCOME_BY_STATE[check.state],
+        decision="import" if check.state == "new" else "skip",
+        created_at=now,
+        client_code=row.client_code,
+        client_id=client_id,
+        import_source_id=row.import_source_id,
+        staff_number=row.staff_number,
+        display_label=row.display_label,
+        work_email=row.work_email,
+        personal_email=row.personal_email,
+        gender=row.gender,
+        date_of_birth=row.date_of_birth,
+        phone=row.phone,
+        national_id=row.national_id,
+        passport_number=row.passport_number,
+        status=row.status,
+        relation=row.relation,
+        primary_import_source_id=row.primary_import_source_id,
+        message=check.message,
+    )
+
+
+def csv_row_from_entity(row: MemberImportRowEntity) -> MemberCsvRow:
+    """Rebuild the parser's row shape from a persisted row, for re-checking at apply time."""
+    return MemberCsvRow(
+        row_number=row.row_number,
         client_code=row.client_code,
         import_source_id=row.import_source_id,
         staff_number=row.staff_number,
@@ -47,10 +114,6 @@ def row_values(row: MemberCsvRow) -> MemberImportRowValues:
         relation=row.relation,
         primary_import_source_id=row.primary_import_source_id,
     )
-
-
-def csv_row(row_number: int, values: MemberImportRowValues) -> MemberCsvRow:
-    return MemberCsvRow(row_number=row_number, **values.model_dump())
 
 
 @dataclass(frozen=True)

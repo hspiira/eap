@@ -284,3 +284,321 @@ defect in the uncommitted change rather than in the members module.
 Fix: await the result before mapping it. Whoever owns the next-of-kin
 relationship taxonomy should confirm no other method in that repository has
 the same shape.
+
+## Design: member import staging batch (2026-09-10)
+
+Product owner request: give member roster import a persisted staging table so
+an import attempt can be audited and duplicates tracked consistently, matching
+the pattern already used by practitioner and session import. Design only;
+nothing in this section has been implemented yet.
+
+### Why today's design does not meet that ask
+
+`POST /members/import` (`apps/api/app/api/routes/members.py:745-821`) and
+`POST /members/import/commit` (`:824-850`) are stateless server-side. Preview
+parses and validates the upload in memory and returns every row's full parsed
+values (`MemberImportRowValues`, `member_schemas.py:231-253`) to the browser;
+nothing is written to the database unless `dry_run=false`. Commit does not
+look anything up by an id, it takes those same values back from the request
+body (`MemberImportCommitRow.values`, `:283-289`) and re-validates from
+scratch. There is no batch/job id anywhere in either schema. Confirmed by
+direct inspection of both handlers and by grepping `apps/api/alembic/versions`
+and `apps/api/app/infrastructure/models` for an import-batch table scoped to
+members: none exists. The only member-import migration is
+`d8x1y3z5a7c9_add_eligible_member_import_source_id.py`, which adds the
+`import_source_id` column and its per-client unique index to `eligible_members`
+directly, not a staging table.
+
+Consequence: the state of an import run lives in the browser tab between
+preview and commit, and there is no audit trail of who staged or applied a
+roster, unlike practitioner and session import.
+
+### Two capabilities already in place that this redesign must not regress
+
+- **Row atomicity.** "Roster import atomicity (2026-09-07)" above is a
+  deliberate, already-reasoned decision: a confirmed import commits one row at
+  a time because a single-transaction import "undid every accepted row when a
+  later row failed, and gave the UI nothing to report until the whole file
+  finished." Any apply step in the new design must keep writing rows
+  one at a time and must not roll the batch back on one row's failure.
+- **Per-row decision before commit.** `docs/gaps/IMPORT_REVIEW_UI_GAP.md`
+  records that member import already has real in-UI review: a person can
+  override each row's Import/Skip decision before the batch runs
+  (`MemberImportDialog.tsx`, `decisionsFor`/`updateDecision`/`ImportRow`).
+  Session import, the flow this design mirrors, has no equivalent per-row
+  decision, only batch-level apply/abandon
+  (`docs/gaps/IMPORT_REVIEW_UI_GAP.md:19-24`). The new member design keeps the
+  member-import capability rather than regressing to the session-import
+  shape; see "Deviation from precedent" below.
+
+### Precedent mirrored: session import staging
+
+Session import (`apps/api/app/api/routes/session_imports.py`,
+`apps/api/app/application/services/session_import_staging.py`,
+`apps/api/app/application/use_cases/apply_session_import.py`) is the closest
+existing flow: an external roster is matched against existing entities and can
+be staged once, reviewed, and applied later. Its shape:
+
+- `POST /session-imports` stages the whole file in one request: hash the
+  upload (`file_hash`), reject only if a batch with the same tenant+hash is
+  still `Staged` (409), persist one `SessionImportBatchModel` row, then persist
+  one `SessionImportRowModel` per row with a computed `outcome` and a
+  `replay_key` (`{prefix}:{source_record_key}` if present, else
+  `file:{hash}:row:{n}`) that is unique per tenant so the same source record
+  cannot be staged twice.
+- `GET /session-imports/{id}/rows` is a paginated, filterable read of the
+  persisted rows. Nothing about a row can be changed from here.
+- `POST /session-imports/{id}/apply` takes no body, only `batch_id`. It loads
+  persisted rows page by page, writes only the ones whose outcome is
+  `Accepted` and that are not already imported, marks each row's
+  `imported_session_id` with one update per row immediately (not a bulk
+  update), and only flips the batch to `Applied` after every row has been
+  processed.
+- `POST /session-imports/{id}/abandon` records a reason and moves the batch to
+  `Abandoned`.
+
+Two things about the batch table are worth calling out because they were bugs
+in this exact precedent, not just design notes: the original migration
+(`a2n1o0r2k4s6_provider_network_tables.py:177-181`) gave
+`session_import_batches` a plain `UniqueConstraint(tenant_id, file_hash)`,
+which meant an applied or abandoned batch permanently blocked ever restaging
+that file again. Two follow-up migrations
+(`h3b5d7f9j1l3_abandoned_batches_free_their_file_hash.py`,
+`j5d7f9h1k3m5_only_an_undecided_batch_holds_its_file_hash.py`) narrowed this to
+a partial unique index, `WHERE status = 'Staged'`, so only a batch still
+awaiting a decision holds the hash. The member design should start with the
+partial index directly rather than repeat the two-migration fix.
+
+### Proposed schema
+
+Two new tables, `member_import_batches` and `member_import_rows`, same shape
+as `session_import_batches`/`session_import_rows`
+(`apps/api/app/infrastructure/models/session_import_model.py:34-140`):
+
+`member_import_batches`
+
+| Column | Type | Notes |
+| --- | --- | --- |
+| `id` | cuid PK | |
+| `tenant_id` | FK `tenants.id` | |
+| `file_name` | string(500) | |
+| `file_hash` | string(128), indexed | sha256 of the upload |
+| `row_count` | int, default 0 | |
+| `status` | `ImportBatchStatus` | `Staged` / `Applied` / `Abandoned`, see below |
+| `staged_by` | string(25) | user id |
+| `applied_by` | string(25), nullable | |
+| `applied_at` | timestamptz, nullable | |
+| `notes` | text, nullable | abandon reason |
+
+Constraints: `UniqueConstraint(tenant_id, id)`; partial unique index on
+`(tenant_id, file_hash)` `WHERE status = 'Staged'`, adopting the corrected
+session-import behaviour directly.
+
+`member_import_rows`
+
+| Column | Type | Notes |
+| --- | --- | --- |
+| `id` | cuid PK | |
+| `tenant_id`, `batch_id` | composite FK to batch, `ondelete=CASCADE` | |
+| `row_number` | int | |
+| `replay_key` | string(500), unique per tenant | see open decision below |
+| `client_code`, `import_source_id`, `staff_number`, `display_label`, `work_email`, `personal_email`, `gender`, `date_of_birth`, `phone`, `national_id`, `passport_number`, `status`, `relation`, `primary_import_source_id` | same fields as `MemberImportRowValues` (`member_schemas.py:231-253`) | the persisted row replaces the client-resent `values` payload |
+| `outcome` | `MemberImportRowOutcome` | `New` / `Duplicate` / `Invalid` / `Skipped`, mirrors today's `RowCheck.state` (`member_import.py:144-208`) |
+| `decision` | `import` / `skip` | new column, not present in session import; carries the per-row override the UI already exposes |
+| `message` | text, nullable | validation/duplicate message, one string, matching today's shape rather than adopting the practitioner-import `ImportReasonCode` taxonomy, which member import has no use for yet |
+| `imported_member_id` | string(25), nullable, FK `eligible_members.id` `ondelete=SET NULL` | set by apply, mirrors `imported_session_id` |
+
+Constraints: `UniqueConstraint(batch_id, row_number)`;
+`UniqueConstraint(tenant_id, replay_key)`; composite FK to the batch.
+
+### New domain enum
+
+`MemberImportRowOutcome(str, Enum)`: `NEW`, `DUPLICATE`, `INVALID`, `SKIPPED`.
+
+Reusing `ImportBatchStatus` from `app/domain/enums/provider_network.py:59-64`
+as-is is a name smell: that module is documented as "Enums for the provider
+network" (`provider_network.py:1`), and importing it from the members domain
+couples members to a provider-network module for a three-value enum that is
+already generic. Recommendation, not yet decided: move `ImportBatchStatus` to
+a neutral module (for example `app/domain/enums/imports.py`) shared by
+practitioner, session, and member import, and update the two existing
+importers. This is a larger blast radius than the member feature alone
+(`graft callers ImportBatchStatus` should be run before touching it) and
+should be confirmed before implementation, not assumed.
+
+### Deviation from precedent: per-row decision endpoint
+
+Session import's row list is read-only; there is no route that changes a row
+after staging. Member import needs one, to preserve the Import/Skip override
+`docs/gaps/IMPORT_REVIEW_UI_GAP.md` already credits it with. Proposed:
+`PATCH /members/import/{batch_id}/rows/{row_id}` with body `{decision: "import" | "skip"}`,
+tenant-scoped, rejecting rows whose outcome is not `New` (a duplicate or
+invalid row cannot be queued regardless of decision, matching today's
+`isQueued` guard). This route has no equivalent in session or practitioner
+import; it exists because member import's UI capability is ahead of theirs,
+not because the precedent was followed loosely.
+
+### Proposed API surface
+
+| Method/path | Replaces | Behaviour |
+| --- | --- | --- |
+| `POST /members/import` | current `POST /members/import` (preview) | Stage: hash, reject only if same tenant+hash batch is still `Staged`, persist batch + one row per CSV row with a computed outcome. Returns `MemberImportBatchResponse`. |
+| `GET /members/import/{batch_id}` | — | Batch status, row_count, outcome counts. |
+| `GET /members/import/{batch_id}/rows` | — | Paginated, filterable by outcome/decision. |
+| `PATCH /members/import/{batch_id}/rows/{row_id}` | — | New. Set a row's decision. |
+| `POST /members/import/{batch_id}/apply` | current `POST /members/import/commit` | No body but `batch_id`. Applies rows with `decision=import` and `outcome=New` one at a time, immediately persisting `imported_member_id` per row (row atomicity preserved), then marks the batch `Applied`. |
+| `POST /members/import/{batch_id}/abandon` | — | Records a reason, marks `Abandoned`, frees the file hash per the corrected partial index. |
+
+`MemberRowChecker.check` (`member_import.py:144-208`) is reused unchanged for
+computing a row's outcome at stage time; the difference is that the result is
+persisted once instead of being recomputed from client-resent values at every
+commit slice.
+
+### Open decision: replay key for a blank Staff ID
+
+This is the question the earlier "no Staff ID" discussion deferred to this
+design. Today `import_source_id` is mandatory at parse time
+(`member_csv.py:88-91`, "Stable Staff_ID is required") specifically because it
+is the only dedup/re-import key (`member_import.py:167`, `176-178`); a blank
+value cannot safely disambiguate two different people in the same client. A
+persisted `replay_key` does not remove that problem by itself, it only
+changes what a blank Staff ID's key looks like:
+
+- `key:{client_id}:{import_source_id}` when Staff ID is present, stable
+  across re-imports, matching today's behaviour.
+- `file:{file_hash}:row:{row_number}` when Staff ID is absent (mirroring
+  session import's own fallback, `session_import_staging.py:448-451`) makes
+  every row's key unique **within one file**, which fixes the in-file
+  collision bug described earlier, but gives no cross-file identity: the same
+  person without a Staff ID re-imported next month gets a new row and,
+  eventually, a new member record. That is the "no dedup guarantee" tradeoff
+  from the earlier options, not a new option.
+
+Whether that tradeoff is acceptable, or whether a blank Staff ID should
+instead require a second field (National ID, email) to stand in as the key,
+is a product decision. I have not decided it here; whoever owns the roster
+data-quality policy should confirm before this is implemented, and the
+decision should be recorded in this file once made, per the "Decisions"
+convention at the top of this document.
+
+### Frontend consequence, not yet designed in detail
+
+`MemberImportDialog.tsx` currently holds every row's full values in browser
+state and resends them in slices of 25 to commit
+(`BATCH_SIZE`, `importRows`). Under the new design it would instead: stage
+once, fetch rows a page at a time, PATCH a row's decision when the user
+changes the select, and call apply with only the batch id. This is a
+rewrite of the dialog's data flow, not a small patch, and is out of scope for
+this design note; it should be scoped separately once the backend shape above
+is confirmed.
+
+### Decisions made, 2026-09-10
+
+- Replay key: use both, as designed above. `key:{client_id}:{import_source_id}`
+  when Staff ID is present; `file:{file_hash}:row:{row_number}` fallback when
+  absent. Cross-file re-identification of a person with no Staff ID is
+  accepted as a known limitation, not solved by this change.
+- `ImportBatchStatus` (`app/domain/enums/provider_network.py:59-64`) is reused
+  as-is for member import rather than relocated. Decision: it is treated as a
+  generic import-lifecycle enum despite living in a provider-network-named
+  module; not moved.
+- Cutover is direct: the old stateless `POST /members/import` and
+  `POST /members/import/commit` are replaced, not kept alongside the new
+  contract, consistent with this document's existing cutover precedent
+  (Phase 4).
+
+### Implementation, 2026-09-10
+
+Backend:
+
+- New tables `member_import_batches`/`member_import_rows`
+  (`alembic/versions/n3q5s7u9w1y3_member_import_staging.py`), domain entities
+  `MemberImportBatchEntity`/`MemberImportRowEntity`
+  (`app/domain/entities/member_import.py`), repository interface/impl
+  (`app/domain/repositories/member_import_repository.py`,
+  `app/infrastructure/repositories/member_import_repository.py`), and mapper
+  (`app/infrastructure/mappers/member_import_mapper.py`).
+- `POST /members/import` now stages (hash, persist batch + one row per CSV
+  row, `MemberRowChecker.check` reused unchanged) instead of previewing.
+  `GET /members/import/{id}`, `GET /members/import/{id}/rows`,
+  `PATCH /members/import/{id}/rows/{row_id}` (the new per-row decision
+  endpoint, no equivalent in session import), `POST /members/import/{id}/apply`,
+  and `POST /members/import/{id}/abandon` round out the surface
+  (`app/api/routes/members.py`). The old `POST /members/import/commit` is
+  gone; the cutover is direct, per the recorded decision.
+- Apply keeps the existing row-atomicity guarantee: `_apply_row` commits or
+  rolls back per row, re-running `MemberRowChecker.check` fresh against the
+  roster as it now stands rather than trusting the row's staged outcome. A
+  row that fails or is no longer importable is marked `Failed` with a message
+  and the loop continues; only after every row is processed does the batch
+  itself commit as `Applied`. This is a deliberate divergence from
+  `ApplyImportBatchUseCase` in session import, which commits the whole apply
+  as one transaction; members cannot use that shape without reintroducing the
+  bug the 2026-09-07 atomicity fix closed.
+- `ImportBatchStatus` is reused from `app.domain.enums.provider_network` as
+  decided, not relocated. A new `MemberImportRowOutcome` enum
+  (`New`/`Duplicate`/`Invalid`/`Failed`) lives in `app.domain.enums.person`
+  alongside the other member enums. There is no `Skipped` outcome value: Skip
+  is the row's mutable `decision` field, not a classification, since a New
+  row can be toggled between Import and Skip after staging.
+- Replay key: `key:{client_id}:{import_source_id}` when Staff ID is present,
+  `file:{file_hash}:row:{row_number}` otherwise, exactly as decided. Cross-file
+  re-identification of a person with no Staff ID remains unsolved by this
+  change; every such re-import still creates a new row.
+- `MemberImportRowEntity.mark_imported`, `mark_failed`, and `set_decision` are
+  accepted silent mutators (`tests/unit/domain/test_audit_coverage.py`,
+  `KNOWN_SILENT_MUTATORS` 93 -> 95): the batch already emits
+  `MemberImportBatchApplied`/`Abandoned` with actor and counts, and each row
+  carries its own `imported_member_id` or failure message as persisted detail,
+  the same reasoning already recorded there for
+  `SessionImportRowEntity.mark_imported`.
+- `pyproject.toml`'s import-linter config grandfathers
+  `app.api.dependencies.clinical -> app.infrastructure.repositories.member_import_repository`
+  alongside the existing composition-root edges; `lint-imports` still passes
+  3 kept, 0 broken.
+
+Frontend: `MemberImportDialog.tsx` and `api/endpoints/members.ts` were
+rewritten for the new stage/rows/decision/apply/abandon contract. One UX
+trade-off, not a defect: apply is now a single request that returns only once
+the whole batch is processed, so the old per-slice live progress bar is gone.
+This matches session import's own `apply` shape (also one all-or-nothing
+call with no client-visible per-row progress); the old member-specific
+slice-by-slice progress was a feature of the stateless design being replaced,
+not something the new design tries to preserve.
+
+Also included in this pass, at the user's request and independent of the
+staging redesign: a "refresh from disk" control on the CSV picker using the
+File System Access API where the browser supports it (Chromium only; other
+browsers keep the plain file input with no refresh button).
+
+Verified:
+
+- Backend: `ruff check`/`ruff format` clean on every touched file;
+  `lint-imports` 3 kept, 0 broken; `uv run pytest tests/unit` 2145 passed, 16
+  skipped (pre-existing, unrelated to this change).
+- Migration: verified against a real local PostgreSQL instance in an isolated
+  schema (`tests/unit/infrastructure/test_member_import_migration.py`, 5
+  passed) — table/column/FK shape, the partial unique index (a Staged batch
+  blocks a same-hash restage, an Applied one does not), the per-tenant replay
+  key uniqueness constraint, and a clean downgrade.
+- Frontend: `tsc --noEmit` clean, `eslint` clean, `prettier --check` clean,
+  full `vitest run` 746 passed (91 files) including 9 new/updated
+  `membersApi` endpoint tests.
+
+Not verified: no browser session exercised the rewritten `MemberImportDialog`
+end to end; only the API layer underneath it and its unit tests were run.
+
+Discoveries recorded, not fixed here (out of scope for this change):
+
+- `alembic heads` shows two heads on this branch,
+  `n3q5s7u9w1y3` (this change, chained off `d8x1y3z5a7c9`) and a pre-existing
+  `e3f5g7h9j1k3` unrelated to members. The second head predates this work.
+  Whoever integrates branches will need an `alembic merge` before a combined
+  `upgrade head` (singular) will succeed; `upgrade heads` (plural) works today.
+- Session import's own `stage_import` route calls `audit_change(batch, ...)`
+  immediately after staging, but nothing ever appends a
+  `SessionImportBatchStaged` event to the batch (the event class exists,
+  `grep -rn "SessionImportBatchStaged("` finds no call site), so that audit
+  call is a silent no-op today. Member import does not repeat this: `stage_member_import`
+  calls `batch.mark_staged(at=now)` before persisting, so the equivalent
+  `MemberImportBatchStaged` event actually fires.

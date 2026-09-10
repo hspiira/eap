@@ -10,9 +10,12 @@ one verdict to all of them.
 - **Client import** (`apps/web/src/components/clients/ClientImportDialog.tsx:70,168,303`):
   each row previews with a `default_action`; a person can override the action
   per row (`updateDecision`, `ClientImportDecision`) before confirming.
-- **Member import** (`apps/web/src/components/members/MemberImportDialog.tsx:97,145,177,443-456`):
-  same shape — a per-row Import/Skip select overrides the default decision
-  before the batch runs.
+- **Member import** (`apps/web/src/components/members/MemberImportDialog.tsx:207,436`,
+  `updateDecision`/`ImportRowLine`, rewritten 2026-09-10 for the staged-batch
+  API, see `docs/migrations/MEMBERS_MIGRATION.md`): same shape — a per-row
+  Import/Skip select overrides the row's decision, now persisted server-side
+  via `PATCH /members/import/{batch_id}/rows/{row_id}` rather than held only
+  in browser state, before apply runs.
 
 ## Flagged only, no way to resolve in the UI
 
