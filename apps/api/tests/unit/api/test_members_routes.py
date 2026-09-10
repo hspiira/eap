@@ -559,6 +559,29 @@ async def test_apply_writes_every_importable_row_in_its_own_transaction(api):
     assert api.db.commit.await_count == 3
 
 
+async def test_apply_carries_employment_details_into_the_real_member(api):
+    """MemberRowImporter.enrol() must pass employment through; it silently
+
+    dropped it before, so a member applied from a roster with Job Title,
+    Department, etc. always ended up with no employment record at all.
+    """
+    api.imports.get_batch.return_value = staged_batch()
+    api.clients.get_by_code.return_value = SimpleNamespace(
+        id=ClientId("c1"), name="Acme", code="ACME", tenant_id=TenantId("t1")
+    )
+    row = import_row(1, job_title="Branch Manager", department="Operations")
+    api.imports.list_rows.side_effect = [([row], 1), ([], 1)]
+
+    response = await api.http.post("/members/import/b1/apply")
+
+    assert response.status_code == 200, response.text
+    assert response.json()["imported"] == 1
+    ((saved_member,), _) = api.members.save.call_args
+    assert saved_member.employment is not None
+    assert saved_member.employment.job_title == "Branch Manager"
+    assert saved_member.employment.department == "Operations"
+
+
 async def test_apply_keeps_going_after_a_row_fails(api):
     api.imports.get_batch.return_value = staged_batch()
     api.clients.get_by_code.return_value = SimpleNamespace(

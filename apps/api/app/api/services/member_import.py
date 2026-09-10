@@ -26,6 +26,7 @@ from app.domain.repositories.member_import_repository import MemberImportReposit
 from app.domain.repositories.outbox_repository import OutboxRepository
 from app.domain.value_objects.core import ClientId, EligibleMemberId, Email, TenantId, UserId
 from app.domain.value_objects.ids import MemberImportBatchId, MemberImportRowId
+from app.domain.value_objects.staffing import EmploymentDetails
 from app.shared.handlers.audit_event_handler import AuditEventHandler
 from app.shared.utils.member_csv import MemberCsvRow, is_employee_relation, parse_roster_date
 from app.shared.utils.route_audit_helper import audit_change
@@ -512,6 +513,9 @@ class MemberRowImporter:
             staff_number=data.staff_number,
             national_id=data.national_id,
             passport_number=data.passport_number,
+            employment=EmploymentDetails.build(**data.employment.model_dump())
+            if data.employment
+            else None,
         )
         _apply_imported_status(member, row.status)
         member.record_import()

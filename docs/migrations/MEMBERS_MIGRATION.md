@@ -914,3 +914,24 @@ Discoveries recorded, not fixed here (out of scope for this change):
   call is a silent no-op today. Member import does not repeat this: `stage_member_import`
   calls `batch.mark_staged(at=now)` before persisting, so the equivalent
   `MemberImportBatchStaged` event actually fires.
+
+## Eighth defect: applying a roster silently dropped employment (2026-09-10)
+
+A member applied from a roster row with Job Title, Department, etc. always
+ended up with no employment record, even though the same data displayed
+correctly in the staging preview (which reads the staged row's own
+persisted columns, untouched by apply). `MemberRowImporter.enrol`
+(`member_import.py`) builds `check.data` (a `MemberCreate`, which does carry
+`employment`) but calls `EnrolEligibleMemberUseCase.execute(...)` with an
+explicit keyword-argument list that never included `employment` — the
+parameter defaults to `None` and the use case builds the real
+`EligibleMember` accordingly. Nothing raised: a missing keyword argument
+with a default is not an error.
+
+Fixed by passing `employment=EmploymentDetails.build(**data.employment.model_dump())
+if data.employment else None` alongside the rest of `enrol`'s call, the same
+conversion `_employment()` already does for manual create/update in
+`members.py`. Pinned in
+`test_apply_carries_employment_details_into_the_real_member`: fails (`None`)
+on the pre-fix code, passes (`job_title`/`department` both present on the
+saved entity) on the fix.
