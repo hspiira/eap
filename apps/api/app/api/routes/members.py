@@ -813,7 +813,7 @@ async def stage_member_import(
             message,
             error_code="IMPORT_ALREADY_STAGED",
             http_status=409,
-            details={"file": message},
+            details={"file": message, "batch_id": existing.id.value},
         )
     await imports.release_superseded_rows(tenant, file_hash)
 

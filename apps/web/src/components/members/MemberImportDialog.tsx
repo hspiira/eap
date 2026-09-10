@@ -8,6 +8,7 @@ import {
   type MemberImportRowDecision,
   membersApi,
 } from "@/api/endpoints/members"
+import { ConfirmDialog } from "@/components/common/ConfirmDialog"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -36,6 +37,7 @@ import {
 } from "@/components/ui/table"
 import { useToast } from "@/contexts/ToastContext"
 import { normalizeErrorMessage } from "@/lib/errors"
+import { ApiError } from "@/types/api"
 
 /** Only Chromium browsers support a re-readable file handle; others fall back to a plain input. */
 const supportsFilePicker =
@@ -123,6 +125,12 @@ function downloadIssues(rows: MemberImportRow[]): void {
   URL.revokeObjectURL(url)
 }
 
+/** The other batch's id, when staging failed because that batch is still awaiting a decision. */
+function conflictingBatchId(cause: unknown): string | null {
+  if (!(cause instanceof ApiError) || cause.code !== "IMPORT_ALREADY_STAGED") return null
+  return cause.details?.find((detail) => detail.field === "batch_id")?.message ?? null
+}
+
 async function fetchAllRows(batchId: string): Promise<MemberImportRow[]> {
   const items: MemberImportRow[] = []
   let page = 1
@@ -140,20 +148,24 @@ function ImportControls({
   applying,
   staging,
   error,
+  canDiscardStuck,
   onPick,
   onRefresh,
   onSelectFile,
   onDownloadTemplate,
+  onDiscardStuck,
 }: {
   file: File | null
   fileHandle: FileSystemFileHandle | null
   applying: boolean
   staging: boolean
   error: string | null
+  canDiscardStuck: boolean
   onPick: () => void
   onRefresh: () => void
   onSelectFile: (file: File | null) => void
   onDownloadTemplate: () => void
+  onDiscardStuck: () => void
 }) {
   return (
     <>
@@ -216,7 +228,22 @@ function ImportControls({
       </p>
 
       {staging ? <p className="text-xs text-fg-muted">Staging rows on the server…</p> : null}
-      {error ? <p className="text-xs text-destructive">{error}</p> : null}
+      {error ? (
+        <div className="flex flex-wrap items-center gap-2">
+          <p className="text-xs text-destructive">{error}</p>
+          {canDiscardStuck ? (
+            <Button
+              type="button"
+              variant="link"
+              size="sm"
+              className="h-auto px-0 text-xs"
+              onClick={onDiscardStuck}
+            >
+              Discard the stuck batch and retry
+            </Button>
+          ) : null}
+        </div>
+      ) : null}
     </>
   )
 }
@@ -351,6 +378,9 @@ export function MemberImportDialog({ open, onOpenChange, onImported }: MemberImp
   const [applying, setApplying] = useState(false)
   const [applied, setApplied] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [conflictBatchId, setConflictBatchId] = useState<string | null>(null)
+  const [discarding, setDiscarding] = useState(false)
+  const [confirmDiscardOpen, setConfirmDiscardOpen] = useState(false)
 
   useEffect(() => {
     if (open) return
@@ -362,6 +392,7 @@ export function MemberImportDialog({ open, onOpenChange, onImported }: MemberImp
     setApplying(false)
     setApplied(false)
     setError(null)
+    setConflictBatchId(null)
   }, [open])
 
   const queued = rows.filter(isQueued)
@@ -374,6 +405,7 @@ export function MemberImportDialog({ open, onOpenChange, onImported }: MemberImp
     setRows([])
     setApplied(false)
     setError(null)
+    setConflictBatchId(null)
     if (!selected) return
     setStaging(true)
     void membersApi
@@ -382,7 +414,10 @@ export function MemberImportDialog({ open, onOpenChange, onImported }: MemberImp
         setBatch(staged)
         setRows(await fetchAllRows(staged.id))
       })
-      .catch((cause) => setError(normalizeErrorMessage(cause, "Could not stage the CSV")))
+      .catch((cause) => {
+        setError(normalizeErrorMessage(cause, "Could not stage the CSV"))
+        setConflictBatchId(conflictingBatchId(cause))
+      })
       .finally(() => setStaging(false))
   }
 
@@ -416,6 +451,24 @@ export function MemberImportDialog({ open, onOpenChange, onImported }: MemberImp
       selectFile(await fileHandle.getFile(), fileHandle)
     } catch (cause) {
       setError(normalizeErrorMessage(cause, "Could not refresh the CSV file"))
+    }
+  }
+
+  /** Abandons the batch blocking this file, then retries staging it. */
+  const discardStuckBatch = async () => {
+    if (!conflictBatchId) return
+    setDiscarding(true)
+    try {
+      await membersApi.abandonImport(
+        conflictBatchId,
+        "Discarded from the import dialog after a restage conflict",
+      )
+      setConflictBatchId(null)
+      selectFile(file, fileHandle)
+    } catch (cause) {
+      setError(normalizeErrorMessage(cause, "Could not discard the stuck batch"))
+    } finally {
+      setDiscarding(false)
     }
   }
 
@@ -484,10 +537,12 @@ export function MemberImportDialog({ open, onOpenChange, onImported }: MemberImp
             applying={applying}
             staging={staging}
             error={error}
+            canDiscardStuck={Boolean(conflictBatchId)}
             onPick={() => void pickFile()}
             onRefresh={() => void refreshFile()}
             onSelectFile={selectFile}
             onDownloadTemplate={() => void downloadTemplate()}
+            onDiscardStuck={() => setConfirmDiscardOpen(true)}
           />
           <ImportPreview
             batch={batch}
@@ -510,6 +565,16 @@ export function MemberImportDialog({ open, onOpenChange, onImported }: MemberImp
           applyImport={() => void applyImport()}
         />
       </SheetContent>
+      <ConfirmDialog
+        open={confirmDiscardOpen}
+        onOpenChange={setConfirmDiscardOpen}
+        title="Discard the stuck batch?"
+        description="This file is already staged and awaiting a decision in another batch. Discarding it may lose any review already done there, so this upload can be staged fresh."
+        confirmLabel="Discard and retry"
+        destructive
+        loading={discarding}
+        onConfirm={discardStuckBatch}
+      />
     </Sheet>
   )
 }

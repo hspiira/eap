@@ -279,6 +279,9 @@ async def test_stage_rejects_restaging_a_file_still_awaiting_a_decision(api):
 
     assert response.status_code == 409, response.text
     api.imports.save_batch.assert_not_awaited()
+    body = response.json()
+    assert body["error"] == "IMPORT_ALREADY_STAGED"
+    assert {"field": "batch_id", "message": "b1", "code": None} in body["details"]
 
 
 def import_row(row_number=1, outcome=MemberImportRowOutcome.NEW, decision="import", **overrides):
