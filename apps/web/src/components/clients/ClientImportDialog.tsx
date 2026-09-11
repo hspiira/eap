@@ -229,8 +229,11 @@ export function ClientImportDialog({ open, onOpenChange, onImported }: ClientImp
       >
         <SheetHeader className="shrink-0 border-b border-fg/10 px-6 py-5 pr-14 text-left">
           <SheetTitle className="text-base text-fg">Import clients</SheetTitle>
-          <SheetDescription className="text-xs leading-relaxed text-fg/60">
-            The server checks every row before you confirm it.
+          <SheetDescription asChild>
+            <ul className="list-disc space-y-1 pl-4 text-xs leading-relaxed text-fg/60">
+              <li>The server checks every row before you confirm it.</li>
+              <li>Files over 5 MB run in the background, with progress and retry support.</li>
+            </ul>
           </SheetDescription>
         </SheetHeader>
 
@@ -243,9 +246,6 @@ export function ClientImportDialog({ open, onOpenChange, onImported }: ClientImp
               accept=".csv,text/csv"
               onChange={(event) => selectFile(event.target.files?.[0] ?? null)}
             />
-            <p className="text-xs text-fg-muted">
-              Files over 5 MB run in the background, with progress and retry support.
-            </p>
           </div>
 
           {previewLoading ? (
