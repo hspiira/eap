@@ -1,7 +1,8 @@
 import { useCallback, useMemo, useRef, useState } from "react"
 
-import { Download, FileInput, RefreshCw, Upload } from "lucide-react"
+import { AlertTriangle, Download, FileInput, RefreshCw, Upload } from "lucide-react"
 
+import { providerAliasesApi } from "@/api/endpoints/provider-aliases"
 import {
   type SessionImportApplyResult,
   type SessionImportBatch,
@@ -10,6 +11,7 @@ import {
   sessionImportsApi,
 } from "@/api/endpoints/session-imports"
 import { ConfirmDialog } from "@/components/common/ConfirmDialog"
+import { NamePractitionerDialog } from "@/components/sessions/NamePractitionerDialog"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -30,10 +32,13 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { useToast } from "@/contexts/ToastContext"
+import { useCurrentRole } from "@/hooks/useCanWrite"
 import { applyPace } from "@/lib/apply-progress"
 import { normalizeErrorMessage } from "@/lib/errors"
 import { cn } from "@/lib/utils"
+import { useTenantStore } from "@/store/slices/tenantSlice"
 import { ApiError } from "@/types/api"
+import { TenantRole } from "@/types/enums"
 
 /** Only Chromium browsers support a re-readable file handle; others fall back to a plain input. */
 const supportsFilePicker =
@@ -159,6 +164,19 @@ const OUTCOMES: { value: SessionImportOutcome; label: string; hint: string }[] =
 
 const OUTCOME_LABELS = new Map(OUTCOMES.map((o) => [o.value, o.label]))
 
+/**
+ * Outcomes where the practitioner name is what stopped the row.
+ *
+ * `MissingPractitioner` belongs here so the row still reads as a failure, but
+ * it can never be fixed from the review: the source names nobody, so there is
+ * no spelling to record against a practitioner.
+ */
+const NAME_FAILURES = new Set<SessionImportOutcome>([
+  "UnmappedPractitioner",
+  "AmbiguousPractitioner",
+  "MissingPractitioner",
+])
+
 interface SessionImportDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
@@ -241,7 +259,36 @@ export function SessionImportDialog({ open, onOpenChange, onImported }: SessionI
   const [conflictBatchId, setConflictBatchId] = useState<string | null>(null)
   const [discarding, setDiscarding] = useState(false)
   const [confirmDiscardOpen, setConfirmDiscardOpen] = useState(false)
+  const [namingRow, setNamingRow] = useState<string | null>(null)
   const applyCancelledRef = useRef(false)
+  const tenantId = useTenantStore((state) => state.currentTenantId)
+  const isAdmin = useCurrentRole() === TenantRole.ADMIN
+
+  /**
+   * Record who a stalled name is, from inside the review.
+   *
+   * Leaves the batch alone on purpose: its rows carry the outcome they were
+   * judged with, and only staging the file again re-judges them.
+   */
+  const nameThePractitioner = async (providerId: string) => {
+    if (!tenantId || !namingRow) return
+    try {
+      const { claimed } = await providerAliasesApi.adopt(
+        tenantId,
+        SOURCE_SYSTEM,
+        namingRow,
+        providerId,
+      )
+      toast.showSuccess(
+        claimed
+          ? `${namingRow} recorded. Stage the file again to re-judge its rows.`
+          : `${namingRow} is already resolved to another practitioner; left as it is.`,
+      )
+      setNamingRow(null)
+    } catch (err) {
+      toast.showError(normalizeErrorMessage(err, `Could not record ${namingRow}`))
+    }
+  }
 
   const counts = useMemo(() => (batch ? presentCounts(batch) : []), [batch])
   const accepted = batch ? outcomeCount(batch.outcome_counts, "Accepted") : 0
@@ -606,7 +653,12 @@ export function SessionImportDialog({ open, onOpenChange, onImported }: SessionI
                   </Button>
                 ))}
               </div>
-              <RowTable rows={rows} loading={busy === "rows"} limit={ROW_LIMIT} />
+              <RowTable
+                rows={rows}
+                loading={busy === "rows"}
+                limit={ROW_LIMIT}
+                onNamePractitioner={isAdmin ? setNamingRow : undefined}
+              />
             </div>
           ) : null}
         </div>
@@ -660,6 +712,13 @@ export function SessionImportDialog({ open, onOpenChange, onImported }: SessionI
         loading={discarding}
         onConfirm={discardStuckBatch}
       />
+
+      <NamePractitionerDialog
+        sourceName={namingRow}
+        open={namingRow !== null}
+        onOpenChange={(next) => !next && setNamingRow(null)}
+        onConfirm={nameThePractitioner}
+      />
     </Sheet>
   )
 }
@@ -668,10 +727,13 @@ function RowTable({
   rows,
   loading,
   limit,
+  onNamePractitioner,
 }: {
   rows: SessionImportRow[]
   loading: boolean
   limit: number
+  /** Admin-only: the alias write behind it is refused for anyone else. */
+  onNamePractitioner?: (sourceName: string) => void
 }) {
   if (loading) return <p className="text-xs text-fg-muted">Loading rows…</p>
   if (rows.length === 0) return <p className="text-xs text-fg-muted">No rows with this outcome.</p>
@@ -685,24 +747,14 @@ function RowTable({
               <TableHead className="h-auto px-2 py-1 text-xs font-medium">Date</TableHead>
               <TableHead className="h-auto px-2 py-1 text-xs font-medium">Practitioner</TableHead>
               <TableHead className="h-auto px-2 py-1 text-xs font-medium">Why</TableHead>
+              <TableHead className="h-auto px-2 py-1 text-xs font-medium">
+                <span className="sr-only">Actions</span>
+              </TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {rows.map((row) => (
-              <TableRow key={row.row_number} className="border-fg/10">
-                <TableCell className="px-2 py-1 tabular-nums text-fg-muted">
-                  {row.row_number}
-                </TableCell>
-                <TableCell className="whitespace-nowrap px-2 py-1">
-                  {row.session_date ?? "-"}
-                </TableCell>
-                <TableCell className="max-w-44 truncate px-2 py-1">
-                  {row.raw_practitioner_name ?? "-"}
-                </TableCell>
-                <TableCell className="px-2 py-1 text-fg/70">
-                  {row.reasons.join("; ") || "-"}
-                </TableCell>
-              </TableRow>
+              <RowLine key={row.row_number} row={row} onNamePractitioner={onNamePractitioner} />
             ))}
           </TableBody>
         </Table>
@@ -713,5 +765,60 @@ function RowTable({
         </p>
       ) : null}
     </>
+  )
+}
+
+/**
+ * One staged row.
+ *
+ * A row the practitioner name stopped keeps the spelling the file used, marked
+ * as the failure it is rather than quietly blank, because that spelling is what
+ * has to be recognised before the row can import.
+ */
+function RowLine({
+  row,
+  onNamePractitioner,
+}: {
+  row: SessionImportRow
+  onNamePractitioner?: (sourceName: string) => void
+}) {
+  const blocked = NAME_FAILURES.has(row.outcome)
+  const name = row.raw_practitioner_name
+  const fixable = blocked && Boolean(name) && Boolean(onNamePractitioner)
+
+  return (
+    <TableRow className="border-fg/10">
+      <TableCell className="px-2 py-1 tabular-nums text-fg-muted">{row.row_number}</TableCell>
+      <TableCell className="whitespace-nowrap px-2 py-1">{row.session_date ?? "-"}</TableCell>
+      <TableCell
+        className={cn("max-w-44 px-2 py-1", blocked ? "text-destructive" : "truncate")}
+        title={blocked ? "This name stopped the row importing" : undefined}
+      >
+        {blocked ? (
+          <span className="flex items-start gap-1">
+            <AlertTriangle aria-hidden className="mt-0.5 size-3 shrink-0" />
+            <span className="font-medium">{name ?? "No name in the source"}</span>
+          </span>
+        ) : (
+          (name ?? "-")
+        )}
+      </TableCell>
+      <TableCell className={cn("px-2 py-1", blocked ? "text-destructive/80" : "text-fg/70")}>
+        {row.reasons.join("; ") || "-"}
+      </TableCell>
+      <TableCell className="whitespace-nowrap px-2 py-1 text-right">
+        {fixable ? (
+          <Button
+            type="button"
+            variant="link"
+            size="sm"
+            className="h-auto px-0 text-xs"
+            onClick={() => onNamePractitioner?.(name as string)}
+          >
+            Name practitioner
+          </Button>
+        ) : null}
+      </TableCell>
+    </TableRow>
   )
 }
