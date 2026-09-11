@@ -8,6 +8,7 @@ also the only identity-bearing side allowed to link to clinical subjects.
 import csv
 import hashlib
 import io
+import logging
 from collections.abc import Sequence
 from copy import deepcopy
 from dataclasses import dataclass
@@ -78,6 +79,7 @@ from app.api.services.member_import import (
 from app.application.use_cases.eligible_member_use_cases import EnrolEligibleMemberUseCase
 from app.core.authorization import require_clinical_scope, require_not_viewer, require_tenant_role
 from app.core.database import get_db
+from app.core.query_metrics import measure_queries
 from app.core.security import TokenData, get_current_user
 from app.domain.entities.client import ClientEntity
 from app.domain.entities.eligible_member import EligibleMember
@@ -126,6 +128,8 @@ from app.shared.utils.datetime import utc_now
 from app.shared.utils.generators import generate_cuid
 from app.shared.utils.member_csv import MemberCsvRow, parse_member_csv
 from app.shared.utils.route_audit_helper import audit_change
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/members", tags=["members"])
 
@@ -848,24 +852,35 @@ async def stage_member_import(
     await imports.save_batch(batch)
 
     checker = MemberRowChecker(current_user.tenant_id, client_repo, member_repo, imports)
-    await checker.preload(rows, file_hash)
-    entities: list[MemberImportRowEntity] = []
-    for row in rows:
-        check = await checker.check(
-            row, parse_error=parse_errors.get(row.row_number), file_hash=file_hash
-        )
-        entities.append(
-            build_row_entity(
-                row,
-                check,
-                row_id=MemberImportRowId(generate_cuid()),
-                batch_id=batch.id,
-                tenant_id=tenant,
-                file_hash=file_hash,
-                now=now,
+    with measure_queries() as measured:
+        await checker.preload(rows, file_hash)
+        entities: list[MemberImportRowEntity] = []
+        for row in rows:
+            check = await checker.check(
+                row, parse_error=parse_errors.get(row.row_number), file_hash=file_hash
             )
-        )
-    await imports.add_rows(entities)
+            entities.append(
+                build_row_entity(
+                    row,
+                    check,
+                    row_id=MemberImportRowId(generate_cuid()),
+                    batch_id=batch.id,
+                    tenant_id=tenant,
+                    file_hash=file_hash,
+                    now=now,
+                )
+            )
+        await imports.add_rows(entities)
+    logger.info(
+        "member import staged",
+        extra={
+            "import_kind": "members",
+            "import_phase": "stage",
+            "batch_id": batch.id.value,
+            "rows": len(rows),
+            **measured.as_log_fields(len(rows)),
+        },
+    )
     await _audit(batch, outbox=outbox, current_user=current_user, request=request)
     return _batch_response(batch, await imports.outcome_counts(tenant, batch.id))
 
@@ -1095,7 +1110,20 @@ async def apply_member_import(
     tenant = TenantId(current_user.tenant_id)
     checker = MemberRowChecker(current_user.tenant_id, client_repo, member_repo, imports)
     writers = _writers(current_user, member_repo, subject_repo, link_repo, outbox)
-    tally = await _apply_rows(tenant, batch.id, checker, writers, imports, db, limit=limit)
+    with measure_queries() as measured:
+        tally = await _apply_rows(tenant, batch.id, checker, writers, imports, db, limit=limit)
+    written = sum(tally.values())
+    logger.info(
+        "member import chunk applied",
+        extra={
+            "import_kind": "members",
+            "import_phase": "apply",
+            "batch_id": batch_id,
+            "rows": written,
+            **tally,
+            **measured.as_log_fields(written),
+        },
+    )
     remaining = await imports.count_pending_rows(tenant, batch.id)
     if remaining == 0:
         accepted_count = await imports.count_imported_rows(tenant, batch.id)

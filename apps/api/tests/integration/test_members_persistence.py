@@ -3,6 +3,7 @@
 import asyncio
 import csv
 import io
+import logging
 import os
 from types import SimpleNamespace
 from unittest.mock import AsyncMock
@@ -25,12 +26,16 @@ from app.core.encryption import decrypt
 from app.core.exception_handlers import register_exception_handlers
 from app.core.security import TokenData, get_current_user
 from app.domain.enums import SubscriptionTier, TenantRole, TenantStatus
-from app.domain.value_objects.core import TenantId, UserId
+from app.domain.value_objects.core import ClientId, TenantId, UserId
 from app.infrastructure.models.base import Base
 from app.infrastructure.models.eligible_member_model import (
     ClinicalSubjectModel,
     EligibleMemberClinicalLinkModel,
     EligibleMemberModel,
+)
+from app.infrastructure.models.member_import_model import (
+    MemberImportBatchModel,
+    MemberImportRowModel,
 )
 from app.infrastructure.models.member_next_of_kin_model import MemberNextOfKinModel
 from app.infrastructure.models.next_of_kin_relationship_model import NextOfKinRelationshipModel
@@ -65,6 +70,8 @@ async def isolated_members_db():
             MemberNextOfKinModel,
             NextOfKinRelationshipModel,
             OutboxEventModel,
+            MemberImportBatchModel,
+            MemberImportRowModel,
         )
     ]
     try:
@@ -603,3 +610,46 @@ async def test_concurrent_auto_issue_does_not_produce_duplicate_codes(
     # Whatever the outcome, the roster must never end up with a duplicate code.
     assert len(stored) == len(set(stored)), stored
     assert len(stored) == len(created)
+
+
+async def test_applying_a_roster_logs_what_the_chunk_cost(member_http, caplog):
+    """The timing log has to carry real counts from a real apply, not zeroes.
+
+    Against Postgres rather than mocks, because the query count is the point:
+    a mocked repository issues no statements and would pass while measuring
+    nothing.
+    """
+    http, app = member_http
+    clients = app.dependency_overrides[get_client_repository]()
+    clients.get_by_code.return_value = SimpleNamespace(
+        id=ClientId("c1"), name="Acme", code="ACM", tenant_id=TenantId("t1")
+    )
+
+    roster = io.StringIO()
+    writer = csv.DictWriter(roster, fieldnames=["company_code", "staff_id", "name_of_employee"])
+    writer.writeheader()
+    for n in range(1, 6):
+        writer.writerow(
+            {"company_code": "ACM", "staff_id": f"HR-{n}", "name_of_employee": f"Member {n}"}
+        )
+
+    staged = await http.post(
+        "/members/import",
+        files={"file": ("roster.csv", roster.getvalue().encode(), "text/csv")},
+    )
+    assert staged.status_code in (200, 201), staged.text
+    batch_id = staged.json()["id"]
+
+    with caplog.at_level(logging.INFO, logger="app.api.routes.members"):
+        applied = await http.post(f"/members/import/{batch_id}/apply")
+    assert applied.status_code == 200, applied.text
+
+    chunk = next(r for r in caplog.records if r.message == "member import chunk applied")
+    assert chunk.import_kind == "members"
+    assert chunk.import_phase == "apply"
+    assert chunk.batch_id == batch_id
+    assert chunk.rows == 5
+    assert chunk.queries > 0
+    assert chunk.query_ms >= 0
+    assert chunk.duration_ms > 0
+    assert chunk.queries_per_row > 0

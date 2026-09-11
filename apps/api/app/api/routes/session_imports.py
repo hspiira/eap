@@ -8,6 +8,9 @@ historical acceptance, which decision 7 keeps apart.
 import csv
 import hashlib
 import io
+import logging
+from collections.abc import Sequence
+from datetime import datetime
 
 from fastapi import APIRouter, Depends, Query, Request, UploadFile, status
 from fastapi.responses import StreamingResponse
@@ -39,11 +42,13 @@ from app.application.services.provider_alias_reconciliation import (
 )
 from app.application.services.session_import_staging import (
     SessionImportStagingService,
+    SourceRow,
     preflight_source_keys,
 )
 from app.application.use_cases.apply_session_import import ApplyImportBatchUseCase
 from app.core.authorization import require_same_tenant, require_tenant_role
 from app.core.database import get_db
+from app.core.query_metrics import measure_queries
 from app.core.security import TokenData, get_current_user
 from app.domain.entities.session_import import (
     SessionImportBatchEntity,
@@ -70,6 +75,8 @@ from app.shared.utils.datetime import utc_now
 from app.shared.utils.generators import generate_cuid
 from app.shared.utils.provider_import_source import parse_source_rows
 from app.shared.utils.route_audit_helper import audit_change
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/session-imports", tags=["session-imports"])
 
@@ -278,6 +285,35 @@ async def stage_import(
         members,
         services,
     )
+    with measure_queries() as measured:
+        await _stage_rows(
+            service, imports, tenant, source_system, file_hash, source_rows, batch, now
+        )
+    logger.info(
+        "session import staged",
+        extra={
+            "import_kind": "sessions",
+            "import_phase": "stage",
+            "batch_id": batch.id.value,
+            "rows": len(source_rows),
+            **measured.as_log_fields(len(source_rows)),
+        },
+    )
+    await audit_change(batch, audit_handler, current_user, request)
+    return _batch_response(batch, await imports.outcome_counts(tenant, batch.id))
+
+
+async def _stage_rows(
+    service: SessionImportStagingService,
+    imports: SessionImportRepository,
+    tenant: TenantId,
+    source_system: str,
+    file_hash: str,
+    source_rows: Sequence[SourceRow],
+    batch: SessionImportBatchEntity,
+    now: datetime,
+) -> None:
+    """Judge every source row and persist the outcomes."""
     await service.preload(tenant, source_rows, file_hash)
     entities: list[SessionImportRowEntity] = []
     for source_row in source_rows:
@@ -312,8 +348,6 @@ async def stage_import(
             )
         )
     await imports.add_rows(entities, file_hash=file_hash)
-    await audit_change(batch, audit_handler, current_user, request)
-    return _batch_response(batch, await imports.outcome_counts(tenant, batch.id))
 
 
 @router.get("/{batch_id}", response_model=SessionImportBatchResponse)
@@ -441,16 +475,31 @@ async def apply_batch(
     replayed request cannot write twice.
     """
     tenant = TenantId(tenant_id)
-    result, batch = await ApplyImportBatchUseCase(
-        imports, writer, clients, members, services
-    ).execute(
-        tenant,
-        SessionImportBatchId(batch_id),
-        UserId(current_user.user_id),
-        now=utc_now(),
-        limit=limit,
-        after_row=db.commit,
-        rollback=db.rollback,
+    with measure_queries() as measured:
+        result, batch = await ApplyImportBatchUseCase(
+            imports, writer, clients, members, services
+        ).execute(
+            tenant,
+            SessionImportBatchId(batch_id),
+            UserId(current_user.user_id),
+            now=utc_now(),
+            limit=limit,
+            after_row=db.commit,
+            rollback=db.rollback,
+        )
+    written = result.imported + result.failed
+    logger.info(
+        "session import chunk applied",
+        extra={
+            "import_kind": "sessions",
+            "import_phase": "apply",
+            "batch_id": batch_id,
+            "rows": written,
+            "imported": result.imported,
+            "failed": result.failed,
+            "remaining": result.remaining,
+            **measured.as_log_fields(written),
+        },
     )
     if result.done:
         await audit_change(batch, audit_handler, current_user, request)

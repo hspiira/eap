@@ -9,6 +9,7 @@ from collections.abc import AsyncGenerator
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
 from app.core.config import settings
+from app.core.query_metrics import install as install_query_metrics
 from app.infrastructure.models.base import Base
 
 # pool_pre_ping detects stale connections (e.g. Neon auto-suspend) and reconnects
@@ -20,6 +21,8 @@ engine = create_async_engine(
     pool_recycle=240,
     echo=settings.DATABASE_ECHO,
 )
+
+install_query_metrics()
 
 # Async session factory
 AsyncSessionLocal = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
