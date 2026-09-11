@@ -30,6 +30,7 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { useToast } from "@/contexts/ToastContext"
+import { applyPace } from "@/lib/apply-progress"
 import { normalizeErrorMessage } from "@/lib/errors"
 import { cn } from "@/lib/utils"
 import { ApiError } from "@/types/api"
@@ -77,17 +78,14 @@ const SOURCE_SYSTEM = "activity-log-workbook"
 /** Rows shown per page of the review queue. */
 const ROW_LIMIT = 50
 
-/**
- * Rows written per apply call. Each row is its own DB round trip and commit,
- * so this stays small enough that one chunk reliably finishes well inside
- * the client's request timeout even against a remote, non-local database.
- */
-const APPLY_CHUNK_SIZE = 50
+/** Rows written per apply call, at the server's ceiling. */
+const APPLY_CHUNK_SIZE = 200
 
 interface ApplyProgress {
   imported: number
   failed: number
   total: number
+  startedAt: number
 }
 
 /**
@@ -200,7 +198,7 @@ function ApplyProgressBanner({
   onCancel: () => void
 }) {
   const done = progress.imported + progress.failed
-  const percent = progress.total > 0 ? Math.round((done / progress.total) * 100) : 100
+  const { percent, eta } = applyPace(done, progress.total, progress.startedAt, Date.now())
   return (
     <div className="flex shrink-0 items-center gap-3 border-t border-fg/10 bg-surface px-6 py-3">
       <div className="min-w-0 flex-1">
@@ -214,6 +212,7 @@ function ApplyProgressBanner({
       </div>
       <p className="shrink-0 text-xs tabular-nums text-fg-muted">
         {done} / {progress.total} · {percent}%
+        {eta ? <span className="ml-1.5 tracking-normal">· {eta}</span> : null}
       </p>
       <Button
         type="button"
@@ -375,8 +374,9 @@ export function SessionImportDialog({ open, onOpenChange, onImported }: SessionI
     applyCancelledRef.current = false
     setBusy("applying")
     setError(null)
+    const startedAt = Date.now()
     const totals = { imported: 0, failed: 0, remaining: accepted }
-    setApplyProgress({ imported: 0, failed: 0, total: accepted })
+    setApplyProgress({ imported: 0, failed: 0, total: accepted, startedAt })
     try {
       let done = false
       while (!done && !applyCancelledRef.current) {
@@ -385,9 +385,14 @@ export function SessionImportDialog({ open, onOpenChange, onImported }: SessionI
         totals.failed += result.failed
         totals.remaining = result.remaining
         done = result.done
-        setApplyProgress({ imported: totals.imported, failed: totals.failed, total: accepted })
-        setBatch(await sessionImportsApi.getBatch(batch.id))
+        setApplyProgress({
+          imported: totals.imported,
+          failed: totals.failed,
+          total: accepted,
+          startedAt,
+        })
       }
+      setBatch(await sessionImportsApi.getBatch(batch.id))
       const result: SessionImportApplyResult = { batch_id: batch.id, done, ...totals }
       setApplied(result)
       if (totals.imported > 0) onImported()

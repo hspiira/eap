@@ -138,7 +138,7 @@ describe("member import preview", () => {
 })
 
 describe("chunked apply", () => {
-  it("polls the apply endpoint until done, refreshing the table after each chunk", async () => {
+  it("polls the apply endpoint until done, refreshing the table once at the end", async () => {
     await stage([makeRow()])
     api.applyImport
       .mockResolvedValueOnce({
@@ -163,9 +163,11 @@ describe("chunked apply", () => {
     await userEvent.click(screen.getByRole("button", { name: "Import 1 rows" }))
 
     await waitFor(() => expect(api.applyImport).toHaveBeenCalledTimes(2))
-    expect(api.applyImport).toHaveBeenNthCalledWith(1, "batch-1", 50)
-    expect(api.applyImport).toHaveBeenNthCalledWith(2, "batch-1", 50)
-    expect(api.listImportRows).toHaveBeenCalledTimes(3) // initial stage + one refresh per chunk
+    expect(api.applyImport).toHaveBeenNthCalledWith(1, "batch-1", 200)
+    expect(api.applyImport).toHaveBeenNthCalledWith(2, "batch-1", 200)
+    // Initial stage, then one refresh once every chunk is written. Refreshing
+    // between chunks paged through the whole batch again for each one.
+    expect(api.listImportRows).toHaveBeenCalledTimes(2)
     await screen.findByRole("button", { name: "Done" })
     expect(screen.queryByRole("button", { name: "Cancel" })).not.toBeInTheDocument()
   })

@@ -65,6 +65,9 @@ class _Sessions:
     async def save(self, session):
         self.saved.append(session)
 
+    async def insert(self, session):
+        self.saved.append(session)
+
 
 class _Providers:
     def __init__(self, provider=None):

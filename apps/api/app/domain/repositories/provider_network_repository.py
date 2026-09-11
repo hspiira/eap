@@ -220,8 +220,8 @@ class SessionImportRepository(ABC):
     ) -> tuple[Sequence[SessionImportRowEntity], int]: ...
 
     @abstractmethod
-    async def mark_row_imported(self, tenant_id: TenantId, row_id: str, session_id: str) -> None:
-        """Record which session a staged row produced.
+    async def mark_row_imported(self, tenant_id: TenantId, row_id: str, session_id: str) -> bool:
+        """Claim a staged row for the session it produced. False if another apply claimed it.
 
         An update, not a second insert: the row already exists and its replay
         key is unique per tenant.
@@ -252,6 +252,16 @@ class SessionImportRepository(ABC):
     async def find_row_by_replay_key(
         self, tenant_id: TenantId, replay_key: str
     ) -> SessionImportRowEntity | None: ...
+
+    @abstractmethod
+    async def find_rows_by_replay_keys(
+        self, tenant_id: TenantId, replay_keys: list[str]
+    ) -> dict[str, SessionImportRowEntity]:
+        """Every live row holding one of these keys, keyed by it.
+
+        Batches what staging would otherwise ask one row at a time for a whole
+        extract.
+        """
 
     @abstractmethod
     async def outcome_counts(

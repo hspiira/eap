@@ -123,11 +123,11 @@ class MemberImportRepositoryImpl(MemberImportRepository):
         row_id: MemberImportRowId,
         member_id: str,
         message: str | None = None,
-    ) -> None:
+    ) -> bool:
         values: dict[str, str] = {"imported_member_id": member_id}
         if message is not None:
             values["message"] = message
-        await self.session.execute(
+        result = await self.session.execute(
             update(MemberImportRowModel)
             .where(
                 MemberImportRowModel.id == row_id.value,
@@ -137,6 +137,7 @@ class MemberImportRepositoryImpl(MemberImportRepository):
             .values(**values)
         )
         await self.session.flush()
+        return result.rowcount > 0
 
     async def mark_row_failed(
         self, tenant_id: TenantId, row_id: MemberImportRowId, message: str

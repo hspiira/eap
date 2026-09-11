@@ -21,6 +21,11 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import Protocol
 
+from sqlalchemy.exc import IntegrityError
+
+from app.domain.entities.client import ClientEntity
+from app.domain.entities.eligible_member import EligibleMember
+from app.domain.entities.service import ServiceEntity
 from app.domain.entities.session_import import (
     SessionImportBatchEntity,
     SessionImportRowEntity,
@@ -94,13 +99,15 @@ class ApplyImportBatchUseCase:
         now: datetime,
         limit: int,
         after_row: Callable[[], Awaitable[None]],
+        rollback: Callable[[], Awaitable[None]],
     ) -> tuple[ApplyResult, SessionImportBatchEntity]:
         """Write up to `limit` still-pending rows, then close the batch if none remain.
 
         `after_row` is awaited once per row (and once more if the batch
         closes), and is the caller's commit: each row's write survives on its
         own, independent of whether a later row in this same call raises or
-        the call itself never finishes responding.
+        the call itself never finishes responding. `rollback` discards a row
+        whose write cannot stand.
 
         A batch that is not Staged is refused, so applying twice, or a
         replayed request, cannot write twice.
@@ -121,8 +128,9 @@ class ApplyImportBatchUseCase:
 
         imported = failed = 0
         rows = await self._imports.list_pending_rows(tenant_id, batch_id, limit=limit)
+        reference = _ReferenceData(self._clients, self._members, self._services)
         for row in rows:
-            if await self._write_row(tenant_id, row):
+            if await self._write_row(tenant_id, row, reference, rollback):
                 imported += 1
             else:
                 failed += 1
@@ -137,7 +145,13 @@ class ApplyImportBatchUseCase:
             await after_row()
         return ApplyResult(imported=imported, failed=failed, remaining=remaining, done=done), batch
 
-    async def _write_row(self, tenant_id: TenantId, row: SessionImportRowEntity) -> bool:
+    async def _write_row(
+        self,
+        tenant_id: TenantId,
+        row: SessionImportRowEntity,
+        reference: "_ReferenceData",
+        rollback: Callable[[], Awaitable[None]],
+    ) -> bool:
         """Re-validate, then write one row. True on success, False on a recorded failure.
 
         A batch can sit staged for days waiting on reference data (see
@@ -151,35 +165,79 @@ class ApplyImportBatchUseCase:
         `_write_row` does, and for the same reason -- one bad row must not
         cost every row after it in the same call.
         """
-        stale = await self._revalidate(tenant_id, row)
+        stale = await reference.stale_reason(tenant_id, row)
         if stale is not None:
-            row.mark_failed(stale)
-            await self._imports.mark_row_failed(tenant_id, row.id.value, stale)
-            return False
+            return await self._fail_row(tenant_id, row, stale)
         try:
             session_id = await self._writer.record(row, tenant_id)
         except DomainError as exc:
-            row.mark_failed(str(exc))
-            await self._imports.mark_row_failed(tenant_id, row.id.value, str(exc))
+            return await self._fail_row(tenant_id, row, str(exc))
+        except IntegrityError as exc:
+            await rollback()
+            return await self._fail_row(tenant_id, row, str(exc).split("\n", 1)[-1])
+        if not await self._imports.mark_row_imported(tenant_id, row.id.value, session_id):
+            # Another apply claimed the row first; discard the session this call wrote.
+            await rollback()
             return False
         row.mark_imported(session_id)
-        await self._imports.mark_row_imported(tenant_id, row.id.value, session_id)
         return True
 
-    async def _revalidate(self, tenant_id: TenantId, row: SessionImportRowEntity) -> str | None:
+    async def _fail_row(self, tenant_id: TenantId, row: SessionImportRowEntity, why: str) -> bool:
+        row.mark_failed(why)
+        await self._imports.mark_row_failed(tenant_id, row.id.value, why)
+        return False
+
+
+class _ReferenceData:
+    """The clients, members and services a chunk's rows are re-validated against.
+
+    Each is read once and remembered for the rest of the chunk.
+    """
+
+    def __init__(
+        self,
+        clients: ClientRepository,
+        members: EligibleMemberRepository,
+        services: ServiceRepository,
+    ) -> None:
+        self._clients = clients
+        self._members = members
+        self._services = services
+        self._client_cache: dict[str, ClientEntity | None] = {}
+        self._member_cache: dict[str, EligibleMember | None] = {}
+        self._service_cache: dict[str, ServiceEntity | None] = {}
+
+    async def stale_reason(self, tenant_id: TenantId, row: SessionImportRowEntity) -> str | None:
         """A reason the row can no longer be written, or None if everything still resolves."""
         if row.client_id is not None:
-            client = await self._clients.get_by_id(ClientId(row.client_id))
+            client = await self._client(row.client_id)
             if client is None or client.tenant_id.value != tenant_id.value:
                 return f"Client {row.client_id} no longer exists in this tenant"
         if row.member_id is not None:
-            member = await self._members.get_by_id(EligibleMemberId(row.member_id))
+            member = await self._member(row.member_id)
             if member is None or member.tenant_id.value != tenant_id.value:
                 return f"Member {row.member_id} no longer exists in this tenant"
             if row.client_id is not None and member.client_id.value != row.client_id:
                 return f"Member {row.member_id} no longer belongs to client {row.client_id}"
         if row.service_id is not None:
-            service = await self._services.get_by_id(ServiceId(row.service_id))
+            service = await self._service(row.service_id)
             if service is None or service.tenant_id.value != tenant_id.value:
                 return f"Service {row.service_id} no longer exists in this tenant"
         return None
+
+    async def _client(self, client_id: str) -> ClientEntity | None:
+        if client_id not in self._client_cache:
+            self._client_cache[client_id] = await self._clients.get_by_id(ClientId(client_id))
+        return self._client_cache[client_id]
+
+    async def _member(self, member_id: str) -> EligibleMember | None:
+        if member_id not in self._member_cache:
+            self._member_cache[member_id] = await self._members.get_by_id(
+                EligibleMemberId(member_id)
+            )
+        return self._member_cache[member_id]
+
+    async def _service(self, service_id: str) -> ServiceEntity | None:
+        if service_id not in self._service_cache:
+            self._service_cache[service_id] = await self._services.get_by_id(ServiceId(service_id))
+        return self._service_cache[service_id]

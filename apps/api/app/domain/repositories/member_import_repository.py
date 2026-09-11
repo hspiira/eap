@@ -55,8 +55,8 @@ class MemberImportRepository(ABC):
         row_id: MemberImportRowId,
         member_id: str,
         message: str | None = None,
-    ) -> None:
-        """Record which member a staged row wrote, whether created or updated.
+    ) -> bool:
+        """Claim a staged row for the member it wrote. False if another apply claimed it.
 
         An update, not a second insert: the row already exists and its replay
         key is unique per tenant. `message` explains a write that resolved to

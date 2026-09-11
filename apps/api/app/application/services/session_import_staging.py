@@ -20,6 +20,10 @@ from app.application.services.provider_alias_reconciliation import (
     NameResolution,
     ProviderAliasReconciliationService,
 )
+from app.domain.entities.client import ClientEntity
+from app.domain.entities.eligible_member import EligibleMember
+from app.domain.entities.service import ServiceEntity
+from app.domain.entities.session_import import SessionImportRowEntity
 from app.domain.enums import (
     ClientType,
     SessionAttendance,
@@ -38,7 +42,7 @@ from app.domain.repositories.provider_network_repository import (
 )
 from app.domain.repositories.service_repository import ServiceRepository
 from app.domain.services.provider_network_calendar import boundary_day
-from app.domain.value_objects.core import TenantId
+from app.domain.value_objects.core import ClientId, TenantId
 from app.domain.value_objects.provider_network import (
     ProviderAffiliationId,
     SessionImportBatchId,
@@ -152,6 +156,55 @@ class SessionImportStagingService:
         self._clients = clients
         self._members = members
         self._services = services
+        self._client_cache: dict[str, ClientEntity | None] = {}
+        self._member_cache: dict[tuple[str, str], EligibleMember | None] = {}
+        self._service_cache: dict[str, ServiceEntity | None] = {}
+        self._staged_by_key: dict[str, SessionImportRowEntity | None] = {}
+
+    async def preload(self, tenant_id: TenantId, rows: Sequence[SourceRow], file_hash: str) -> None:
+        """Batch every lookup `stage_row` would otherwise repeat once per row.
+
+        Only fills caches: a value it missed still falls back to its own
+        query, so this changes what staging costs and never what it decides.
+        """
+        await self._preload_clients(tenant_id, rows)
+        await self._preload_members(tenant_id, rows)
+        await self._preload_services(tenant_id, rows)
+        keys = [_replay_key(row, file_hash) for row in rows]
+        if not keys:
+            return
+        found = await self._imports.find_rows_by_replay_keys(tenant_id, keys)
+        for key in keys:
+            self._staged_by_key.setdefault(key, found.get(key))
+
+    async def _preload_clients(self, tenant_id: TenantId, rows: Sequence[SourceRow]) -> None:
+        for name in {row.raw_client_name for row in rows if row.raw_client_name}:
+            self._client_cache.setdefault(
+                name, await self._clients.get_by_name_or_alias(tenant_id, name)
+            )
+
+    async def _preload_members(self, tenant_id: TenantId, rows: Sequence[SourceRow]) -> None:
+        wanted: dict[str, set[str]] = {}
+        for row in rows:
+            client = self._client_cache.get(row.raw_client_name or "")
+            if client is None or not row.raw_member_ref:
+                continue
+            wanted.setdefault(client.id.value, set()).add(row.raw_member_ref)
+        for client_id, refs in wanted.items():
+            found = await self._members.find_by_employer_member_ids(
+                tenant_id, ClientId(client_id), sorted(refs)
+            )
+            for ref in refs:
+                self._member_cache.setdefault((client_id, ref), found.get(ref))
+
+    async def _preload_services(self, tenant_id: TenantId, rows: Sequence[SourceRow]) -> None:
+        names = set()
+        for row in rows:
+            canonical = map_intervention(row.raw_intervention)
+            if canonical is not None and not isinstance(canonical, Unmapped):
+                names.add(canonical)
+        for name in names:
+            self._service_cache.setdefault(name, await self._services.get_by_name(tenant_id, name))
 
     async def stage_row(
         self,
@@ -163,7 +216,7 @@ class SessionImportStagingService:
         now: datetime,
     ) -> StagedRow:
         replay_key = _replay_key(row, file_hash)
-        existing = await self._imports.find_row_by_replay_key(tenant_id, replay_key)
+        existing = await self._live_row_holding(tenant_id, replay_key)
         if existing is not None:
             # The earlier row holds the key. This one records that the source
             # row was seen again, and defers rather than claiming it twice.
@@ -222,7 +275,7 @@ class SessionImportStagingService:
         normalised, notes = _normalised(row)
 
         client = (
-            await self._clients.get_by_name_or_alias(tenant_id, row.raw_client_name)
+            await self._client_named(tenant_id, row.raw_client_name)
             if row.raw_client_name
             else None
         )
@@ -246,9 +299,7 @@ class SessionImportStagingService:
                         "identities stay staged rather than guessed",
                     )
                 )
-            member = await self._members.find_by_employer_member_id(
-                tenant_id, client.id, row.raw_member_ref
-            )
+            member = await self._member_of(tenant_id, client.id, row.raw_member_ref)
             if member is None:
                 return _Subject(
                     held=(
@@ -267,7 +318,7 @@ class SessionImportStagingService:
                     f"Intervention {what!r} does not map to a catalogue service",
                 )
             )
-        service = await self._services.get_by_name(tenant_id, canonical)
+        service = await self._service_named(tenant_id, canonical)
         if service is None:
             return _Subject(
                 held=(
@@ -284,6 +335,35 @@ class SessionImportStagingService:
             normalised=normalised,
             notes=notes,
         )
+
+    async def _live_row_holding(
+        self, tenant_id: TenantId, replay_key: str
+    ) -> SessionImportRowEntity | None:
+        if replay_key not in self._staged_by_key:
+            self._staged_by_key[replay_key] = await self._imports.find_row_by_replay_key(
+                tenant_id, replay_key
+            )
+        return self._staged_by_key[replay_key]
+
+    async def _client_named(self, tenant_id: TenantId, name: str) -> ClientEntity | None:
+        if name not in self._client_cache:
+            self._client_cache[name] = await self._clients.get_by_name_or_alias(tenant_id, name)
+        return self._client_cache[name]
+
+    async def _member_of(
+        self, tenant_id: TenantId, client_id: ClientId, ref: str
+    ) -> EligibleMember | None:
+        key = (client_id.value, ref)
+        if key not in self._member_cache:
+            self._member_cache[key] = await self._members.find_by_employer_member_id(
+                tenant_id, client_id, ref
+            )
+        return self._member_cache[key]
+
+    async def _service_named(self, tenant_id: TenantId, name: str) -> ServiceEntity | None:
+        if name not in self._service_cache:
+            self._service_cache[name] = await self._services.get_by_name(tenant_id, name)
+        return self._service_cache[name]
 
     async def _with_delivery_context(
         self,

@@ -104,6 +104,10 @@ class EligibleMemberRepositoryImpl(EligibleMemberRepository):
             existing.updated_at = new_model.updated_at
         await self._session.flush()
 
+    async def insert(self, entity: EligibleMember) -> None:
+        self._session.add(EligibleMemberMapper.to_model(entity))
+        await self._session.flush()
+
     async def delete(self, entity_id: EligibleMemberId) -> None:
         existing = await self._session.get(EligibleMemberModel, entity_id.value)
         if existing is not None:
@@ -323,6 +327,22 @@ class EligibleMemberRepositoryImpl(EligibleMemberRepository):
         row = (await self._session.execute(stmt)).scalar_one_or_none()
         return EligibleMemberMapper.to_entity(row) if row else None
 
+    async def find_by_employer_member_ids(
+        self,
+        tenant_id: TenantId,
+        client_id: ClientId,
+        employer_member_ids: list[str],
+    ) -> dict[str, EligibleMember]:
+        if not employer_member_ids:
+            return {}
+        stmt = select(EligibleMemberModel).where(
+            EligibleMemberModel.tenant_id == tenant_id.value,
+            EligibleMemberModel.client_id == client_id.value,
+            EligibleMemberModel.employer_member_id.in_(employer_member_ids),
+        )
+        rows = (await self._session.execute(stmt)).scalars().all()
+        return {row.employer_member_id: EligibleMemberMapper.to_entity(row) for row in rows}
+
     async def find_by_import_source_id(
         self,
         tenant_id: TenantId,
@@ -501,6 +521,10 @@ class ClinicalSubjectRepositoryImpl(ClinicalSubjectRepository):
             existing.is_active = new_model.is_active
             existing.deactivated_at = new_model.deactivated_at
             existing.updated_at = new_model.updated_at
+        await self._session.flush()
+
+    async def insert(self, entity: ClinicalSubject) -> None:
+        self._session.add(ClinicalSubjectMapper.to_model(entity))
         await self._session.flush()
 
     async def delete(self, entity_id: ClinicalSubjectId) -> None:

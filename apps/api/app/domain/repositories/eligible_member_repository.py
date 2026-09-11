@@ -85,6 +85,19 @@ class EligibleMemberRepository(BaseRepository[EligibleMember, EligibleMemberId])
         employer_member_id: str,
     ) -> EligibleMember | None: ...
 
+    async def find_by_employer_member_ids(
+        self,
+        tenant_id: TenantId,
+        client_id: ClientId,
+        employer_member_ids: list[str],
+    ) -> dict[str, EligibleMember]:
+        """Every real member among the given member codes, keyed by that code.
+
+        Batches what the session importer would otherwise ask one row at a
+        time while staging a whole extract.
+        """
+        ...
+
     async def find_by_import_source_id(
         self,
         tenant_id: TenantId,

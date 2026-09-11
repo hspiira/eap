@@ -78,6 +78,11 @@ class BaseRepositoryImpl(ABC, Generic[TEntity, TModel, TId]):
         model = self._to_model(entity)
         await self.session.merge(model)
 
+    async def insert(self, entity: TEntity) -> None:
+        """Insert an entity that is known to be new, without merge's existence probe."""
+        self.session.add(self._to_model(entity))
+        await self.session.flush()
+
     async def delete(self, entity_id: TId) -> None:
         """Soft delete entity."""
         id_value = self._get_id_value(entity_id)

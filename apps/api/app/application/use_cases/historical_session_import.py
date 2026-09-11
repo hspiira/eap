@@ -17,6 +17,7 @@ effects. Those belong to live delivery, not to recording what already occurred.
 from dataclasses import dataclass
 from datetime import datetime
 
+from app.domain.entities.provider import ProviderEntity
 from app.domain.entities.service_session import ServiceSessionEntity
 from app.domain.enums import (
     ClientType,
@@ -85,6 +86,8 @@ class RecordHistoricalSessionUseCase:
     ):
         self._sessions = session_repository
         self._providers = provider_repository
+        # Scoped to one request, so it cannot go stale between them.
+        self._provider_cache: dict[str, ProviderEntity | None] = {}
 
     async def execute(self, record: HistoricalSessionRecord) -> ServiceSessionEntity:
         await self._require_same_tenant_practitioner(record)
@@ -121,12 +124,15 @@ class RecordHistoricalSessionUseCase:
             rate_ugx=record.rate_ugx,
             session_number=record.session_number,
         )
-        await self._sessions.save(session)
+        await self._sessions.insert(session)
         return session
 
     async def _require_same_tenant_practitioner(self, record: HistoricalSessionRecord) -> None:
         """Resolved and same-tenant, but not required to be eligible today."""
-        provider = await self._providers.get_by_id(record.provider_id)
+        key = record.provider_id.value
+        if key not in self._provider_cache:
+            self._provider_cache[key] = await self._providers.get_by_id(record.provider_id)
+        provider = self._provider_cache[key]
         if provider is None or provider.tenant_id != record.tenant_id:
             raise HistoricalImportRejected(
                 f"Practitioner {record.provider_id.value} is not in this tenant",

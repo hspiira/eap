@@ -36,6 +36,7 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { useToast } from "@/contexts/ToastContext"
+import { applyPace } from "@/lib/apply-progress"
 import { normalizeErrorMessage } from "@/lib/errors"
 import { ApiError } from "@/types/api"
 
@@ -90,12 +91,8 @@ const TONE_CLASS: Record<Tone, string> = {
 /** Headers never wrap; the table scrolls horizontally instead when columns run out of room. */
 const HEAD_CLASS = "h-auto whitespace-nowrap px-2 py-1 text-xs font-medium"
 
-/**
- * Rows written per apply call. Each row is its own DB round trip and commit,
- * so this stays small enough that one chunk reliably finishes well inside the
- * client's request timeout even against a remote, non-local database.
- */
-const APPLY_CHUNK_SIZE = 50
+/** Rows written per apply call. */
+const APPLY_CHUNK_SIZE = 200
 
 interface ApplyProgress {
   imported: number
@@ -103,6 +100,7 @@ interface ApplyProgress {
   unchanged: number
   failed: number
   total: number
+  startedAt: number
 }
 
 const DECISION_LABELS: Record<MemberImportRowDecision, string> = {
@@ -461,7 +459,7 @@ function ApplyProgressBanner({
   onCancel: () => void
 }) {
   const done = progress.imported + progress.updated + progress.unchanged + progress.failed
-  const percent = progress.total > 0 ? Math.round((done / progress.total) * 100) : 100
+  const { percent, eta } = applyPace(done, progress.total, progress.startedAt, Date.now())
   return (
     <div className="flex shrink-0 items-center gap-3 border-t border-fg/10 bg-surface px-6 py-3">
       <div className="min-w-0 flex-1">
@@ -475,6 +473,7 @@ function ApplyProgressBanner({
       </div>
       <p className="shrink-0 text-xs tabular-nums text-fg-muted">
         {done} / {progress.total} · {percent}%
+        {eta ? <span className="ml-1.5 tracking-normal">· {eta}</span> : null}
       </p>
       <Button
         type="button"
@@ -628,8 +627,9 @@ export function MemberImportDialog({ open, onOpenChange, onImported }: MemberImp
     applyCancelledRef.current = false
     setApplying(true)
     setError(null)
+    const startedAt = Date.now()
     const totals = { imported: 0, updated: 0, unchanged: 0, failed: 0, total: queued.length }
-    setApplyProgress({ ...totals })
+    setApplyProgress({ ...totals, startedAt })
     try {
       let done = false
       while (!done && !applyCancelledRef.current) {
@@ -639,9 +639,9 @@ export function MemberImportDialog({ open, onOpenChange, onImported }: MemberImp
         totals.unchanged += result.unchanged
         totals.failed += result.failed
         done = result.done
-        setApplyProgress({ ...totals })
-        setRows(await fetchAllRows(batch.id))
+        setApplyProgress({ ...totals, startedAt })
       }
+      setRows(await fetchAllRows(batch.id))
       if (totals.imported + totals.updated > 0) onImported()
       if (done) {
         setApplied(true)

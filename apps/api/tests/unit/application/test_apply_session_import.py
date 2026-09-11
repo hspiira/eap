@@ -79,6 +79,7 @@ def _use_case(*, batch=None, pending=(), remaining=0, imported_count=None, sessi
     imports.count_imported_rows.return_value = (
         imported_count if imported_count is not None else len(pending)
     )
+    imports.mark_row_imported.return_value = True
     writer = AsyncMock()
     writer.record.return_value = session_id
     clients = AsyncMock()
@@ -91,10 +92,16 @@ def _use_case(*, batch=None, pending=(), remaining=0, imported_count=None, sessi
     return use_case, imports, writer, clients, members, services
 
 
-async def _execute(use_case, *, limit=50, batch_id=BATCH):
+async def _execute(use_case, *, limit=50, batch_id=BATCH, rollback=None):
     after_row = AsyncMock()
     result, batch = await use_case.execute(
-        TENANT, batch_id, ACTOR, now=NOW, limit=limit, after_row=after_row
+        TENANT,
+        batch_id,
+        ACTOR,
+        now=NOW,
+        limit=limit,
+        after_row=after_row,
+        rollback=rollback or AsyncMock(),
     )
     return result, batch, after_row
 
@@ -237,3 +244,60 @@ class TestRevalidation:
         result, _, _ = await _execute(use_case)
         assert result.imported == 1
         writer.record.assert_awaited_once()
+
+
+class TestConcurrentApply:
+    """Two applies of one batch both read it as Staged; claiming the row decides."""
+
+    async def test_a_row_another_apply_already_claimed_is_not_counted_as_imported(self):
+        use_case, imports, writer, *_ = _use_case(pending=[_row()], remaining=0)
+        imports.mark_row_imported.return_value = False
+        rollback = AsyncMock()
+
+        result, _, _ = await _execute(use_case, rollback=rollback)
+
+        assert (result.imported, result.failed) == (0, 1)
+        rollback.assert_awaited_once()
+
+    async def test_a_lost_claim_does_not_mark_the_row_failed(self):
+        """The winner's write stands; the row is imported, not broken."""
+        use_case, imports, _, *_ = _use_case(pending=[_row()], remaining=0)
+        imports.mark_row_imported.return_value = False
+
+        await _execute(use_case, rollback=AsyncMock())
+
+        imports.mark_row_failed.assert_not_awaited()
+
+    async def test_the_batch_still_closes_when_nothing_is_left(self):
+        use_case, imports, *_ = _use_case(pending=[_row()], remaining=0)
+        imports.mark_row_imported.return_value = False
+
+        result, batch, _ = await _execute(use_case, rollback=AsyncMock())
+
+        assert result.done is True
+        assert batch.status is ImportBatchStatus.APPLIED
+
+
+class TestReferenceDataIsReadOncePerChunk:
+    async def test_rows_sharing_a_client_member_and_service_cost_one_read_each(self):
+        rows = [_row(f"r-{n}", n) for n in range(1, 11)]
+        use_case, _, _, clients, members, services = _use_case(pending=rows, remaining=0)
+
+        result, _, _ = await _execute(use_case)
+
+        assert result.imported == 10
+        assert clients.get_by_id.await_count == 1
+        assert members.get_by_id.await_count == 1
+        assert services.get_by_id.await_count == 1
+
+    async def test_a_stale_reference_still_fails_every_row_that_names_it(self):
+        """Caching must not let a row through on a second look."""
+        rows = [_row(f"r-{n}", n) for n in range(1, 4)]
+        use_case, imports, writer, clients, _, _ = _use_case(pending=rows, remaining=0)
+        clients.get_by_id.return_value = None
+
+        result, _, _ = await _execute(use_case)
+
+        assert (result.imported, result.failed) == (0, 3)
+        writer.record.assert_not_awaited()
+        assert imports.mark_row_failed.await_count == 3

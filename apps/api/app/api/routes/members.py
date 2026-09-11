@@ -993,12 +993,15 @@ async def _write_row(
                 await db.commit()
                 return "failed"
             changed = await writers.updater.update(csv_row, check.existing)
-            await imports.mark_row_imported(
+            claimed = await imports.mark_row_imported(
                 tenant_id,
                 row.id,
                 check.existing.id.value,
                 message=None if changed else "No changes: roster matches the member already",
             )
+            if not claimed:
+                await db.rollback()
+                return "unchanged"
             await db.commit()
             return "updated" if changed else "unchanged"
         if not check.importable or check.data is None or check.client is None:
@@ -1008,7 +1011,10 @@ async def _write_row(
             await db.commit()
             return "failed"
         member = await writers.importer.enrol(csv_row, check.data, check.client.code)
-        await imports.mark_row_imported(tenant_id, row.id, member.id.value)
+        if not await imports.mark_row_imported(tenant_id, row.id, member.id.value):
+            # Another apply claimed the row first; discard the member this call created.
+            await db.rollback()
+            return "unchanged"
         await db.commit()
         return "imported"
     except (EvexiaException, IntegrityError, ValueError) as exc:

@@ -32,6 +32,9 @@ class _FakeMemberRepo:
     async def save(self, m):
         self.store[m.id.value] = m
 
+    async def insert(self, m):
+        self.store[m.id.value] = m
+
     async def delete(self, mid):
         self.store.pop(mid.value, None)
 
@@ -62,6 +65,9 @@ class _FakeSubjectRepo:
         return self.store.get(sid.value)
 
     async def save(self, s):
+        self.store[s.id.value] = s
+
+    async def insert(self, s):
         self.store[s.id.value] = s
 
     async def delete(self, sid):

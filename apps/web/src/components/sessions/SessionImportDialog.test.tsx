@@ -90,7 +90,7 @@ describe("template", () => {
 })
 
 describe("chunked apply", () => {
-  it("polls the apply endpoint until done, refreshing the batch after each chunk", async () => {
+  it("polls the apply endpoint until done, refreshing the batch once at the end", async () => {
     const screen = await stageFile({ Accepted: 2 })
     getBatch.mockResolvedValue(batch({ Accepted: 2 }))
     apply
@@ -100,8 +100,8 @@ describe("chunked apply", () => {
     await userEvent.click(screen.getByRole("button", { name: /apply 2 rows/i }))
 
     await waitFor(() => expect(apply).toHaveBeenCalledTimes(2))
-    expect(apply).toHaveBeenNthCalledWith(1, "b_1", 50)
-    expect(apply).toHaveBeenNthCalledWith(2, "b_1", 50)
+    expect(apply).toHaveBeenNthCalledWith(1, "b_1", 200)
+    expect(apply).toHaveBeenNthCalledWith(2, "b_1", 200)
     expect(await screen.findByText(/imported 2 sessions/i)).toBeInTheDocument()
     expect(screen.queryByRole("button", { name: "Cancel" })).not.toBeInTheDocument()
   })

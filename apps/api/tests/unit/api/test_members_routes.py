@@ -100,6 +100,7 @@ async def api():
     state.imports.count_imported_rows.return_value = 0
     state.imports.get_batch.return_value = None
     state.imports.get_row.return_value = None
+    state.imports.mark_row_imported.return_value = True
     state.clients.get_by_id.return_value = SimpleNamespace(
         tenant_id=TenantId("t1"), name="Acme", code="ACM"
     )
@@ -145,8 +146,8 @@ CONTACT = {"name": "Grace", "relationship": "Spouse", "phone": "+256700000000", 
 async def test_create_commits_roster_subject_link_and_audit_without_pii(api):
     response = await api.http.post("/members", json=CREATE)
     assert response.status_code == 201, response.text
-    api.members.save.assert_awaited_once()
-    api.subjects.save.assert_awaited_once()
+    api.members.insert.assert_awaited_once()
+    api.subjects.insert.assert_awaited_once()
     api.links.link.assert_awaited_once()
     api.db.commit.assert_awaited_once()
     event = api.outbox.enqueue.call_args.kwargs
@@ -182,7 +183,7 @@ async def test_create_rejects_an_explicit_member_code(api):
 
     assert response.status_code == 422, response.text
     api.members.next_member_sequence.assert_not_awaited()
-    api.members.save.assert_not_awaited()
+    api.members.insert.assert_not_awaited()
 
 
 async def test_create_records_optional_identification_numbers(api):
@@ -579,7 +580,7 @@ async def test_apply_carries_employment_details_into_the_real_member(api):
 
     assert response.status_code == 200, response.text
     assert response.json()["imported"] == 1
-    ((saved_member,), _) = api.members.save.call_args
+    ((saved_member,), _) = api.members.insert.call_args
     assert saved_member.employment is not None
     assert saved_member.employment.job_title == "Branch Manager"
     assert saved_member.employment.department == "Operations"
@@ -598,7 +599,7 @@ async def test_apply_sets_coverage_start_from_date_joined(api):
 
     assert response.status_code == 200, response.text
     assert response.json()["imported"] == 1
-    ((saved_member,), _) = api.members.save.call_args
+    ((saved_member,), _) = api.members.insert.call_args
     assert saved_member.coverage_start == date(2026, 4, 3)
 
 
@@ -613,7 +614,7 @@ async def test_apply_leaves_coverage_start_unset_when_date_joined_is_blank(api):
     response = await api.http.post("/members/import/b1/apply")
 
     assert response.status_code == 200, response.text
-    ((saved_member,), _) = api.members.save.call_args
+    ((saved_member,), _) = api.members.insert.call_args
     assert saved_member.coverage_start is None
 
 
@@ -631,7 +632,7 @@ async def test_apply_keeps_going_after_a_row_fails(api):
         if saves["n"] == 1:
             raise ValueError("member is not writable")
 
-    api.members.save.side_effect = fail_first
+    api.members.insert.side_effect = fail_first
 
     response = await api.http.post("/members/import/b1/apply")
 
@@ -659,7 +660,7 @@ async def test_apply_never_overwrites_an_existing_member(api):
     body = response.json()
     assert body["imported"] == 0
     assert body["failed"] == 1
-    api.members.save.assert_not_awaited()
+    api.members.insert.assert_not_awaited()
 
 
 async def test_apply_rejects_a_company_code_outside_the_tenant(api):
@@ -683,7 +684,7 @@ async def test_apply_refuses_a_batch_that_is_not_staged(api):
     response = await api.http.post("/members/import/b1/apply")
 
     assert response.status_code == 409, response.text
-    api.members.save.assert_not_awaited()
+    api.members.insert.assert_not_awaited()
 
 
 async def test_set_row_decision_rejects_a_duplicate_row(api):
@@ -1327,3 +1328,65 @@ async def test_contact_cannot_be_accessed_through_another_member(api, method):
     )
     assert response.status_code == 404
     api.db.commit.assert_not_awaited()
+
+
+class TestApplyCostPerRow:
+    """Applying a roster must not re-read per row what the run already knows."""
+
+    async def test_a_chunk_of_rows_reads_the_member_sequence_once(self, api):
+        api.imports.get_batch.return_value = staged_batch()
+        _acme(api)
+        api.imports.list_pending_rows.return_value = [import_row(n) for n in range(1, 11)]
+
+        response = await api.http.post("/members/import/b1/apply")
+
+        assert response.status_code == 200, response.text
+        assert response.json()["imported"] == 10
+        api.members.next_member_sequence.assert_awaited_once()
+
+    async def test_enrolling_writes_the_member_once(self, api):
+        """Status and import stamp are applied before the insert, not after it."""
+        api.imports.get_batch.return_value = staged_batch()
+        _acme(api)
+        api.imports.list_pending_rows.return_value = [import_row(1, status="Suspended")]
+
+        response = await api.http.post("/members/import/b1/apply")
+
+        assert response.status_code == 200, response.text
+        api.members.insert.assert_awaited_once()
+        api.members.save.assert_not_awaited()
+        written = api.members.insert.await_args.args[0]
+        assert written.status is EligibilityStatus.SUSPENDED
+        assert written.last_imported_at is not None
+
+
+class TestConcurrentApply:
+    """Two applies of one batch must not both write the same row."""
+
+    async def test_a_row_another_apply_claimed_first_writes_no_second_member(self, api):
+        api.imports.get_batch.return_value = staged_batch()
+        _acme(api)
+        api.imports.list_pending_rows.return_value = [import_row(1)]
+        api.imports.mark_row_imported.return_value = False
+
+        response = await api.http.post("/members/import/b1/apply")
+
+        assert response.status_code == 200, response.text
+        body = response.json()
+        assert body["imported"] == 0
+        assert body["unchanged"] == 1
+        assert api.db.rollback.await_count == 1
+        api.imports.mark_row_failed.assert_not_awaited()
+
+    async def test_an_update_another_apply_claimed_first_is_rolled_back(self, api):
+        api.imports.get_batch.return_value = staged_batch()
+        _acme(api)
+        api.members.find_by_import_source_id.return_value = member()
+        api.imports.list_pending_rows.return_value = [matched_row(phone="0700111222")]
+        api.imports.mark_row_imported.return_value = False
+
+        response = await api.http.post("/members/import/b1/apply")
+
+        assert response.status_code == 200, response.text
+        assert response.json()["updated"] == 0
+        assert api.db.rollback.await_count == 1

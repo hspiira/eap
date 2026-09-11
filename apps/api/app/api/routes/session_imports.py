@@ -278,6 +278,7 @@ async def stage_import(
         members,
         services,
     )
+    await service.preload(tenant, source_rows, file_hash)
     entities: list[SessionImportRowEntity] = []
     for source_row in source_rows:
         staged = await service.stage_row(tenant, source_system, file_hash, source_row, now=now)
@@ -449,6 +450,7 @@ async def apply_batch(
         now=utc_now(),
         limit=limit,
         after_row=db.commit,
+        rollback=db.rollback,
     )
     if result.done:
         await audit_change(batch, audit_handler, current_user, request)

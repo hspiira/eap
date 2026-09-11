@@ -487,3 +487,78 @@ CSV back out, so the formula-injection escaping the member importer needed
 for its issue-report download does not apply). Tenant isolation was checked
 and found correct throughout: every staging lookup is scoped by
 `tenant_id` already.
+
+## Import apply and staging performance, 2026-09-11
+
+Applying and staging were slow because of what each row cost, not because of
+the chunked, resumable design, which is kept as it is. Every item below was
+measured as a repository call per row and removed; test counts now pin each
+one.
+
+### Eighteenth defect (high): re-validation re-read reference data per row
+
+`ApplyImportBatchUseCase._revalidate` fetched the client, member and service
+by id for every row, and `RecordHistoricalSessionUseCase` fetched the
+practitioner for every row. A 7,470-row extract names a handful of each.
+Fixed with `_ReferenceData`, read once per chunk, and a request-scoped
+provider cache. Roughly 4 of ~7 round trips per row removed.
+
+### Nineteenth defect (high): staging had the timeout risk members already fixed
+
+`stage_import` looped `stage_row` per row with no preload, costing ~6-8
+queries per row: replay key, alias, client by name or alias, member, service,
+and the same-looking-session check. The member importer's `MemberRowChecker`
+docstring already records that this exact pattern "was slow enough to time out
+a serverless function". Fixed with `SessionImportStagingService.preload`,
+mirroring the member checker: batched client, member and service lookups, a
+batched `find_rows_by_replay_keys`, and a request-scoped alias cache. Preload
+only fills caches, so a miss still falls back to its own query and the
+outcome a row reaches is unchanged.
+
+### Twentieth defect (high): two concurrent applies could write a row twice
+
+Neither `list_pending_rows` locks, and the batch's Staged check does not
+separate two callers: both read it as Staged and both read the same pending
+rows. The member side was backstopped by its unique constraints; the session
+side was not, and `service_sessions` has no unique key on the source
+coordinates, so a row could produce two sessions. Fixed by making
+`mark_row_imported` return whether it claimed the row. The claim and the write
+share a transaction, so the loser rolls back and discards what it wrote. This
+also makes parallel chunk requests safe, which is available as a further
+speed-up but not used yet.
+
+### Twenty-first defect (medium): the session insert bypassed error isolation
+
+`_write_row` caught only `DomainError`, so an `IntegrityError` from the
+session insert escaped the per-row isolation the chunked apply exists to
+provide and surfaced as a 500 mid-batch. Now caught, rolled back, and recorded
+on the row like every other write failure.
+
+### Also removed
+
+- `next_member_sequence` was called per enrolled row and scans every id the
+  client holds, making a roster import quadratic. `MemberCodeIssuer` reads it
+  once per client and advances in memory; the unique constraint remains what
+  guarantees uniqueness.
+- The member enrolment wrote its member twice (INSERT then UPDATE) and
+  re-read two ids the checker had just read. One `insert`, `prepare` applied
+  before it, `verify_absent=False` on the import path.
+- `save` merges, which probes for an existing row before writing. New
+  aggregates now use `insert`, removing a guaranteed-miss SELECT for each of
+  the member, subject and session writes.
+- The member dialog paged through every row of the batch after each chunk. A
+  5,000-row roster cost ~25 page requests per chunk. Now refreshed once, at
+  the end. The session dialog refetched the batch per chunk; also once now.
+- Both dialogs applied 50 rows per call; now 200, and the progress banner
+  shows a measured rate and time remaining.
+
+### Not done, and why
+
+Batching commits behind savepoints (roughly a further 10x on commit flushes)
+changes the durability guarantee that a lost response never loses a written
+row, and is left as an explicit decision rather than taken silently. Moving
+the apply loop out of the dialog so it survives the drawer closing is a UI
+change, not a performance one; the backend already supports resuming, so it
+can be done whenever wanted. Whole-chunk bulk insert was not attempted: the
+cheap wins above should be measured against a real Vercel-to-Neon latency
+first.
