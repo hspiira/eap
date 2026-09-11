@@ -86,7 +86,10 @@ if _XDIST_WORKER:
             await conn.close()
 
     asyncio.run(_ensure_worker_database())
-    TEST_DATABASE_URL = str(_base_url.set(database=_worker_database))
+    # str(url) masks the password; that breaks real auth here.
+    TEST_DATABASE_URL = _base_url.set(database=_worker_database).render_as_string(
+        hide_password=False
+    )
 
 # Module-global engine + per-test event loops: pooled connections would be
 # created on one test's loop and reused on the next ("attached to a different
