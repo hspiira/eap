@@ -2,7 +2,6 @@
 
 from app.core.encryption import decrypt, encrypt
 from app.domain.entities.provider_affiliation import ProviderAffiliationEntity
-from app.domain.entities.provider_alias import ProviderAliasEntity
 from app.domain.entities.provider_organisation import ProviderOrganisationEntity
 from app.domain.entities.provider_specialty import (
     ProviderSpecialtyEntity,
@@ -21,7 +20,6 @@ from app.domain.enums import (
     SessionType,
 )
 from app.domain.enums.provider_network import (
-    AliasResolutionState,
     DeliveryContext,
     ImportBatchStatus,
     ImportRowOutcome,
@@ -30,7 +28,6 @@ from app.domain.enums.provider_network import (
 from app.domain.value_objects.core import ProviderId, TenantId, UserId
 from app.domain.value_objects.provider_network import (
     ProviderAffiliationId,
-    ProviderAliasId,
     ProviderOrganisationId,
     ProviderSpecialtyId,
     ProviderSpecialtyLinkId,
@@ -38,7 +35,6 @@ from app.domain.value_objects.provider_network import (
     SessionImportRowId,
 )
 from app.infrastructure.models.provider_affiliation_model import ProviderAffiliationModel
-from app.infrastructure.models.provider_alias_model import ProviderAliasModel
 from app.infrastructure.models.provider_organisation_model import ProviderOrganisationModel
 from app.infrastructure.models.provider_specialty_model import (
     ProviderSpecialtyLinkModel,
@@ -154,44 +150,6 @@ class ProviderSpecialtyMapper:
             provider_id=entity.provider_id.value,
             specialty_id=entity.specialty_id.value,
             created_at=entity.created_at,
-        )
-
-
-class ProviderAliasMapper:
-    @staticmethod
-    def to_entity(model: ProviderAliasModel) -> ProviderAliasEntity:
-        return ProviderAliasEntity(
-            id=ProviderAliasId(model.id),
-            tenant_id=TenantId(model.tenant_id),
-            source_system=model.source_system,
-            source_value=model.source_value,
-            normalized_value=model.normalized_value,
-            state=AliasResolutionState(model.state),
-            provider_id=ProviderId(model.provider_id) if model.provider_id else None,
-            candidate_provider_ids=tuple(model.candidate_provider_ids or ()),
-            resolved_by=UserId(model.resolved_by) if model.resolved_by else None,
-            resolved_at=ensure_utc(model.resolved_at),
-            review_note=model.review_note,
-            created_at=ensure_utc(model.created_at),
-            updated_at=ensure_utc(model.updated_at),
-        )
-
-    @staticmethod
-    def to_model(entity: ProviderAliasEntity) -> ProviderAliasModel:
-        return ProviderAliasModel(
-            id=entity.id.value,
-            tenant_id=entity.tenant_id.value,
-            source_system=entity.source_system,
-            source_value=entity.source_value,
-            normalized_value=entity.normalized_value,
-            state=entity.state,
-            provider_id=entity.provider_id.value if entity.provider_id else None,
-            candidate_provider_ids=list(entity.candidate_provider_ids) or None,
-            resolved_by=entity.resolved_by.value if entity.resolved_by else None,
-            resolved_at=entity.resolved_at,
-            review_note=entity.review_note,
-            created_at=entity.created_at,
-            updated_at=entity.updated_at,
         )
 
 

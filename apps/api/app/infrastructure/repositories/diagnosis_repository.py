@@ -7,31 +7,17 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.domain.entities.diagnosis import (
     Diagnosis,
-    DiagnosisAlias,
     DiagnosisType,
     TenantOverlay,
 )
 from app.domain.repositories.diagnosis_repository import DiagnosisRepository
 from app.domain.services.diagnosis_alias import normalise_diagnosis_value
 from app.infrastructure.models.diagnosis_model import (
-    DiagnosisAliasModel,
     DiagnosisModel,
     DiagnosisTypeModel,
     TenantDiagnosisSettingModel,
 )
 from app.shared.utils.generators import generate_cuid
-
-
-def _to_alias(model: DiagnosisAliasModel) -> DiagnosisAlias:
-    return DiagnosisAlias(
-        id=model.id,
-        raw_value=model.raw_value,
-        normalised_key=model.normalised_key,
-        diagnosis_type_id=model.diagnosis_type_id,
-        diagnosis_id=model.diagnosis_id,
-        source=model.source,
-        confidence=model.confidence,
-    )
 
 
 def _to_overlay(model: TenantDiagnosisSettingModel) -> TenantOverlay:
@@ -279,46 +265,12 @@ class DiagnosisRepositoryImpl(DiagnosisRepository):
         await self._session.flush()
         return _to_overlay(model)
 
-    # === Legacy aliases ===
-
-    async def list_aliases(self, *, confidence: str | None = None) -> list[DiagnosisAlias]:
-        stmt = select(DiagnosisAliasModel).order_by(DiagnosisAliasModel.normalised_key)
-        if confidence is not None:
-            stmt = stmt.where(DiagnosisAliasModel.confidence == confidence)
-        return [_to_alias(r) for r in (await self._session.execute(stmt)).scalars()]
-
-    async def upsert_alias(
-        self,
-        *,
-        raw_value: str,
-        diagnosis_type_id: str,
-        diagnosis_id: str | None,
-        source: str,
-        confidence: str,
-    ) -> DiagnosisAlias:
-        key = normalise_diagnosis_value(raw_value)
-        stmt = select(DiagnosisAliasModel).where(DiagnosisAliasModel.normalised_key == key)
-        model = (await self._session.execute(stmt)).scalar_one_or_none()
-        if model is None:
-            model = DiagnosisAliasModel(
-                id=generate_cuid(),
-                raw_value=raw_value,
-                normalised_key=key,
-                diagnosis_type_id=diagnosis_type_id,
-                diagnosis_id=diagnosis_id,
-                source=source,
-                confidence=confidence,
-            )
-            self._session.add(model)
-        else:
-            model.raw_value = raw_value
-            model.diagnosis_type_id = diagnosis_type_id
-            model.diagnosis_id = diagnosis_id
-            model.source = source
-            model.confidence = confidence
-        await self._session.flush()
-        return _to_alias(model)
-
-    async def alias_lookup(self) -> dict[str, tuple[str, str | None]]:
-        rows = (await self._session.execute(select(DiagnosisAliasModel))).scalars()
-        return {r.normalised_key: (r.diagnosis_type_id, r.diagnosis_id) for r in rows}
+    async def name_lookup(self) -> dict[str, tuple[str, str | None]]:
+        types = (await self._session.execute(select(DiagnosisTypeModel))).scalars()
+        index: dict[str, tuple[str, str | None]] = {
+            normalise_diagnosis_value(t.name): (t.id, None) for t in types
+        }
+        diagnoses = (await self._session.execute(select(DiagnosisModel))).scalars()
+        for d in diagnoses:
+            index[normalise_diagnosis_value(d.name)] = (d.type_id, d.id)
+        return index

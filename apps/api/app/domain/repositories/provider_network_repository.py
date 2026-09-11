@@ -5,7 +5,6 @@ from collections.abc import Sequence
 from datetime import date, datetime
 
 from app.domain.entities.provider_affiliation import ProviderAffiliationEntity
-from app.domain.entities.provider_alias import ProviderAliasEntity
 from app.domain.entities.provider_organisation import ProviderOrganisationEntity
 from app.domain.entities.provider_specialty import (
     ProviderSpecialtyEntity,
@@ -18,7 +17,6 @@ from app.domain.entities.session_import import (
 from app.domain.value_objects.core import ProviderId, TenantId
 from app.domain.value_objects.provider_network import (
     ProviderAffiliationId,
-    ProviderAliasId,
     ProviderOrganisationId,
     ProviderSpecialtyId,
     SessionImportBatchId,
@@ -158,33 +156,6 @@ class ProviderSpecialtyRepository(ABC):
 
     @abstractmethod
     async def remove_link(self, tenant_id: TenantId, link_id: str) -> bool: ...
-
-
-class ProviderAliasRepository(ABC):
-    @abstractmethod
-    async def find_alias(
-        self, tenant_id: TenantId, source_system: str, normalized_value: str
-    ) -> ProviderAliasEntity | None: ...
-
-    @abstractmethod
-    async def get_alias(
-        self, tenant_id: TenantId, alias_id: ProviderAliasId
-    ) -> ProviderAliasEntity | None: ...
-
-    @abstractmethod
-    async def list_aliases(
-        self,
-        tenant_id: TenantId,
-        *,
-        source_system: str | None = None,
-        state: str | None = None,
-        provider_id: ProviderId | None = None,
-        limit: int = 20,
-        offset: int = 0,
-    ) -> tuple[Sequence[ProviderAliasEntity], int]: ...
-
-    @abstractmethod
-    async def save_alias(self, alias: ProviderAliasEntity) -> None: ...
 
 
 class SessionImportRepository(ABC):

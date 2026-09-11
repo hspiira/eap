@@ -21,11 +21,8 @@ from collections import defaultdict
 from collections.abc import Sequence
 from dataclasses import dataclass, replace
 from datetime import date, datetime
+from enum import Enum
 
-from app.application.services.provider_alias_reconciliation import (
-    NameOutcome,
-    NameResolution,
-)
 from app.domain.entities.client import ClientEntity
 from app.domain.entities.eligible_member import EligibleMember
 from app.domain.entities.service import ServiceEntity
@@ -57,7 +54,7 @@ from app.domain.services.provider_alias_normalisation import (
     normalise_practitioner_name,
 )
 from app.domain.services.provider_network_calendar import boundary_day
-from app.domain.value_objects.core import ClientId, TenantId
+from app.domain.value_objects.core import ClientId, ProviderId, TenantId
 from app.domain.value_objects.provider_network import (
     ProviderAffiliationId,
     SessionImportBatchId,
@@ -75,8 +72,30 @@ from app.shared.utils.session_import_normalisation import (
     map_status,
 )
 
+
 #: An approver name matching more than one active user in the tenant. Distinct
 #: from a `str` UserId so a preloaded ambiguous name is never mistaken for one.
+class NameOutcome(str, Enum):
+    """Why a source name did or did not match a practitioner."""
+
+    RESOLVED = "Resolved"
+    MISSING = "Missing"
+    UNMAPPED = "Unmapped"
+    AMBIGUOUS = "Ambiguous"
+
+
+@dataclass(frozen=True)
+class NameResolution:
+    outcome: NameOutcome
+    provider_id: ProviderId | None = None
+    normalized_value: str = ""
+    reasons: tuple[str, ...] = ()
+
+    @property
+    def is_resolved(self) -> bool:
+        return self.outcome is NameOutcome.RESOLVED
+
+
 _AMBIGUOUS_APPROVER = object()
 _AMBIGUOUS_PRACTITIONER = object()
 
@@ -84,7 +103,6 @@ _NAME_OUTCOMES = {
     NameOutcome.MISSING: ImportRowOutcome.MISSING_PRACTITIONER,
     NameOutcome.UNMAPPED: ImportRowOutcome.UNMAPPED_PRACTITIONER,
     NameOutcome.AMBIGUOUS: ImportRowOutcome.AMBIGUOUS_PRACTITIONER,
-    NameOutcome.REJECTED: ImportRowOutcome.REJECTED,
 }
 
 SOURCE_KEY_STRATEGY = "source_record_key"
@@ -221,7 +239,7 @@ class SessionImportStagingService:
         self._member_cache: dict[tuple[str, str], EligibleMember | None] = {}
         self._service_cache: dict[str, ServiceEntity | None] = {}
         self._staged_by_key: dict[str, SessionImportRowEntity | None] = {}
-        self._diagnosis_aliases: dict[str, tuple[str, str | None]] | None = None
+        self._diagnosis_by_name: dict[str, tuple[str, str | None]] | None = None
         self._approver_by_name: dict[str, str | object] | None = None
         self._practitioner_by_name: dict[str, object] | None = None
 
@@ -234,7 +252,7 @@ class SessionImportStagingService:
         await self._preload_clients(tenant_id, rows)
         await self._preload_members(tenant_id, rows)
         await self._preload_services(tenant_id, rows)
-        await self._preload_diagnosis_aliases()
+        await self._preload_diagnoses()
         await self._preload_approvers(tenant_id)
         await self._preload_practitioners(tenant_id)
         keys = [_replay_key(row, file_hash) for row in rows]
@@ -244,9 +262,10 @@ class SessionImportStagingService:
         for key in keys:
             self._staged_by_key.setdefault(key, found.get(key))
 
-    async def _preload_diagnosis_aliases(self) -> None:
-        if self._diagnosis_aliases is None:
-            self._diagnosis_aliases = await self._diagnoses.alias_lookup()
+    async def _preload_diagnoses(self) -> None:
+        """The taxonomy's own names, normalised, for matching the source value."""
+        if self._diagnosis_by_name is None:
+            self._diagnosis_by_name = await self._diagnoses.name_lookup()
 
     async def _preload_practitioners(self, tenant_id: TenantId) -> None:
         """Every practitioner's name, normalised, for matching the source row.
@@ -539,11 +558,13 @@ class SessionImportStagingService:
 
         diagnosis_type_id, diagnosis_id = None, None
         if row.raw_diagnosis:
-            await self._preload_diagnosis_aliases()
-            aliases = self._diagnosis_aliases or {}
-            match = aliases.get(normalise_diagnosis_value(row.raw_diagnosis))
+            await self._preload_diagnoses()
+            known = self._diagnosis_by_name or {}
+            match = known.get(normalise_diagnosis_value(row.raw_diagnosis))
             if match is None:
-                notes.append(f"Diagnosis {row.raw_diagnosis!r} has no alias and was left empty")
+                notes.append(
+                    f"Diagnosis {row.raw_diagnosis!r} is not in the taxonomy and was left empty"
+                )
             else:
                 diagnosis_type_id, diagnosis_id = match
         fields["diagnosis_type_id"] = diagnosis_type_id

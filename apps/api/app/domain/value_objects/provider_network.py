@@ -26,11 +26,6 @@ class ProviderSpecialtyLinkId(Id):
 
 
 @dataclass(frozen=True)
-class ProviderAliasId(Id):
-    pass
-
-
-@dataclass(frozen=True)
 class SessionImportBatchId(Id):
     pass
 

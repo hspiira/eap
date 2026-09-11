@@ -19,7 +19,6 @@ from app.api.dependencies import (
 )
 from app.api.dependencies.provider_network import (
     get_provider_affiliation_repository,
-    get_provider_alias_repository,
     get_session_import_repository,
 )
 from app.api.routes.session_imports import router
@@ -82,7 +81,6 @@ async def api():
     app.dependency_overrides[get_current_user] = _user
     app.dependency_overrides[get_current_user_entity] = _user_entity
     app.dependency_overrides[get_session_import_repository] = lambda: state.imports
-    app.dependency_overrides[get_provider_alias_repository] = lambda: state.aliases
     app.dependency_overrides[get_provider_affiliation_repository] = lambda: state.affiliations
     app.dependency_overrides[get_client_repository] = lambda: state.clients
     app.dependency_overrides[get_eligible_member_repository] = lambda: state.members

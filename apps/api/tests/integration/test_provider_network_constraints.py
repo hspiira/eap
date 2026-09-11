@@ -18,7 +18,6 @@ from sqlalchemy.ext.asyncio import create_async_engine
 from sqlalchemy.schema import CreateSchema, DropSchema
 
 from app.infrastructure.models.provider_affiliation_model import ProviderAffiliationModel
-from app.infrastructure.models.provider_alias_model import ProviderAliasModel
 from app.infrastructure.models.provider_organisation_model import ProviderOrganisationModel
 from app.infrastructure.models.provider_specialty_model import (
     ProviderSpecialtyLinkModel,
@@ -47,7 +46,6 @@ _TABLES = [
     ProviderAffiliationModel.__table__,
     ProviderSpecialtyModel.__table__,
     ProviderSpecialtyLinkModel.__table__,
-    ProviderAliasModel.__table__,
     SessionImportBatchModel.__table__,
     SessionImportRowModel.__table__,
 ]
@@ -165,44 +163,6 @@ class TestSpecialtyLinkTenantEnforcement:
 
     async def test_a_global_specialty_carries_no_tenant_column(self, db):
         assert "tenant_id" not in ProviderSpecialtyModel.__table__.columns
-
-
-class TestAliasScoping:
-    _ALIAS = (
-        "INSERT INTO provider_aliases "
-        "(id, tenant_id, source_system, source_value, normalized_value, state, "
-        " created_at, updated_at) "
-        "VALUES (:id, :tenant, :source, 'Alice Nakato', 'alice nakato', 'Unmapped', "
-        " now(), now())"
-    )
-
-    async def test_the_same_name_is_allowed_in_two_tenants(self, db):
-        """Decision 5 forbids merging equal names across tenants."""
-        await _insert(db, self._ALIAS, {"id": "al-1", "tenant": TENANT_A, "source": "sessions-csv"})
-        await _insert(db, self._ALIAS, {"id": "al-2", "tenant": TENANT_B, "source": "sessions-csv"})
-
-    async def test_the_same_name_is_allowed_in_two_source_systems(self, db):
-        await _insert(db, self._ALIAS, {"id": "al-3", "tenant": TENANT_A, "source": "sessions-csv"})
-        await _insert(db, self._ALIAS, {"id": "al-4", "tenant": TENANT_A, "source": "legacy-hr"})
-
-    async def test_a_duplicate_within_one_tenant_and_source_is_rejected(self, db):
-        await _insert(db, self._ALIAS, {"id": "al-5", "tenant": TENANT_A, "source": "sessions-csv"})
-        with pytest.raises(IntegrityError):
-            await _insert(
-                db, self._ALIAS, {"id": "al-6", "tenant": TENANT_A, "source": "sessions-csv"}
-            )
-
-    async def test_a_resolved_alias_cannot_name_another_tenants_provider(self, db):
-        with pytest.raises(IntegrityError):
-            await _insert(
-                db,
-                "INSERT INTO provider_aliases "
-                "(id, tenant_id, source_system, source_value, normalized_value, state, "
-                " provider_id, created_at, updated_at) "
-                "VALUES ('al-7', :tenant, 'sessions-csv', 'X', 'x', 'Resolved', 'prov-b', "
-                " now(), now())",
-                {"tenant": TENANT_A},
-            )
 
 
 class TestImportRowEnforcement:

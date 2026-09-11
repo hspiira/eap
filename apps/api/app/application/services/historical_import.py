@@ -54,7 +54,7 @@ class CanonicalMappings:
     provider_codes: dict[str, str] = field(default_factory=dict[str, str])
     member_codes: dict[str, dict[str, str]] = field(default_factory=dict)
     status_text: dict[str, SessionStatus] = field(default_factory=dict[str, SessionStatus])
-    diagnosis_aliases: dict[str, tuple[str, str | None]] = field(
+    diagnosis_names: dict[str, tuple[str, str | None]] = field(
         default_factory=dict[str, tuple[str, str | None]]
     )
 
@@ -153,17 +153,17 @@ _UNMAPPED = object()
 
 def _resolve_diagnosis(
     raw: str | None,
-    aliases: dict[str, tuple[str, str | None]],
+    known: dict[str, tuple[str, str | None]],
 ):
-    """Resolve a legacy diagnosis string, or ``_UNMAPPED`` if it has no alias.
+    """Resolve a diagnosis string against the taxonomy, or ``_UNMAPPED``.
 
     A blank value is not an error: not every legacy row carries a diagnosis.
-    A value that is present but unrecognised is rejected rather than bucketed,
-    so a missing alias is noticed before the import runs.
+    A value that is present but names nothing in the taxonomy is rejected
+    rather than bucketed, so it is noticed before the import runs.
     """
     if raw is None or not raw.strip():
         return (None, None)
-    return aliases.get(normalise_diagnosis_value(raw), _UNMAPPED)
+    return known.get(normalise_diagnosis_value(raw), _UNMAPPED)
 
 
 def validate_row(
@@ -250,12 +250,12 @@ def validate_row(
             detail=f"Cannot parse '{row.scheduled_at_text}' as ISO date/datetime",
             raw=row,
         )
-    diagnosis = _resolve_diagnosis(row.diagnosis_text, mappings.diagnosis_aliases)
+    diagnosis = _resolve_diagnosis(row.diagnosis_text, mappings.diagnosis_names)
     if diagnosis is _UNMAPPED:
         return RejectedRow(
             source_id=row.source_id,
             classification=ImportClassification.REJECTED_UNMAPPED_DIAGNOSIS,
-            detail=f"No diagnosis alias for '{row.diagnosis_text}'",
+            detail=f"'{row.diagnosis_text}' is not in the diagnosis taxonomy",
             raw=row,
         )
     type_id, diagnosis_id = diagnosis

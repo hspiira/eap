@@ -27,7 +27,7 @@ def _write_routes():
 
 
 def test_there_are_write_routes_to_check():
-    assert len(_write_routes()) == 8
+    assert len(_write_routes()) == 7
 
 
 def test_no_write_route_is_ungated():
@@ -71,18 +71,6 @@ def test_overlay_gate_excludes_viewer_and_user():
 
 def test_taxonomy_reads_are_not_platform_gated():
     """Everyone selecting a diagnosis must be able to read the tree."""
-    reads = [
-        r for r in _routes() if not (r.methods & WRITE_METHODS) and not r.path.endswith("/aliases")
-    ]
+    reads = [r for r in _routes() if not (r.methods & WRITE_METHODS)]
     for route in reads:
         assert require_platform_admin not in _dependency_callables(route), route.path
-
-
-def test_alias_read_is_platform_gated():
-    """The alias table is the mapping's audit trail, not a selector feed.
-
-    It exposes which legacy spellings are still unconfirmed, which is review
-    state for the taxonomy owner rather than something a session form needs.
-    """
-    alias_read = next(r for r in _routes() if r.path.endswith("/aliases") and "GET" in r.methods)
-    assert require_platform_admin in _dependency_callables(alias_read)

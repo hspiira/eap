@@ -6,8 +6,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.api.dependencies import get_diagnosis_repository
 from app.api.dependencies.audit import get_audit_event_handler
 from app.api.schemas.diagnosis_schemas import (
-    DiagnosisAliasResponse,
-    DiagnosisAliasUpsert,
     DiagnosisCapabilitiesResponse,
     DiagnosisCreate,
     DiagnosisOverlayResponse,
@@ -27,10 +25,9 @@ from app.core.authorization import (
 )
 from app.core.database import get_db
 from app.core.security import TokenData, get_current_user
-from app.domain.entities.diagnosis import DiagnosisAlias, TenantOverlay
-from app.domain.enums import AliasConfidence, AuditActionType, TenantRole
+from app.domain.entities.diagnosis import TenantOverlay
+from app.domain.enums import AuditActionType, TenantRole
 from app.domain.repositories.diagnosis_repository import DiagnosisRepository
-from app.domain.services.diagnosis_alias import normalise_diagnosis_value
 from app.shared.decorators import readonly, transactional
 from app.shared.utils.route_audit_helper import audit_reference_change
 
@@ -408,80 +405,3 @@ async def set_diagnosis_setting(
         tenant_id=user.tenant_id,
     )
     return DiagnosisOverlayResponse.model_validate(saved)
-
-
-# === Legacy aliases (platform admin) ===
-#
-# Aliases exist because free-text diagnosis spellings keep arriving from the
-# field. Adding one used to mean writing an Alembic migration, which is why
-# values awaiting a clinical decision stayed unmapped and their rows kept
-# failing the import. These routes let the taxonomy owner resolve a value
-# without a deploy.
-
-
-@router.get("/aliases", response_model=list[DiagnosisAliasResponse])
-@readonly()
-async def list_diagnosis_aliases(
-    confidence: AliasConfidence | None = Query(
-        None, description="Filter to mappings still awaiting sign-off, or those confirmed"
-    ),
-    _user: TokenData = Depends(require_platform_admin),
-    repo: DiagnosisRepository = Depends(get_diagnosis_repository),
-    db: AsyncSession = Depends(get_db),
-):
-    aliases = await repo.list_aliases(confidence=confidence.value if confidence else None)
-    return [DiagnosisAliasResponse.model_validate(a) for a in aliases]
-
-
-async def _alias_for(repo: DiagnosisRepository, raw_value: str) -> DiagnosisAlias | None:
-    """The alias a raw value already resolves to, matched on its normalised key."""
-    key = normalise_diagnosis_value(raw_value)
-    return next((a for a in await repo.list_aliases() if a.normalised_key == key), None)
-
-
-@router.put("/aliases", response_model=DiagnosisAliasResponse)
-@transactional()
-async def upsert_diagnosis_alias(
-    data: DiagnosisAliasUpsert,
-    request: Request,
-    _user: TokenData = Depends(require_platform_admin),
-    repo: DiagnosisRepository = Depends(get_diagnosis_repository),
-    audit_handler=Depends(get_audit_event_handler),
-    db: AsyncSession = Depends(get_db),
-):
-    """Map a legacy spelling onto the taxonomy, keyed on its normalised form."""
-    # An alias pointing at a row that does not exist would fail the import it
-    # was meant to unblock, so the reference is checked here rather than at
-    # import time.
-    types = await repo.list_types(active_only=False)
-    if not any(t.id == data.diagnosis_type_id for t in types):
-        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="Diagnosis type not found")
-    if data.diagnosis_id is not None:
-        diagnoses = await repo.list_diagnoses(active_only=False)
-        target = next((d for d in diagnoses if d.id == data.diagnosis_id), None)
-        if target is None:
-            raise HTTPException(status.HTTP_404_NOT_FOUND, detail="Diagnosis not found")
-        if target.type_id != data.diagnosis_type_id:
-            raise HTTPException(
-                status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
-                detail="Diagnosis does not belong to the given type",
-            )
-    before = await _alias_for(repo, data.raw_value)
-    saved = await repo.upsert_alias(
-        raw_value=data.raw_value,
-        diagnosis_type_id=data.diagnosis_type_id,
-        diagnosis_id=data.diagnosis_id,
-        source=data.source,
-        confidence=data.confidence.value,
-    )
-    await audit_reference_change(
-        audit_handler,
-        _user,
-        request,
-        action=AuditActionType.UPDATE if before is not None else AuditActionType.CREATE,
-        resource_type="DiagnosisAlias",
-        resource_id=saved.id,
-        before=before,
-        after=saved,
-    )
-    return DiagnosisAliasResponse.model_validate(saved)

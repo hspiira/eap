@@ -23,7 +23,7 @@ def _mappings(**overrides) -> CanonicalMappings:
         provider_codes={"DR-A": "prov-1"},
         member_codes={"client-absa": {"E1234": "member-1"}},
         status_text={"COMPLETED": SessionStatus.COMPLETED},
-        diagnosis_aliases={
+        diagnosis_names={
             "work stress anxiety": ("dt_work_stress_anxiety", None),
             "burnout": ("dt_work_stress_anxiety", "dx_burnout"),
         },
@@ -63,24 +63,24 @@ class TestDiagnosisResolution:
             assert isinstance(result, AcceptedRow), value
             assert result.diagnosis_type_id is None
 
-    def test_a_spelling_with_no_alias_is_rejected_even_when_it_reads_familiar(self):
+    def test_a_spelling_not_in_the_taxonomy_is_rejected_even_when_it_reads_familiar(self):
         """ "Work Stress, Fatigue, Burnout" normalises to a key no alias covers."""
         result = _validate(_row(diagnosis_text="Work Stress, Fatigue, Burnout"))
         assert isinstance(result, RejectedRow)
         assert result.classification is ImportClassification.REJECTED_UNMAPPED_DIAGNOSIS
 
-    def test_an_alias_resolves_to_its_type(self):
+    def test_a_type_name_resolves_to_its_type(self):
         result = _validate(_row(diagnosis_text="Work_Stress_Anxiety"))
         assert isinstance(result, AcceptedRow)
         assert result.diagnosis_type_id == "dt_work_stress_anxiety"
         assert result.diagnosis_id is None
 
-    def test_an_alias_resolves_to_a_specific_diagnosis(self):
+    def test_a_diagnosis_name_resolves_to_that_diagnosis(self):
         result = _validate(_row(diagnosis_text="Burnout"))
         assert isinstance(result, AcceptedRow)
         assert result.diagnosis_id == "dx_burnout"
 
-    def test_case_and_padding_variants_collapse_to_one_alias(self):
+    def test_case_and_padding_variants_collapse_to_one_name(self):
         for spelling in ("Burnout", "burnout", "  BURNOUT  ", "BurnOut"):
             result = _validate(_row(diagnosis_text=spelling))
             assert isinstance(result, AcceptedRow), spelling

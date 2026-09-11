@@ -28,19 +28,6 @@ class DeliveryContext(str, Enum):
     UNKNOWN = "Unknown"
 
 
-class AliasResolutionState(str, Enum):
-    """Whether a source name has been reconciled to a practitioner.
-
-    `AMBIGUOUS` and `UNMAPPED` are distinct review outcomes: the first has
-    candidates and no decision, the second has no candidate at all.
-    """
-
-    UNMAPPED = "Unmapped"
-    AMBIGUOUS = "Ambiguous"
-    RESOLVED = "Resolved"
-    REJECTED = "Rejected"
-
-
 class ImportRowOutcome(str, Enum):
     """Per-row result of a staged historical import."""
 
