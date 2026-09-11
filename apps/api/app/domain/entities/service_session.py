@@ -36,6 +36,8 @@ from app.domain.value_objects.core import (
 )
 from app.shared.utils.datetime import utc_now
 
+DELETED_SESSION_UPDATE_ERROR = "Cannot update deleted session"
+
 
 @dataclass
 class ServiceSessionEntity:
@@ -220,7 +222,7 @@ class ServiceSessionEntity:
 
     def set_session_type(self, session_type: SessionType) -> None:
         if self.deleted_at:
-            raise DomainError("Cannot update deleted session")
+            raise DomainError(DELETED_SESSION_UPDATE_ERROR)
         self.session_type = session_type
         self.updated_at = utc_now()
         self.events.append(
@@ -233,7 +235,7 @@ class ServiceSessionEntity:
         headcount: int | None = None,
     ) -> None:
         if self.deleted_at:
-            raise DomainError("Cannot update deleted session")
+            raise DomainError(DELETED_SESSION_UPDATE_ERROR)
         if category == SessionCategory.GROUP:
             if headcount is not None and headcount < 2:
                 raise DomainError("Group sessions require at least 2 participants")
@@ -254,7 +256,7 @@ class ServiceSessionEntity:
         rate_ugx: int | None = None,
     ) -> None:
         if self.deleted_at:
-            raise DomainError("Cannot update deleted session")
+            raise DomainError(DELETED_SESSION_UPDATE_ERROR)
         if issue_topic is not None:
             self.issue_topic = issue_topic
         if diagnosis_type_id is not None:
@@ -278,7 +280,7 @@ class ServiceSessionEntity:
         partner_relationship: str | None,
     ) -> None:
         if self.deleted_at:
-            raise DomainError("Cannot update deleted session")
+            raise DomainError(DELETED_SESSION_UPDATE_ERROR)
         if self.category not in {SessionCategory.FAMILY, SessionCategory.COUPLES}:
             raise DomainError("Partner details only apply to family or couples sessions")
         self.partner_name = partner_name
@@ -290,7 +292,7 @@ class ServiceSessionEntity:
 
     def set_clinical_outcome(self, outcome: SessionClinicalStatus) -> None:
         if self.deleted_at:
-            raise DomainError("Cannot update deleted session")
+            raise DomainError(DELETED_SESSION_UPDATE_ERROR)
         self.clinical_outcome = outcome
         self.updated_at = utc_now()
         self.events.append(
@@ -299,7 +301,7 @@ class ServiceSessionEntity:
 
     def set_client_type(self, client_type: ClientType) -> None:
         if self.deleted_at:
-            raise DomainError("Cannot update deleted session")
+            raise DomainError(DELETED_SESSION_UPDATE_ERROR)
         self.client_type = client_type
         self.updated_at = utc_now()
         self.events.append(
