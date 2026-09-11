@@ -29,7 +29,6 @@ import { Route as KpisRouteImport } from './routes/kpis'
 import { Route as MeRouteImport } from './routes/me'
 import { Route as MembersRouteImport } from './routes/members'
 import { Route as PersonsRouteImport } from './routes/persons'
-import { Route as ProviderAliasesRouteImport } from './routes/provider-aliases'
 import { Route as ProviderOrganisationsRouteImport } from './routes/provider-organisations'
 import { Route as ProvidersRouteImport } from './routes/providers'
 import { Route as ReportsRouteImport } from './routes/reports'
@@ -65,7 +64,6 @@ import { Route as MembersMemberIdRouteImport } from './routes/members/$memberId'
 import { Route as PersonsIndexRouteImport } from './routes/persons/index'
 import { Route as PersonsPersonIdRouteImport } from './routes/persons/$personId'
 import { Route as PersonsNewRouteImport } from './routes/persons/new'
-import { Route as ProviderAliasesIndexRouteImport } from './routes/provider-aliases/index'
 import { Route as ProviderOrganisationsIndexRouteImport } from './routes/provider-organisations/index'
 import { Route as ProviderOrganisationsOrganisationIdRouteImport } from './routes/provider-organisations/$organisationId'
 import { Route as ProvidersIndexRouteImport } from './routes/providers/index'
@@ -195,11 +193,6 @@ const MembersRoute = MembersRouteImport.update({
 const PersonsRoute = PersonsRouteImport.update({
   id: '/persons',
   path: '/persons',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ProviderAliasesRoute = ProviderAliasesRouteImport.update({
-  id: '/provider-aliases',
-  path: '/provider-aliases',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ProviderOrganisationsRoute = ProviderOrganisationsRouteImport.update({
@@ -376,11 +369,6 @@ const PersonsNewRoute = PersonsNewRouteImport.update({
   id: '/new',
   path: '/new',
   getParentRoute: () => PersonsRoute,
-} as any)
-const ProviderAliasesIndexRoute = ProviderAliasesIndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => ProviderAliasesRoute,
 } as any)
 const ProviderOrganisationsIndexRoute =
   ProviderOrganisationsIndexRouteImport.update({
@@ -560,7 +548,6 @@ export interface FileRoutesByFullPath {
   '/me': typeof MeRoute
   '/members': typeof MembersRouteWithChildren
   '/persons': typeof PersonsRouteWithChildren
-  '/provider-aliases': typeof ProviderAliasesRouteWithChildren
   '/provider-organisations': typeof ProviderOrganisationsRouteWithChildren
   '/providers': typeof ProvidersRouteWithChildren
   '/reports': typeof ReportsRouteWithChildren
@@ -613,7 +600,6 @@ export interface FileRoutesByFullPath {
   '/incidents/': typeof IncidentsIndexRoute
   '/members/': typeof MembersIndexRoute
   '/persons/': typeof PersonsIndexRoute
-  '/provider-aliases/': typeof ProviderAliasesIndexRoute
   '/provider-organisations/': typeof ProviderOrganisationsIndexRoute
   '/providers/': typeof ProvidersIndexRoute
   '/reports/': typeof ReportsIndexRoute
@@ -684,7 +670,6 @@ export interface FileRoutesByTo {
   '/incidents': typeof IncidentsIndexRoute
   '/members': typeof MembersIndexRoute
   '/persons': typeof PersonsIndexRoute
-  '/provider-aliases': typeof ProviderAliasesIndexRoute
   '/provider-organisations': typeof ProviderOrganisationsIndexRoute
   '/providers': typeof ProvidersIndexRoute
   '/reports': typeof ReportsIndexRoute
@@ -721,7 +706,6 @@ export interface FileRoutesById {
   '/me': typeof MeRoute
   '/members': typeof MembersRouteWithChildren
   '/persons': typeof PersonsRouteWithChildren
-  '/provider-aliases': typeof ProviderAliasesRouteWithChildren
   '/provider-organisations': typeof ProviderOrganisationsRouteWithChildren
   '/providers': typeof ProvidersRouteWithChildren
   '/reports': typeof ReportsRouteWithChildren
@@ -774,7 +758,6 @@ export interface FileRoutesById {
   '/incidents/': typeof IncidentsIndexRoute
   '/members/': typeof MembersIndexRoute
   '/persons/': typeof PersonsIndexRoute
-  '/provider-aliases/': typeof ProviderAliasesIndexRoute
   '/provider-organisations/': typeof ProviderOrganisationsIndexRoute
   '/providers/': typeof ProvidersIndexRoute
   '/reports/': typeof ReportsIndexRoute
@@ -812,7 +795,6 @@ export interface FileRouteTypes {
     | '/me'
     | '/members'
     | '/persons'
-    | '/provider-aliases'
     | '/provider-organisations'
     | '/providers'
     | '/reports'
@@ -865,7 +847,6 @@ export interface FileRouteTypes {
     | '/incidents/'
     | '/members/'
     | '/persons/'
-    | '/provider-aliases/'
     | '/provider-organisations/'
     | '/providers/'
     | '/reports/'
@@ -936,7 +917,6 @@ export interface FileRouteTypes {
     | '/incidents'
     | '/members'
     | '/persons'
-    | '/provider-aliases'
     | '/provider-organisations'
     | '/providers'
     | '/reports'
@@ -972,7 +952,6 @@ export interface FileRouteTypes {
     | '/me'
     | '/members'
     | '/persons'
-    | '/provider-aliases'
     | '/provider-organisations'
     | '/providers'
     | '/reports'
@@ -1025,7 +1004,6 @@ export interface FileRouteTypes {
     | '/incidents/'
     | '/members/'
     | '/persons/'
-    | '/provider-aliases/'
     | '/provider-organisations/'
     | '/providers/'
     | '/reports/'
@@ -1062,7 +1040,6 @@ export interface RootRouteChildren {
   MeRoute: typeof MeRoute
   MembersRoute: typeof MembersRouteWithChildren
   PersonsRoute: typeof PersonsRouteWithChildren
-  ProviderAliasesRoute: typeof ProviderAliasesRouteWithChildren
   ProviderOrganisationsRoute: typeof ProviderOrganisationsRouteWithChildren
   ProvidersRoute: typeof ProvidersRouteWithChildren
   ReportsRoute: typeof ReportsRouteWithChildren
@@ -1219,13 +1196,6 @@ declare module '@tanstack/react-router' {
       path: '/persons'
       fullPath: '/persons'
       preLoaderRoute: typeof PersonsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/provider-aliases': {
-      id: '/provider-aliases'
-      path: '/provider-aliases'
-      fullPath: '/provider-aliases'
-      preLoaderRoute: typeof ProviderAliasesRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/provider-organisations': {
@@ -1472,13 +1442,6 @@ declare module '@tanstack/react-router' {
       fullPath: '/persons/new'
       preLoaderRoute: typeof PersonsNewRouteImport
       parentRoute: typeof PersonsRoute
-    }
-    '/provider-aliases/': {
-      id: '/provider-aliases/'
-      path: '/'
-      fullPath: '/provider-aliases/'
-      preLoaderRoute: typeof ProviderAliasesIndexRouteImport
-      parentRoute: typeof ProviderAliasesRoute
     }
     '/provider-organisations/': {
       id: '/provider-organisations/'
@@ -1833,18 +1796,6 @@ const PersonsRouteChildren: PersonsRouteChildren = {
 const PersonsRouteWithChildren =
   PersonsRoute._addFileChildren(PersonsRouteChildren)
 
-interface ProviderAliasesRouteChildren {
-  ProviderAliasesIndexRoute: typeof ProviderAliasesIndexRoute
-}
-
-const ProviderAliasesRouteChildren: ProviderAliasesRouteChildren = {
-  ProviderAliasesIndexRoute: ProviderAliasesIndexRoute,
-}
-
-const ProviderAliasesRouteWithChildren = ProviderAliasesRoute._addFileChildren(
-  ProviderAliasesRouteChildren,
-)
-
 interface ProviderOrganisationsRouteChildren {
   ProviderOrganisationsOrganisationIdRoute: typeof ProviderOrganisationsOrganisationIdRoute
   ProviderOrganisationsIndexRoute: typeof ProviderOrganisationsIndexRoute
@@ -1999,7 +1950,6 @@ const rootRouteChildren: RootRouteChildren = {
   MeRoute: MeRoute,
   MembersRoute: MembersRouteWithChildren,
   PersonsRoute: PersonsRouteWithChildren,
-  ProviderAliasesRoute: ProviderAliasesRouteWithChildren,
   ProviderOrganisationsRoute: ProviderOrganisationsRouteWithChildren,
   ProvidersRoute: ProvidersRouteWithChildren,
   ReportsRoute: ReportsRouteWithChildren,

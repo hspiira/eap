@@ -34721,6 +34721,24 @@
             }
           },
           {
+            "description": "Only the spellings resolved to this practitioner",
+            "in": "query",
+            "name": "provider_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Only the spellings resolved to this practitioner",
+              "title": "Provider Id"
+            }
+          },
+          {
             "description": "Page number",
             "in": "query",
             "name": "page",

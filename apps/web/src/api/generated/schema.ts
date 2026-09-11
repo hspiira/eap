@@ -24118,6 +24118,8 @@ export interface operations {
                 source_system?: string | null;
                 /** @description Filter the review queue by outcome */
                 state?: components["schemas"]["AliasResolutionState"] | null;
+                /** @description Only the spellings resolved to this practitioner */
+                provider_id?: string | null;
                 /** @description Page number */
                 page?: number;
                 /** @description Items per page */

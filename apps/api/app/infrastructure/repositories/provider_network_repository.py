@@ -370,6 +370,7 @@ class ProviderAliasRepositoryImpl(ProviderAliasRepository):
         *,
         source_system: str | None = None,
         state: str | None = None,
+        provider_id: ProviderId | None = None,
         limit: int = 20,
         offset: int = 0,
     ) -> tuple[Sequence[ProviderAliasEntity], int]:
@@ -380,6 +381,8 @@ class ProviderAliasRepositoryImpl(ProviderAliasRepository):
             statement = statement.where(ProviderAliasModel.source_system == source_system)
         if state:
             statement = statement.where(ProviderAliasModel.state == state)
+        if provider_id:
+            statement = statement.where(ProviderAliasModel.provider_id == provider_id.value)
         total = await _count(self.session, statement)
         rows = await self.session.scalars(
             statement.order_by(ProviderAliasModel.normalized_value).limit(limit).offset(offset)

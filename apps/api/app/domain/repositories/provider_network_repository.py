@@ -178,6 +178,7 @@ class ProviderAliasRepository(ABC):
         *,
         source_system: str | None = None,
         state: str | None = None,
+        provider_id: ProviderId | None = None,
         limit: int = 20,
         offset: int = 0,
     ) -> tuple[Sequence[ProviderAliasEntity], int]: ...

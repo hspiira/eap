@@ -38,15 +38,10 @@ describe("one registry for the sidebar and search", () => {
     expect(new Set(routes).size).toBe(routes.length)
   })
 
-  it("keeps Providers as one entry owning every route family in the module", () => {
+  it("keeps Providers as one entry owning both route families", () => {
     // docs/migrations/PROVIDERS_MIGRATION.md navigation decision, 2026-09-07.
-    expect(item("Providers").matchPrefixes).toEqual([
-      "/providers",
-      "/provider-organisations",
-      "/provider-aliases",
-    ])
+    expect(item("Providers").matchPrefixes).toEqual(["/providers", "/provider-organisations"])
     expect(ALL.some((i) => i.to === "/provider-organisations")).toBe(false)
-    expect(ALL.some((i) => i.to === "/provider-aliases")).toBe(false)
   })
 })
 

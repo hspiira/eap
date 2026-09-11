@@ -25,6 +25,8 @@ export interface ProviderAliasListParams extends ListParams {
   tenant_id: string
   source_system?: string
   state?: AliasResolutionState
+  /** Only the spellings resolved to this practitioner. */
+  provider_id?: string
 }
 
 /** Tenant travels in the query string on every alias route, writes included. */

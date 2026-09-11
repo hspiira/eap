@@ -5,10 +5,9 @@ import { cn } from "@/lib/utils"
 const SECTIONS = [
   { to: "/providers", label: "Practitioners" },
   { to: "/provider-organisations", label: "Organisations" },
-  { to: "/provider-aliases", label: "Name aliases" },
 ] as const
 
-/** Switches between the sections of the Providers module. */
+/** Switches between the two directories inside the Providers module. */
 export function ProviderSectionTabs() {
   const pathname = useRouterState({ select: (s) => s.location.pathname })
   return (
