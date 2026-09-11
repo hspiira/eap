@@ -11,12 +11,7 @@ export interface ApplyPace {
 const MIN_ROWS_TO_ESTIMATE = 5
 
 /** Percentage, measured write rate, and time left for a run in flight. */
-export function applyPace(
-  done: number,
-  total: number,
-  startedAt: number,
-  now: number,
-): ApplyPace {
+export function applyPace(done: number, total: number, startedAt: number, now: number): ApplyPace {
   const percent = total > 0 ? Math.min(100, Math.round((done / total) * 100)) : 100
   const elapsed = (now - startedAt) / 1000
   if (done < MIN_ROWS_TO_ESTIMATE || elapsed <= 0) return { percent, rate: null, eta: null }

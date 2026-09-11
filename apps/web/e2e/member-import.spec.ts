@@ -8,7 +8,7 @@
  * the API's own integration tests.
  */
 
-import { expect, type Page,test } from "@playwright/test"
+import { expect, type Page, test } from "@playwright/test"
 
 const TENANT = "tenant-1"
 const BATCH = "batch-1"
@@ -135,12 +135,15 @@ async function stubApi(page: Page, applyCalls: ApplyCall[]) {
  * branch real users are on rather than forcing the plain-input fallback.
  */
 async function stubFilePicker(page: Page, csv: string) {
-  await page.addInitScript(([contents]) => {
-    const file = new File([contents], "roster.csv", { type: "text/csv" })
-    ;(window as unknown as { showOpenFilePicker: unknown }).showOpenFilePicker = async () => [
-      { kind: "file", name: "roster.csv", getFile: async () => file },
-    ]
-  }, [csv])
+  await page.addInitScript(
+    ([contents]) => {
+      const file = new File([contents], "roster.csv", { type: "text/csv" })
+      ;(window as unknown as { showOpenFilePicker: unknown }).showOpenFilePicker = async () => [
+        { kind: "file", name: "roster.csv", getFile: async () => file },
+      ]
+    },
+    [csv],
+  )
 }
 
 async function openImportWith(page: Page, csv: string) {
