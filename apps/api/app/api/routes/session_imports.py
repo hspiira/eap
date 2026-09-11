@@ -225,7 +225,7 @@ async def stage_import(
             message,
             error_code="IMPORT_ALREADY_STAGED",
             http_status=409,
-            details={"file": message},
+            details={"file": message, "batch_id": existing.id.value},
         )
 
     # An earlier judging of this same file gives up every row it never
@@ -257,6 +257,11 @@ async def stage_import(
         # stops the second one at the database, so translate that into the
         # same clean conflict the sequential path already returns instead of
         # letting it surface as an unhandled 500.
+        # No batch_id here: the session is unusable for a further query until
+        # it rolls back, and this path is rare enough (a genuine race, not a
+        # sequential restage) that adding a rollback-then-requery is not
+        # worth it for a "discard and retry" shortcut this one case would
+        # skip; the client still gets a clean, actionable 409.
         message = "This file was already staged as another batch"
         raise DomainError(
             message,
