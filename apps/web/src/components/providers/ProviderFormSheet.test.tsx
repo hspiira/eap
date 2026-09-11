@@ -6,32 +6,9 @@ import { ProviderFormSheet } from "@/components/providers/ProviderFormSheet"
 import { renderWithProviders } from "@/test/utils"
 import type { Provider } from "@/types/entities"
 
-const mocks = vi.hoisted(() => ({
-  create: vi.fn(),
-  update: vi.fn(),
-  adopt: vi.fn(),
-  role: "Admin" as string,
-  showSuccess: vi.fn(),
-  showError: vi.fn(),
-}))
+const mocks = vi.hoisted(() => ({ create: vi.fn(), update: vi.fn() }))
 vi.mock("@/api/endpoints/providers", () => ({
   providersApi: { create: mocks.create, update: mocks.update },
-}))
-vi.mock("@/api/endpoints/provider-aliases", () => ({
-  providerAliasesApi: { adopt: mocks.adopt },
-}))
-vi.mock("@/hooks/useCanWrite", () => ({
-  useCanWrite: () => true,
-  useCurrentRole: () => mocks.role,
-}))
-vi.mock("@/store/slices/tenantSlice", () => ({
-  useTenantStore: (select: (s: { currentTenantId: string }) => unknown) =>
-    select({ currentTenantId: "tenant-1" }),
-}))
-// Partial: the test wrapper still renders the real ToastProvider.
-vi.mock("@/contexts/ToastContext", async (importOriginal) => ({
-  ...(await importOriginal<object>()),
-  useToast: () => ({ showSuccess: mocks.showSuccess, showError: mocks.showError }),
 }))
 
 const PROTECTED_KEYS = [
@@ -71,17 +48,9 @@ function makeProvider(overrides: Partial<Provider> = {}): Provider {
 
 beforeEach(() => {
   vi.clearAllMocks()
-  mocks.role = "Admin"
   mocks.create.mockResolvedValue(makeProvider())
   mocks.update.mockResolvedValue(makeProvider())
-  mocks.adopt.mockResolvedValue({ alias: { id: "alias-1" }, claimed: true })
 })
-
-/** Fill the required name and submit the create form. */
-function createNamed(name = "Amina Okello") {
-  fireEvent.change(screen.getByLabelText(/display name/i), { target: { value: name } })
-  fireEvent.click(screen.getByRole("button", { name: /create practitioner/i }))
-}
 
 describe("practitioner form", () => {
   it("creates a practitioner with no contact details and no account", async () => {
@@ -98,65 +67,6 @@ describe("practitioner form", () => {
     expect(body.email).toBeNull()
     expect(body.phone).toBeNull()
     expect(body).not.toHaveProperty("user_id")
-  })
-
-  it("does not touch aliases unless the box is ticked", async () => {
-    renderWithProviders(<ProviderFormSheet open onOpenChange={() => {}} />)
-    createNamed()
-    await waitFor(() => expect(mocks.create).toHaveBeenCalled())
-    expect(mocks.adopt).not.toHaveBeenCalled()
-  })
-
-  it("names the new practitioner for the spelling just typed when asked", async () => {
-    renderWithProviders(<ProviderFormSheet open onOpenChange={() => {}} />)
-    fireEvent.click(screen.getByLabelText(/match this name in imported activity logs/i))
-    createNamed()
-
-    await waitFor(() => expect(mocks.adopt).toHaveBeenCalled())
-    expect(mocks.adopt).toHaveBeenCalledWith(
-      "tenant-1",
-      "activity-log-workbook",
-      "Amina Okello",
-      "prv-1",
-    )
-  })
-
-  it("says so rather than silently stealing a name already resolved elsewhere", async () => {
-    mocks.adopt.mockResolvedValue({ alias: { id: "alias-1" }, claimed: false })
-    renderWithProviders(<ProviderFormSheet open onOpenChange={() => {}} />)
-    fireEvent.click(screen.getByLabelText(/match this name in imported activity logs/i))
-    createNamed()
-
-    await waitFor(() => expect(mocks.showSuccess).toHaveBeenCalled())
-    expect(mocks.showSuccess.mock.calls[0][0]).toMatch(/already resolved to another practitioner/i)
-  })
-
-  it("keeps the created practitioner when the alias step fails", async () => {
-    mocks.adopt.mockRejectedValue(new Error("403"))
-    renderWithProviders(<ProviderFormSheet open onOpenChange={() => {}} />)
-    fireEvent.click(screen.getByLabelText(/match this name in imported activity logs/i))
-    createNamed()
-
-    await waitFor(() => expect(mocks.showError).toHaveBeenCalled())
-    expect(mocks.create).toHaveBeenCalled()
-    expect(mocks.showError.mock.calls[0][0]).toMatch(/Practitioner created/i)
-  })
-
-  it("hides the option from a non-admin, whom the alias API refuses", async () => {
-    mocks.role = "User"
-    renderWithProviders(<ProviderFormSheet open onOpenChange={() => {}} />)
-    expect(
-      screen.queryByLabelText(/match this name in imported activity logs/i),
-    ).not.toBeInTheDocument()
-  })
-
-  it("does not offer the option when editing, where the typed name may be a rename", async () => {
-    renderWithProviders(
-      <ProviderFormSheet open onOpenChange={() => {}} provider={makeProvider()} />,
-    )
-    expect(
-      screen.queryByLabelText(/match this name in imported activity logs/i),
-    ).not.toBeInTheDocument()
   })
 
   it("sends the title as its own field, never folded into the name", async () => {

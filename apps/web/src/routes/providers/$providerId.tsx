@@ -18,7 +18,6 @@ import { ProviderTierBadge } from "@/components/common/ProviderTierBadge"
 import { StatusBadge } from "@/components/common/StatusBadge"
 import { Tab, TabPanel, Tabs, TabsList } from "@/components/common/Tabs"
 import { ProviderAccountCard } from "@/components/providers/ProviderAccountCard"
-import { ProviderAliasesPanel } from "@/components/providers/ProviderAliasesPanel"
 import { ProviderCommitmentsPanel } from "@/components/providers/ProviderCommitmentsPanel"
 import { ProviderDeliveryPanel } from "@/components/providers/ProviderDeliveryPanel"
 import { ProviderEngagementDocumentsCard } from "@/components/providers/ProviderEngagementDocumentsCard"
@@ -135,10 +134,6 @@ function ProviderDetailPage() {
 
                   <ProviderLifecyclePanel provider={provider} onChanged={refresh} />
                   <ProviderSpecialtiesPanel providerId={provider.id} />
-                  <ProviderAliasesPanel
-                    providerId={provider.id}
-                    displayName={provider.display_name}
-                  />
                   <ProviderEngagementDocumentsCard providerId={provider.id} />
                   <ProviderAccountCard provider={provider} onChanged={refresh} />
 

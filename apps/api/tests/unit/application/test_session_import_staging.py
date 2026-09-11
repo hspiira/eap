@@ -58,11 +58,16 @@ def _service(
     existing_row=None,
     member="default",
     affiliations_on_date=(),
+    practitioners=None,
 ):
-    aliases = AsyncMock()
-    aliases.resolve.return_value = resolution or NameResolution(
-        outcome=NameOutcome.RESOLVED, provider_id=PROV, normalized_value="alice nakato"
-    )
+    """A staging service whose directory holds one practitioner by default.
+
+    `practitioners` names the directory the matcher sees; `resolution` is the
+    older lever and now seeds that directory so the existing cases still read
+    as "this name resolves / does not resolve".
+    """
+    providers = AsyncMock()
+    providers.list_for_tenant.return_value = _directory(practitioners, resolution)
     affiliations = AsyncMock()
     affiliations.get_valid_affiliation.return_value = affiliation
     affiliations.list_affiliations.return_value = (
@@ -91,10 +96,27 @@ def _service(
     users.list_all.return_value = []
     return (
         SessionImportStagingService(
-            aliases, affiliations, imports, clients, members, services, diagnoses, users
+            providers, affiliations, imports, clients, members, services, diagnoses, users
         ),
         imports,
     )
+
+
+def _practitioner(provider_id: str, display_name: str):
+    return SimpleNamespace(id=ProviderId(provider_id), display_name=display_name)
+
+
+def _directory(practitioners, resolution):
+    """Translate the older `resolution` lever into a directory of practitioners.
+
+    A resolution that is anything but RESOLVED means the name matches nobody,
+    which is now an empty directory rather than an absent alias.
+    """
+    if practitioners is not None:
+        return list(practitioners)
+    if resolution is None or resolution.outcome is NameOutcome.RESOLVED:
+        return [_practitioner(PROV.value, "Dr Alice Nakato")]
+    return []
 
 
 def _row(**overrides) -> SourceRow:
@@ -199,29 +221,50 @@ class TestUnresolvedSubjects:
 
 
 class TestNameOutcomesStaySeparate:
-    @pytest.mark.parametrize(
-        "name_outcome,expected",
-        [
-            (NameOutcome.MISSING, ImportRowOutcome.MISSING_PRACTITIONER),
-            (NameOutcome.UNMAPPED, ImportRowOutcome.UNMAPPED_PRACTITIONER),
-            (NameOutcome.AMBIGUOUS, ImportRowOutcome.AMBIGUOUS_PRACTITIONER),
-            (NameOutcome.REJECTED, ImportRowOutcome.REJECTED),
-        ],
-    )
-    async def test_each_name_failure_maps_to_its_own_outcome(self, name_outcome, expected):
-        service, _ = _service(resolution=NameResolution(outcome=name_outcome, reasons=("why",)))
+    """Each way a name can fail keeps its own outcome, so the fix is obvious.
+
+    `Rejected` is no longer reachable from the name: it described an alias a
+    person had ruled out, and there are no aliases. A name either matches one
+    practitioner, none, or several.
+    """
+
+    async def test_a_name_matching_nobody_is_unmapped(self):
+        service, _ = _service(practitioners=[])
         staged = await _stage(service, _row())
-        assert staged.outcome is expected
+        assert staged.outcome is ImportRowOutcome.UNMAPPED_PRACTITIONER
         assert staged.provider_id is None
 
-    async def test_a_held_row_carries_the_reason(self):
+    async def test_a_name_matching_several_practitioners_is_ambiguous(self):
         service, _ = _service(
-            resolution=NameResolution(
-                outcome=NameOutcome.AMBIGUOUS, reasons=("matches prov-1, prov-2",)
-            )
+            practitioners=[
+                _practitioner("prov-1", "Alice Nakato"),
+                _practitioner("prov-2", "Dr Alice Nakato"),
+            ]
         )
         staged = await _stage(service, _row())
-        assert staged.reasons == ("matches prov-1, prov-2",)
+        assert staged.outcome is ImportRowOutcome.AMBIGUOUS_PRACTITIONER
+        assert staged.provider_id is None
+
+    async def test_a_row_naming_nobody_is_missing_not_unmapped(self):
+        service, _ = _service()
+        staged = await _stage(service, _row(raw_practitioner_name=None))
+        assert staged.outcome is ImportRowOutcome.MISSING_PRACTITIONER
+
+    async def test_an_unmapped_row_says_what_would_fix_it(self):
+        service, _ = _service(practitioners=[])
+        staged = await _stage(service, _row())
+        assert "Add them, then stage the file again" in staged.reasons[0]
+
+    async def test_the_same_practitioner_listed_twice_is_not_ambiguous(self):
+        """Paging returns each practitioner once, but the guard is on identity."""
+        service, _ = _service(
+            practitioners=[
+                _practitioner("prov-1", "Alice Nakato"),
+                _practitioner("prov-1", "Dr. Alice Nakato"),
+            ]
+        )
+        staged = await _stage(service, _row())
+        assert staged.outcome is ImportRowOutcome.ACCEPTED
 
     async def test_no_practitioner_is_invented_for_an_unmapped_name(self):
         service, _ = _service(
@@ -381,7 +424,7 @@ class TestReplay:
         existing.batch_id = SessionImportBatchId("b-old")
         service, _ = _service(existing_row=existing)
         await _stage(service, _row())
-        service._aliases.resolve.assert_not_awaited()
+        service._providers.list_for_tenant.assert_not_awaited()
         service._affiliations.get_valid_affiliation.assert_not_awaited()
 
 

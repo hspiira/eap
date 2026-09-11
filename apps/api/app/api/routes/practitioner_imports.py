@@ -15,7 +15,6 @@ from app.api.dependencies.pagination import PageParams, pagination
 from app.api.dependencies.provider_network import (
     get_practitioner_import_repository,
     get_provider_affiliation_repository,
-    get_provider_alias_repository,
     get_provider_organisation_repository,
 )
 from app.api.schemas.practitioner_import_schemas import (
@@ -48,7 +47,6 @@ from app.domain.exceptions import DomainError, NotFoundError
 from app.domain.repositories.practitioner_import_repository import PractitionerImportRepository
 from app.domain.repositories.provider_network_repository import (
     ProviderAffiliationRepository,
-    ProviderAliasRepository,
     ProviderOrganisationRepository,
 )
 from app.domain.repositories.provider_repository import ProviderRepository
@@ -94,7 +92,6 @@ async def stage_import(
     tenant_id: str = Query(...),
     current_user: TokenData = Depends(require_same_tenant),
     imports: PractitionerImportRepository = Depends(get_practitioner_import_repository),
-    aliases: ProviderAliasRepository = Depends(get_provider_alias_repository),
     audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
 ):
@@ -133,7 +130,7 @@ async def stage_import(
     )
     await imports.save_batch(batch)
 
-    service = PractitionerImportStagingService(aliases, imports)
+    service = PractitionerImportStagingService(imports)
     staged_rows = await service.stage_rows(tenant, file_hash, workbook_rows, now=now)
     entities = [
         PractitionerImportRowEntity(

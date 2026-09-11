@@ -1,5 +1,11 @@
 """Stage historical session rows for review. Writes no sessions.
 
+A row's practitioner is matched on the name itself: the source spelling and the
+stored display name are normalised the same way, and exactly one match resolves
+it. Zero or several hold the row, because the system stores clean names and a
+name that matches nothing means the practitioner is not here yet, not that a
+spelling needs reconciling.
+
 Decision 7 keeps historical acceptance separate from booking eligibility: a row
 may name a practitioner who is suspended or unaccredited today, because the
 delivery already happened. What it may not do is create future work, so a row
@@ -19,7 +25,6 @@ from datetime import date, datetime
 from app.application.services.provider_alias_reconciliation import (
     NameOutcome,
     NameResolution,
-    ProviderAliasReconciliationService,
 )
 from app.domain.entities.client import ClientEntity
 from app.domain.entities.eligible_member import EligibleMember
@@ -43,10 +48,14 @@ from app.domain.repositories.provider_network_repository import (
     ProviderAffiliationRepository,
     SessionImportRepository,
 )
+from app.domain.repositories.provider_repository import ProviderRepository
 from app.domain.repositories.service_repository import ServiceRepository
 from app.domain.repositories.user_repository import UserRepository
 from app.domain.services.diagnosis_alias import normalise_diagnosis_value
-from app.domain.services.provider_alias_normalisation import normalise_practitioner_name
+from app.domain.services.provider_alias_normalisation import (
+    is_usable_name,
+    normalise_practitioner_name,
+)
 from app.domain.services.provider_network_calendar import boundary_day
 from app.domain.value_objects.core import ClientId, TenantId
 from app.domain.value_objects.provider_network import (
@@ -69,6 +78,7 @@ from app.shared.utils.session_import_normalisation import (
 #: An approver name matching more than one active user in the tenant. Distinct
 #: from a `str` UserId so a preloaded ambiguous name is never mistaken for one.
 _AMBIGUOUS_APPROVER = object()
+_AMBIGUOUS_PRACTITIONER = object()
 
 _NAME_OUTCOMES = {
     NameOutcome.MISSING: ImportRowOutcome.MISSING_PRACTITIONER,
@@ -189,7 +199,7 @@ class StagedRow:
 class SessionImportStagingService:
     def __init__(
         self,
-        aliases: ProviderAliasReconciliationService,
+        providers: ProviderRepository,
         affiliations: ProviderAffiliationRepository,
         imports: SessionImportRepository,
         clients: ClientRepository,
@@ -198,7 +208,7 @@ class SessionImportStagingService:
         diagnoses: DiagnosisRepository,
         users: UserRepository,
     ):
-        self._aliases = aliases
+        self._providers = providers
         self._affiliations = affiliations
         self._imports = imports
         self._clients = clients
@@ -213,6 +223,7 @@ class SessionImportStagingService:
         self._staged_by_key: dict[str, SessionImportRowEntity | None] = {}
         self._diagnosis_aliases: dict[str, tuple[str, str | None]] | None = None
         self._approver_by_name: dict[str, str | object] | None = None
+        self._practitioner_by_name: dict[str, object] | None = None
 
     async def preload(self, tenant_id: TenantId, rows: Sequence[SourceRow], file_hash: str) -> None:
         """Batch every lookup `stage_row` would otherwise repeat once per row.
@@ -225,6 +236,7 @@ class SessionImportStagingService:
         await self._preload_services(tenant_id, rows)
         await self._preload_diagnosis_aliases()
         await self._preload_approvers(tenant_id)
+        await self._preload_practitioners(tenant_id)
         keys = [_replay_key(row, file_hash) for row in rows]
         if not keys:
             return
@@ -235,6 +247,63 @@ class SessionImportStagingService:
     async def _preload_diagnosis_aliases(self) -> None:
         if self._diagnosis_aliases is None:
             self._diagnosis_aliases = await self._diagnoses.alias_lookup()
+
+    async def _preload_practitioners(self, tenant_id: TenantId) -> None:
+        """Every practitioner's name, normalised, for matching the source row.
+
+        Both sides go through the same normaliser, so a stored `Amina Okello`
+        and a source `DR. AMINA OKELLO` meet at `amina okello`. A name held by
+        more than one practitioner is not a usable key and holds its rows
+        rather than picking one.
+        """
+        if self._practitioner_by_name is not None:
+            return
+        by_name: dict[str, object] = {}
+        offset = 0
+        while True:
+            page = await self._providers.list_for_tenant(tenant_id, limit=200, offset=offset)
+            for provider in page:
+                key = normalise_practitioner_name(provider.display_name)
+                if not key:
+                    continue
+                held = by_name.get(key)
+                if held is not None and getattr(held, "value", None) != provider.id.value:
+                    by_name[key] = _AMBIGUOUS_PRACTITIONER
+                elif held is None:
+                    by_name[key] = provider.id
+            if len(page) < 200:
+                break
+            offset += 200
+        self._practitioner_by_name = by_name
+
+    def _match_practitioner(self, raw_name: str | None) -> NameResolution:
+        """Resolve the row's practitioner from the name alone."""
+        if raw_name is None or not is_usable_name(raw_name):
+            return NameResolution(
+                outcome=NameOutcome.MISSING,
+                reasons=("No practitioner name in the source row",),
+            )
+        normalized = normalise_practitioner_name(raw_name)
+        match = (self._practitioner_by_name or {}).get(normalized)
+        if match is None:
+            return NameResolution(
+                outcome=NameOutcome.UNMAPPED,
+                normalized_value=normalized,
+                reasons=(
+                    f"No practitioner named {raw_name!r}. Add them, then stage the file again.",
+                ),
+            )
+        if match is _AMBIGUOUS_PRACTITIONER:
+            return NameResolution(
+                outcome=NameOutcome.AMBIGUOUS,
+                normalized_value=normalized,
+                reasons=(f"More than one practitioner is named {raw_name!r}",),
+            )
+        return NameResolution(
+            outcome=NameOutcome.RESOLVED,
+            provider_id=match,
+            normalized_value=normalized,
+        )
 
     async def _preload_approvers(self, tenant_id: TenantId) -> None:
         """Every active user's display name, normalised, for matching `Approved By`.
@@ -340,9 +409,8 @@ class SessionImportStagingService:
                 replay_key,
             )
 
-        resolution = await self._aliases.resolve(
-            tenant_id, source_system, row.raw_practitioner_name
-        )
+        await self._preload_practitioners(tenant_id)
+        resolution = self._match_practitioner(row.raw_practitioner_name)
         if not resolution.is_resolved:
             return self._held(
                 row, _NAME_OUTCOMES[resolution.outcome], resolution.reasons, replay_key

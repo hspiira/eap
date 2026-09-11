@@ -11,7 +11,6 @@ import { SessionImportDialog } from "@/components/sessions/SessionImportDialog"
 import { renderWithProviders } from "@/test/utils"
 import { ApiError } from "@/types/api"
 
-const adopt = vi.fn()
 const listProviders = vi.fn()
 const role = { current: "Admin" }
 const stage = vi.fn()
@@ -21,9 +20,6 @@ const getBatch = vi.fn()
 const getTemplate = vi.fn()
 const abandon = vi.fn()
 
-vi.mock("@/api/endpoints/provider-aliases", () => ({
-  providerAliasesApi: { adopt: (...args: unknown[]) => adopt(...args) },
-}))
 vi.mock("@/api/endpoints/providers", () => ({
   providersApi: { list: (...args: unknown[]) => listProviders(...args), getById: vi.fn() },
 }))
@@ -119,7 +115,7 @@ describe("a row the practitioner name stopped", () => {
   async function reviewing(rows: Record<string, unknown>[]) {
     const screen = await stageFile({ UnmappedPractitioner: rows.length })
     listRows.mockResolvedValue({ items: rows, total: rows.length, page: 1, limit: 50 })
-    await userEvent.click(await screen.findByRole("button", { name: /unmapped practitioner/i }))
+    await userEvent.click(await screen.findByRole("button", { name: /unknown practitioner/i }))
     return screen
   }
 
@@ -147,17 +143,7 @@ describe("a row the practitioner name stopped", () => {
     expect(name.closest("td")).not.toHaveClass("text-destructive")
   })
 
-  it("records the practitioner chosen against the spelling the file used", async () => {
-    adopt.mockResolvedValue({ alias: { id: "alias-1" }, claimed: true })
-    const screen = await reviewing([row()])
-    await userEvent.click(await screen.findByRole("button", { name: /name practitioner/i }))
-
-    const dialog = await screen.findByRole("dialog")
-    expect(dialog).toHaveTextContent("DR. J. ACHIENG")
-    expect(dialog).toHaveTextContent(/stage the file again/i)
-  })
-
-  it("offers no fix for a row the source named nobody in", async () => {
+  it("marks a row the source named nobody in", async () => {
     const screen = await stageFile({ MissingPractitioner: 1 })
     listRows.mockResolvedValue({
       items: [row({ outcome: "MissingPractitioner", raw_practitioner_name: null })],
@@ -166,19 +152,7 @@ describe("a row the practitioner name stopped", () => {
       limit: 50,
     })
     await userEvent.click(await screen.findByRole("button", { name: /no practitioner named/i }))
-    await screen.findByText(/no name in the source/i)
-    expect(screen.queryByRole("button", { name: /name practitioner/i })).not.toBeInTheDocument()
-  })
-
-  it("offers no fix to a non-admin, whom the alias API refuses", async () => {
-    role.current = "User"
-    try {
-      const screen = await reviewing([row()])
-      expect(await screen.findByText("DR. J. ACHIENG")).toBeInTheDocument()
-      expect(screen.queryByRole("button", { name: /name practitioner/i })).not.toBeInTheDocument()
-    } finally {
-      role.current = "Admin"
-    }
+    expect(await screen.findByText(/no name in the source/i)).toBeInTheDocument()
   })
 })
 

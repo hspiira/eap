@@ -1,9 +1,6 @@
-import { useEffect, useState } from "react"
-
 import { Controller } from "react-hook-form"
 import { z } from "zod"
 
-import { providerAliasesApi } from "@/api/endpoints/provider-aliases"
 import {
   type ProviderCreateRequest,
   type ProviderProfileInput,
@@ -12,7 +9,6 @@ import {
 import { FormField } from "@/components/common/FormField"
 import { FormSection } from "@/components/common/FormSection"
 import { SheetForm } from "@/components/common/SheetForm"
-import { Checkbox } from "@/components/ui/checkbox"
 import { Input } from "@/components/ui/input"
 import {
   Select,
@@ -22,22 +18,10 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
-import { useToast } from "@/contexts/ToastContext"
-import { useCurrentRole } from "@/hooks/useCanWrite"
 import { useEntityFormSheet } from "@/hooks/useEntityFormSheet"
-import { useTenantStore } from "@/store/slices/tenantSlice"
 import type { Provider } from "@/types/entities"
-import {
-  ProviderGender,
-  ProviderTier,
-  ProviderTitle,
-  TenantRole,
-  UgandaRegion,
-} from "@/types/enums"
+import { ProviderGender, ProviderTier, ProviderTitle, UgandaRegion } from "@/types/enums"
 import { getStatusLabel } from "@/utils/statusColors"
-
-/** The source system session import consults. Matches SessionImportDialog. */
-const ACTIVITY_LOG = "activity-log-workbook"
 
 const TIERS = Object.values(ProviderTier)
 const REGIONS = Object.values(UgandaRegion)
@@ -117,17 +101,6 @@ export function ProviderFormSheet({
   provider,
   onSaved,
 }: ProviderFormSheetProps) {
-  const tenantId = useTenantStore((state) => state.currentTenantId)
-  const isAdmin = useCurrentRole() === TenantRole.ADMIN
-  const toast = useToast()
-  // Not part of the practitioner payload: it names a separate, audited alias
-  // decision, so it stays out of the schema the API receives.
-  const [matchInImports, setMatchInImports] = useState(false)
-
-  useEffect(() => {
-    if (open) setMatchInImports(false)
-  }, [open])
-
   const { register, control, formState, submit, serverError, isEdit } = useEntityFormSheet<
     ProviderFormValues,
     ProviderFormValues,
@@ -154,43 +127,13 @@ export function ProviderFormSheet({
       bio: p.provider_profile.bio ?? "",
     }),
     parsePayload: (values) => values,
-    save: async ({ payload, entity, isEdit }) => {
-      if (isEdit && entity) return providersApi.update(entity.id, editPayload(payload))
-      const created = await providersApi.create(createPayload(payload))
-      await claimImportName(created)
-      return created
-    },
+    save: ({ payload, entity, isEdit }) =>
+      isEdit && entity
+        ? providersApi.update(entity.id, editPayload(payload))
+        : providersApi.create(createPayload(payload)),
     successToast: { create: "Practitioner created", update: "Practitioner updated" },
     onSaved,
   })
-
-  /**
-   * Name this practitioner for the spelling just typed, when asked to.
-   *
-   * Deliberately after the practitioner exists and never fatal: the record is
-   * already written, so a failure here is reported and left for the aliases
-   * page rather than rolled back into a misleading form error.
-   */
-  async function claimImportName(created: Provider) {
-    if (!matchInImports || !tenantId) return
-    try {
-      const { claimed } = await providerAliasesApi.adopt(
-        tenantId,
-        ACTIVITY_LOG,
-        created.display_name,
-        created.id,
-      )
-      toast.showSuccess(
-        claimed
-          ? `Imports naming ${created.display_name} now resolve to this practitioner`
-          : `${created.display_name} is already resolved to another practitioner; left as it is`,
-      )
-    } catch {
-      toast.showError(
-        `Practitioner created, but ${created.display_name} could not be matched for imports. Do it on the Name aliases page.`,
-      )
-    }
-  }
 
   const errors = formState.errors
 
@@ -345,28 +288,6 @@ export function ProviderFormSheet({
           <Textarea id="prv-bio" rows={4} {...register("bio")} />
         </FormField>
       </FormSection>
-
-      {!isEdit && isAdmin ? (
-        <FormSection title="Historical imports">
-          <label className="flex items-start gap-2.5" htmlFor="prv-match-imports">
-            <Checkbox
-              id="prv-match-imports"
-              checked={matchInImports}
-              onCheckedChange={(checked) => setMatchInImports(checked === true)}
-              className="mt-0.5"
-            />
-            <span className="text-sm text-fg">
-              Match this name in imported activity logs
-              <span className="mt-0.5 block text-xs text-fg-muted">
-                Records that the name above is this practitioner, so import rows spelling it that
-                way resolve instead of stalling. Audited as your decision. A spelling already
-                resolved to somebody else is left alone. Other spellings are still yours to map on
-                the Name aliases page.
-              </span>
-            </span>
-          </label>
-        </FormSection>
-      ) : null}
     </SheetForm>
   )
 }

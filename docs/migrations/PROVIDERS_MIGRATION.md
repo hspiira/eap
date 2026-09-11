@@ -389,15 +389,46 @@ administration; tenants select active entries through their own provider links.
 Do not introduce tenant-specific specialty definitions in this migration.
 Retain retired specialties on historical records but prevent new selection.
 
-Practitioner aliases are different: scope them by tenant and source system.
-Preserve the source value and the normalization used. An alias can resolve to
-one practitioner only after explicit reconciliation. Do not merge equal names
-across tenants or source systems. Ambiguous, unmapped, and missing names are
-separate review outcomes; no automatic practitioner creation or placeholder
-practitioner is allowed.
+Practitioner aliases are withdrawn. **Superseded 2026-09-12** by the entry
+below; the original wording is kept here because the alias table and its
+routes still exist and still hold the decisions people made under it.
 
-**Reason:** shared concepts improve matching without sharing people. Name
-normalization is not proof of identity.
+> ~~Practitioner aliases are different: scope them by tenant and source system.
+> Preserve the source value and the normalization used. An alias can resolve to
+> one practitioner only after explicit reconciliation. Do not merge equal names
+> across tenants or source systems. Ambiguous, unmapped, and missing names are
+> separate review outcomes; no automatic practitioner creation or placeholder
+> practitioner is allowed.~~
+>
+> ~~**Reason:** shared concepts improve matching without sharing people. Name
+> normalization is not proof of identity.~~
+
+### 5a. Practitioners are matched on their name (supersedes the alias rule)
+
+A source row's practitioner is resolved by normalising the row's name and the
+stored display name the same way and requiring exactly one match. No match and
+more than one match are separate review outcomes and both hold the row. No
+practitioner is created by an import, and no placeholder is written; that part
+of the original decision stands.
+
+Titles are not part of a name. A practitioner holds a typed `title`, and
+`formal_name` composes the two for display, so the stored name is the name the
+matcher sees.
+
+**Reason:** the inconsistent spellings the alias table absorbed were an
+artefact of one Excel export, not a property of this system. Cleaning belongs
+at the import boundary, and what is stored should already be clean. The
+original reason, that normalisation is not proof of identity, was aimed at
+stopping the importer *guessing*; requiring a unique match within one tenant is
+not a guess, and the case it worried about, two practitioners sharing a name,
+is exactly what the ambiguous outcome holds.
+
+**What this costs.** `display_name` carries no uniqueness constraint, so a
+second practitioner registered under an existing name makes that name ambiguous
+from then on. Rows imported before that point keep the attribution they were
+given and nothing reopens them. The session itself records `provider_id`, so
+the attribution is inspectable, but there is no record of who decided it,
+because nobody did.
 
 ### 6. Typed profile fields and independent credential ownership
 
