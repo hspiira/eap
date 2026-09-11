@@ -34,6 +34,7 @@ _HEADERS = (
     "Diagnosis Type",
     "Diagnosis",
     "Approved By",
+    "Organisation Session",
 )
 
 #: Reference sheet column order. Only headers named here get a dropdown.
@@ -49,6 +50,7 @@ _DROPDOWN_HEADERS = (
     "Diagnosis Type",
     "Diagnosis",
     "Approved By",
+    "Organisation Session",
 )
 
 _STATIC_LISTS: dict[str, tuple[str, ...]] = {
@@ -71,6 +73,9 @@ _STATIC_LISTS: dict[str, tuple[str, ...]] = {
         "Empowerment Talk",
     ),
     "Status (CLEAN)": ("Ongoing", "Completed", "Referred", "Terminated", "No Show"),
+    #: Blank is not offered: it is what an old row with no evidence looks like,
+    #: and staging must not read it as either answer.
+    "Organisation Session": ("Yes", "No"),
 }
 
 _EXAMPLE_ROWS = (
@@ -93,6 +98,7 @@ _EXAMPLE_ROWS = (
         "Mental_Ill_Health",
         "Depression",
         "Example Approver",
+        "Yes",
     ),
     (
         "2026-01-16",
@@ -113,6 +119,7 @@ _EXAMPLE_ROWS = (
         "",
         "",
         "",
+        "No",
     ),
 )
 

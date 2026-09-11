@@ -114,6 +114,28 @@ class SourceRow:
     raw_diagnosis: str | None = None
     raw_diagnosis_type: str | None = None
     raw_approved_by: str | None = None
+    raw_organisation_session: str | None = None
+
+
+#: What the workbook's Organisation Session column says. Blank stays absent,
+#: because decision 2 forbids reading a missing value as direct delivery.
+_ORGANISATION_SESSION = {
+    "yes": True,
+    "y": True,
+    "true": True,
+    "1": True,
+    "no": False,
+    "n": False,
+    "false": False,
+    "0": False,
+}
+
+
+def _organisation_session(raw: str | None) -> bool | None:
+    """True for organisation delivery, False for direct, None for no evidence."""
+    if raw is None:
+        return None
+    return _ORGANISATION_SESSION.get(raw.strip().lower())
 
 
 @dataclass(frozen=True)
@@ -507,15 +529,8 @@ class SessionImportStagingService:
         if conflict is not None:
             return self._held(row, ImportRowOutcome.CONFLICTING, (conflict,), replay_key)
         if row.organisation_affiliation_id is None:
-            return self._staged(
-                row,
-                ImportRowOutcome.ACCEPTED,
-                DeliveryContext.UNKNOWN,
-                resolution.provider_id,
-                None,
-                subject.notes,
-                replay_key,
-                subject=subject,
+            return await self._from_organisation_column(
+                tenant_id, row, resolution, replay_key, now=now, subject=subject
             )
         at = datetime.combine(row.session_date, datetime.min.time(), tzinfo=now.tzinfo)
         affiliation = await self._affiliations.get_valid_affiliation(
@@ -541,6 +556,98 @@ class SessionImportStagingService:
             resolution.provider_id,
             affiliation.id,
             subject.notes,
+            replay_key,
+            subject=subject,
+        )
+
+    async def _from_organisation_column(
+        self,
+        tenant_id: TenantId,
+        row: SourceRow,
+        resolution: NameResolution,
+        replay_key: str,
+        *,
+        now: datetime,
+        subject: "_Subject",
+    ) -> StagedRow:
+        """Read the workbook's Organisation Session answer.
+
+        No names direct delivery, which the source states rather than the
+        importer inferring, so decision 2 is untouched: a blank cell still
+        stages as unknown. Yes must name one affiliation the practitioner
+        actually held that day, because the apply path rejects organisation
+        delivery without one; zero or several is a question for a person.
+        """
+        answer = _organisation_session(row.raw_organisation_session)
+        if answer is None:
+            notes = subject.notes
+            if row.raw_organisation_session:
+                notes = notes + (
+                    f"Organisation Session {row.raw_organisation_session!r} is not Yes or No; "
+                    "staged as unknown delivery",
+                )
+            return self._accepted(
+                row, DeliveryContext.UNKNOWN, resolution, None, notes, replay_key, subject
+            )
+        if not answer:
+            return self._accepted(
+                row, DeliveryContext.DIRECT, resolution, None, subject.notes, replay_key, subject
+            )
+
+        affiliations, _ = await self._affiliations.list_affiliations(
+            tenant_id,
+            provider_id=resolution.provider_id,
+            valid_at=row.session_date,
+            limit=2,
+        )
+        if not affiliations:
+            return self._held(
+                row,
+                ImportRowOutcome.CONFLICTING,
+                (
+                    "Row says the session was delivered under an organisation, but this "
+                    f"practitioner held no affiliation on {row.session_date.isoformat()}",
+                ),
+                replay_key,
+            )
+        if len(affiliations) > 1:
+            return self._held(
+                row,
+                ImportRowOutcome.CONFLICTING,
+                (
+                    "Row says the session was delivered under an organisation, but this "
+                    f"practitioner held {len(affiliations)} on "
+                    f"{row.session_date.isoformat()}; which one is a decision for a person",
+                ),
+                replay_key,
+            )
+        return self._accepted(
+            row,
+            DeliveryContext.ORGANISATION,
+            resolution,
+            affiliations[0].id,
+            subject.notes,
+            replay_key,
+            subject,
+        )
+
+    def _accepted(
+        self,
+        row: SourceRow,
+        context: DeliveryContext,
+        resolution: NameResolution,
+        affiliation_id: ProviderAffiliationId | None,
+        notes: tuple[str, ...],
+        replay_key: str,
+        subject: "_Subject",
+    ) -> StagedRow:
+        return self._staged(
+            row,
+            ImportRowOutcome.ACCEPTED,
+            context,
+            resolution.provider_id,
+            affiliation_id,
+            notes,
             replay_key,
             subject=subject,
         )
@@ -723,6 +830,7 @@ _ROW_SIGNATURE_FIELDS = (
     "raw_diagnosis",
     "raw_diagnosis_type",
     "raw_approved_by",
+    "raw_organisation_session",
 )
 
 

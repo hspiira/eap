@@ -35,6 +35,8 @@ _ISSUE_TOPIC_COLUMNS = ("issue/topic", "issue topic")
 _DIAGNOSIS_COLUMNS = ("diagnosis",)
 _DIAGNOSIS_TYPE_COLUMNS = ("diagnosis type",)
 _APPROVED_BY_COLUMNS = ("approved by",)
+#: Both spellings, because the source workbooks use either.
+_ORGANISATION_SESSION_COLUMNS = ("organisation session", "organization session")
 #: No _FEEDBACK_COLUMNS: CLIENT FEEDBACK is free text that PRIV-01 forbids
 #: reaching an employer aggregate (session_import_normalisation.py's own
 #: docstring). It is deliberately never parsed into a SourceRow field.
@@ -81,6 +83,7 @@ def parse_source_rows(content: bytes, source_record_key_field: str | None) -> li
         "raw_diagnosis": _first_present(lookup, _DIAGNOSIS_COLUMNS),
         "raw_diagnosis_type": _first_present(lookup, _DIAGNOSIS_TYPE_COLUMNS),
         "raw_approved_by": _first_present(lookup, _APPROVED_BY_COLUMNS),
+        "raw_organisation_session": _first_present(lookup, _ORGANISATION_SESSION_COLUMNS),
     }
     return [
         SourceRow(

@@ -51,13 +51,24 @@ NOW = datetime(2026, 9, 6, 12, 0, tzinfo=UTC)
 PROV = ProviderId("prov-1")
 
 
-def _service(*, resolution=None, affiliation=None, existing_row=None, member="default"):
+def _service(
+    *,
+    resolution=None,
+    affiliation=None,
+    existing_row=None,
+    member="default",
+    affiliations_on_date=(),
+):
     aliases = AsyncMock()
     aliases.resolve.return_value = resolution or NameResolution(
         outcome=NameOutcome.RESOLVED, provider_id=PROV, normalized_value="alice nakato"
     )
     affiliations = AsyncMock()
     affiliations.get_valid_affiliation.return_value = affiliation
+    affiliations.list_affiliations.return_value = (
+        tuple(affiliations_on_date),
+        len(affiliations_on_date),
+    )
     imports = AsyncMock()
     imports.find_row_by_replay_key.return_value = existing_row
     imports.find_rows_by_replay_keys.return_value = {}
@@ -256,6 +267,81 @@ class TestOrganisationContext:
         )
         _, kwargs = affiliations.get_valid_affiliation.call_args
         assert kwargs["at"].date() == date(2025, 4, 2)
+
+
+class TestOrganisationSessionColumn:
+    """The workbook's Yes/No answer, and what a blank one may not be read as."""
+
+    def _affiliation(self, affiliation_id="aff-1"):
+        return ProviderAffiliationEntity(
+            id=ProviderAffiliationId(affiliation_id),
+            tenant_id=TENANT,
+            provider_id=PROV,
+            organisation_id=ProviderOrganisationId("org-1"),
+            valid_from=date(2025, 1, 1),
+            valid_until=None,
+            created_at=NOW,
+            updated_at=NOW,
+        )
+
+    async def test_yes_links_the_affiliation_the_practitioner_held_that_day(self):
+        service, _ = _service(affiliations_on_date=[self._affiliation()])
+        staged = await _stage(service, _row(raw_organisation_session="Yes"))
+        assert staged.outcome is ImportRowOutcome.ACCEPTED
+        assert staged.delivery_context is DeliveryContext.ORGANISATION
+        assert staged.provider_affiliation_id == ProviderAffiliationId("aff-1")
+
+    async def test_the_affiliation_is_looked_up_at_the_session_date(self):
+        service, _ = _service(affiliations_on_date=[self._affiliation()])
+        await _stage(service, _row(session_date=date(2025, 4, 2), raw_organisation_session="Yes"))
+        _, kwargs = service._affiliations.list_affiliations.call_args
+        assert kwargs["valid_at"] == date(2025, 4, 2)
+        assert kwargs["provider_id"] == PROV
+
+    async def test_no_states_direct_delivery_rather_than_leaving_it_unknown(self):
+        service, _ = _service()
+        staged = await _stage(service, _row(raw_organisation_session="No"))
+        assert staged.outcome is ImportRowOutcome.ACCEPTED
+        assert staged.delivery_context is DeliveryContext.DIRECT
+        assert staged.provider_affiliation_id is None
+
+    async def test_a_blank_column_stays_unknown_and_is_never_read_as_direct(self):
+        """Decision 2: an absent answer is missing evidence, not a statement."""
+        service, _ = _service()
+        staged = await _stage(service, _row(raw_organisation_session=None))
+        assert staged.outcome is ImportRowOutcome.ACCEPTED
+        assert staged.delivery_context is DeliveryContext.UNKNOWN
+
+    async def test_yes_with_no_affiliation_that_day_is_a_conflict_not_an_accept(self):
+        """The apply path rejects organisation delivery carrying no affiliation."""
+        service, _ = _service(affiliations_on_date=[])
+        staged = await _stage(service, _row(raw_organisation_session="Yes"))
+        assert staged.outcome is ImportRowOutcome.CONFLICTING
+        assert "held no affiliation" in staged.reasons[0]
+
+    async def test_yes_with_several_affiliations_is_a_question_for_a_person(self):
+        service, _ = _service(
+            affiliations_on_date=[self._affiliation("aff-1"), self._affiliation("aff-2")]
+        )
+        staged = await _stage(service, _row(raw_organisation_session="Yes"))
+        assert staged.outcome is ImportRowOutcome.CONFLICTING
+        assert "decision for a person" in staged.reasons[0]
+
+    async def test_an_unrecognised_answer_stays_unknown_and_says_so(self):
+        service, _ = _service()
+        staged = await _stage(service, _row(raw_organisation_session="maybe"))
+        assert staged.outcome is ImportRowOutcome.ACCEPTED
+        assert staged.delivery_context is DeliveryContext.UNKNOWN
+        assert any("is not Yes or No" in note for note in staged.reasons)
+
+    async def test_an_explicit_affiliation_id_still_wins_over_the_column(self):
+        """The older, precise path keeps working for files that carry an id."""
+        service, _ = _service(affiliation=self._affiliation())
+        staged = await _stage(
+            service,
+            _row(organisation_affiliation_id="aff-1", raw_organisation_session="No"),
+        )
+        assert staged.delivery_context is DeliveryContext.ORGANISATION
 
 
 class TestReplay:
