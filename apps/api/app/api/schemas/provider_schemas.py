@@ -29,6 +29,7 @@ from app.domain.enums import (
     ProviderGender,
     ProviderIdentityProvenance,
     ProviderTier,
+    ProviderTitle,
     UgandaRegion,
 )
 
@@ -49,6 +50,10 @@ class ProviderResponse(BaseModel):
     id: str
     tenant_id: str
     display_name: str
+    formal_name: str = Field(
+        "",
+        description="Display name with the practitioner's title, composed server-side",
+    )
     email: str | None = Field(None, description="Practitioner contact email, not a login")
     phone: str | None = None
     user_id: str | None = Field(None, description="Linked account, if any")
@@ -71,6 +76,7 @@ class ProviderCreate(BaseModel):
     region: UgandaRegion
     bio: OptionalSanitizedStr = None
     gender: ProviderGender | None = None
+    title: ProviderTitle | None = None
     license_info: dict | None = None
 
     model_config = ConfigDict(extra="forbid")
@@ -89,6 +95,7 @@ class ProviderUpdate(BaseModel):
     region: UgandaRegion | None = None
     bio: OptionalSanitizedStr = None
     gender: ProviderGender | None = None
+    title: ProviderTitle | None = None
     license_info: dict | None = None
 
     model_config = ConfigDict(extra="forbid")

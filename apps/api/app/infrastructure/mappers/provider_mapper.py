@@ -10,6 +10,7 @@ from app.domain.enums import (
     ProviderGender,
     ProviderIdentityProvenance,
     ProviderTier,
+    ProviderTitle,
     UgandaRegion,
 )
 from app.domain.value_objects.core import ProviderId, ProviderProfile, TenantId, UserId
@@ -81,6 +82,7 @@ class ProviderMapper:
             specialties=tuple(profile.get("specialties") or ()),
             bio=profile.get("bio"),
             gender=ProviderGender(profile["gender"]) if profile.get("gender") else None,
+            title=ProviderTitle(profile["title"]) if profile.get("title") else None,
         )
 
     @staticmethod
@@ -99,4 +101,5 @@ class ProviderMapper:
             "specialties": list(profile.specialties),
             "bio": profile.bio,
             "gender": profile.gender.value if profile.gender else None,
+            "title": profile.title.value if profile.title else None,
         }

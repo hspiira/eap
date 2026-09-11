@@ -12213,6 +12213,7 @@ export interface components {
             phone?: string | null;
             region: components["schemas"]["UgandaRegion"];
             tier: components["schemas"]["ProviderTier"];
+            title?: components["schemas"]["ProviderTitle"] | null;
         };
         /** ProviderDeliveryOrganisationStat */
         ProviderDeliveryOrganisationStat: {
@@ -12392,6 +12393,7 @@ export interface components {
             /** Specialties */
             specialties?: string[];
             tier?: components["schemas"]["ProviderTier"] | null;
+            title?: components["schemas"]["ProviderTitle"] | null;
         };
         /** ProviderResponse */
         ProviderResponse: {
@@ -12407,6 +12409,12 @@ export interface components {
              * @description Practitioner contact email, not a login
              */
             email?: string | null;
+            /**
+             * Formal Name
+             * @description Display name with the practitioner's title, composed server-side
+             * @default
+             */
+            formal_name: string;
             /** Id */
             id: string;
             identity_provenance: components["schemas"]["ProviderIdentityProvenance"];
@@ -12480,6 +12488,17 @@ export interface components {
          */
         ProviderTier: "T1" | "T2" | "T3";
         /**
+         * ProviderTitle
+         * @description An honorific held by a practitioner.
+         *
+         *     Stored apart from the name so the name stays the name. Source extracts
+         *     write the two together (`DR. JANE ACHIENG`), and the alias normaliser
+         *     strips exactly this vocabulary before matching, so a title never has to be
+         *     guessed back out of a stored name.
+         * @enum {string}
+         */
+        ProviderTitle: "Dr" | "Prof" | "Rev" | "Sr" | "Mr" | "Mrs" | "Ms" | "Miss";
+        /**
          * ProviderUpdate
          * @description Partial update of ordinary contact and profile fields.
          *
@@ -12501,6 +12520,7 @@ export interface components {
             /** Phone */
             phone?: string | null;
             region?: components["schemas"]["UgandaRegion"] | null;
+            title?: components["schemas"]["ProviderTitle"] | null;
         };
         /**
          * RangeInfo

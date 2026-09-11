@@ -10,6 +10,7 @@ from app.domain.enums import (
     PanelStatus,
     ProviderGender,
     ProviderTier,
+    ProviderTitle,
     UgandaRegion,
 )
 
@@ -24,6 +25,7 @@ class ProviderProfileSchema(BaseModel):
     specialties: list[str] = Field(default_factory=list)
     bio: OptionalSanitizedStr = None
     gender: ProviderGender | None = None
+    title: ProviderTitle | None = None
 
     model_config = ConfigDict(from_attributes=True)
 

@@ -78,7 +78,7 @@ function ProviderDetailPage() {
     <PageShell
       icon={Stethoscope}
       trail={[{ label: "Providers", to: "/providers" }]}
-      title={provider.display_name}
+      title={provider.formal_name || provider.display_name}
       actions={
         canWrite ? (
           <Button
@@ -121,6 +121,7 @@ function ProviderDetailPage() {
                 <div className="grid gap-4 lg:grid-cols-2">
                   <DetailCard title="Practitioner">
                     <DetailGrid>
+                      <DetailRow label="Title" value={profile.title ?? ""} />
                       <DetailRow label="Display name" value={provider.display_name} />
                       <DetailRow
                         label="Region"

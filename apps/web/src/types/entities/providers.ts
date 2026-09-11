@@ -7,6 +7,7 @@ import type {
   ProviderGender,
   ProviderIdentityProvenance,
   ProviderTier,
+  ProviderTitle,
   UgandaRegion,
 } from "../enums"
 import type { LicenseInfo } from "./identity"
@@ -35,6 +36,7 @@ export interface ProviderProfile {
   specialties: string[]
   bio?: string | null
   gender?: ProviderGender | null
+  title?: ProviderTitle | null
 }
 
 /**
@@ -49,6 +51,11 @@ export interface Provider {
   id: string
   tenant_id: string
   display_name: string
+  /**
+   * The name with the practitioner's title, composed by the server. Show this
+   * wherever a person reads the name; never build it from the two fields here.
+   */
+  formal_name: string
   email: string | null
   phone: string | null
   user_id: string | null
