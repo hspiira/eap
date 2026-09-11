@@ -282,15 +282,21 @@ function ImportControls({
         </Button>
       </div>
       {showFieldHelp ? (
-        <p className="text-xs text-fg-muted">
-          Company Code resolves the client. Supported fields: Company Code, Staff_ID, Name of
-          Employee, Relation, Primary Staff ID, Staff Number, Email Address, Personal Email, Phone,
-          Date of Birth (dd/mm/yyyy or YYYY-MM-DD), Date Joined, Gender, National ID, Passport
-          Number, and Status. Leave Date Joined blank if unknown; it is only used to record when
-          cover actually began. Job Title, Job Classification, Skill, Department, Unit and Contract
-          type are also imported when present. Any other column is ignored; files are limited to 10
-          MB.
-        </p>
+        <ul className="list-disc space-y-1 pl-4 text-xs text-fg-muted">
+          <li>Company Code resolves the client.</li>
+          <li>
+            Supported fields: Company Code, Staff_ID, Name of Employee, Relation, Primary Staff ID,
+            Staff Number, Email Address, Personal Email, Phone, Date of Birth (dd/mm/yyyy or
+            YYYY-MM-DD), Date Joined, Gender, National ID, Passport Number, and Status.
+          </li>
+          <li>
+            Job Title, Job Classification, Skill, Department, Unit and Contract type are also
+            imported when present.
+          </li>
+          <li>Leave Date Joined blank if unknown. It only records when cover actually began.</li>
+          <li>Any other column is ignored.</li>
+          <li>Files are limited to 10 MB.</li>
+        </ul>
       ) : null}
 
       {staging ? <p className="text-xs text-fg-muted">Staging rows on the server…</p> : null}
@@ -674,9 +680,12 @@ export function MemberImportDialog({ open, onOpenChange, onImported }: MemberImp
       >
         <SheetHeader className="shrink-0 border-b border-fg/10 px-6 py-5 pr-14 text-left">
           <SheetTitle className="text-base text-fg">Import members</SheetTitle>
-          <SheetDescription className="text-xs leading-relaxed text-fg/60">
-            Upload a roster, review every row, then apply. Staff_ID is the stable identity key; an
-            existing member is only changed if you set their row to Update.
+          <SheetDescription asChild>
+            <ul className="list-disc space-y-1 pl-4 text-xs leading-relaxed text-fg/60">
+              <li>Upload a roster, review every row, then apply.</li>
+              <li>Staff_ID is the stable identity key.</li>
+              <li>An existing member is only changed if you set their row to Update.</li>
+            </ul>
           </SheetDescription>
         </SheetHeader>
 
