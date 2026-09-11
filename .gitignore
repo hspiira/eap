@@ -85,3 +85,8 @@ todos.json
 
 # Extracts derived from client activity logs. Clinical free text, never committed.
 apps/api/data/taxonomy/
+
+# Playwright run artefacts.
+apps/web/test-results/
+apps/web/playwright-report/
+apps/web/blob-report/

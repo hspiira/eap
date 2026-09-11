@@ -1,8 +1,9 @@
 import csv
 import io
+from contextlib import asynccontextmanager
 from datetime import date
 from types import SimpleNamespace
-from unittest.mock import AsyncMock
+from unittest.mock import AsyncMock, Mock
 
 import pytest
 import pytest_asyncio
@@ -101,6 +102,12 @@ async def api():
     state.imports.get_batch.return_value = None
     state.imports.get_row.return_value = None
     state.imports.mark_row_imported.return_value = True
+
+    @asynccontextmanager
+    async def _nested():
+        yield
+
+    state.db.begin_nested = Mock(side_effect=lambda: _nested())
     state.clients.get_by_id.return_value = SimpleNamespace(
         tenant_id=TenantId("t1"), name="Acme", code="ACM"
     )
@@ -544,7 +551,7 @@ def staged_batch(**overrides):
     )
 
 
-async def test_apply_writes_every_importable_row_in_its_own_transaction(api):
+async def test_apply_writes_every_row_in_its_own_savepoint(api):
     api.imports.get_batch.return_value = staged_batch()
     api.clients.get_by_code.return_value = SimpleNamespace(
         id=ClientId("c1"), name="Acme", code="ACME", tenant_id=TenantId("t1")
@@ -559,8 +566,10 @@ async def test_apply_writes_every_importable_row_in_its_own_transaction(api):
     assert body["imported"] == 2
     assert body["failed"] == 0
     assert body["done"] is True
-    # Two row-level commits, plus one for the batch's own applied-status write.
-    assert api.db.commit.await_count == 3
+    assert api.db.begin_nested.call_count == 2
+    # One commit for the two rows together, plus one for the batch's own
+    # applied-status write. Rows are no longer a commit each.
+    assert api.db.commit.await_count == 2
 
 
 async def test_apply_carries_employment_details_into_the_real_member(api):
@@ -642,7 +651,9 @@ async def test_apply_keeps_going_after_a_row_fails(api):
     assert body["failed"] == 1
     api.imports.mark_row_failed.assert_awaited_once()
     assert api.imports.mark_row_failed.call_args.args[2] == "member is not writable"
-    assert api.db.rollback.await_count == 1
+    # The failing row is undone by leaving its savepoint, so the rows that
+    # already wrote in this call are not rolled back with it.
+    api.db.rollback.assert_not_awaited()
 
 
 async def test_apply_never_overwrites_an_existing_member(api):
@@ -1375,8 +1386,8 @@ class TestConcurrentApply:
         body = response.json()
         assert body["imported"] == 0
         assert body["unchanged"] == 1
-        assert api.db.rollback.await_count == 1
         api.imports.mark_row_failed.assert_not_awaited()
+        api.db.rollback.assert_not_awaited()
 
     async def test_an_update_another_apply_claimed_first_is_rolled_back(self, api):
         api.imports.get_batch.return_value = staged_batch()
@@ -1389,4 +1400,4 @@ class TestConcurrentApply:
 
         assert response.status_code == 200, response.text
         assert response.json()["updated"] == 0
-        assert api.db.rollback.await_count == 1
+        api.db.rollback.assert_not_awaited()

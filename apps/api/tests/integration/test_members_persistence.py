@@ -25,7 +25,11 @@ from app.core.database import get_db
 from app.core.encryption import decrypt
 from app.core.exception_handlers import register_exception_handlers
 from app.core.security import TokenData, get_current_user
-from app.domain.enums import SubscriptionTier, TenantRole, TenantStatus
+from app.domain.enums import (
+    SubscriptionTier,
+    TenantRole,
+    TenantStatus,
+)
 from app.domain.value_objects.core import ClientId, TenantId, UserId
 from app.infrastructure.models.base import Base
 from app.infrastructure.models.eligible_member_model import (
@@ -41,6 +45,7 @@ from app.infrastructure.models.member_next_of_kin_model import MemberNextOfKinMo
 from app.infrastructure.models.next_of_kin_relationship_model import NextOfKinRelationshipModel
 from app.infrastructure.models.outbox_model import OutboxEventModel
 from app.infrastructure.models.tenant_model import TenantModel
+from app.infrastructure.repositories.member_import_repository import MemberImportRepositoryImpl
 from app.shared.utils.generators import generate_cuid
 
 
@@ -653,3 +658,108 @@ async def test_applying_a_roster_logs_what_the_chunk_cost(member_http, caplog):
     assert chunk.query_ms >= 0
     assert chunk.duration_ms > 0
     assert chunk.queries_per_row > 0
+
+
+async def _stage_roster(http, rows):
+    """Stage a roster CSV and return the batch id."""
+    roster = io.StringIO()
+    writer = csv.DictWriter(roster, fieldnames=["company_code", "staff_id", "name_of_employee"])
+    writer.writeheader()
+    for staff_id, name in rows:
+        writer.writerow({"company_code": "ACM", "staff_id": staff_id, "name_of_employee": name})
+    staged = await http.post(
+        "/members/import",
+        files={"file": ("roster.csv", roster.getvalue().encode(), "text/csv")},
+    )
+    assert staged.status_code in (200, 201), staged.text
+    return staged.json()["id"]
+
+
+def _acme_client(app):
+    clients = app.dependency_overrides[get_client_repository]()
+    clients.get_by_code.return_value = SimpleNamespace(
+        id=ClientId("c1"), name="Acme", code="ACM", tenant_id=TenantId("t1")
+    )
+    return clients
+
+
+async def test_a_lost_row_is_undone_whole_without_taking_the_chunk_with_it(
+    member_http, isolated_members_db, monkeypatch
+):
+    """The savepoint's whole point, against a real database rather than a double.
+
+    Enrolling one row writes a member, a clinical subject and the link between
+    them. Losing the claim after that has to undo all three, and with batched
+    commits the rows before it are still uncommitted, so rolling back the
+    transaction instead of the savepoint would take them too. Only real
+    PostgreSQL savepoints show either.
+    """
+    http, app = member_http
+    _acme_client(app)
+    batch_id = await _stage_roster(http, [(f"HR-{n}", f"Member {n}") for n in range(1, 6)])
+
+    # Rows are written in order, so the third claim is the third member. It
+    # comes back False, the way it would if another apply had claimed the row
+    # between this call writing the member and claiming it.
+    real_mark = MemberImportRepositoryImpl.mark_row_imported
+    claims = {"n": 0}
+
+    async def claim_unless_third(self, tenant_id, row_id, member_id, message=None):
+        claims["n"] += 1
+        if claims["n"] == 3:
+            return False
+        return await real_mark(self, tenant_id, row_id, member_id, message)
+
+    monkeypatch.setattr(MemberImportRepositoryImpl, "mark_row_imported", claim_unless_third)
+
+    applied = await http.post(f"/members/import/{batch_id}/apply")
+    assert applied.status_code == 200, applied.text
+    body = applied.json()
+
+    assert body["imported"] == 4
+    assert body["unchanged"] == 1
+
+    async with isolated_members_db() as session:
+        members = sorted((await session.scalars(select(EligibleMemberModel.display_label))).all())
+        subjects = await session.scalar(select(func.count()).select_from(ClinicalSubjectModel))
+        links = await session.scalar(
+            select(func.count()).select_from(EligibleMemberClinicalLinkModel)
+        )
+
+    # The lost row left no member, no subject and no dangling link, and the
+    # four rows around it in the same uncommitted batch all stand.
+    assert members == ["Member 1", "Member 2", "Member 4", "Member 5"]
+    assert subjects == 4
+    assert links == 4
+
+
+async def test_a_chunk_commits_in_batches_rather_than_once_per_row(member_http, caplog):
+    """Ten rows must not cost ten commits; the log records what it actually cost."""
+    http, app = member_http
+    _acme_client(app)
+    batch_id = await _stage_roster(http, [(f"HR-{n}", f"Member {n}") for n in range(1, 11)])
+
+    with caplog.at_level(logging.INFO, logger="app.api.routes.members"):
+        applied = await http.post(f"/members/import/{batch_id}/apply")
+    assert applied.status_code == 200, applied.text
+    assert applied.json()["imported"] == 10
+
+    chunk = next(r for r in caplog.records if r.message == "member import chunk applied")
+    assert chunk.rows == 10
+    assert chunk.commits == 1
+
+
+async def test_every_written_row_survives_the_request(member_http, isolated_members_db):
+    """Batching changes when rows commit, never whether they do."""
+    http, app = member_http
+    _acme_client(app)
+    batch_id = await _stage_roster(http, [(f"HR-{n}", f"Member {n}") for n in range(1, 26)])
+
+    applied = await http.post(f"/members/import/{batch_id}/apply")
+    assert applied.status_code == 200, applied.text
+    assert applied.json()["imported"] == 25
+    assert applied.json()["done"] is True
+
+    async with isolated_members_db() as session:
+        count = await session.scalar(select(func.count()).select_from(EligibleMemberModel))
+    assert count == 25

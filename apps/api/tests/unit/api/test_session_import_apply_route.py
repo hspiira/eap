@@ -1,8 +1,9 @@
 """The apply route: Admin-only, and honest about importing nothing."""
 
+from contextlib import asynccontextmanager
 from datetime import UTC, date, datetime
 from types import SimpleNamespace
-from unittest.mock import AsyncMock
+from unittest.mock import AsyncMock, Mock
 
 import pytest
 import pytest_asyncio
@@ -94,6 +95,13 @@ async def api():
     state.clients.get_by_id.return_value = SimpleNamespace(tenant_id=TenantId(TENANT))
     state.members.get_by_id.return_value = SimpleNamespace(tenant_id=TenantId(TENANT))
     state.services.get_by_id.return_value = SimpleNamespace(tenant_id=TenantId(TENANT))
+    state.imports.mark_row_imported.return_value = True
+
+    @asynccontextmanager
+    async def _nested():
+        yield
+
+    state.db.begin_nested = Mock(side_effect=lambda: _nested())
 
     def _user() -> TokenData:
         return TokenData(user_id="u-1", tenant_id=TENANT, role=state.role)

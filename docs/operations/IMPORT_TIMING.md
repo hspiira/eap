@@ -12,6 +12,7 @@ No flag to turn on; the lines are always emitted at INFO.
 | `import_phase` | `stage` or `apply` |
 | `batch_id` | The batch, so chunks of one run group together |
 | `rows` | Rows this call processed |
+| `commits` | Commits this chunk made (apply only) |
 | `duration_ms` | Wall clock for the work, excluding request overhead |
 | `query_ms` | Time inside SQL statements |
 | `queries` | SQL statements executed |
@@ -47,24 +48,52 @@ MEMBER_TEST_DATABASE_URL=postgresql+asyncpg://postgres:postgres@localhost:5432/p
 
 ## Baseline, local PostgreSQL, 2026-09-11
 
-Five rows, on a laptop, against a local database, so network latency is close
-to zero and these are a floor rather than a prediction of production.
+On a laptop against a local database, so network latency is close to zero and
+these are a floor rather than a prediction of production.
 
 | Phase | rows | duration_ms | query_ms | queries | queries/row |
 | --- | --- | --- | --- | --- | --- |
 | stage | 5 | 9.2 | 5.9 | 3 | 0.6 |
-| apply | 5 | 141.5 | 70.3 | 33 | 6.6 |
+| apply | 25 | 162.8 | 75.0 | 203 | 8.1 |
 
 Staging at 0.6 queries per row is the preload working: the lookups are batched
 across the file rather than repeated per row.
 
-Apply is still 6.6 queries per row, and half the wall clock is inside SQL even
-with no network in the way. On a remote database each of those queries also
-carries a round trip, which is what makes a large roster slow. The remaining
-lever is batching commits behind savepoints; it changes the durability
-guarantee that a lost response never loses a written row, so measure a real
-run against Neon first and decide against that number.
+### What the commit cadence is worth
 
-The five-row sample includes the once-per-client sequence read, so per-row
-figures for a full chunk will be lower. Take a real reading before drawing
-conclusions from this table.
+The same 25 rows, the same 203 statements, committed two ways:
+
+| Cadence | commits | duration_ms | query_ms | ms/row |
+| --- | --- | --- | --- | --- |
+| Every row | 25 | 624.3 | 290.0 | 24.97 |
+| Every 10 rows | 3 | 162.8 | 75.0 | 6.51 |
+
+**3.8x, with the query count identical.** The work did not change; only how
+often it was made durable. Each commit is a WAL flush, and paying that per row
+was most of what a roster import cost.
+
+Savepoints add two cheap statements per row (`SAVEPOINT`, `RELEASE`), which is
+why queries per row went from 6.6 to 8.1 while the wall clock fell. Neither
+carries an fsync, so the trade is heavily net positive.
+
+`COMMIT_EVERY_ROWS` in `app/shared/utils/batched_commit.py` is the knob. Set it
+to 1 to get the old per-row behaviour back; the A/B above was produced exactly
+that way.
+
+### The durability trade
+
+A call that dies mid-chunk leaves up to `COMMIT_EVERY_ROWS - 1` rows for the
+next call to write again. Nothing is lost: a row that never committed never
+claimed itself and is still pending, so the next call picks it up. What
+changed is that a crash can cost repeated work, where before it could not.
+
+Per-row isolation is unchanged. Each row writes inside its own savepoint, so a
+row that fails is undone on its own and the rows around it in the same
+uncommitted batch still stand. That is covered against real PostgreSQL in
+`test_a_lost_row_is_undone_whole_without_taking_the_chunk_with_it`.
+
+### Still to measure
+
+Every figure here is local. On Neon each statement also carries a round trip,
+which is the number that decides whether 8.1 queries per row is worth attacking
+next. Take a reading from a real run before going further.

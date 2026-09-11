@@ -4,6 +4,7 @@ Agent 1 owns the write itself and left replay protection here, because the
 batch and row keys are this module's tables.
 """
 
+from contextlib import asynccontextmanager
 from datetime import UTC, date, datetime
 from types import SimpleNamespace
 from unittest.mock import AsyncMock
@@ -92,7 +93,36 @@ def _use_case(*, batch=None, pending=(), remaining=0, imported_count=None, sessi
     return use_case, imports, writer, clients, members, services
 
 
-async def _execute(use_case, *, limit=50, batch_id=BATCH, rollback=None):
+@asynccontextmanager
+async def _savepoint():
+    yield
+
+
+class _RecordingSavepoint:
+    """Records how each row left its savepoint: normally, or by raising.
+
+    Leaving by raising is what undoes the row, so it is the property worth
+    asserting rather than that some rollback function was called.
+    """
+
+    def __init__(self) -> None:
+        self.entered = 0
+        self.rolled_back = 0
+
+    def __call__(self):
+        return self._scope()
+
+    @asynccontextmanager
+    async def _scope(self):
+        self.entered += 1
+        try:
+            yield
+        except BaseException:
+            self.rolled_back += 1
+            raise
+
+
+async def _execute(use_case, *, limit=50, batch_id=BATCH, savepoint=None):
     after_row = AsyncMock()
     result, batch = await use_case.execute(
         TENANT,
@@ -101,7 +131,7 @@ async def _execute(use_case, *, limit=50, batch_id=BATCH, rollback=None):
         now=NOW,
         limit=limit,
         after_row=after_row,
-        rollback=rollback or AsyncMock(),
+        savepoint=savepoint or (lambda: _savepoint()),
     )
     return result, batch, after_row
 
@@ -249,22 +279,22 @@ class TestRevalidation:
 class TestConcurrentApply:
     """Two applies of one batch both read it as Staged; claiming the row decides."""
 
-    async def test_a_row_another_apply_already_claimed_is_not_counted_as_imported(self):
-        use_case, imports, writer, *_ = _use_case(pending=[_row()], remaining=0)
+    async def test_a_row_another_apply_already_claimed_leaves_its_savepoint_by_raising(self):
+        use_case, imports, _, *_ = _use_case(pending=[_row()], remaining=0)
         imports.mark_row_imported.return_value = False
-        rollback = AsyncMock()
+        savepoint = _RecordingSavepoint()
 
-        result, _, _ = await _execute(use_case, rollback=rollback)
+        result, _, _ = await _execute(use_case, savepoint=savepoint)
 
         assert (result.imported, result.failed) == (0, 1)
-        rollback.assert_awaited_once()
+        assert savepoint.rolled_back == 1
 
     async def test_a_lost_claim_does_not_mark_the_row_failed(self):
         """The winner's write stands; the row is imported, not broken."""
         use_case, imports, _, *_ = _use_case(pending=[_row()], remaining=0)
         imports.mark_row_imported.return_value = False
 
-        await _execute(use_case, rollback=AsyncMock())
+        await _execute(use_case)
 
         imports.mark_row_failed.assert_not_awaited()
 
@@ -272,10 +302,31 @@ class TestConcurrentApply:
         use_case, imports, *_ = _use_case(pending=[_row()], remaining=0)
         imports.mark_row_imported.return_value = False
 
-        result, batch, _ = await _execute(use_case, rollback=AsyncMock())
+        result, batch, _ = await _execute(use_case)
 
         assert result.done is True
         assert batch.status is ImportBatchStatus.APPLIED
+
+    async def test_a_written_row_leaves_its_savepoint_normally(self):
+        use_case, *_ = _use_case(pending=[_row()], remaining=0)
+        savepoint = _RecordingSavepoint()
+
+        result, _, _ = await _execute(use_case, savepoint=savepoint)
+
+        assert result.imported == 1
+        assert (savepoint.entered, savepoint.rolled_back) == (1, 0)
+
+    async def test_a_refused_row_is_undone_and_the_rest_of_the_chunk_stands(self):
+        rows = [_row("r-1", 1), _row("r-2", 2)]
+        use_case, imports, writer, *_ = _use_case(pending=rows, remaining=0)
+        writer.record.side_effect = [DomainError("no", error_code="x"), "sess-2"]
+        savepoint = _RecordingSavepoint()
+
+        result, _, _ = await _execute(use_case, savepoint=savepoint)
+
+        assert (result.imported, result.failed) == (1, 1)
+        assert (savepoint.entered, savepoint.rolled_back) == (2, 1)
+        imports.mark_row_failed.assert_awaited_once()
 
 
 class TestReferenceDataIsReadOncePerChunk:

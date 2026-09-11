@@ -71,6 +71,7 @@ from app.domain.value_objects.provider_network import (
     SessionImportRowId,
 )
 from app.shared.decorators import readonly, transactional
+from app.shared.utils.batched_commit import BatchedCommit
 from app.shared.utils.datetime import utc_now
 from app.shared.utils.generators import generate_cuid
 from app.shared.utils.provider_import_source import parse_source_rows
@@ -475,6 +476,7 @@ async def apply_batch(
     replayed request cannot write twice.
     """
     tenant = TenantId(tenant_id)
+    committer = BatchedCommit(db.commit)
     with measure_queries() as measured:
         result, batch = await ApplyImportBatchUseCase(
             imports, writer, clients, members, services
@@ -484,9 +486,10 @@ async def apply_batch(
             UserId(current_user.user_id),
             now=utc_now(),
             limit=limit,
-            after_row=db.commit,
-            rollback=db.rollback,
+            after_row=committer.after_row,
+            savepoint=db.begin_nested,
         )
+        await committer.flush()
     written = result.imported + result.failed
     logger.info(
         "session import chunk applied",
@@ -498,6 +501,7 @@ async def apply_batch(
             "imported": result.imported,
             "failed": result.failed,
             "remaining": result.remaining,
+            "commits": committer.commits,
             **measured.as_log_fields(written),
         },
     )

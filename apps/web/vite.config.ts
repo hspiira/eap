@@ -19,7 +19,9 @@ const config = defineConfig({
     },
   },
   plugins: [
-    devtools(),
+    // The devtools event bus binds a fixed port, so an end-to-end run would
+    // collide with a dev server already using it.
+    ...(process.env.E2E ? [] : [devtools()]),
     nitro(),
     viteTsConfigPaths({ projects: ["./tsconfig.json"] }),
     tailwindcss(),

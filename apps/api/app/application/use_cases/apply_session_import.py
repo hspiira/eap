@@ -17,9 +17,10 @@ that same call the moment it does.
 """
 
 from collections.abc import Awaitable, Callable
+from contextlib import AbstractAsyncContextManager
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Protocol
+from typing import Any, Protocol
 
 from sqlalchemy.exc import IntegrityError
 
@@ -46,6 +47,13 @@ class HistoricalSessionWriter(Protocol):
     async def record(self, row: SessionImportRowEntity, tenant_id: TenantId) -> str:
         """Write one past session and return its id."""
         ...
+
+
+type SavepointFactory = Callable[[], AbstractAsyncContextManager[Any]]
+
+
+class _ClaimLost(Exception):
+    """Another apply of this batch claimed the row first."""
 
 
 class ImportRowNotConvertible(DomainError):
@@ -99,15 +107,14 @@ class ApplyImportBatchUseCase:
         now: datetime,
         limit: int,
         after_row: Callable[[], Awaitable[None]],
-        rollback: Callable[[], Awaitable[None]],
+        savepoint: SavepointFactory,
     ) -> tuple[ApplyResult, SessionImportBatchEntity]:
         """Write up to `limit` still-pending rows, then close the batch if none remain.
 
-        `after_row` is awaited once per row (and once more if the batch
-        closes), and is the caller's commit: each row's write survives on its
-        own, independent of whether a later row in this same call raises or
-        the call itself never finishes responding. `rollback` discards a row
-        whose write cannot stand.
+        Each row writes inside its own `savepoint`, so a row that cannot be
+        written is undone on its own and the rows around it in the same call
+        stand. `after_row` is awaited once per row, and once more if the batch
+        closes; it is the caller's commit, which need not fire on every call.
 
         A batch that is not Staged is refused, so applying twice, or a
         replayed request, cannot write twice.
@@ -130,7 +137,7 @@ class ApplyImportBatchUseCase:
         rows = await self._imports.list_pending_rows(tenant_id, batch_id, limit=limit)
         reference = _ReferenceData(self._clients, self._members, self._services)
         for row in rows:
-            if await self._write_row(tenant_id, row, reference, rollback):
+            if await self._write_row(tenant_id, row, reference, savepoint):
                 imported += 1
             else:
                 failed += 1
@@ -150,7 +157,7 @@ class ApplyImportBatchUseCase:
         tenant_id: TenantId,
         row: SessionImportRowEntity,
         reference: "_ReferenceData",
-        rollback: Callable[[], Awaitable[None]],
+        savepoint: SavepointFactory,
     ) -> bool:
         """Re-validate, then write one row. True on success, False on a recorded failure.
 
@@ -169,16 +176,25 @@ class ApplyImportBatchUseCase:
         if stale is not None:
             return await self._fail_row(tenant_id, row, stale)
         try:
-            session_id = await self._writer.record(row, tenant_id)
-        except DomainError as exc:
-            return await self._fail_row(tenant_id, row, str(exc))
-        except IntegrityError as exc:
-            await rollback()
-            return await self._fail_row(tenant_id, row, str(exc).split("\n", 1)[-1])
-        if not await self._imports.mark_row_imported(tenant_id, row.id.value, session_id):
-            # Another apply claimed the row first; discard the session this call wrote.
-            await rollback()
+            return await self._write_and_claim(tenant_id, row, savepoint)
+        except _ClaimLost:
             return False
+        except (DomainError, IntegrityError) as exc:
+            return await self._fail_row(tenant_id, row, str(exc).split("\n", 1)[-1])
+
+    async def _write_and_claim(
+        self, tenant_id: TenantId, row: SessionImportRowEntity, savepoint: SavepointFactory
+    ) -> bool:
+        """Write the session and claim the row, both inside one savepoint.
+
+        Leaving the savepoint by raising undoes the session write, so a row
+        another apply claimed first, or one the database refuses, leaves
+        nothing behind for the rows that follow to commit.
+        """
+        async with savepoint():
+            session_id = await self._writer.record(row, tenant_id)
+            if not await self._imports.mark_row_imported(tenant_id, row.id.value, session_id):
+                raise _ClaimLost
         row.mark_imported(session_id)
         return True
 
