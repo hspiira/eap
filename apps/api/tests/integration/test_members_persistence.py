@@ -21,6 +21,7 @@ from sqlalchemy.schema import CreateSchema, DropSchema
 from app.api.dependencies import get_client_repository, get_outbox_repository, get_user_repository
 from app.api.routes.members import router
 from app.core.database import get_db
+from app.core.encryption import decrypt
 from app.core.exception_handlers import register_exception_handlers
 from app.core.security import TokenData, get_current_user
 from app.domain.enums import SubscriptionTier, TenantRole, TenantStatus
@@ -416,11 +417,11 @@ async def test_identity_numbers_round_trip_through_postgresql(member_http, isola
 
     async with isolated_members_db() as session:
         row = await session.get(EligibleMemberModel, member_id)
-        assert (row.staff_number, row.national_id, row.passport_number) == (
-            "EMP-9",
-            "CM12345",
-            "B0987654",
-        )
+        assert row.staff_number == "EMP-9"
+        assert row.national_id != "CM12345"
+        assert row.passport_number != "B0987654"
+        assert decrypt(row.national_id, tenant_id="t1") == "CM12345"
+        assert decrypt(row.passport_number, tenant_id="t1") == "B0987654"
 
     listed = await http.get("/members")
     assert listed.status_code == 200, listed.text
@@ -470,8 +471,8 @@ async def test_patching_one_identity_number_preserves_the_others(member_http, is
     assert body["staff_number"] == "EMP-9"
     async with isolated_members_db() as session:
         row = await session.get(EligibleMemberModel, member_id)
-        assert row.national_id == "CM99999"
-        assert row.passport_number == "B0987654"
+        assert decrypt(row.national_id, tenant_id="t1") == "CM99999"
+        assert decrypt(row.passport_number, tenant_id="t1") == "B0987654"
         assert row.staff_number == "EMP-9"
 
 
