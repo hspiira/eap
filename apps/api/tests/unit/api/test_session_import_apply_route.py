@@ -319,6 +319,7 @@ class TestTemplate:
             "Diagnosis Type",
             "Diagnosis",
             "Approved By",
+            "Organisation Session",
         ]
         assert "Example Client" in [cell.value for cell in sheet[2]]
 

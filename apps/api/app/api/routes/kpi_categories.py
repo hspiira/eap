@@ -65,7 +65,7 @@ async def create_kpi_category(
         resource_id=created.id,
         after=created,
     )
-    invalidate_reference_cache(_RESOURCE)
+    await invalidate_reference_cache(_RESOURCE)
     return KPICategoryResponse.model_validate(created)
 
 
@@ -96,7 +96,7 @@ async def update_kpi_category(
         before=before,
         after=updated,
     )
-    invalidate_reference_cache(_RESOURCE)
+    await invalidate_reference_cache(_RESOURCE)
     return KPICategoryResponse.model_validate(updated)
 
 
@@ -125,5 +125,5 @@ async def set_kpi_category_active(
         before=before,
         after=updated,
     )
-    invalidate_reference_cache(_RESOURCE)
+    await invalidate_reference_cache(_RESOURCE)
     return KPICategoryResponse.model_validate(updated)

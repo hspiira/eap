@@ -64,6 +64,7 @@ def test_provider_mapper_persists_json_safe_profile() -> None:
         "specialties": ["Counselling"],
         "bio": "Trauma-informed practitioner",
         "gender": None,
+        "title": None,
     }
 
 

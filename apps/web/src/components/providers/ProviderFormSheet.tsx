@@ -20,11 +20,12 @@ import {
 import { Textarea } from "@/components/ui/textarea"
 import { useEntityFormSheet } from "@/hooks/useEntityFormSheet"
 import type { Provider } from "@/types/entities"
-import { ProviderGender, ProviderTier, UgandaRegion } from "@/types/enums"
+import { ProviderGender, ProviderTier, ProviderTitle, UgandaRegion } from "@/types/enums"
 import { getStatusLabel } from "@/utils/statusColors"
 
 const TIERS = Object.values(ProviderTier)
 const REGIONS = Object.values(UgandaRegion)
+const TITLE_VALUES = Object.values(ProviderTitle) as [ProviderTitle, ...ProviderTitle[]]
 const GENDER_VALUES = Object.values(ProviderGender) as [ProviderGender, ...ProviderGender[]]
 const GENDERS: ReadonlyArray<{ value: ProviderGender; label: string }> = [
   { value: ProviderGender.FEMALE, label: "Female" },
@@ -38,6 +39,7 @@ const providerSchema = z.object({
   tier: z.enum(ProviderTier),
   region: z.enum(UgandaRegion),
   gender: z.enum(GENDER_VALUES).optional(),
+  title: z.enum(TITLE_VALUES).optional(),
   bio: z.string(),
 })
 
@@ -50,6 +52,7 @@ const DEFAULTS: ProviderFormValues = {
   tier: ProviderTier.T2,
   region: UgandaRegion.CENTRAL,
   gender: undefined,
+  title: undefined,
   bio: "",
 }
 
@@ -71,6 +74,7 @@ function editPayload(values: ProviderFormValues): ProviderProfileInput {
     phone: nullable(values.phone),
     region: values.region,
     gender: values.gender ?? null,
+    title: values.title ?? null,
     bio: nullable(values.bio),
   }
 }
@@ -119,6 +123,7 @@ export function ProviderFormSheet({
       tier: p.provider_profile.tier ?? ("" as unknown as ProviderTier),
       region: p.provider_profile.region ?? ("" as unknown as UgandaRegion),
       gender: p.provider_profile.gender ?? undefined,
+      title: p.provider_profile.title ?? undefined,
       bio: p.provider_profile.bio ?? "",
     }),
     parsePayload: (values) => values,
@@ -151,8 +156,39 @@ export function ProviderFormSheet({
     >
       <FormSection title="Identity">
         <FormField
+          label="Title"
+          description="Kept apart from the name, so the name stays matchable when an import writes it as DR. AMINA OKELLO."
+          error={errors.title?.message}
+          htmlFor="prv-title"
+        >
+          <Controller
+            control={control}
+            name="title"
+            render={({ field }) => (
+              <Select
+                value={field.value ?? "unset"}
+                onValueChange={(value) => field.onChange(value === "unset" ? undefined : value)}
+              >
+                <SelectTrigger id="prv-title">
+                  <SelectValue placeholder="No title" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="unset">No title</SelectItem>
+                  {TITLE_VALUES.map((value) => (
+                    <SelectItem key={value} value={value}>
+                      {value}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+          />
+        </FormField>
+
+        <FormField
           label="Display name"
           required
+          description="The name alone. A title typed here would be stripped back out whenever an import matches on it."
           error={errors.display_name?.message}
           htmlFor="prv-name"
         >

@@ -330,6 +330,23 @@ export enum ProviderTier {
 }
 
 /** Practitioner gender: mirrors BE `ProviderGender`. Restricted to Male/Female. */
+/**
+ * An honorific a practitioner holds: mirrors BE `ProviderTitle`.
+ *
+ * Held apart from the name so the name stays the name. The server composes
+ * `formal_name` from the two; never concatenate them here.
+ */
+export enum ProviderTitle {
+  DR = "Dr",
+  PROF = "Prof",
+  REV = "Rev",
+  SR = "Sr",
+  MR = "Mr",
+  MRS = "Mrs",
+  MS = "Ms",
+  MISS = "Miss",
+}
+
 export enum ProviderGender {
   FEMALE = "Female",
   MALE = "Male",
@@ -375,6 +392,21 @@ export enum PanelStatus {
   ACTIVE = "Active",
   SUSPENDED = "Suspended",
   REMOVED = "Removed",
+}
+
+/**
+ * Whether a source-system name has been reconciled to a practitioner: mirrors
+ * BE `AliasResolutionState`.
+ *
+ * `AMBIGUOUS` and `UNMAPPED` are distinct review outcomes. The first has
+ * candidates and no decision, the second has no candidate at all. Only
+ * `RESOLVED` lets an import attribute a row to a practitioner.
+ */
+export enum AliasResolutionState {
+  UNMAPPED = "Unmapped",
+  AMBIGUOUS = "Ambiguous",
+  RESOLVED = "Resolved",
+  REJECTED = "Rejected",
 }
 
 /**

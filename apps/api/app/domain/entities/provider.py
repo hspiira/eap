@@ -17,6 +17,7 @@ from app.domain.enums import (
     ProviderGender,
     ProviderIdentityProvenance,
     ProviderTier,
+    ProviderTitle,
     UgandaRegion,
 )
 from app.domain.events import DomainEvent
@@ -42,7 +43,7 @@ class _Unset:
 UNSET = _Unset()
 
 _ENTITY_FIELDS = ("display_name", "contact_email", "contact_phone", "license_info")
-_PROFILE_FIELDS = ("region", "bio", "gender")
+_PROFILE_FIELDS = ("region", "bio", "gender", "title")
 
 
 def _require_reason(reason: str) -> str:
@@ -97,6 +98,17 @@ class ProviderEntity:
     def _touch(self) -> None:
         self.updated_at = utc_now()
 
+    @property
+    def formal_name(self) -> str:
+        """The display name with the practitioner's title, when they hold one.
+
+        Composed rather than stored, so the name stays the name: a title typed
+        into `display_name` would be normalised straight back out when an
+        import matches on it.
+        """
+        title = self.provider_profile.title if self.provider_profile else None
+        return f"{title.written} {self.display_name}" if title else self.display_name
+
     def record_created(self, actor: UserId) -> None:
         """Emit the creation event so a new practitioner reaches the audit trail."""
         self.events.append(ProviderCreated(occurred_at=utc_now(), provider_id=self.id, actor=actor))
@@ -112,6 +124,7 @@ class ProviderEntity:
         region: UgandaRegion | _Unset = UNSET,
         bio: str | None | _Unset = UNSET,
         gender: ProviderGender | None | _Unset = UNSET,
+        title: ProviderTitle | None | _Unset = UNSET,
     ) -> tuple[str, ...]:
         """Apply a partial update to ordinary contact and profile fields.
 
@@ -127,6 +140,7 @@ class ProviderEntity:
             "region": region,
             "bio": bio,
             "gender": gender,
+            "title": title,
         }
         provided = {
             name: value for name, value in requested.items() if not isinstance(value, _Unset)

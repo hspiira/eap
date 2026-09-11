@@ -69,6 +69,7 @@ from app.domain.enums.provider import (
     ProviderGender,
     ProviderIdentityProvenance,
     ProviderTier,
+    ProviderTitle,
     UgandaRegion,
 )
 from app.domain.enums.reporting import (
@@ -142,6 +143,7 @@ __all__ = [
     "PersonType",
     "PricingModel",
     "ProviderGender",
+    "ProviderTitle",
     "ProviderIdentityProvenance",
     "ProviderTier",
     "RelationType",

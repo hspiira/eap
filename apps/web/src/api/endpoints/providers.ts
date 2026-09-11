@@ -20,6 +20,7 @@ import type {
   PanelStatus,
   ProviderGender,
   ProviderTier,
+  ProviderTitle,
   UgandaRegion,
 } from "@/types/enums"
 
@@ -51,6 +52,8 @@ export interface ProviderProfileInput {
   region?: UgandaRegion
   bio?: string | null
   gender?: ProviderGender | null
+  /** Held apart from the name; the server composes `formal_name` from both. */
+  title?: ProviderTitle | null
   license_info?: LicenseInfo | null
 }
 

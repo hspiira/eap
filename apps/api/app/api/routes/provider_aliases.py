@@ -72,6 +72,9 @@ async def list_aliases(
     state: AliasResolutionState | None = Query(
         None, description="Filter the review queue by outcome"
     ),
+    provider_id: str | None = Query(
+        None, description="Only the spellings resolved to this practitioner"
+    ),
     pg: PageParams = Depends(pagination()),
     current_user: TokenData = Depends(require_same_tenant),
     repo: ProviderAliasRepository = Depends(get_provider_alias_repository),
@@ -80,6 +83,7 @@ async def list_aliases(
         TenantId(tenant_id),
         source_system=source_system,
         state=state.value if state else None,
+        provider_id=ProviderId(provider_id) if provider_id else None,
         limit=pg.limit,
         offset=pg.offset,
     )

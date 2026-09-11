@@ -6,6 +6,7 @@ from app.domain.enums import (
     PanelStatus,
     ProviderGender,
     ProviderTier,
+    ProviderTitle,
     RelationType,
     StaffRole,
     UgandaRegion,
@@ -48,6 +49,7 @@ class ProviderProfile:
     specialties: tuple[str, ...] = ()
     bio: str | None = None
     gender: ProviderGender | None = None
+    title: ProviderTitle | None = None
 
 
 @dataclass(frozen=True)

@@ -361,7 +361,7 @@ function ProviderRow({
         >
           <EntityNameCell
             initials={nameInitials(provider.display_name)}
-            name={provider.display_name}
+            name={provider.formal_name || provider.display_name}
           />
         </Link>
       </TableCell>

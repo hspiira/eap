@@ -64,6 +64,33 @@ class ProviderGender(str, Enum):
     MALE = "Male"
 
 
+class ProviderTitle(str, Enum):
+    """An honorific held by a practitioner.
+
+    Stored apart from the name so the name stays the name. Source extracts
+    write the two together (`DR. JANE ACHIENG`), and the alias normaliser
+    strips exactly this vocabulary before matching, so a title never has to be
+    guessed back out of a stored name.
+    """
+
+    DR = "Dr"
+    PROF = "Prof"
+    REV = "Rev"
+    SR = "Sr"
+    MR = "Mr"
+    MRS = "Mrs"
+    MS = "Ms"
+    MISS = "Miss"
+
+    @property
+    def written(self) -> str:
+        """How the title is written before a name.
+
+        `Miss` is a whole word and takes no stop; the rest are shortened and do.
+        """
+        return self.value if self is ProviderTitle.MISS else f"{self.value}."
+
+
 class EngagementDocumentKind(str, Enum):
     """The seven engagement documents tracked per practitioner (P-02)."""
 

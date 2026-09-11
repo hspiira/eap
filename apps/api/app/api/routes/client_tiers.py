@@ -65,7 +65,7 @@ async def create_client_tier(
         resource_id=created.id,
         after=created,
     )
-    invalidate_reference_cache(_RESOURCE)
+    await invalidate_reference_cache(_RESOURCE)
     return ClientTierResponse.model_validate(created)
 
 
@@ -96,7 +96,7 @@ async def update_client_tier(
         before=before,
         after=updated,
     )
-    invalidate_reference_cache(_RESOURCE)
+    await invalidate_reference_cache(_RESOURCE)
     return ClientTierResponse.model_validate(updated)
 
 
@@ -125,5 +125,5 @@ async def set_client_tier_active(
         before=before,
         after=updated,
     )
-    invalidate_reference_cache(_RESOURCE)
+    await invalidate_reference_cache(_RESOURCE)
     return ClientTierResponse.model_validate(updated)

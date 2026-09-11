@@ -1,4 +1,5 @@
 import { fireEvent, screen, waitFor } from "@testing-library/react"
+import userEvent from "@testing-library/user-event"
 import { beforeEach, describe, expect, it, vi } from "vitest"
 
 import { ProviderFormSheet } from "@/components/providers/ProviderFormSheet"
@@ -6,7 +7,9 @@ import { renderWithProviders } from "@/test/utils"
 import type { Provider } from "@/types/entities"
 
 const mocks = vi.hoisted(() => ({ create: vi.fn(), update: vi.fn() }))
-vi.mock("@/api/endpoints/providers", () => ({ providersApi: mocks }))
+vi.mock("@/api/endpoints/providers", () => ({
+  providersApi: { create: mocks.create, update: mocks.update },
+}))
 
 const PROTECTED_KEYS = [
   "provider_profile",
@@ -66,6 +69,21 @@ describe("practitioner form", () => {
     expect(body).not.toHaveProperty("user_id")
   })
 
+  it("sends the title as its own field, never folded into the name", async () => {
+    const user = userEvent.setup()
+    renderWithProviders(<ProviderFormSheet open onOpenChange={() => {}} />)
+
+    fireEvent.change(screen.getByLabelText(/display name/i), { target: { value: "Amina Okello" } })
+    await user.click(screen.getByLabelText(/^title$/i))
+    await user.click(await screen.findByRole("option", { name: "Dr" }))
+    fireEvent.click(screen.getByRole("button", { name: /create practitioner/i }))
+
+    await waitFor(() => expect(mocks.create).toHaveBeenCalled())
+    const body = mocks.create.mock.calls[0][0]
+    expect(body.title).toBe("Dr")
+    expect(body.display_name).toBe("Amina Okello")
+  })
+
   it("requires a name", async () => {
     renderWithProviders(<ProviderFormSheet open onOpenChange={() => {}} />)
     fireEvent.click(screen.getByRole("button", { name: /create practitioner/i }))
@@ -110,6 +128,7 @@ describe("practitioner form", () => {
       "gender",
       "phone",
       "region",
+      "title",
     ])
   })
 

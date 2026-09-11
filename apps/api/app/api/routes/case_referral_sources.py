@@ -69,7 +69,7 @@ async def create_case_referral_source(
         resource_id=created.id,
         after=created,
     )
-    invalidate_reference_cache(_RESOURCE)
+    await invalidate_reference_cache(_RESOURCE)
     return CaseReferralSourceResponse.model_validate(created)
 
 
@@ -100,7 +100,7 @@ async def update_case_referral_source(
         before=before,
         after=updated,
     )
-    invalidate_reference_cache(_RESOURCE)
+    await invalidate_reference_cache(_RESOURCE)
     return CaseReferralSourceResponse.model_validate(updated)
 
 
@@ -129,5 +129,5 @@ async def set_case_referral_source_active(
         before=before,
         after=updated,
     )
-    invalidate_reference_cache(_RESOURCE)
+    await invalidate_reference_cache(_RESOURCE)
     return CaseReferralSourceResponse.model_validate(updated)

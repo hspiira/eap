@@ -5,12 +5,14 @@
 
 import { waitFor } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
-import { describe, expect, it, vi } from "vitest"
+import { beforeEach, describe, expect, it, vi } from "vitest"
 
 import { SessionImportDialog } from "@/components/sessions/SessionImportDialog"
 import { renderWithProviders } from "@/test/utils"
 import { ApiError } from "@/types/api"
 
+const listProviders = vi.fn()
+const role = { current: "Admin" }
 const stage = vi.fn()
 const apply = vi.fn()
 const listRows = vi.fn()
@@ -18,6 +20,17 @@ const getBatch = vi.fn()
 const getTemplate = vi.fn()
 const abandon = vi.fn()
 
+vi.mock("@/api/endpoints/providers", () => ({
+  providersApi: { list: (...args: unknown[]) => listProviders(...args), getById: vi.fn() },
+}))
+vi.mock("@/hooks/useCanWrite", () => ({
+  useCanWrite: () => true,
+  useCurrentRole: () => role.current,
+}))
+vi.mock("@/store/slices/tenantSlice", () => ({
+  useTenantStore: (select: (s: { currentTenantId: string }) => unknown) =>
+    select({ currentTenantId: "tenant-1" }),
+}))
 vi.mock("@/api/endpoints/session-imports", () => ({
   sessionImportsApi: {
     stage: (...args: unknown[]) => stage(...args),
@@ -28,6 +41,25 @@ vi.mock("@/api/endpoints/session-imports", () => ({
     abandon: (...args: unknown[]) => abandon(...args),
   },
 }))
+
+// The global afterEach restores mocks, so implementations belong in beforeEach.
+beforeEach(() => {
+  listProviders.mockResolvedValue({ items: [], total: 0, page: 1, limit: 8 })
+})
+
+function row(overrides: Record<string, unknown> = {}) {
+  return {
+    row_number: 1,
+    outcome: "UnmappedPractitioner",
+    delivery_context: "Unknown",
+    provider_id: null,
+    provider_affiliation_id: null,
+    raw_practitioner_name: "DR. J. ACHIENG",
+    session_date: "2025-09-12",
+    reasons: ["No alias mapping for 'DR. J. ACHIENG'"],
+    ...overrides,
+  }
+}
 
 function batch(counts: Record<string, number>) {
   return {
@@ -75,6 +107,52 @@ describe("session import", () => {
   it("cannot apply a batch with nothing accepted", async () => {
     const screen = await stageFile({ UnresolvedMember: 10 })
     expect(await screen.findByRole("button", { name: /apply 0 rows/i })).toBeDisabled()
+  })
+})
+
+describe("a row the practitioner name stopped", () => {
+  /** Stage, then open the tab holding the blocked rows. */
+  async function reviewing(rows: Record<string, unknown>[]) {
+    const screen = await stageFile({ UnmappedPractitioner: rows.length })
+    listRows.mockResolvedValue({ items: rows, total: rows.length, page: 1, limit: 50 })
+    await userEvent.click(await screen.findByRole("button", { name: /unknown practitioner/i }))
+    return screen
+  }
+
+  it("keeps the spelling the file used rather than blanking it", async () => {
+    const screen = await reviewing([row()])
+    expect(await screen.findByText("DR. J. ACHIENG")).toBeInTheDocument()
+  })
+
+  it("marks that name as the failure it is", async () => {
+    const screen = await reviewing([row()])
+    const name = await screen.findByText("DR. J. ACHIENG")
+    expect(name.closest("td")).toHaveClass("text-destructive")
+  })
+
+  it("leaves an accepted row's name unmarked", async () => {
+    const screen = await stageFile({ Accepted: 1 })
+    listRows.mockResolvedValue({
+      items: [row({ outcome: "Accepted", reasons: [] })],
+      total: 1,
+      page: 1,
+      limit: 50,
+    })
+    await userEvent.click(await screen.findByRole("button", { name: /^accepted/i }))
+    const name = await screen.findByText("DR. J. ACHIENG")
+    expect(name.closest("td")).not.toHaveClass("text-destructive")
+  })
+
+  it("marks a row the source named nobody in", async () => {
+    const screen = await stageFile({ MissingPractitioner: 1 })
+    listRows.mockResolvedValue({
+      items: [row({ outcome: "MissingPractitioner", raw_practitioner_name: null })],
+      total: 1,
+      page: 1,
+      limit: 50,
+    })
+    await userEvent.click(await screen.findByRole("button", { name: /no practitioner named/i }))
+    expect(await screen.findByText(/no name in the source/i)).toBeInTheDocument()
   })
 })
 

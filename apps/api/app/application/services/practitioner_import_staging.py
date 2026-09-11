@@ -29,16 +29,13 @@ from dataclasses import dataclass
 from datetime import datetime
 
 from app.domain.entities.practitioner_import import ImportReviewReason
-from app.domain.entities.provider_alias import ProviderAliasEntity
 from app.domain.enums.provider_network import ImportReasonCode, PractitionerImportOutcome
 from app.domain.repositories.practitioner_import_repository import PractitionerImportRepository
-from app.domain.repositories.provider_network_repository import ProviderAliasRepository
 from app.domain.services.provider_alias_normalisation import normalise_practitioner_name
 from app.domain.value_objects.core import TenantId
 from app.domain.value_objects.provider_network import (
     PractitionerImportBatchId,
     PractitionerImportRowId,
-    ProviderAliasId,
 )
 from app.shared.utils.generators import generate_cuid
 from app.shared.utils.practitioner_workbook import WorkbookRow
@@ -72,8 +69,7 @@ class StagedPractitionerRow:
 
 
 class PractitionerImportStagingService:
-    def __init__(self, aliases: ProviderAliasRepository, imports: PractitionerImportRepository):
-        self._aliases = aliases
+    def __init__(self, imports: PractitionerImportRepository):
         self._imports = imports
 
     async def stage_rows(
@@ -86,12 +82,9 @@ class PractitionerImportStagingService:
     ) -> list[StagedPractitionerRow]:
         """Stage every parsed row, sharing one identity-candidate index."""
         candidates = _candidate_index(rows)
-        ensured: set[str] = set()
         staged = []
         for row in rows:
-            staged.append(
-                await self._stage_row(tenant_id, file_hash, row, candidates, ensured, now)
-            )
+            staged.append(await self._stage_row(tenant_id, file_hash, row, candidates, now))
         return staged
 
     async def _stage_row(
@@ -100,7 +93,6 @@ class PractitionerImportStagingService:
         file_hash: str,
         row: WorkbookRow,
         candidates: dict[str, list[WorkbookRow]],
-        ensured: set[str],
         now: datetime,
     ) -> StagedPractitionerRow:
         replay_key = _replay_key(row, file_hash)
@@ -124,7 +116,6 @@ class PractitionerImportStagingService:
                 row, None, None, PractitionerImportOutcome.REJECTED, (reason,), replay_key
             )
 
-        await self._ensure_alias(tenant_id, row, normalized, ensured, now)
         mapped, reasons = _mapped_profession(row)
         reasons += _candidate_reasons(row, candidates.get(normalized, []))
         reasons += _organisation_collision_reasons(row, candidates)
@@ -135,37 +126,6 @@ class PractitionerImportStagingService:
             else PractitionerImportOutcome.ACCEPTED
         )
         return _staged(row, normalized, mapped, outcome, reasons, replay_key)
-
-    async def _ensure_alias(
-        self,
-        tenant_id: TenantId,
-        row: WorkbookRow,
-        normalized: str,
-        ensured: set[str],
-        now: datetime,
-    ) -> None:
-        """Record the source name as an unmapped alias if nobody has yet.
-
-        An existing alias is left exactly as a person decided it; staging never
-        resolves, rejects or re-opens one.
-        """
-        if normalized in ensured:
-            return
-        ensured.add(normalized)
-        existing = await self._aliases.find_alias(tenant_id, WORKBOOK_SOURCE_SYSTEM, normalized)
-        if existing is not None:
-            return
-        await self._aliases.save_alias(
-            ProviderAliasEntity(
-                id=ProviderAliasId(generate_cuid()),
-                tenant_id=tenant_id,
-                source_system=WORKBOOK_SOURCE_SYSTEM,
-                source_value=row.raw_name or "",
-                normalized_value=normalized,
-                created_at=now,
-                updated_at=now,
-            )
-        )
 
 
 def _candidate_index(rows: Sequence[WorkbookRow]) -> dict[str, list[WorkbookRow]]:

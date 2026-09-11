@@ -17,7 +17,7 @@ export function ProviderNameLink({ providerId }: { providerId: string }) {
     staleTime: 5 * 60_000,
   })
 
-  const label = query.data?.display_name
+  const label = query.data && (query.data.formal_name || query.data.display_name)
 
   return (
     <Link

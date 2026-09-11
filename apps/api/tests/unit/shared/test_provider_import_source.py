@@ -64,6 +64,19 @@ class TestValues:
         rows = parse_source_rows(_csv("2025-04-02,A,A,L1"), None)
         assert rows[0].organisation_affiliation_id is None
 
+    def test_the_organisation_session_column_is_read_verbatim(self):
+        """The parser carries the answer; staging decides what it means."""
+        content = b"DATE,COUNSELOR,Organisation Session\n2025-04-02,Alice Nakato,Yes\n"
+        assert parse_source_rows(content, None)[0].raw_organisation_session == "Yes"
+
+    def test_the_american_spelling_of_that_column_is_accepted(self):
+        content = b"DATE,COUNSELOR,Organization Session\n2025-04-02,Alice Nakato,No\n"
+        assert parse_source_rows(content, None)[0].raw_organisation_session == "No"
+
+    def test_a_missing_organisation_session_column_leaves_it_none(self):
+        rows = parse_source_rows(_csv("2025-04-02,A,A,L1"), None)
+        assert rows[0].raw_organisation_session is None
+
     def test_a_byte_order_mark_is_handled(self):
         content = ("﻿" + HEADER + "2025-04-02,A,A,L1\n").encode("utf-8")
         assert parse_source_rows(content, None)[0].session_date is not None

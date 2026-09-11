@@ -12470,6 +12470,16 @@
           },
           "tier": {
             "$ref": "#/components/schemas/ProviderTier"
+          },
+          "title": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ProviderTitle"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "required": [
@@ -12988,6 +12998,16 @@
                 "type": "null"
               }
             ]
+          },
+          "title": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ProviderTitle"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "required": [
@@ -13018,6 +13038,12 @@
             ],
             "description": "Practitioner contact email, not a login",
             "title": "Email"
+          },
+          "formal_name": {
+            "default": "",
+            "description": "Display name with the practitioner's title, composed server-side",
+            "title": "Formal Name",
+            "type": "string"
           },
           "id": {
             "title": "Id",
@@ -13213,6 +13239,21 @@
         "title": "ProviderTier",
         "type": "string"
       },
+      "ProviderTitle": {
+        "description": "An honorific held by a practitioner.\n\nStored apart from the name so the name stays the name. Source extracts\nwrite the two together (`DR. JANE ACHIENG`), and the alias normaliser\nstrips exactly this vocabulary before matching, so a title never has to be\nguessed back out of a stored name.",
+        "enum": [
+          "Dr",
+          "Prof",
+          "Rev",
+          "Sr",
+          "Mr",
+          "Mrs",
+          "Ms",
+          "Miss"
+        ],
+        "title": "ProviderTitle",
+        "type": "string"
+      },
       "ProviderUpdate": {
         "additionalProperties": false,
         "description": "Partial update of ordinary contact and profile fields.\n\nAn omitted field stays unchanged; an explicit null clears a nullable field.\nA protected field present in the body is rejected rather than ignored.",
@@ -13291,6 +13332,16 @@
             "anyOf": [
               {
                 "$ref": "#/components/schemas/UgandaRegion"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "title": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ProviderTitle"
               },
               {
                 "type": "null"
@@ -34718,6 +34769,24 @@
               ],
               "description": "Filter the review queue by outcome",
               "title": "State"
+            }
+          },
+          {
+            "description": "Only the spellings resolved to this practitioner",
+            "in": "query",
+            "name": "provider_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Only the spellings resolved to this practitioner",
+              "title": "Provider Id"
             }
           },
           {

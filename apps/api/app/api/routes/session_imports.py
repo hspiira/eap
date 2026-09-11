@@ -26,7 +26,7 @@ from app.api.dependencies.pagination import PageParams, pagination
 from app.api.dependencies.provider_network import (
     get_historical_session_writer,
     get_provider_affiliation_repository,
-    get_provider_alias_repository,
+    get_provider_repository,
     get_session_import_repository,
 )
 from app.api.schemas.provider_network_schemas import (
@@ -35,9 +35,6 @@ from app.api.schemas.provider_network_schemas import (
     SessionImportBatchResponse,
     SessionImportRowListResponse,
     SessionImportRowPreview,
-)
-from app.application.services.provider_alias_reconciliation import (
-    ProviderAliasReconciliationService,
 )
 from app.application.services.session_import_staging import (
     SessionImportStagingService,
@@ -63,9 +60,9 @@ from app.domain.repositories.diagnosis_repository import DiagnosisRepository
 from app.domain.repositories.eligible_member_repository import EligibleMemberRepository
 from app.domain.repositories.provider_network_repository import (
     ProviderAffiliationRepository,
-    ProviderAliasRepository,
     SessionImportRepository,
 )
+from app.domain.repositories.provider_repository import ProviderRepository
 from app.domain.repositories.service_repository import ServiceRepository
 from app.domain.repositories.user_repository import UserRepository
 from app.domain.value_objects.core import TenantId, UserId
@@ -176,7 +173,7 @@ async def stage_import(
     ),
     current_user: TokenData = Depends(require_same_tenant),
     imports: SessionImportRepository = Depends(get_session_import_repository),
-    aliases: ProviderAliasRepository = Depends(get_provider_alias_repository),
+    providers: ProviderRepository = Depends(get_provider_repository),
     affiliations: ProviderAffiliationRepository = Depends(get_provider_affiliation_repository),
     audit_handler=Depends(get_audit_event_handler),
     clients: ClientRepository = Depends(get_client_repository),
@@ -255,7 +252,7 @@ async def stage_import(
         ) from exc
 
     service = SessionImportStagingService(
-        ProviderAliasReconciliationService(aliases),
+        providers,
         affiliations,
         imports,
         clients,
