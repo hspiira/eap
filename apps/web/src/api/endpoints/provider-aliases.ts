@@ -57,6 +57,29 @@ export const providerAliasesApi = {
     })
   },
 
+  /**
+   * Queue a name and name its practitioner in one step.
+   *
+   * Refuses to overwrite a decision somebody already made: `create` returns an
+   * existing entry rather than a second one, so a name already resolved comes
+   * back untouched and the caller is told. Without that guard, creating a
+   * practitioner could silently reattribute every session imported under a
+   * name that already points at a different person.
+   */
+  async adopt(
+    tenantId: string,
+    sourceSystem: string,
+    sourceValue: string,
+    providerId: string,
+  ): Promise<{ alias: ProviderAlias; claimed: boolean }> {
+    const existing = await this.create(tenantId, {
+      source_system: sourceSystem,
+      source_value: sourceValue,
+    })
+    if (existing.state === "Resolved") return { alias: existing, claimed: false }
+    return { alias: await this.resolve(tenantId, existing.id, providerId), claimed: true }
+  },
+
   /** Record that this source value does not name a practitioner. */
   async reject(tenantId: string, aliasId: string, note: string): Promise<ProviderAlias> {
     return apiClient.post<ProviderAlias>(scoped(`/provider-aliases/${aliasId}/reject`, tenantId), {

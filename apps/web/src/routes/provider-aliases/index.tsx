@@ -33,10 +33,24 @@ import { useTenantStore } from "@/store/slices/tenantSlice"
 import { AliasResolutionState, TenantRole } from "@/types/enums"
 
 /**
- * The source system the session import dialog stages against. Aliases are keyed
- * by this string, so the queue shows the names that importer actually consults.
+ * Aliases are keyed by source system, and the two importers do not share a
+ * namespace: resolving a name under one does nothing for the other. Session
+ * import reads `activity-log-workbook`; staging a practitioner workbook queues
+ * its own names under `practitioners-orgs-workbook` automatically.
  */
-const SOURCE_SYSTEM = "activity-log-workbook"
+const SOURCE_SYSTEMS = {
+  "activity-log-workbook": "Activity log",
+  "practitioners-orgs-workbook": "Practitioner workbook",
+} as const
+
+type SourceSystem = keyof typeof SOURCE_SYSTEMS
+
+const DEFAULT_SOURCE_SYSTEM: SourceSystem = "activity-log-workbook"
+
+const SOURCE_OPTIONS = Object.entries(SOURCE_SYSTEMS).map(([value, label]) => ({
+  value,
+  label,
+}))
 
 const STATE_OPTIONS = enumOptions(AliasResolutionState, "All states")
 
@@ -60,7 +74,15 @@ const COLUMNS: ListColumn[] = [
 
 export const Route = createFileRoute("/provider-aliases/")({
   component: ProviderAliasesPage,
-  validateSearch: listSearchSchema({ state: enumParam(AliasResolutionState) }),
+  validateSearch: listSearchSchema({
+    state: enumParam(AliasResolutionState),
+    source: enumParam(
+      Object.fromEntries(Object.keys(SOURCE_SYSTEMS).map((key) => [key, key])) as Record<
+        SourceSystem,
+        SourceSystem
+      >,
+    ),
+  }),
 })
 
 function ProviderAliasesPage() {
@@ -74,12 +96,13 @@ function ProviderAliasesPage() {
 
   const [resolving, setResolving] = useState<ProviderAlias | null>(null)
   const [rejecting, setRejecting] = useState<ProviderAlias | null>(null)
+  const sourceSystem: SourceSystem = searchParams.source ?? DEFAULT_SOURCE_SYSTEM
 
   const query = useEntityList<ProviderAlias, ProviderAliasListParams>({
     resource: "provider-aliases",
     params: {
       tenant_id: tenantId ?? "",
-      source_system: SOURCE_SYSTEM,
+      source_system: sourceSystem,
       state: searchParams.state,
       page: list.page,
       limit: list.limit,
@@ -132,10 +155,11 @@ function ProviderAliasesPage() {
       <ProviderSectionTabs />
 
       <p className="border-b border-fg/10 px-3 py-2 text-xs leading-relaxed text-fg-muted">
-        How each spelling in the {SOURCE_SYSTEM} import is reconciled to a practitioner. Session
-        import reads these decisions and never makes one, so a name left here unmapped holds its
-        rows instead of guessing. Accreditation and panel status are not consulted: a past session
-        may name someone no longer eligible for new work.
+        How each spelling in the {SOURCE_SYSTEMS[sourceSystem]} import is reconciled to a
+        practitioner. Import reads these decisions and never makes one, so a name left unmapped
+        holds its rows instead of guessing. The two source systems are separate namespaces:
+        resolving a name here does nothing for the other. Accreditation and panel status are not
+        consulted, because a past session may name someone no longer eligible for new work.
       </p>
 
       <FilterBar>
@@ -151,17 +175,23 @@ function ProviderAliasesPage() {
           options={STATE_OPTIONS}
           onChange={(value) => list.setFilter("state", value === "all" ? undefined : value)}
         />
+        <FilterTrigger
+          label="Source"
+          value={sourceSystem}
+          options={SOURCE_OPTIONS}
+          onChange={(value) => list.setFilter("source", value)}
+        />
       </FilterBar>
 
       <AliasQueueDialog
-        sourceSystem={SOURCE_SYSTEM}
+        sourceSystem={SOURCE_SYSTEMS[sourceSystem]}
         open={list.addOpen}
         onOpenChange={list.setAddOpen}
         onConfirm={(sourceValue) =>
           run(
             () =>
               providerAliasesApi.create(tenantId!, {
-                source_system: SOURCE_SYSTEM,
+                source_system: sourceSystem,
                 source_value: sourceValue,
               }),
             "Name queued for review",

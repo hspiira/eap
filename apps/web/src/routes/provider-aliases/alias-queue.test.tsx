@@ -121,6 +121,44 @@ describe("alias review queue", () => {
     )
   })
 
+  it("defaults to the source system the session importer reads", async () => {
+    renderWithProviders(<Page />)
+    await waitFor(() =>
+      expect(mocks.list).toHaveBeenCalledWith(
+        expect.objectContaining({ source_system: "activity-log-workbook" }),
+      ),
+    )
+  })
+
+  it("reaches the practitioner-workbook namespace, which the two do not share", async () => {
+    mocks.search = { source: "practitioners-orgs-workbook" }
+    renderWithProviders(<Page />)
+    await waitFor(() =>
+      expect(mocks.list).toHaveBeenCalledWith(
+        expect.objectContaining({ source_system: "practitioners-orgs-workbook" }),
+      ),
+    )
+  })
+
+  it("queues a new name under the source system being viewed", async () => {
+    mocks.search = { source: "practitioners-orgs-workbook" }
+    mocks.create.mockResolvedValue(makeAlias())
+    const user = userEvent.setup()
+    renderWithProviders(<Page />)
+    await user.click(await screen.findByRole("button", { name: /queue a name/i }))
+
+    const dialog = await screen.findByRole("dialog")
+    await user.type(within(dialog).getByRole("textbox"), "Dr. Mary Nakato")
+    await user.click(within(dialog).getByRole("button", { name: "Queue" }))
+
+    await waitFor(() =>
+      expect(mocks.create).toHaveBeenCalledWith("tenant-1", {
+        source_system: "practitioners-orgs-workbook",
+        source_value: "Dr. Mary Nakato",
+      }),
+    )
+  })
+
   it("filters by state on the server rather than narrowing a fetched page", async () => {
     mocks.search = { state: "Ambiguous" }
     renderWithProviders(<Page />)
