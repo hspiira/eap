@@ -1,6 +1,6 @@
 import { useCallback, useMemo, useRef, useState } from "react"
 
-import { Download, FileInput, Upload } from "lucide-react"
+import { Download, FileInput, RefreshCw, Upload } from "lucide-react"
 
 import {
   type SessionImportApplyResult,
@@ -9,6 +9,7 @@ import {
   type SessionImportRow,
   sessionImportsApi,
 } from "@/api/endpoints/session-imports"
+import { ConfirmDialog } from "@/components/common/ConfirmDialog"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -32,6 +33,46 @@ import { useToast } from "@/contexts/ToastContext"
 import { normalizeErrorMessage } from "@/lib/errors"
 import { cn } from "@/lib/utils"
 import { ApiError } from "@/types/api"
+
+/** Only Chromium browsers support a re-readable file handle; others fall back to a plain input. */
+const supportsFilePicker =
+  typeof window !== "undefined" && typeof window.showOpenFilePicker === "function"
+
+interface FilePickerAcceptType {
+  description?: string
+  accept: Record<string, string[]>
+}
+
+interface OpenFilePickerOptions {
+  types?: FilePickerAcceptType[]
+  excludeAcceptAllOption?: boolean
+  multiple?: boolean
+}
+
+interface FileSystemHandlePermissionDescriptor {
+  mode?: "read" | "readwrite"
+}
+
+declare global {
+  interface FileSystemFileHandle {
+    queryPermission(descriptor?: FileSystemHandlePermissionDescriptor): Promise<PermissionState>
+    requestPermission(descriptor?: FileSystemHandlePermissionDescriptor): Promise<PermissionState>
+  }
+  interface Window {
+    showOpenFilePicker?: (options?: OpenFilePickerOptions) => Promise<FileSystemFileHandle[]>
+  }
+}
+
+/**
+ * The only source system this dialog has ever staged a file for: the
+ * activity-log workbook the counselling team exports. Practitioner aliases
+ * already resolved in this environment are recorded against this exact
+ * string (see `scripts/resolve_provider_aliases.py`), so changing it would
+ * silently break every practitioner name this environment already knows.
+ * If a second, genuinely different source system is ever needed, this
+ * becomes a real field again rather than a constant.
+ */
+const SOURCE_SYSTEM = "activity-log-workbook"
 
 /** Rows shown per page of the review queue. */
 const ROW_LIMIT = 50
@@ -62,6 +103,12 @@ function applyErrorMessage(cause: unknown): string {
     return "Lost the connection partway through, but nothing already written was lost. Click Apply to resume."
   }
   return normalizeErrorMessage(cause, "Could not apply the batch")
+}
+
+/** The other batch's id, when staging failed because that batch is still awaiting a decision. */
+function conflictingBatchId(cause: unknown): string | null {
+  if (!(cause instanceof ApiError) || cause.code !== "IMPORT_ALREADY_STAGED") return null
+  return cause.details?.find((detail) => detail.field === "batch_id")?.message ?? null
 }
 
 /**
@@ -184,8 +231,7 @@ function ApplyProgressBanner({
 export function SessionImportDialog({ open, onOpenChange, onImported }: SessionImportDialogProps) {
   const toast = useToast()
   const [file, setFile] = useState<File | null>(null)
-  const [sourceSystem, setSourceSystem] = useState("")
-  const [keyColumn, setKeyColumn] = useState("")
+  const [fileHandle, setFileHandle] = useState<FileSystemFileHandle | null>(null)
   const [batch, setBatch] = useState<SessionImportBatch | null>(null)
   const [rows, setRows] = useState<SessionImportRow[]>([])
   const [filter, setFilter] = useState<SessionImportOutcome>("Accepted")
@@ -193,6 +239,9 @@ export function SessionImportDialog({ open, onOpenChange, onImported }: SessionI
   const [error, setError] = useState<string | null>(null)
   const [applied, setApplied] = useState<SessionImportApplyResult | null>(null)
   const [applyProgress, setApplyProgress] = useState<ApplyProgress | null>(null)
+  const [conflictBatchId, setConflictBatchId] = useState<string | null>(null)
+  const [discarding, setDiscarding] = useState(false)
+  const [confirmDiscardOpen, setConfirmDiscardOpen] = useState(false)
   const applyCancelledRef = useRef(false)
 
   const counts = useMemo(() => (batch ? presentCounts(batch) : []), [batch])
@@ -201,11 +250,13 @@ export function SessionImportDialog({ open, onOpenChange, onImported }: SessionI
 
   const reset = useCallback(() => {
     setFile(null)
+    setFileHandle(null)
     setBatch(null)
     setRows([])
     setApplied(null)
     setApplyProgress(null)
     setError(null)
+    setConflictBatchId(null)
     setFilter("Accepted")
   }, [])
 
@@ -222,23 +273,82 @@ export function SessionImportDialog({ open, onOpenChange, onImported }: SessionI
     }
   }, [])
 
+  const selectFile = (selected: File | null, handle: FileSystemFileHandle | null = null) => {
+    setFile(selected)
+    setFileHandle(handle)
+    setBatch(null)
+    setRows([])
+    setApplied(null)
+    setError(null)
+    setConflictBatchId(null)
+  }
+
+  const pickFile = async () => {
+    if (!window.showOpenFilePicker) return
+    try {
+      const [handle] = await window.showOpenFilePicker({
+        types: [{ description: "CSV", accept: { "text/csv": [".csv"] } }],
+        excludeAcceptAllOption: false,
+        multiple: false,
+      })
+      selectFile(await handle.getFile(), handle)
+    } catch (cause) {
+      if (cause instanceof DOMException && cause.name === "AbortError") return
+      setError(normalizeErrorMessage(cause, "Could not open the CSV file"))
+    }
+  }
+
+  /** Re-reads the same handle from disk, so local edits show up without reopening the picker. */
+  const refreshFile = async () => {
+    if (!fileHandle) return
+    try {
+      const permission = await fileHandle.queryPermission({ mode: "read" })
+      if (
+        permission !== "granted" &&
+        (await fileHandle.requestPermission({ mode: "read" })) !== "granted"
+      ) {
+        setError("Permission to re-read the file was denied")
+        return
+      }
+      selectFile(await fileHandle.getFile(), fileHandle)
+    } catch (cause) {
+      setError(normalizeErrorMessage(cause, "Could not refresh the CSV file"))
+    }
+  }
+
   async function stage() {
-    if (!file || !sourceSystem.trim()) return
+    if (!file) return
     setBusy("staging")
     setError(null)
     setApplied(null)
     try {
-      const result = await sessionImportsApi.stage(
-        file,
-        sourceSystem.trim(),
-        keyColumn.trim() || undefined,
-      )
+      const result = await sessionImportsApi.stage(file, SOURCE_SYSTEM)
       setBatch(result)
+      setConflictBatchId(null)
       await loadRows(result.id, "Accepted")
     } catch (cause) {
       setError(normalizeErrorMessage(cause, "Could not stage the file"))
+      setConflictBatchId(conflictingBatchId(cause))
     } finally {
       setBusy("")
+    }
+  }
+
+  /** Abandons the batch blocking this file, then retries staging it. */
+  const discardStuckBatch = async () => {
+    if (!conflictBatchId) return
+    setDiscarding(true)
+    try {
+      await sessionImportsApi.abandon(
+        conflictBatchId,
+        "Discarded from the import dialog after a restage conflict",
+      )
+      setConflictBatchId(null)
+      await stage()
+    } catch (cause) {
+      setError(normalizeErrorMessage(cause, "Could not discard the stuck batch"))
+    } finally {
+      setDiscarding(false)
     }
   }
 
@@ -344,40 +454,45 @@ export function SessionImportDialog({ open, onOpenChange, onImported }: SessionI
         </SheetHeader>
 
         <div className="min-h-0 flex-1 space-y-4 overflow-y-auto px-6 py-5">
-          <div className="flex flex-wrap items-end gap-2">
-            <div className="min-w-52 flex-1 space-y-1">
-              <Label htmlFor="session-import-file">CSV file</Label>
+          <div className="flex flex-wrap items-center gap-2">
+            <Label htmlFor="session-import-file" className="shrink-0">
+              CSV file
+            </Label>
+            {supportsFilePicker ? (
+              <>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  disabled={busy !== ""}
+                  className="h-9 min-w-52 flex-1 justify-start truncate font-normal"
+                  onClick={() => void pickFile()}
+                >
+                  {file ? file.name : "Choose file…"}
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  disabled={!fileHandle || busy !== ""}
+                  title="Re-read this file from disk"
+                  aria-label="Refresh CSV from disk"
+                  className="h-9 w-9 shrink-0"
+                  onClick={() => void refreshFile()}
+                >
+                  <RefreshCw className="size-3.5" />
+                </Button>
+              </>
+            ) : (
               <Input
                 id="session-import-file"
                 type="file"
                 accept=".csv,text/csv"
-                disabled={busy !== "" || batch != null}
-                className="h-9"
-                onChange={(event) => setFile(event.target.files?.[0] ?? null)}
+                disabled={busy !== ""}
+                className="h-9 min-w-52 flex-1"
+                onChange={(event) => selectFile(event.target.files?.[0] ?? null)}
               />
-            </div>
-            <div className="w-44 space-y-1">
-              <Label htmlFor="session-import-source">Source system</Label>
-              <Input
-                id="session-import-source"
-                value={sourceSystem}
-                placeholder="activity-log"
-                disabled={busy !== "" || batch != null}
-                className="h-9"
-                onChange={(event) => setSourceSystem(event.target.value)}
-              />
-            </div>
-            <div className="w-44 space-y-1">
-              <Label htmlFor="session-import-key">Source id column</Label>
-              <Input
-                id="session-import-key"
-                value={keyColumn}
-                placeholder="optional"
-                disabled={busy !== "" || batch != null}
-                className="h-9"
-                onChange={(event) => setKeyColumn(event.target.value)}
-              />
-            </div>
+            )}
             <Button
               type="button"
               variant="outline"
@@ -390,16 +505,29 @@ export function SessionImportDialog({ open, onOpenChange, onImported }: SessionI
             </Button>
           </div>
           <p className="text-xs text-fg-muted">
-            The source system names where the extract came from; practitioner name mappings are
-            recorded against it. The source id column is optional and must be unique and filled on
-            every row, because a blank one would key part of the file differently; leave it empty
-            and rows are keyed by file and row number. Download the template for the full column
-            list with one Individual and one company-wide example row; note that "Client Type
-            (Staff/Dep)" says who attended and "Client Type" is unrelated, saying whether this is a
-            new or repeat client engagement. Files are limited to 10 MB.
+            Judged against the activity-log workbook's practitioner, client and service names.
+            Download the template for the full column list with one Individual and one company-wide
+            example row; note that "Client Type (Staff/Dep)" says who attended and "Client Type" is
+            unrelated, saying whether this is a new or repeat client engagement. Files are limited
+            to 10 MB.
           </p>
 
-          {error ? <p className="text-xs text-destructive">{error}</p> : null}
+          {error ? (
+            <div className="flex flex-wrap items-center gap-2">
+              <p className="text-xs text-destructive">{error}</p>
+              {conflictBatchId ? (
+                <Button
+                  type="button"
+                  variant="link"
+                  size="sm"
+                  className="h-auto px-0 text-xs"
+                  onClick={() => setConfirmDiscardOpen(true)}
+                >
+                  Discard the stuck batch and retry
+                </Button>
+              ) : null}
+            </div>
+          ) : null}
 
           {batch ? (
             <div className="space-y-3 border-t border-fg/10 pt-4">
@@ -480,17 +608,23 @@ export function SessionImportDialog({ open, onOpenChange, onImported }: SessionI
               {busy === "applying" ? "Applying…" : `Apply ${accepted} rows`}
             </Button>
           ) : (
-            <Button
-              type="button"
-              disabled={!file || !sourceSystem.trim() || busy !== ""}
-              onClick={() => void stage()}
-            >
+            <Button type="button" disabled={!file || busy !== ""} onClick={() => void stage()}>
               <Upload className="mr-1.5 size-4" />
               {busy === "staging" ? "Staging…" : "Stage file"}
             </Button>
           )}
         </SheetFooter>
       </SheetContent>
+      <ConfirmDialog
+        open={confirmDiscardOpen}
+        onOpenChange={setConfirmDiscardOpen}
+        title="Discard the stuck batch?"
+        description="This file is already staged and awaiting a decision in another batch. Discarding it may lose any review already done there, so this upload can be staged fresh."
+        confirmLabel="Discard and retry"
+        destructive
+        loading={discarding}
+        onConfirm={discardStuckBatch}
+      />
     </Sheet>
   )
 }

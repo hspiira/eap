@@ -16,6 +16,7 @@ const apply = vi.fn()
 const listRows = vi.fn()
 const getBatch = vi.fn()
 const getTemplate = vi.fn()
+const abandon = vi.fn()
 
 vi.mock("@/api/endpoints/session-imports", () => ({
   sessionImportsApi: {
@@ -24,7 +25,7 @@ vi.mock("@/api/endpoints/session-imports", () => ({
     listRows: (...args: unknown[]) => listRows(...args),
     getBatch: (...args: unknown[]) => getBatch(...args),
     getTemplate: (...args: unknown[]) => getTemplate(...args),
-    abandon: vi.fn(),
+    abandon: (...args: unknown[]) => abandon(...args),
   },
 }))
 
@@ -52,7 +53,6 @@ async function stageFile(counts: Record<string, number>) {
     <SessionImportDialog open onOpenChange={() => {}} onImported={() => {}} />,
   )
   const file = new File(["DATE\n2025-09-12\n"], "sessions.csv", { type: "text/csv" })
-  await user.type(screen.getByLabelText("Source system"), "activity-log")
   await user.upload(screen.getByLabelText("CSV file"), file)
   await user.click(screen.getByRole("button", { name: /stage file/i }))
   return screen
@@ -147,5 +147,51 @@ describe("chunked apply", () => {
         "Lost the connection partway through, but nothing already written was lost. Click Apply to resume.",
       ),
     ).toBeInTheDocument()
+  })
+})
+
+describe("source system", () => {
+  it("always stages against the activity-log workbook, with no source-key column", async () => {
+    await stageFile({ Accepted: 1 })
+    expect(stage).toHaveBeenCalledWith(expect.any(File), "activity-log-workbook")
+  })
+})
+
+describe("restage conflict", () => {
+  it("offers to discard the stuck batch and retries staging after confirming", async () => {
+    stage
+      .mockRejectedValueOnce(
+        new ApiError(
+          "This file was already staged as batch b-1",
+          "IMPORT_ALREADY_STAGED",
+          409,
+          undefined,
+          undefined,
+          [{ field: "batch_id", message: "b-1", code: null }],
+        ),
+      )
+      .mockResolvedValueOnce(batch({ Accepted: 1 }))
+    listRows.mockResolvedValue({ items: [], total: 0, page: 1, limit: 50 })
+    abandon.mockResolvedValue({ id: "b-1", status: "Abandoned" })
+
+    const screen = renderWithProviders(
+      <SessionImportDialog open onOpenChange={() => {}} onImported={() => {}} />,
+    )
+    const file = new File(["DATE\n2025-09-12\n"], "sessions.csv", { type: "text/csv" })
+    await userEvent.upload(screen.getByLabelText("CSV file"), file)
+    await userEvent.click(screen.getByRole("button", { name: /stage file/i }))
+
+    const discardLink = await screen.findByText("Discard the stuck batch and retry")
+    await userEvent.click(discardLink)
+    await userEvent.click(await screen.findByRole("button", { name: "Discard and retry" }))
+
+    await waitFor(() =>
+      expect(abandon).toHaveBeenCalledWith(
+        "b-1",
+        "Discarded from the import dialog after a restage conflict",
+      ),
+    )
+    expect(stage).toHaveBeenCalledTimes(2)
+    expect(await screen.findByRole("button", { name: /apply 1 rows/i })).toBeEnabled()
   })
 })
