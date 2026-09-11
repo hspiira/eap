@@ -121,7 +121,12 @@ jobs:
           AUDIT_CHAIN_TEST_DATABASE_URL: postgresql+asyncpg://postgres:postgres@localhost:5432/eap_test
           IMPORT_TEST_DATABASE_URL: postgresql+asyncpg://postgres:postgres@localhost:5432/eap_test
           OUTBOX_TEST_DATABASE_URL: postgresql+asyncpg://postgres:postgres@localhost:5432/eap_test
-        run: uv run pytest tests -v --ignore=tests/unit
+        # Pinned to 4, not -n auto: this is a public repo, so the runner has
+        # exactly 4 vCPUs (GitHub's documented spec). Verified locally that 4
+        # workers pass cleanly against the per-test-schema isolation below,
+        # while a higher count (10, this machine's core count) exhausts
+        # Postgres's shared lock table on concurrent DROP SCHEMA ... CASCADE.
+        run: uv run pytest tests -v --ignore=tests/unit -n 4
 
       # A skipped test and a passing test are indistinguishable in the run
       # above. REQUIRE_DATABASE_TESTS turns a missing database URL into a

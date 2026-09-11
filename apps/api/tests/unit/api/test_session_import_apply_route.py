@@ -1,14 +1,22 @@
 """The apply route: Admin-only, and honest about importing nothing."""
 
+from contextlib import asynccontextmanager
 from datetime import UTC, date, datetime
 from types import SimpleNamespace
-from unittest.mock import AsyncMock
+from unittest.mock import AsyncMock, Mock
 
 import pytest
 import pytest_asyncio
 from fastapi import FastAPI
 from httpx import ASGITransport, AsyncClient
 
+from app.api.dependencies import (
+    get_client_repository,
+    get_diagnosis_repository,
+    get_eligible_member_repository,
+    get_service_repository,
+    get_user_repository,
+)
 from app.api.dependencies.provider_network import (
     get_historical_session_writer,
     get_session_import_repository,
@@ -24,6 +32,7 @@ from app.domain.entities.session_import import (
 )
 from app.domain.enums.provider_network import ImportBatchStatus, ImportRowOutcome
 from app.domain.enums.tenancy import TenantRole
+from app.domain.exceptions import DomainError
 from app.domain.value_objects.core import ProviderId, TenantId, UserId
 from app.domain.value_objects.provider_network import (
     SessionImportBatchId,
@@ -70,10 +79,37 @@ async def api():
     app = FastAPI()
     app.include_router(router)
     register_exception_handlers(app)
-    state = SimpleNamespace(imports=AsyncMock(), writer=AsyncMock(), db=AsyncMock(), role="Admin")
+    state = SimpleNamespace(
+        imports=AsyncMock(),
+        writer=AsyncMock(),
+        clients=AsyncMock(),
+        members=AsyncMock(),
+        services=AsyncMock(),
+        diagnoses=AsyncMock(),
+        users=AsyncMock(),
+        db=AsyncMock(),
+        role="Admin",
+    )
     state.imports.get_batch.return_value = _batch()
     state.imports.list_rows.return_value = ([_row()], 1)
+    state.imports.list_pending_rows.return_value = []
+    state.imports.count_pending_rows.return_value = 0
+    state.imports.count_imported_rows.return_value = 0
     state.imports.outcome_counts.return_value = {"UnresolvedMember": 1}
+    state.clients.get_by_id.return_value = SimpleNamespace(tenant_id=TenantId(TENANT))
+    state.clients.list_all.return_value = []
+    state.members.get_by_id.return_value = SimpleNamespace(tenant_id=TenantId(TENANT))
+    state.services.get_by_id.return_value = SimpleNamespace(tenant_id=TenantId(TENANT))
+    state.imports.mark_row_imported.return_value = True
+    state.diagnoses.list_types.return_value = []
+    state.diagnoses.list_diagnoses.return_value = []
+    state.users.list_all.return_value = []
+
+    @asynccontextmanager
+    async def _nested():
+        yield
+
+    state.db.begin_nested = Mock(side_effect=lambda: _nested())
 
     def _user() -> TokenData:
         return TokenData(user_id="u-1", tenant_id=TENANT, role=state.role)
@@ -85,6 +121,11 @@ async def api():
     app.dependency_overrides[get_current_user_entity] = _user_entity
     app.dependency_overrides[get_session_import_repository] = lambda: state.imports
     app.dependency_overrides[get_historical_session_writer] = lambda: state.writer
+    app.dependency_overrides[get_client_repository] = lambda: state.clients
+    app.dependency_overrides[get_eligible_member_repository] = lambda: state.members
+    app.dependency_overrides[get_service_repository] = lambda: state.services
+    app.dependency_overrides[get_diagnosis_repository] = lambda: state.diagnoses
+    app.dependency_overrides[get_user_repository] = lambda: state.users
     app.dependency_overrides[get_db] = lambda: state.db
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as http:
         state.http = http
@@ -114,11 +155,13 @@ class TestHonestResult:
         response = await api.http.post(f"/session-imports/b-1/apply?tenant_id={TENANT}")
         assert response.status_code != 501
 
-    async def test_an_unresolved_batch_reports_zero_imported(self, api):
+    async def test_a_batch_with_nothing_pending_reports_zero_imported_and_done(self, api):
+        """UnresolvedMember and friends never reach list_pending_rows in the real repo."""
         response = await api.http.post(f"/session-imports/b-1/apply?tenant_id={TENANT}")
         body = response.json()
         assert body["imported"] == 0
-        assert body["not_importable"] == 1
+        assert body["done"] is True
+        assert body["remaining"] == 0
         api.writer.record.assert_not_awaited()
 
     async def test_applying_twice_is_refused(self, api):
@@ -131,6 +174,51 @@ class TestHonestResult:
         api.imports.get_batch.return_value = None
         response = await api.http.post(f"/session-imports/b-1/apply?tenant_id={TENANT}")
         assert response.status_code == 404
+
+
+class TestChunkedApply:
+    def _accepted_row(self):
+        return SessionImportRowEntity(
+            id=SessionImportRowId("r-2"),
+            batch_id=SessionImportBatchId("b-1"),
+            tenant_id=TenantId(TENANT),
+            row_number=2,
+            source_record_key=None,
+            raw_practitioner_name="Alice Nakato",
+            session_date=date(2025, 4, 2),
+            outcome=ImportRowOutcome.ACCEPTED,
+            provider_id=ProviderId("prov-1"),
+            client_id="cli-1",
+            service_id="svc-1",
+            reasons=(),
+            created_at=NOW,
+        )
+
+    async def test_a_pending_row_is_written_and_the_response_reports_it_left_open(self, api):
+        api.imports.list_pending_rows.return_value = [self._accepted_row()]
+        api.imports.count_pending_rows.return_value = 3
+        api.writer.record.return_value = "sess-1"
+        response = await api.http.post(f"/session-imports/b-1/apply?tenant_id={TENANT}")
+        body = response.json()
+        assert response.status_code == 200, response.text
+        assert (body["imported"], body["remaining"], body["done"]) == (1, 3, False)
+        api.imports.save_batch.assert_not_awaited()
+
+    async def test_the_limit_query_param_reaches_the_pending_row_query(self, api):
+        await api.http.post(f"/session-imports/b-1/apply?tenant_id={TENANT}&limit=10")
+        assert api.imports.list_pending_rows.await_args.kwargs["limit"] == 10
+
+    async def test_the_default_limit_is_used_when_none_is_given(self, api):
+        await api.http.post(f"/session-imports/b-1/apply?tenant_id={TENANT}")
+        assert api.imports.list_pending_rows.await_args.kwargs["limit"] == 50
+
+    async def test_a_row_the_writer_refuses_is_reported_failed_not_a_500(self, api):
+        api.imports.list_pending_rows.return_value = [self._accepted_row()]
+        api.writer.record.side_effect = DomainError("no such thing", error_code="x")
+        response = await api.http.post(f"/session-imports/b-1/apply?tenant_id={TENANT}")
+        body = response.json()
+        assert response.status_code == 200, response.text
+        assert (body["imported"], body["failed"]) == (0, 1)
 
 
 class TestAbandon:
@@ -192,3 +280,66 @@ class TestAbandon:
             f"/session-imports/b-1/abandon?tenant_id={TENANT}", json={"reason": "wrong file"}
         )
         assert response.status_code == 404
+
+
+def _load_workbook(content: bytes):
+    import io
+
+    import openpyxl
+
+    return openpyxl.load_workbook(io.BytesIO(content))
+
+
+class TestTemplate:
+    async def test_the_template_is_server_generated(self, api):
+        response = await api.http.get("/session-imports/template")
+
+        assert response.status_code == 200
+        assert response.headers["content-type"] == (
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        )
+        workbook = _load_workbook(response.content)
+        sheet = workbook["Sessions"]
+        assert [cell.value for cell in sheet[1]] == [
+            "Date",
+            "Company (CLEAN)",
+            "Client Code",
+            "Client-ID#",
+            "Counselor (CLEAN)",
+            "Client Type (Staff/Dep)",
+            "Gender",
+            "Session Type",
+            "Session Category",
+            "Client Type",
+            "Intervention",
+            "Status (CLEAN)",
+            "Rate (UGX)",
+            "Session #",
+            "Issue/Topic",
+            "Diagnosis Type",
+            "Diagnosis",
+            "Approved By",
+        ]
+        assert "Example Client" in [cell.value for cell in sheet[2]]
+
+    async def test_the_template_shows_both_an_individual_and_a_company_wide_row(self, api):
+        """Client-ID# and Gender are blank on the company-wide row; nothing else demonstrates that shape."""
+        response = await api.http.get("/session-imports/template")
+        sheet = _load_workbook(response.content)["Sessions"]
+        assert sheet.max_row == 3
+        assert [cell.value for cell in sheet[2]][5] == "Staff"
+        assert [cell.value for cell in sheet[3]][5] == "Group/Event"
+
+    async def test_dropdown_columns_reference_the_hidden_list_sheet(self, api):
+        response = await api.http.get("/session-imports/template")
+        workbook = _load_workbook(response.content)
+        assert "Reference Lists" in workbook.sheetnames
+        assert workbook["Reference Lists"].sheet_state == "hidden"
+        sheet = workbook["Sessions"]
+        assert len(sheet.data_validations.dataValidation) > 0
+
+    async def test_a_non_admin_may_still_read_the_template(self, api):
+        """Staging is Admin-only; knowing the file shape is not."""
+        api.role = "Viewer"
+        response = await api.http.get("/session-imports/template")
+        assert response.status_code == 200

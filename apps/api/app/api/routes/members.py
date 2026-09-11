@@ -8,6 +8,7 @@ also the only identity-bearing side allowed to link to clinical subjects.
 import csv
 import hashlib
 import io
+import logging
 from collections.abc import Sequence
 from copy import deepcopy
 from dataclasses import dataclass
@@ -71,6 +72,7 @@ from app.api.services.member_import import (
     MemberRowChecker,
     MemberRowImporter,
     MemberRowUpdater,
+    RowCheck,
     build_row_entity,
     csv_row_from_entity,
     issue_member_code,
@@ -78,6 +80,7 @@ from app.api.services.member_import import (
 from app.application.use_cases.eligible_member_use_cases import EnrolEligibleMemberUseCase
 from app.core.authorization import require_clinical_scope, require_not_viewer, require_tenant_role
 from app.core.database import get_db
+from app.core.query_metrics import measure_queries
 from app.core.security import TokenData, get_current_user
 from app.domain.entities.client import ClientEntity
 from app.domain.entities.eligible_member import EligibleMember
@@ -122,10 +125,13 @@ from app.domain.value_objects.core import (
 from app.domain.value_objects.staffing import EmploymentDetails
 from app.shared.decorators import readonly, transactional
 from app.shared.handlers.audit_event_handler import AuditEventHandler
+from app.shared.utils.batched_commit import BatchedCommit
 from app.shared.utils.datetime import utc_now
 from app.shared.utils.generators import generate_cuid
 from app.shared.utils.member_csv import MemberCsvRow, parse_member_csv
 from app.shared.utils.route_audit_helper import audit_change
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/members", tags=["members"])
 
@@ -848,24 +854,35 @@ async def stage_member_import(
     await imports.save_batch(batch)
 
     checker = MemberRowChecker(current_user.tenant_id, client_repo, member_repo, imports)
-    await checker.preload(rows, file_hash)
-    entities: list[MemberImportRowEntity] = []
-    for row in rows:
-        check = await checker.check(
-            row, parse_error=parse_errors.get(row.row_number), file_hash=file_hash
-        )
-        entities.append(
-            build_row_entity(
-                row,
-                check,
-                row_id=MemberImportRowId(generate_cuid()),
-                batch_id=batch.id,
-                tenant_id=tenant,
-                file_hash=file_hash,
-                now=now,
+    with measure_queries() as measured:
+        await checker.preload(rows, file_hash)
+        entities: list[MemberImportRowEntity] = []
+        for row in rows:
+            check = await checker.check(
+                row, parse_error=parse_errors.get(row.row_number), file_hash=file_hash
             )
-        )
-    await imports.add_rows(entities)
+            entities.append(
+                build_row_entity(
+                    row,
+                    check,
+                    row_id=MemberImportRowId(generate_cuid()),
+                    batch_id=batch.id,
+                    tenant_id=tenant,
+                    file_hash=file_hash,
+                    now=now,
+                )
+            )
+        await imports.add_rows(entities)
+    logger.info(
+        "member import staged",
+        extra={
+            "import_kind": "members",
+            "import_phase": "stage",
+            "batch_id": batch.id.value,
+            "rows": len(rows),
+            **measured.as_log_fields(len(rows)),
+        },
+    )
     await _audit(batch, outbox=outbox, current_user=current_user, request=request)
     return _batch_response(batch, await imports.outcome_counts(tenant, batch.id))
 
@@ -966,6 +983,10 @@ async def abandon_member_import(
     return _batch_response(batch, await imports.outcome_counts(tenant, batch.id))
 
 
+class _ClaimLost(Exception):
+    """Another apply of this batch claimed the row first."""
+
+
 async def _write_row(
     row: MemberImportRowEntity,
     checker: MemberRowChecker,
@@ -974,48 +995,72 @@ async def _write_row(
     tenant_id: TenantId,
     db: AsyncSession,
 ) -> str:
-    """Re-check and write one pending row in its own transaction.
+    """Re-check and write one pending row inside its own savepoint.
 
     A batch can sit staged for a while before it is applied, so the row is
     judged again against the roster as it stands now rather than trusted from
-    staging time. A row that fails to write is marked Failed and the caller's
-    loop continues: see "Roster import atomicity" in
-    docs/migrations/MEMBERS_MIGRATION.md.
+    staging time. Leaving the savepoint by raising undoes this row's writes
+    and leaves the rows around it in the same call standing, so a row that
+    fails is marked Failed and the caller's loop continues: see "Roster import
+    atomicity" in docs/migrations/MEMBERS_MIGRATION.md.
     """
     csv_row = csv_row_from_entity(row)
     check = await checker.check(csv_row)
     try:
-        if row.decision == "update":
-            if not check.updatable or check.existing is None:
-                await imports.mark_row_failed(
-                    tenant_id, row.id, check.message or f"No longer updatable ({check.state})"
-                )
-                await db.commit()
-                return "failed"
-            changed = await writers.updater.update(csv_row, check.existing)
-            await imports.mark_row_imported(
-                tenant_id,
-                row.id,
-                check.existing.id.value,
-                message=None if changed else "No changes: roster matches the member already",
-            )
-            await db.commit()
-            return "updated" if changed else "unchanged"
-        if not check.importable or check.data is None or check.client is None:
-            await imports.mark_row_failed(
-                tenant_id, row.id, check.message or f"No longer importable ({check.state})"
-            )
-            await db.commit()
-            return "failed"
-        member = await writers.importer.enrol(csv_row, check.data, check.client.code)
-        await imports.mark_row_imported(tenant_id, row.id, member.id.value)
-        await db.commit()
-        return "imported"
+        async with db.begin_nested():
+            return await _write_checked_row(row, csv_row, check, writers, imports, tenant_id)
+    except _ClaimLost:
+        return "unchanged"
     except (EvexiaException, IntegrityError, ValueError) as exc:
-        await db.rollback()
         await imports.mark_row_failed(tenant_id, row.id, str(exc).split("\n", 1)[-1])
-        await db.commit()
         return "failed"
+
+
+async def _write_checked_row(
+    row: MemberImportRowEntity,
+    csv_row: MemberCsvRow,
+    check: RowCheck,
+    writers: _RowWriters,
+    imports: MemberImportRepository,
+    tenant_id: TenantId,
+) -> str:
+    """Enrol or revise the member this row resolved to, and claim the row for it."""
+    if row.decision == "update":
+        return await _revise_member(row, csv_row, check, writers, imports, tenant_id)
+    if not check.importable or check.data is None or check.client is None:
+        await imports.mark_row_failed(
+            tenant_id, row.id, check.message or f"No longer importable ({check.state})"
+        )
+        return "failed"
+    member = await writers.importer.enrol(csv_row, check.data, check.client.code)
+    if not await imports.mark_row_imported(tenant_id, row.id, member.id.value):
+        raise _ClaimLost
+    return "imported"
+
+
+async def _revise_member(
+    row: MemberImportRowEntity,
+    csv_row: MemberCsvRow,
+    check: RowCheck,
+    writers: _RowWriters,
+    imports: MemberImportRepository,
+    tenant_id: TenantId,
+) -> str:
+    if not check.updatable or check.existing is None:
+        await imports.mark_row_failed(
+            tenant_id, row.id, check.message or f"No longer updatable ({check.state})"
+        )
+        return "failed"
+    changed = await writers.updater.update(csv_row, check.existing)
+    claimed = await imports.mark_row_imported(
+        tenant_id,
+        row.id,
+        check.existing.id.value,
+        message=None if changed else "No changes: roster matches the member already",
+    )
+    if not claimed:
+        raise _ClaimLost
+    return "updated" if changed else "unchanged"
 
 
 async def _apply_rows(
@@ -1025,6 +1070,7 @@ async def _apply_rows(
     writers: _RowWriters,
     imports: MemberImportRepository,
     db: AsyncSession,
+    committer: BatchedCommit,
     *,
     limit: int,
 ) -> dict[str, int]:
@@ -1041,6 +1087,8 @@ async def _apply_rows(
     for row in rows:
         state = await _write_row(row, checker, writers, imports, tenant_id, db)
         tally[state] += 1
+        await committer.after_row()
+    await committer.flush()
     return tally
 
 
@@ -1089,7 +1137,24 @@ async def apply_member_import(
     tenant = TenantId(current_user.tenant_id)
     checker = MemberRowChecker(current_user.tenant_id, client_repo, member_repo, imports)
     writers = _writers(current_user, member_repo, subject_repo, link_repo, outbox)
-    tally = await _apply_rows(tenant, batch.id, checker, writers, imports, db, limit=limit)
+    committer = BatchedCommit(db.commit)
+    with measure_queries() as measured:
+        tally = await _apply_rows(
+            tenant, batch.id, checker, writers, imports, db, committer, limit=limit
+        )
+    written = sum(tally.values())
+    logger.info(
+        "member import chunk applied",
+        extra={
+            "import_kind": "members",
+            "import_phase": "apply",
+            "batch_id": batch_id,
+            "rows": written,
+            "commits": committer.commits,
+            **tally,
+            **measured.as_log_fields(written),
+        },
+    )
     remaining = await imports.count_pending_rows(tenant, batch.id)
     if remaining == 0:
         accepted_count = await imports.count_imported_rows(tenant, batch.id)

@@ -1,5 +1,6 @@
 """Persistence mappers for the provider network aggregates."""
 
+from app.core.encryption import decrypt, encrypt
 from app.domain.entities.provider_affiliation import ProviderAffiliationEntity
 from app.domain.entities.provider_alias import ProviderAliasEntity
 from app.domain.entities.provider_organisation import ProviderOrganisationEntity
@@ -265,6 +266,10 @@ class SessionImportMapper:
             client_type=ClientType(model.client_type) if model.client_type else None,
             rate_ugx=model.rate_ugx,
             session_number=model.session_number,
+            issue_topic=decrypt(model.issue_topic, tenant_id=model.tenant_id),
+            diagnosis_type_id=model.diagnosis_type_id,
+            diagnosis_id=model.diagnosis_id,
+            approved_by=model.approved_by,
             created_at=ensure_utc(model.created_at),
         )
 
@@ -298,5 +303,9 @@ class SessionImportMapper:
             client_type=entity.client_type.value if entity.client_type else None,
             rate_ugx=entity.rate_ugx,
             session_number=entity.session_number,
+            issue_topic=encrypt(entity.issue_topic, tenant_id=entity.tenant_id.value),
+            diagnosis_type_id=entity.diagnosis_type_id,
+            diagnosis_id=entity.diagnosis_id,
+            approved_by=entity.approved_by,
             created_at=entity.created_at,
         )

@@ -5,6 +5,7 @@ Provides async test client and database fixtures for E2E testing.
 """
 
 # Force test environment before any app imports so rate limiting uses test limits
+import asyncio
 import os
 
 os.environ["ENVIRONMENT"] = "test"
@@ -18,6 +19,7 @@ import pytest_asyncio
 from fastapi import Depends, Request
 from httpx import ASGITransport, AsyncClient
 from sqlalchemy import select
+from sqlalchemy.engine import make_url
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.pool import NullPool
 
@@ -52,6 +54,42 @@ TEST_DATABASE_URL = os.environ.get(
     "TEST_DATABASE_URL",
     "postgresql+asyncpg://postgres:postgres@localhost:5432/eap_test",
 )
+
+# db_session (below) does create_all/drop_all against the whole database, not
+# a per-test schema. Under pytest-xdist that races two workers dropping and
+# recreating the same tables underneath each other, so each worker gets its
+# own physical database instead, named from PYTEST_XDIST_WORKER (e.g. "gw0"),
+# which pytest-xdist sets in every worker process and leaves unset otherwise.
+_XDIST_WORKER = os.environ.get("PYTEST_XDIST_WORKER")
+if _XDIST_WORKER:
+    _base_url = make_url(TEST_DATABASE_URL)
+    _worker_database = f"{_base_url.database}_{_XDIST_WORKER}"
+
+    async def _ensure_worker_database() -> None:
+        import asyncpg
+
+        admin_url = _base_url.set(database="postgres")
+        conn = await asyncpg.connect(
+            host=admin_url.host,
+            port=admin_url.port or 5432,
+            user=admin_url.username,
+            password=admin_url.password,
+            database="postgres",
+        )
+        try:
+            exists = await conn.fetchval(
+                "SELECT 1 FROM pg_database WHERE datname = $1", _worker_database
+            )
+            if not exists:
+                await conn.execute(f'CREATE DATABASE "{_worker_database}"')
+        finally:
+            await conn.close()
+
+    asyncio.run(_ensure_worker_database())
+    # str(url) masks the password; that breaks real auth here.
+    TEST_DATABASE_URL = _base_url.set(database=_worker_database).render_as_string(
+        hide_password=False
+    )
 
 # Module-global engine + per-test event loops: pooled connections would be
 # created on one test's loop and reused on the next ("attached to a different

@@ -42,6 +42,7 @@ _REVIEW_OUTCOMES = frozenset(
         ImportRowOutcome.UNRESOLVED_SERVICE,
         ImportRowOutcome.CONFLICTING,
         ImportRowOutcome.REJECTED,
+        ImportRowOutcome.FAILED,
     }
 )
 
@@ -161,6 +162,11 @@ class SessionImportRowEntity:
     client_type: ClientType | None = None
     rate_ugx: int | None = None
     session_number: int | None = None
+    # Enrichment: never blocks a row, unlike the resolved subject above.
+    issue_topic: str | None = None
+    diagnosis_type_id: str | None = None
+    diagnosis_id: str | None = None
+    approved_by: str | None = None
 
     def __post_init__(self) -> None:
         if self.row_number < 1:
@@ -193,6 +199,21 @@ class SessionImportRowEntity:
                 f"Row {self.row_number} was already imported as {self.imported_session_id}"
             )
         self.imported_session_id = session_id
+
+    def mark_failed(self, reason: str) -> None:
+        """The historical write path refused this row at apply time.
+
+        Terminal, like a member import row's Failed outcome: the batch's
+        apply loop moves on rather than losing every row after it to one bad
+        row. `is_importable` becomes false the moment `outcome` changes, so a
+        later chunk of the same apply run never retries it.
+        """
+        if self.imported_session_id is not None:
+            raise DomainError(
+                f"Row {self.row_number} was already imported as {self.imported_session_id}"
+            )
+        self.outcome = ImportRowOutcome.FAILED
+        self.reasons = (reason,)
 
     @property
     def needs_review(self) -> bool:

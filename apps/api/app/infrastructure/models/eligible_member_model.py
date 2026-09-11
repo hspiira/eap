@@ -71,13 +71,19 @@ class EligibleMemberModel(CuidMixin, TenantMixin, Base, TimestampMixin):
     work_email: Mapped[str | None] = mapped_column(String(255), nullable=True)
     personal_email: Mapped[str | None] = mapped_column(String(255), nullable=True)
     display_label: Mapped[str | None] = mapped_column(String(255), nullable=True)
-    date_of_birth: Mapped[date | None] = mapped_column(Date, nullable=True)
+    # Encrypted at rest (app/core/encryption.py): stores ciphertext, not a
+    # calendar date, so it cannot be indexed, compared or sorted on in SQL.
+    # See EligibleMemberMapper for the date <-> ciphertext conversion.
+    date_of_birth: Mapped[str | None] = mapped_column(Text, nullable=True)
     gender: Mapped[MemberGender | None] = mapped_column(String(30), nullable=True)
     phone: Mapped[str | None] = mapped_column(String(50), nullable=True)
     staff_number: Mapped[str | None] = mapped_column(String(100), nullable=True)
     import_source_id: Mapped[str | None] = mapped_column(String(255), nullable=True, index=True)
-    national_id: Mapped[str | None] = mapped_column(String(100), nullable=True)
-    passport_number: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    # Encrypted at rest; ciphertext is longer than the plaintext and never
+    # looked up by value (confirmed: no query anywhere filters on either),
+    # so there is no blind-index column to keep in step here.
+    national_id: Mapped[str | None] = mapped_column(Text, nullable=True)
+    passport_number: Mapped[str | None] = mapped_column(Text, nullable=True)
     job_title: Mapped[str | None] = mapped_column(String(255), nullable=True)
     job_classification: Mapped[str | None] = mapped_column(String(255), nullable=True)
     skill: Mapped[str | None] = mapped_column(String(255), nullable=True)
@@ -109,6 +115,7 @@ class ClinicalSubjectModel(CuidMixin, TenantMixin, Base, TimestampMixin):
     preferred_language: Mapped[str | None] = mapped_column(String(20), nullable=True)
     preferred_pronouns: Mapped[str | None] = mapped_column(String(50), nullable=True)
     preferred_contact_method: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    # Encrypted at rest.
     notes_for_continuity: Mapped[str | None] = mapped_column(Text, nullable=True)
     is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
     deactivated_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)

@@ -217,6 +217,10 @@ class SessionImportRowPreview(BaseModel):
     raw_practitioner_name: str | None
     session_date: date | None
     reasons: list[str]
+    issue_topic: str | None = None
+    diagnosis_type_id: str | None = None
+    diagnosis_id: str | None = None
+    approved_by: str | None = None
 
 
 class SessionImportBatchResponse(BaseModel):
@@ -242,9 +246,10 @@ class SessionImportRowListResponse(BaseModel):
 
 
 class SessionImportApplyResponse(BaseModel):
-    """Outcome of applying a batch. `imported` is the only write count."""
+    """What this one chunked call wrote. Call again while `remaining` is above zero."""
 
     batch_id: str
     imported: int
-    skipped_already_imported: int
-    not_importable: int
+    failed: int
+    remaining: int
+    done: bool

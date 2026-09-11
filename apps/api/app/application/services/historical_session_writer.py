@@ -73,6 +73,10 @@ class HistoricalSessionWriterAdapter:
             client_type=row.client_type,
             rate_ugx=row.rate_ugx,
             session_number=row.session_number,
+            issue_topic=row.issue_topic,
+            diagnosis_type_id=row.diagnosis_type_id,
+            diagnosis_id=row.diagnosis_id,
+            approved_by=row.approved_by,
         )
         session = await self._record.execute(record)
         return session.id.value

@@ -41,6 +41,10 @@ class BaseRepository[EntityType, IdType](ABC):
             entity: Entity to save
         """
 
+    async def insert(self, entity: EntityType) -> None:
+        """Persist an entity known to be new, skipping the existence probe `save` makes."""
+        await self.save(entity)
+
     @abstractmethod
     async def delete(self, entity_id: IdType) -> None:
         """

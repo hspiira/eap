@@ -134,6 +134,10 @@ class SessionImportRowModel(CuidMixin, TenantMixin, Base, TimestampMixin):
     client_type: Mapped[str | None] = mapped_column(String(32), nullable=True)
     rate_ugx: Mapped[int | None] = mapped_column(Integer, nullable=True)
     session_number: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    issue_topic: Mapped[str | None] = mapped_column(Text, nullable=True)
+    diagnosis_type_id: Mapped[str | None] = mapped_column(String(25), nullable=True)
+    diagnosis_id: Mapped[str | None] = mapped_column(String(25), nullable=True)
+    approved_by: Mapped[str | None] = mapped_column(String(25), nullable=True)
     imported_session_id: Mapped[str | None] = mapped_column(
         String(25), ForeignKey("service_sessions.id", ondelete="SET NULL"), nullable=True
     )

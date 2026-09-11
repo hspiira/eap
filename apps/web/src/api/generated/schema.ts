@@ -5653,6 +5653,38 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/session-imports/template": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Download the session import workbook template
+         * @description An .xlsx workbook with the supported columns and one example row of each attendance kind.
+         *
+         *     Column names match `provider_import_source.py`'s accepted spellings, using
+         *     the same "(CLEAN)" form the reference extract itself uses for the columns
+         *     that have one. "Client Type (Staff/Dep)" says who attended (an
+         *     individual, or the client at large); "Client Type" is unrelated and says
+         *     whether this is a new or repeat client engagement -- the two are easy to
+         *     conflate and both belong in a real extract.
+         *
+         *     Columns backed by a fixed or tenant-scoped list get an Excel dropdown
+         *     sourced from a hidden reference sheet. That is a client-side aid only;
+         *     `provider_import_source.py` and the staging service validate every row
+         *     the same way whether or not the value came from the dropdown.
+         */
+        get: operations["session_import_template_session_imports_template_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/session-imports/{batch_id}": {
         parameters: {
             query?: never;
@@ -5708,12 +5740,18 @@ export interface paths {
         put?: never;
         /**
          * Apply Batch
-         * @description Write every importable row through the historical path, then close the batch.
+         * @description Write up to `limit` still-pending rows, one at a time, in their own commit.
          *
-         *     Applying a second time is refused, so a replayed request cannot write
-         *     twice. Only Accepted rows are written; every other row states per row why
-         *     it was passed over, so an unimportable batch is legible without reading
-         *     this code.
+         *     A batch large enough to write for minutes cannot be written in a single
+         *     request without risking a platform timeout, and a single transaction
+         *     around all of it loses every row already written the moment any later
+         *     row fails or the call times out. Call this repeatedly while `remaining`
+         *     in the response is above zero; a client that stops calling (a closed
+         *     tab, a timeout) leaves the batch safely Staged for the next call to
+         *     continue from exactly where the last one left off. The batch only closes
+         *     -- flips to Applied, fires its audit event -- once a call finds nothing
+         *     left to write. Applying an already-Applied batch is refused, so a
+         *     replayed request cannot write twice.
          */
         post: operations["apply_batch_session_imports__batch_id__apply_post"];
         delete?: never;
@@ -10338,7 +10376,7 @@ export interface components {
          * @description Per-row result of a staged historical import.
          * @enum {string}
          */
-        ImportRowOutcome: "Accepted" | "Duplicate" | "Conflicting" | "MissingPractitioner" | "UnmappedPractitioner" | "AmbiguousPractitioner" | "UnresolvedClient" | "UnresolvedMember" | "UnresolvedService" | "Rejected";
+        ImportRowOutcome: "Accepted" | "Duplicate" | "Conflicting" | "MissingPractitioner" | "UnmappedPractitioner" | "AmbiguousPractitioner" | "UnresolvedClient" | "UnresolvedMember" | "UnresolvedService" | "Rejected" | "Failed";
         /** IncidentClose */
         IncidentClose: {
             /**
@@ -13616,17 +13654,19 @@ export interface components {
         };
         /**
          * SessionImportApplyResponse
-         * @description Outcome of applying a batch. `imported` is the only write count.
+         * @description What this one chunked call wrote. Call again while `remaining` is above zero.
          */
         SessionImportApplyResponse: {
             /** Batch Id */
             batch_id: string;
+            /** Done */
+            done: boolean;
+            /** Failed */
+            failed: number;
             /** Imported */
             imported: number;
-            /** Not Importable */
-            not_importable: number;
-            /** Skipped Already Imported */
-            skipped_already_imported: number;
+            /** Remaining */
+            remaining: number;
         };
         /** SessionImportBatchResponse */
         SessionImportBatchResponse: {
@@ -13672,7 +13712,15 @@ export interface components {
         };
         /** SessionImportRowPreview */
         SessionImportRowPreview: {
+            /** Approved By */
+            approved_by?: string | null;
             delivery_context: components["schemas"]["DeliveryContext"];
+            /** Diagnosis Id */
+            diagnosis_id?: string | null;
+            /** Diagnosis Type Id */
+            diagnosis_type_id?: string | null;
+            /** Issue Topic */
+            issue_topic?: string | null;
             outcome: components["schemas"]["ImportRowOutcome"];
             /** Provider Affiliation Id */
             provider_affiliation_id: string | null;
@@ -26585,6 +26633,26 @@ export interface operations {
             };
         };
     };
+    session_import_template_session_imports_template_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
     get_batch_session_imports__batch_id__get: {
         parameters: {
             query: {
@@ -26659,6 +26727,8 @@ export interface operations {
         parameters: {
             query: {
                 tenant_id: string;
+                /** @description Max rows to write in this call. Keep calling while the response's remaining is above zero; the batch only closes once nothing is left. */
+                limit?: number;
             };
             header?: never;
             path: {

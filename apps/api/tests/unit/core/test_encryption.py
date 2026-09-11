@@ -5,10 +5,13 @@ import base64
 import pytest
 
 from app.core.encryption import (
+    AWSKMSKeyProvider,
     EncryptionError,
     KeyProvider,
+    SettingsKeyProvider,
     decrypt,
     encrypt,
+    get_key_provider,
     set_key_provider,
 )
 
@@ -134,3 +137,82 @@ class TestKeyProvider:
                 SettingsKeyProvider().get_kek()
         finally:
             settings.ENCRYPTION_KEK = original
+
+
+class _FakeKMSClient:
+    """Stands in for a boto3 KMS client: decrypts whatever it last "generated"."""
+
+    def __init__(self, plaintext_kek: bytes):
+        self._plaintext_kek = plaintext_kek
+        self.decrypt_calls = 0
+
+    def decrypt(self, *, CiphertextBlob: bytes, KeyId: str):  # noqa: N803 (matches boto3's shape)
+        self.decrypt_calls += 1
+        if CiphertextBlob != b"wrapped:" + self._plaintext_kek:
+            raise ValueError("wrong ciphertext for this key")
+        return {"Plaintext": self._plaintext_kek}
+
+
+class TestAWSKMSKeyProvider:
+    def _provider(
+        self, plaintext_kek=b"k" * 32, **kwargs
+    ) -> tuple[AWSKMSKeyProvider, _FakeKMSClient]:
+        client = _FakeKMSClient(plaintext_kek)
+        ciphertext_b64 = base64.b64encode(b"wrapped:" + plaintext_kek).decode()
+        return AWSKMSKeyProvider(client, "key-1", ciphertext_b64, **kwargs), client
+
+    def test_get_kek_returns_the_kms_decrypted_plaintext(self):
+        provider, _client = self._provider(b"k" * 32)
+        assert provider.get_kek() == b"k" * 32
+
+    def test_a_short_kms_decrypted_key_is_rejected(self):
+        provider, _client = self._provider(b"short")
+        with pytest.raises(EncryptionError):
+            provider.get_kek()
+
+    def test_invalid_base64_ciphertext_is_rejected_at_construction(self):
+        with pytest.raises(EncryptionError):
+            AWSKMSKeyProvider(_FakeKMSClient(b"k" * 32), "key-1", "@@not-base64@@")
+
+    def test_a_kms_decrypt_failure_becomes_an_encryption_error(self):
+        provider, client = self._provider()
+        client.decrypt = lambda **_: (_ for _ in ()).throw(RuntimeError("access denied"))
+        with pytest.raises(EncryptionError):
+            provider.get_kek()
+
+    def test_repeated_calls_within_the_cache_window_do_not_call_kms_again(self):
+        """encrypt/decrypt call get_kek on every field, so an uncached provider would hit KMS per field."""
+        provider, client = self._provider(cache_ttl_seconds=300.0)
+        for _ in range(5):
+            provider.get_kek()
+        assert client.decrypt_calls == 1
+
+    def test_the_cache_expires_after_its_ttl(self, monkeypatch):
+        import time as time_module
+
+        real_monotonic = time_module.monotonic
+        provider, client = self._provider(cache_ttl_seconds=1.0)
+        provider.get_kek()
+        monkeypatch.setattr(time_module, "monotonic", lambda: real_monotonic() + 2.0)
+        provider.get_kek()
+        assert client.decrypt_calls == 2
+
+
+class TestGetKeyProvider:
+    def test_defaults_to_the_settings_provider(self):
+        assert isinstance(get_key_provider(), SettingsKeyProvider)
+
+    def test_unrecognised_provider_type_falls_back_to_settings(self):
+        assert isinstance(get_key_provider("something-else"), SettingsKeyProvider)
+
+    def test_aws_kms_with_no_key_id_falls_back_to_settings(self):
+        """Matches get_login_rate_limit_backend: an unconfigured real backend never blocks startup."""
+        assert isinstance(
+            get_key_provider("aws-kms", kms_key_id="", kek_ciphertext="anything"),
+            SettingsKeyProvider,
+        )
+
+    def test_aws_kms_with_boto3_unavailable_falls_back_to_settings(self):
+        """boto3 is an optional dependency (the `kms` extra); this environment does not install it."""
+        provider = get_key_provider("aws-kms", kms_key_id="key-1", kek_ciphertext="Y2lwaGVy")
+        assert isinstance(provider, SettingsKeyProvider)

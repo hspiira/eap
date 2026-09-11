@@ -8,6 +8,7 @@ later compromised in isolation.
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from datetime import date
 
 from app.domain.entities.clinical_subject import ClinicalSubject
@@ -67,22 +68,18 @@ class EnrolEligibleMemberUseCase:
         national_id: str | None = None,
         passport_number: str | None = None,
         employment: EmploymentDetails | None = None,
+        prepare: Callable[[EligibleMember], None] | None = None,
+        verify_absent: bool = True,
     ) -> tuple[EligibleMember, ClinicalSubject]:
-        existing = await self._members.find_by_employer_member_id(
-            tenant_id, client_id, employer_member_id
-        )
-        if existing is not None:
-            raise DomainError(
-                f"Eligible member already exists for employer_member_id={employer_member_id}"
-            )
-        if import_source_id is not None:
-            existing_source = await self._members.find_by_import_source_id(
-                tenant_id, client_id, import_source_id
-            )
-            if existing_source is not None:
-                raise DomainError(
-                    f"Eligible member already exists for import_source_id={import_source_id}"
-                )
+        """Enrol a member with their paired clinical subject and audited link.
+
+        `prepare` is applied to the new member before its first write.
+        `verify_absent` reads both ids back first to turn a collision into a
+        DomainError; a bulk importer that has already checked passes False and
+        leaves it to the unique constraints.
+        """
+        if verify_absent:
+            await self._require_absent(tenant_id, client_id, employer_member_id, import_source_id)
         now = utc_now()
         member = EligibleMember(
             id=EligibleMemberId(generate_cuid()),
@@ -110,7 +107,9 @@ class EnrolEligibleMemberUseCase:
             updated_at=now,
         )
         member.record_created()
-        await self._members.save(member)
+        if prepare is not None:
+            prepare(member)
+        await self._members.insert(member)
 
         subject = ClinicalSubject(
             id=ClinicalSubjectId(generate_cuid()),
@@ -119,7 +118,7 @@ class EnrolEligibleMemberUseCase:
             created_at=now,
             updated_at=now,
         )
-        await self._subjects.save(subject)
+        await self._subjects.insert(subject)
 
         await self._links.link(
             tenant_id=tenant_id,
@@ -127,6 +126,30 @@ class EnrolEligibleMemberUseCase:
             subject_id=subject.id,
         )
         return member, subject
+
+    async def _require_absent(
+        self,
+        tenant_id: TenantId,
+        client_id: ClientId,
+        employer_member_id: str,
+        import_source_id: str | None,
+    ) -> None:
+        existing = await self._members.find_by_employer_member_id(
+            tenant_id, client_id, employer_member_id
+        )
+        if existing is not None:
+            raise DomainError(
+                f"Eligible member already exists for employer_member_id={employer_member_id}"
+            )
+        if import_source_id is None:
+            return
+        existing_source = await self._members.find_by_import_source_id(
+            tenant_id, client_id, import_source_id
+        )
+        if existing_source is not None:
+            raise DomainError(
+                f"Eligible member already exists for import_source_id={import_source_id}"
+            )
 
 
 class ResolveClinicalSubjectUseCase:

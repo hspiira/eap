@@ -1,5 +1,9 @@
 """Care Callback campaign + outreach mapper (Phase 3 #D-CareCallback)."""
 
+import json
+from typing import Any
+
+from app.core.encryption import decrypt, encrypt
 from app.domain.entities.care_callback_campaign import CareCallbackCampaign
 from app.domain.entities.outreach_record import OutreachRecord
 from app.domain.enums import (
@@ -21,6 +25,15 @@ from app.infrastructure.models.care_callback_model import (
     OutreachRecordModel,
 )
 from app.shared.utils.datetime import ensure_utc
+
+
+def _decrypt_json(ciphertext: str | None, *, tenant_id: str) -> dict[str, Any] | None:
+    plaintext = decrypt(ciphertext, tenant_id=tenant_id)
+    return json.loads(plaintext) if plaintext else None
+
+
+def _encrypt_json(value: dict[str, Any] | None, *, tenant_id: str) -> str | None:
+    return encrypt(json.dumps(value), tenant_id=tenant_id) if value is not None else None
 
 
 class CareCallbackCampaignMapper:
@@ -87,11 +100,11 @@ class OutreachRecordMapper:
             else None,
             completed_at=ensure_utc(model.completed_at) if model.completed_at else None,
             triage_instrument_code=model.triage_instrument_code,
-            triage_responses=model.triage_responses,
-            triage_scores=model.triage_scores,
+            triage_responses=_decrypt_json(model.triage_responses, tenant_id=model.tenant_id),
+            triage_scores=_decrypt_json(model.triage_scores, tenant_id=model.tenant_id),
             triage_risk_level=risk,
             crisis_flag=model.crisis_flag,
-            notes=model.notes,
+            notes=decrypt(model.notes, tenant_id=model.tenant_id),
             created_at=ensure_utc(model.created_at),
             updated_at=ensure_utc(model.updated_at),
         )
@@ -114,11 +127,13 @@ class OutreachRecordMapper:
             else None,
             completed_at=ensure_utc(entity.completed_at) if entity.completed_at else None,
             triage_instrument_code=entity.triage_instrument_code,
-            triage_responses=entity.triage_responses,
-            triage_scores=entity.triage_scores,
+            triage_responses=_encrypt_json(
+                entity.triage_responses, tenant_id=entity.tenant_id.value
+            ),
+            triage_scores=_encrypt_json(entity.triage_scores, tenant_id=entity.tenant_id.value),
             triage_risk_level=entity.triage_risk_level,
             crisis_flag=entity.crisis_flag,
-            notes=entity.notes,
+            notes=encrypt(entity.notes, tenant_id=entity.tenant_id.value),
             created_at=ensure_utc(entity.created_at),
             updated_at=ensure_utc(entity.updated_at),
         )

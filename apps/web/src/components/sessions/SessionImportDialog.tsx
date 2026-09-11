@@ -1,6 +1,6 @@
-import { useCallback, useMemo, useState } from "react"
+import { useCallback, useMemo, useRef, useState } from "react"
 
-import { FileInput, Upload } from "lucide-react"
+import { Download, FileInput, RefreshCw, Upload } from "lucide-react"
 
 import {
   type SessionImportApplyResult,
@@ -9,6 +9,7 @@ import {
   type SessionImportRow,
   sessionImportsApi,
 } from "@/api/endpoints/session-imports"
+import { ConfirmDialog } from "@/components/common/ConfirmDialog"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -29,11 +30,84 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { useToast } from "@/contexts/ToastContext"
+import { applyPace } from "@/lib/apply-progress"
 import { normalizeErrorMessage } from "@/lib/errors"
 import { cn } from "@/lib/utils"
+import { ApiError } from "@/types/api"
+
+/** Only Chromium browsers support a re-readable file handle; others fall back to a plain input. */
+const supportsFilePicker =
+  typeof window !== "undefined" && typeof window.showOpenFilePicker === "function"
+
+interface FilePickerAcceptType {
+  description?: string
+  accept: Record<string, string[]>
+}
+
+interface OpenFilePickerOptions {
+  types?: FilePickerAcceptType[]
+  excludeAcceptAllOption?: boolean
+  multiple?: boolean
+}
+
+interface FileSystemHandlePermissionDescriptor {
+  mode?: "read" | "readwrite"
+}
+
+declare global {
+  interface FileSystemFileHandle {
+    queryPermission(descriptor?: FileSystemHandlePermissionDescriptor): Promise<PermissionState>
+    requestPermission(descriptor?: FileSystemHandlePermissionDescriptor): Promise<PermissionState>
+  }
+  interface Window {
+    showOpenFilePicker?: (options?: OpenFilePickerOptions) => Promise<FileSystemFileHandle[]>
+  }
+}
+
+/**
+ * The only source system this dialog has ever staged a file for: the
+ * activity-log workbook the counselling team exports. Practitioner aliases
+ * already resolved in this environment are recorded against this exact
+ * string (see `scripts/resolve_provider_aliases.py`), so changing it would
+ * silently break every practitioner name this environment already knows.
+ * If a second, genuinely different source system is ever needed, this
+ * becomes a real field again rather than a constant.
+ */
+const SOURCE_SYSTEM = "activity-log-workbook"
 
 /** Rows shown per page of the review queue. */
 const ROW_LIMIT = 50
+
+/** Rows written per apply call, at the server's ceiling. */
+const APPLY_CHUNK_SIZE = 200
+
+interface ApplyProgress {
+  imported: number
+  failed: number
+  total: number
+  startedAt: number
+}
+
+/**
+ * A chunk that timed out or dropped connection already committed on the
+ * server before the response was lost in transit, so this is never data
+ * loss: the next click resumes from wherever the server actually is.
+ */
+function applyErrorMessage(cause: unknown): string {
+  if (
+    cause instanceof ApiError &&
+    (cause.code === "TIMEOUT_ERROR" || cause.code === "NETWORK_ERROR")
+  ) {
+    return "Lost the connection partway through, but nothing already written was lost. Click Apply to resume."
+  }
+  return normalizeErrorMessage(cause, "Could not apply the batch")
+}
+
+/** The other batch's id, when staging failed because that batch is still awaiting a decision. */
+function conflictingBatchId(cause: unknown): string | null {
+  if (!(cause instanceof ApiError) || cause.code !== "IMPORT_ALREADY_STAGED") return null
+  return cause.details?.find((detail) => detail.field === "batch_id")?.message ?? null
+}
 
 /**
  * What each outcome means, in the order a reviewer cares about.
@@ -113,17 +187,61 @@ function presentCounts(batch: SessionImportBatch): { outcome: SessionImportOutco
     .sort((a, b) => b.n - a.n)
 }
 
+/** Compact, toast-style status while a chunked apply is in flight. */
+function ApplyProgressBanner({
+  fileName,
+  progress,
+  onCancel,
+}: {
+  fileName: string
+  progress: ApplyProgress
+  onCancel: () => void
+}) {
+  const done = progress.imported + progress.failed
+  const { percent, eta } = applyPace(done, progress.total, progress.startedAt, Date.now())
+  return (
+    <div className="flex shrink-0 items-center gap-3 border-t border-fg/10 bg-surface px-6 py-3">
+      <div className="min-w-0 flex-1">
+        <p className="truncate text-xs font-medium text-fg">{fileName}</p>
+        <div className="mt-1.5 h-1.5 w-full overflow-hidden rounded-full bg-fg/10">
+          <div
+            className="h-full rounded-full bg-primary transition-[width]"
+            style={{ width: `${percent}%` }}
+          />
+        </div>
+      </div>
+      <p className="shrink-0 text-xs tabular-nums text-fg-muted">
+        {done} / {progress.total} · {percent}%
+        {eta ? <span className="ml-1.5 tracking-normal">· {eta}</span> : null}
+      </p>
+      <Button
+        type="button"
+        variant="ghost"
+        size="sm"
+        className="h-7 shrink-0 px-2 text-xs"
+        onClick={onCancel}
+      >
+        Cancel
+      </Button>
+    </div>
+  )
+}
+
 export function SessionImportDialog({ open, onOpenChange, onImported }: SessionImportDialogProps) {
   const toast = useToast()
   const [file, setFile] = useState<File | null>(null)
-  const [sourceSystem, setSourceSystem] = useState("")
-  const [keyColumn, setKeyColumn] = useState("")
+  const [fileHandle, setFileHandle] = useState<FileSystemFileHandle | null>(null)
   const [batch, setBatch] = useState<SessionImportBatch | null>(null)
   const [rows, setRows] = useState<SessionImportRow[]>([])
   const [filter, setFilter] = useState<SessionImportOutcome>("Accepted")
   const [busy, setBusy] = useState<"" | "staging" | "rows" | "applying" | "abandoning">("")
   const [error, setError] = useState<string | null>(null)
   const [applied, setApplied] = useState<SessionImportApplyResult | null>(null)
+  const [applyProgress, setApplyProgress] = useState<ApplyProgress | null>(null)
+  const [conflictBatchId, setConflictBatchId] = useState<string | null>(null)
+  const [discarding, setDiscarding] = useState(false)
+  const [confirmDiscardOpen, setConfirmDiscardOpen] = useState(false)
+  const applyCancelledRef = useRef(false)
 
   const counts = useMemo(() => (batch ? presentCounts(batch) : []), [batch])
   const accepted = batch ? outcomeCount(batch.outcome_counts, "Accepted") : 0
@@ -131,10 +249,13 @@ export function SessionImportDialog({ open, onOpenChange, onImported }: SessionI
 
   const reset = useCallback(() => {
     setFile(null)
+    setFileHandle(null)
     setBatch(null)
     setRows([])
     setApplied(null)
+    setApplyProgress(null)
     setError(null)
+    setConflictBatchId(null)
     setFilter("Accepted")
   }, [])
 
@@ -151,40 +272,158 @@ export function SessionImportDialog({ open, onOpenChange, onImported }: SessionI
     }
   }, [])
 
+  const selectFile = (selected: File | null, handle: FileSystemFileHandle | null = null) => {
+    setFile(selected)
+    setFileHandle(handle)
+    setBatch(null)
+    setRows([])
+    setApplied(null)
+    setError(null)
+    setConflictBatchId(null)
+  }
+
+  const pickFile = async () => {
+    if (!window.showOpenFilePicker) return
+    try {
+      const [handle] = await window.showOpenFilePicker({
+        types: [
+          {
+            description: "CSV or Excel",
+            accept: {
+              "text/csv": [".csv"],
+              "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": [".xlsx"],
+            },
+          },
+        ],
+        excludeAcceptAllOption: false,
+        multiple: false,
+      })
+      selectFile(await handle.getFile(), handle)
+    } catch (cause) {
+      if (cause instanceof DOMException && cause.name === "AbortError") return
+      setError(normalizeErrorMessage(cause, "Could not open the file"))
+    }
+  }
+
+  /** Re-reads the same handle from disk, so local edits show up without reopening the picker. */
+  const refreshFile = async () => {
+    if (!fileHandle) return
+    try {
+      const permission = await fileHandle.queryPermission({ mode: "read" })
+      if (
+        permission !== "granted" &&
+        (await fileHandle.requestPermission({ mode: "read" })) !== "granted"
+      ) {
+        setError("Permission to re-read the file was denied")
+        return
+      }
+      selectFile(await fileHandle.getFile(), fileHandle)
+    } catch (cause) {
+      setError(normalizeErrorMessage(cause, "Could not refresh the file"))
+    }
+  }
+
   async function stage() {
-    if (!file || !sourceSystem.trim()) return
+    if (!file) return
     setBusy("staging")
     setError(null)
     setApplied(null)
     try {
-      const result = await sessionImportsApi.stage(
-        file,
-        sourceSystem.trim(),
-        keyColumn.trim() || undefined,
-      )
+      const result = await sessionImportsApi.stage(file, SOURCE_SYSTEM)
       setBatch(result)
+      setConflictBatchId(null)
       await loadRows(result.id, "Accepted")
     } catch (cause) {
       setError(normalizeErrorMessage(cause, "Could not stage the file"))
+      setConflictBatchId(conflictingBatchId(cause))
     } finally {
       setBusy("")
     }
   }
 
+  /** Abandons the batch blocking this file, then retries staging it. */
+  const discardStuckBatch = async () => {
+    if (!conflictBatchId) return
+    setDiscarding(true)
+    try {
+      await sessionImportsApi.abandon(
+        conflictBatchId,
+        "Discarded from the import dialog after a restage conflict",
+      )
+      setConflictBatchId(null)
+      await stage()
+    } catch (cause) {
+      setError(normalizeErrorMessage(cause, "Could not discard the stuck batch"))
+    } finally {
+      setDiscarding(false)
+    }
+  }
+
+  const downloadTemplate = async () => {
+    try {
+      const blob = await sessionImportsApi.getTemplate()
+      const url = URL.createObjectURL(blob)
+      const anchor = document.createElement("a")
+      anchor.href = url
+      anchor.download = "session-import-template.xlsx"
+      anchor.click()
+      URL.revokeObjectURL(url)
+    } catch (cause) {
+      toast.showError(normalizeErrorMessage(cause, "Could not download the session template"))
+    }
+  }
+
+  const cancelApply = () => {
+    applyCancelledRef.current = true
+  }
+
   async function apply() {
     if (!batch) return
+    applyCancelledRef.current = false
     setBusy("applying")
     setError(null)
+    const startedAt = Date.now()
+    const totals = { imported: 0, failed: 0, remaining: accepted }
+    setApplyProgress({ imported: 0, failed: 0, total: accepted, startedAt })
     try {
-      const result = await sessionImportsApi.apply(batch.id)
-      setApplied(result)
+      let done = false
+      while (!done && !applyCancelledRef.current) {
+        const result = await sessionImportsApi.apply(batch.id, APPLY_CHUNK_SIZE)
+        totals.imported += result.imported
+        totals.failed += result.failed
+        totals.remaining = result.remaining
+        done = result.done
+        setApplyProgress({
+          imported: totals.imported,
+          failed: totals.failed,
+          total: accepted,
+          startedAt,
+        })
+      }
       setBatch(await sessionImportsApi.getBatch(batch.id))
-      toast.showSuccess(`Imported ${result.imported} sessions`)
-      onImported()
+      const result: SessionImportApplyResult = { batch_id: batch.id, done, ...totals }
+      setApplied(result)
+      if (totals.imported > 0) onImported()
+      if (done) {
+        if (totals.failed === 0) toast.showSuccess(`Imported ${totals.imported} sessions`)
+        else
+          toast.showError(
+            `${totals.failed} row${totals.failed === 1 ? "" : "s"} could not be written`,
+          )
+        await loadRows(batch.id, filter)
+      }
     } catch (cause) {
-      setError(normalizeErrorMessage(cause, "Could not apply the batch"))
+      // Each row commits on the server as it writes, independently of
+      // whether this call's response ever arrives, so a failed chunk (a
+      // timeout, a dropped connection) never loses rows already written.
+      // Refresh so the batch and the Apply button reflect whatever landed.
+      const refreshed = await sessionImportsApi.getBatch(batch.id).catch(() => null)
+      if (refreshed) setBatch(refreshed)
+      if (totals.imported > 0) onImported()
+      setError(applyErrorMessage(cause))
     } finally {
       setBusy("")
+      setApplyProgress(null)
     }
   }
 
@@ -219,58 +458,111 @@ export function SessionImportDialog({ open, onOpenChange, onImported }: SessionI
       >
         <SheetHeader className="shrink-0 border-b border-fg/10 px-6 py-5 pr-14 text-left">
           <SheetTitle className="text-base text-fg">Import sessions</SheetTitle>
-          <SheetDescription className="text-xs leading-relaxed text-fg/60">
-            Staging writes nothing. It judges every row against the practitioners, clients, members
-            and services this environment holds now, and says per row what stopped it. Applying
-            writes only the accepted rows. Stage the same file again after the reference data
-            improves and the rest are judged afresh.
+          <SheetDescription asChild>
+            <ul className="list-disc space-y-1 pl-4 text-xs leading-relaxed text-fg/60">
+              <li>Staging writes nothing.</li>
+              <li>
+                Every row is judged against the practitioners, clients, members and services this
+                environment holds now, and each row says what stopped it.
+              </li>
+              <li>Applying writes only the accepted rows.</li>
+              <li>
+                Stage the same file again after the reference data improves and the rest are judged
+                afresh.
+              </li>
+            </ul>
           </SheetDescription>
         </SheetHeader>
 
         <div className="min-h-0 flex-1 space-y-4 overflow-y-auto px-6 py-5">
-          <div className="flex flex-wrap items-end gap-2">
-            <div className="min-w-52 flex-1 space-y-1">
-              <Label htmlFor="session-import-file">CSV file</Label>
+          <div className="flex flex-wrap items-center gap-2">
+            <Label htmlFor="session-import-file" className="shrink-0">
+              CSV or Excel file
+            </Label>
+            {supportsFilePicker ? (
+              <>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  disabled={busy !== ""}
+                  className="h-9 min-w-52 flex-1 justify-start truncate font-normal"
+                  onClick={() => void pickFile()}
+                >
+                  {file ? file.name : "Choose file…"}
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  disabled={!fileHandle || busy !== ""}
+                  title="Re-read this file from disk"
+                  aria-label="Refresh CSV from disk"
+                  className="h-9 w-9 shrink-0"
+                  onClick={() => void refreshFile()}
+                >
+                  <RefreshCw className="size-3.5" />
+                </Button>
+              </>
+            ) : (
               <Input
                 id="session-import-file"
                 type="file"
-                accept=".csv,text/csv"
-                disabled={busy !== "" || batch != null}
-                className="h-9"
-                onChange={(event) => setFile(event.target.files?.[0] ?? null)}
+                accept=".csv,text/csv,.xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                disabled={busy !== ""}
+                className="h-9 min-w-52 flex-1"
+                onChange={(event) => selectFile(event.target.files?.[0] ?? null)}
               />
-            </div>
-            <div className="w-44 space-y-1">
-              <Label htmlFor="session-import-source">Source system</Label>
-              <Input
-                id="session-import-source"
-                value={sourceSystem}
-                placeholder="activity-log"
-                disabled={busy !== "" || batch != null}
-                className="h-9"
-                onChange={(event) => setSourceSystem(event.target.value)}
-              />
-            </div>
-            <div className="w-44 space-y-1">
-              <Label htmlFor="session-import-key">Source id column</Label>
-              <Input
-                id="session-import-key"
-                value={keyColumn}
-                placeholder="optional"
-                disabled={busy !== "" || batch != null}
-                className="h-9"
-                onChange={(event) => setKeyColumn(event.target.value)}
-              />
-            </div>
+            )}
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="h-9 shrink-0"
+              onClick={() => void downloadTemplate()}
+            >
+              <Download className="mr-1.5 size-3.5" />
+              Template
+            </Button>
           </div>
-          <p className="text-xs text-fg-muted">
-            The source system names where the extract came from; practitioner name mappings are
-            recorded against it. The source id column is optional and must be unique and filled on
-            every row, because a blank one would key part of the file differently; leave it empty
-            and rows are keyed by file and row number. Files are limited to 10 MB.
-          </p>
+          <ul className="list-disc space-y-1 pl-4 text-xs text-fg-muted">
+            <li>
+              Rows are judged against the activity-log workbook&apos;s practitioner, client and
+              service names. Client Code, if present, is used instead of the company name.
+            </li>
+            <li>
+              Download the template (.xlsx) for the full column list, with one Individual and one
+              company-wide example row. Columns backed by a fixed or tenant list get a dropdown on a
+              hidden sheet; every value is still validated server-side regardless of how it got into
+              the cell.
+            </li>
+            <li>
+              &quot;Client Type (Staff/Dep)&quot; says who attended. &quot;Client Type&quot; is
+              unrelated and says whether this is a new or repeat client engagement.
+            </li>
+            <li>
+              Issue/Topic, Diagnosis Type, Diagnosis and Approved By are optional enrichment: a row
+              is still imported even if none of them resolve.
+            </li>
+            <li>Files are limited to 10 MB.</li>
+          </ul>
 
-          {error ? <p className="text-xs text-destructive">{error}</p> : null}
+          {error ? (
+            <div className="flex flex-wrap items-center gap-2">
+              <p className="text-xs text-destructive">{error}</p>
+              {conflictBatchId ? (
+                <Button
+                  type="button"
+                  variant="link"
+                  size="sm"
+                  className="h-auto px-0 text-xs"
+                  onClick={() => setConfirmDiscardOpen(true)}
+                >
+                  Discard the stuck batch and retry
+                </Button>
+              ) : null}
+            </div>
+          ) : null}
 
           {batch ? (
             <div className="space-y-3 border-t border-fg/10 pt-4">
@@ -281,9 +573,18 @@ export function SessionImportDialog({ open, onOpenChange, onImported }: SessionI
                 </span>
               </p>
               {applied ? (
-                <p className="text-sm text-primary">
-                  Imported {applied.imported} sessions. {applied.skipped_already_imported} were
-                  already imported and {applied.not_importable} were not importable.
+                <p
+                  className={cn(
+                    "text-sm",
+                    applied.failed > 0 ? "text-destructive" : "text-primary",
+                  )}
+                >
+                  Imported {applied.imported} session{applied.imported === 1 ? "" : "s"}
+                  {applied.failed > 0 ? `. ${applied.failed} could not be written` : ""}
+                  {!applied.done
+                    ? `. ${applied.remaining} still pending, click Apply to resume`
+                    : ""}
+                  .
                 </p>
               ) : null}
               <div className="flex flex-wrap gap-1.5">
@@ -310,6 +611,14 @@ export function SessionImportDialog({ open, onOpenChange, onImported }: SessionI
           ) : null}
         </div>
 
+        {applyProgress ? (
+          <ApplyProgressBanner
+            fileName={batch?.file_name ?? "Applying import…"}
+            progress={applyProgress}
+            onCancel={cancelApply}
+          />
+        ) : null}
+
         <SheetFooter className="shrink-0 justify-end gap-2 border-t border-fg/10 bg-surface px-6 py-3">
           <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
             Close
@@ -334,17 +643,23 @@ export function SessionImportDialog({ open, onOpenChange, onImported }: SessionI
               {busy === "applying" ? "Applying…" : `Apply ${accepted} rows`}
             </Button>
           ) : (
-            <Button
-              type="button"
-              disabled={!file || !sourceSystem.trim() || busy !== ""}
-              onClick={() => void stage()}
-            >
+            <Button type="button" disabled={!file || busy !== ""} onClick={() => void stage()}>
               <Upload className="mr-1.5 size-4" />
               {busy === "staging" ? "Staging…" : "Stage file"}
             </Button>
           )}
         </SheetFooter>
       </SheetContent>
+      <ConfirmDialog
+        open={confirmDiscardOpen}
+        onOpenChange={setConfirmDiscardOpen}
+        title="Discard the stuck batch?"
+        description="This file is already staged and awaiting a decision in another batch. Discarding it may lose any review already done there, so this upload can be staged fresh."
+        confirmLabel="Discard and retry"
+        destructive
+        loading={discarding}
+        onConfirm={discardStuckBatch}
+      />
     </Sheet>
   )
 }

@@ -149,7 +149,19 @@ class Settings(BaseSettings):
 
     ENCRYPTION_KEK: str = Field(
         default="",
-        description="Base64-encoded 32-byte key-encryption key. Per-tenant DEKs are HKDF-derived from this. In production, source this from KMS.",
+        description="Base64-encoded 32-byte key-encryption key, used when ENCRYPTION_KEY_PROVIDER=settings. Per-tenant DEKs are HKDF-derived from this. Not used in production; see ENCRYPTION_KEY_PROVIDER.",
+    )
+    ENCRYPTION_KEY_PROVIDER: str = Field(
+        default="settings",
+        description="Where the KEK comes from: settings (ENCRYPTION_KEK directly, dev/test only) or aws-kms (envelope-decrypted from AWS KMS at startup)",
+    )
+    ENCRYPTION_KMS_KEY_ID: str = Field(
+        default="",
+        description="AWS KMS key id or ARN used to decrypt ENCRYPTION_KEK_CIPHERTEXT when ENCRYPTION_KEY_PROVIDER=aws-kms. Minted once via scripts/generate_kms_kek.py.",
+    )
+    ENCRYPTION_KEK_CIPHERTEXT: str = Field(
+        default="",
+        description="Base64 KMS CiphertextBlob wrapping the KEK, decrypted at startup and cached in-process. The plaintext KEK is never stored in config. Minted once via scripts/generate_kms_kek.py.",
     )
 
     # Azure AD SSO (Option C: Sign in with Microsoft)
@@ -268,6 +280,15 @@ class Settings(BaseSettings):
             raise ValueError(f"LOGIN_RATE_LIMIT_BACKEND must be one of {allowed}")
         return v.lower()
 
+    @field_validator("ENCRYPTION_KEY_PROVIDER")
+    @classmethod
+    def validate_encryption_key_provider(cls, v: str) -> str:
+        """Validate the encryption key provider."""
+        allowed = {"settings", "aws-kms"}
+        if v.lower() not in allowed:
+            raise ValueError(f"ENCRYPTION_KEY_PROVIDER must be one of {allowed}")
+        return v.lower()
+
     @field_validator("AUDIT_SAMPLE_RATE")
     @classmethod
     def validate_audit_sample_rate(cls, v: float) -> float:
@@ -297,6 +318,18 @@ class Settings(BaseSettings):
             warnings.warn(
                 "LOGIN_RATE_LIMIT_BACKEND is 'redis' but REDIS_URL is empty. "
                 "Falling back to memory backend.",
+                UserWarning,
+                stacklevel=2,
+            )
+
+        if self.ENCRYPTION_KEY_PROVIDER == "aws-kms" and not (
+            (self.ENCRYPTION_KMS_KEY_ID or "").strip()
+            and (self.ENCRYPTION_KEK_CIPHERTEXT or "").strip()
+        ):
+            warnings.warn(
+                "ENCRYPTION_KEY_PROVIDER is 'aws-kms' but ENCRYPTION_KMS_KEY_ID or "
+                "ENCRYPTION_KEK_CIPHERTEXT is empty. Falling back to the settings "
+                "KEK, which must not be used in production.",
                 UserWarning,
                 stacklevel=2,
             )

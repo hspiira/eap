@@ -60,18 +60,28 @@ def _service(*, resolution=None, affiliation=None, existing_row=None, member="de
     affiliations.get_valid_affiliation.return_value = affiliation
     imports = AsyncMock()
     imports.find_row_by_replay_key.return_value = existing_row
+    imports.find_rows_by_replay_keys.return_value = {}
+    imports.find_imported_row_matching.return_value = None
     clients = AsyncMock()
     clients.get_by_name_or_alias.return_value = SimpleNamespace(
         id=ClientId("cli-1"), name="Stanbic Bank", tenant_id=TENANT
     )
     members = AsyncMock()
-    members.find_by_employer_member_id.return_value = (
-        SimpleNamespace(id=EligibleMemberId("mem-1")) if member == "default" else member
-    )
+    resolved = SimpleNamespace(id=EligibleMemberId("mem-1")) if member == "default" else member
+    members.find_by_employer_member_id.return_value = resolved
+    # The batch lookup answers the same thing the singular one does, keyed by
+    # the member reference the rows carry.
+    members.find_by_employer_member_ids.return_value = {"HR-1": resolved} if resolved else {}
     services = AsyncMock()
     services.get_by_name.return_value = SimpleNamespace(id=ServiceId("svc-1"))
+    diagnoses = AsyncMock()
+    diagnoses.alias_lookup.return_value = {}
+    users = AsyncMock()
+    users.list_all.return_value = []
     return (
-        SessionImportStagingService(aliases, affiliations, imports, clients, members, services),
+        SessionImportStagingService(
+            aliases, affiliations, imports, clients, members, services, diagnoses, users
+        ),
         imports,
     )
 
@@ -289,6 +299,49 @@ class TestReplay:
         service._affiliations.get_valid_affiliation.assert_not_awaited()
 
 
+class TestContentDuplicateAcrossFileHashes:
+    """A row that looks like an already-imported session, restaged under a
+    different file hash, must not silently write a second copy of it.
+
+    The file-hash-row replay key is a function of the file's bytes: any edit
+    to the source between staging passes changes every row's key and defeats
+    the ordinary replay-key duplicate check in TestReplay above entirely.
+    """
+
+    async def test_a_row_matching_an_already_imported_one_is_held_as_conflicting(self):
+        already_imported = AsyncMock()
+        already_imported.row_number = 3
+        already_imported.batch_id = SessionImportBatchId("b-old")
+        service, imports = _service()
+        imports.find_imported_row_matching.return_value = already_imported
+        staged = await _stage(service, _row())
+        assert staged.outcome is ImportRowOutcome.CONFLICTING
+        assert "batch b-old row 3" in staged.reasons[0]
+
+    async def test_a_source_keyed_row_never_runs_the_content_check(self):
+        """A source key survives a file edit, so it does not need this guard."""
+        service, imports = _service()
+        await _stage(service, _row(source_record_key="LOG-9"))
+        imports.find_imported_row_matching.assert_not_awaited()
+
+    async def test_no_match_leaves_the_row_to_stage_normally(self):
+        service, _ = _service()
+        staged = await _stage(service, _row())
+        assert staged.outcome is ImportRowOutcome.ACCEPTED
+
+    async def test_the_match_is_scoped_by_client_service_provider_date_and_member(self):
+        service, imports = _service()
+        await _stage(service, _row())
+        imports.find_imported_row_matching.assert_awaited_once_with(
+            TENANT,
+            session_date=date(2025, 4, 2),
+            provider_id=PROV,
+            client_id="cli-1",
+            service_id="svc-1",
+            member_id="mem-1",
+        )
+
+
 def _keyed_rows(*keys: str | None) -> list[SourceRow]:
     return [_row(row_number=number, source_record_key=key) for number, key in enumerate(keys, 1)]
 
@@ -500,3 +553,55 @@ class TestVisitInterventions:
         staged = await _stage(service, _row(raw_intervention=spelling))
         assert staged.outcome is ImportRowOutcome.UNRESOLVED_SERVICE
         assert "does not map" in staged.reasons[0]
+
+
+class TestPreload:
+    """A preloaded run must reach the same outcomes while asking far less."""
+
+    async def test_preloaded_rows_reach_the_same_outcome_without_per_row_queries(self):
+        service, imports = _service()
+        imports.find_rows_by_replay_keys.return_value = {}
+        rows = [_row(row_number=n) for n in range(1, 21)]
+
+        await service.preload(TENANT, rows, HASH)
+        staged = [await _stage(service, row) for row in rows]
+
+        assert all(s.outcome is ImportRowOutcome.ACCEPTED for s in staged)
+        imports.find_row_by_replay_key.assert_not_awaited()
+        assert service._clients.get_by_name_or_alias.await_count == 1
+        assert service._services.get_by_name.await_count == 1
+        assert service._members.find_by_employer_member_ids.await_count == 1
+        service._members.find_by_employer_member_id.assert_not_awaited()
+
+    async def test_a_key_another_batch_already_holds_is_still_a_duplicate(self):
+        service, imports = _service()
+        held = SimpleNamespace(row_number=7, batch_id=SessionImportBatchId("b-earlier"))
+        rows = [_row(row_number=1)]
+        imports.find_rows_by_replay_keys.return_value = {f"file:{HASH}:row:1": held}
+
+        await service.preload(TENANT, rows, HASH)
+        staged = await _stage(service, rows[0])
+
+        assert staged.outcome is ImportRowOutcome.DUPLICATE
+        assert "row 7 of batch b-earlier" in staged.reasons[0]
+        imports.find_row_by_replay_key.assert_not_awaited()
+
+    async def test_a_member_the_batch_lookup_missed_still_holds_its_row(self):
+        """A preload miss must read as unresolved, never as a resolved member."""
+        service, imports = _service()
+        imports.find_rows_by_replay_keys.return_value = {}
+        service._members.find_by_employer_member_ids.return_value = {}
+        rows = [_row(row_number=1)]
+
+        await service.preload(TENANT, rows, HASH)
+        staged = await _stage(service, rows[0])
+
+        assert staged.outcome is ImportRowOutcome.UNRESOLVED_MEMBER
+        assert staged.member_id is None
+
+    async def test_staging_without_preload_still_resolves_every_row(self):
+        """`preload` is an optimisation, not a precondition."""
+        service, imports = _service()
+        staged = await _stage(service, _row())
+        assert staged.outcome is ImportRowOutcome.ACCEPTED
+        imports.find_row_by_replay_key.assert_awaited_once()

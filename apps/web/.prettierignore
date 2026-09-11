@@ -11,6 +11,11 @@ src/api/generated/
 dist/
 node_modules/
 
+# Playwright output. Gitignored, so it never reaches CI, and prettier does not
+# read .gitignore - without this a local lint run fails where CI passes.
+test-results/
+playwright-report/
+
 # Prose is left to humans. These docs carry hand-aligned tables with emoji
 # status columns that prettier re-flows unhelpfully, and reformatting living
 # planning documents adds churn without making them clearer.

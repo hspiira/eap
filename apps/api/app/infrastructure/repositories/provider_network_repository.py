@@ -17,6 +17,7 @@ from app.domain.entities.session_import import (
     SessionImportBatchEntity,
     SessionImportRowEntity,
 )
+from app.domain.enums.provider_network import ImportBatchStatus, ImportRowOutcome
 from app.domain.repositories.provider_network_repository import (
     ProviderAffiliationRepository,
     ProviderAliasRepository,
@@ -408,10 +409,24 @@ class SessionImportRepositoryImpl(SessionImportRepository):
     async def find_batch_by_hash(
         self, tenant_id: TenantId, file_hash: str
     ) -> SessionImportBatchEntity | None:
+        """The Staged batch holding this hash, if any.
+
+        A hash can belong to several historical batches once a file has been
+        staged, applied or abandoned, and staged again to re-judge against
+        improved reference data: this tenant's session_import_batches can
+        (and in practice does) hold more than one row for the same hash.
+        Filtering by status here, rather than fetching an arbitrary match and
+        checking it in Python, is required: an unfiltered query has no
+        ORDER BY and `scalar()` returns whichever row the database happens to
+        put first, which can silently be the wrong one and let a genuine
+        conflict through to the unique-index violation this check exists to
+        turn into a clean 409 instead.
+        """
         model = await self.session.scalar(
             select(SessionImportBatchModel).where(
                 SessionImportBatchModel.tenant_id == tenant_id.value,
                 SessionImportBatchModel.file_hash == file_hash,
+                SessionImportBatchModel.status == ImportBatchStatus.STAGED.value,
             )
         )
         return SessionImportMapper.batch_to_entity(model) if model else None
@@ -480,8 +495,8 @@ class SessionImportRepositoryImpl(SessionImportRepository):
         )
         return [SessionImportMapper.row_to_entity(m) for m in rows], total
 
-    async def mark_row_imported(self, tenant_id: TenantId, row_id: str, session_id: str) -> None:
-        await self.session.execute(
+    async def mark_row_imported(self, tenant_id: TenantId, row_id: str, session_id: str) -> bool:
+        result = await self.session.execute(
             update(SessionImportRowModel)
             .where(
                 SessionImportRowModel.id == row_id,
@@ -491,6 +506,7 @@ class SessionImportRepositoryImpl(SessionImportRepository):
             .values(imported_session_id=session_id)
         )
         await self.session.flush()
+        return result.rowcount > 0
 
     async def find_row_by_replay_key(
         self, tenant_id: TenantId, replay_key: str
@@ -502,6 +518,19 @@ class SessionImportRepositoryImpl(SessionImportRepository):
             )
         )
         return SessionImportMapper.row_to_entity(model) if model else None
+
+    async def find_rows_by_replay_keys(
+        self, tenant_id: TenantId, replay_keys: list[str]
+    ) -> dict[str, SessionImportRowEntity]:
+        if not replay_keys:
+            return {}
+        models = await self.session.scalars(
+            select(SessionImportRowModel).where(
+                SessionImportRowModel.tenant_id == tenant_id.value,
+                SessionImportRowModel.replay_key.in_(replay_keys),
+            )
+        )
+        return {model.replay_key: SessionImportMapper.row_to_entity(model) for model in models}
 
     async def outcome_counts(
         self, tenant_id: TenantId, batch_id: SessionImportBatchId
@@ -515,3 +544,88 @@ class SessionImportRepositoryImpl(SessionImportRepository):
             .group_by(SessionImportRowModel.outcome)
         )
         return {str(outcome): int(count) for outcome, count in rows}
+
+    async def mark_row_failed(self, tenant_id: TenantId, row_id: str, reason: str) -> None:
+        await self.session.execute(
+            update(SessionImportRowModel)
+            .where(
+                SessionImportRowModel.id == row_id,
+                SessionImportRowModel.tenant_id == tenant_id.value,
+                SessionImportRowModel.imported_session_id.is_(None),
+            )
+            .values(outcome=ImportRowOutcome.FAILED.value, reasons=[reason])
+        )
+        await self.session.flush()
+
+    def _pending_rows_filter(self, tenant_id: TenantId, batch_id: SessionImportBatchId):
+        return (
+            SessionImportRowModel.tenant_id == tenant_id.value,
+            SessionImportRowModel.batch_id == batch_id.value,
+            SessionImportRowModel.outcome == ImportRowOutcome.ACCEPTED.value,
+            SessionImportRowModel.imported_session_id.is_(None),
+        )
+
+    async def list_pending_rows(
+        self, tenant_id: TenantId, batch_id: SessionImportBatchId, *, limit: int
+    ) -> Sequence[SessionImportRowEntity]:
+        models = await self.session.scalars(
+            select(SessionImportRowModel)
+            .where(*self._pending_rows_filter(tenant_id, batch_id))
+            .order_by(SessionImportRowModel.row_number)
+            .limit(limit)
+        )
+        return [SessionImportMapper.row_to_entity(model) for model in models]
+
+    async def count_pending_rows(self, tenant_id: TenantId, batch_id: SessionImportBatchId) -> int:
+        return int(
+            await self.session.scalar(
+                select(func.count())
+                .select_from(SessionImportRowModel)
+                .where(*self._pending_rows_filter(tenant_id, batch_id))
+            )
+            or 0
+        )
+
+    async def count_imported_rows(self, tenant_id: TenantId, batch_id: SessionImportBatchId) -> int:
+        return int(
+            await self.session.scalar(
+                select(func.count())
+                .select_from(SessionImportRowModel)
+                .where(
+                    SessionImportRowModel.tenant_id == tenant_id.value,
+                    SessionImportRowModel.batch_id == batch_id.value,
+                    SessionImportRowModel.imported_session_id.is_not(None),
+                )
+            )
+            or 0
+        )
+
+    async def find_imported_row_matching(
+        self,
+        tenant_id: TenantId,
+        *,
+        session_date: date,
+        provider_id: ProviderId,
+        client_id: str,
+        service_id: str,
+        member_id: str | None,
+    ) -> SessionImportRowEntity | None:
+        member_condition = (
+            SessionImportRowModel.member_id == member_id
+            if member_id is not None
+            else SessionImportRowModel.member_id.is_(None)
+        )
+        model = await self.session.scalar(
+            select(SessionImportRowModel)
+            .where(
+                SessionImportRowModel.tenant_id == tenant_id.value,
+                SessionImportRowModel.imported_session_id.is_not(None),
+                SessionImportRowModel.session_date == session_date,
+                SessionImportRowModel.provider_id == provider_id.value,
+                SessionImportRowModel.client_id == client_id,
+                SessionImportRowModel.service_id == service_id,
+                member_condition,
+            )
+            .limit(1)
+        )
+        return SessionImportMapper.row_to_entity(model) if model else None

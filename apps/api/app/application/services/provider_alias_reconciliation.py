@@ -52,6 +52,8 @@ _STATE_OUTCOMES = {
 class ProviderAliasReconciliationService:
     def __init__(self, aliases: ProviderAliasRepository):
         self._aliases = aliases
+        # Scoped to one request, so it cannot go stale between them.
+        self._alias_cache: dict[tuple[str, str], ProviderAliasEntity | None] = {}
 
     async def resolve(
         self, tenant_id: TenantId, source_system: str, raw_name: str | None
@@ -68,7 +70,7 @@ class ProviderAliasReconciliationService:
                 reasons=("No practitioner name in the source row",),
             )
         normalized = normalise_practitioner_name(raw_name)
-        alias = await self._aliases.find_alias(tenant_id, source_system, normalized)
+        alias = await self._find_alias(tenant_id, source_system, normalized)
         if alias is None:
             return NameResolution(
                 outcome=NameOutcome.UNMAPPED,
@@ -76,6 +78,16 @@ class ProviderAliasReconciliationService:
                 reasons=(f"No alias mapping for {raw_name!r} in {source_system}",),
             )
         return self._from_alias(alias, raw_name, normalized)
+
+    async def _find_alias(
+        self, tenant_id: TenantId, source_system: str, normalized: str
+    ) -> ProviderAliasEntity | None:
+        key = (source_system, normalized)
+        if key not in self._alias_cache:
+            self._alias_cache[key] = await self._aliases.find_alias(
+                tenant_id, source_system, normalized
+            )
+        return self._alias_cache[key]
 
     def _from_alias(
         self, alias: ProviderAliasEntity, raw_name: str, normalized: str

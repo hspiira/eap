@@ -311,6 +311,41 @@ def _member_create(
     )
 
 
+class MemberCodeIssuer:
+    """Issues ``{client code}-###`` ids, holding each client's sequence in memory.
+
+    The first id for a client reads the highest already issued and skips any
+    code taken; the rest come from the remembered sequence. Reads see only
+    committed rows, so the unique constraint on ``employer_member_id``, not
+    these reads, is what guarantees uniqueness against a concurrent enrolment.
+    """
+
+    def __init__(self, member_repo: EligibleMemberRepository) -> None:
+        self._members = member_repo
+        self._issued: dict[tuple[str, str], int] = {}
+
+    async def issue(self, *, tenant_id: TenantId, client_id: ClientId, client_code: str) -> str:
+        prefix = client_code.strip().upper()
+        key = (client_id.value, prefix)
+        last = self._issued.get(key)
+        if last is not None:
+            self._issued[key] = last + 1
+            return f"{prefix}-{last + 1:03d}"
+        sequence = await self._first_free(tenant_id, client_id, prefix)
+        self._issued[key] = sequence
+        return f"{prefix}-{sequence:03d}"
+
+    async def _first_free(self, tenant_id: TenantId, client_id: ClientId, prefix: str) -> int:
+        start = await self._members.next_member_sequence(tenant_id, client_id, prefix)
+        for candidate in range(start, start + 50):
+            existing = await self._members.find_by_employer_member_id(
+                tenant_id, client_id, f"{prefix}-{candidate:03d}"
+            )
+            if existing is None:
+                return candidate
+        raise ValueError("Could not issue a member ID for this client")
+
+
 async def issue_member_code(
     member_repo: EligibleMemberRepository,
     *,
@@ -318,28 +353,10 @@ async def issue_member_code(
     client_id: ClientId,
     client_code: str,
 ) -> str:
-    """Issue the next ``{client code}-###`` id for this client.
-
-    Shared by manual creation and roster import so every member, no matter
-    how they are added or what relation they carry, draws from the same
-    per-client sequence.
-
-    Skips codes already taken, so a roster imported with hand-written codes
-    under the same prefix continues from the top rather than colliding.
-
-    This sees only committed rows, so it cannot resolve a race between two
-    in-flight enrolments. The unique constraint on ``employer_member_id`` is
-    what actually guarantees uniqueness; callers turn that violation into a
-    409 or a per-row failure, as fits their transport.
-    """
-    prefix = client_code.strip().upper()
-    sequence = await member_repo.next_member_sequence(tenant_id, client_id, prefix)
-    for candidate_sequence in range(sequence, sequence + 50):
-        candidate = f"{prefix}-{candidate_sequence:03d}"
-        existing = await member_repo.find_by_employer_member_id(tenant_id, client_id, candidate)
-        if existing is None:
-            return candidate
-    raise ValueError("Could not issue a member ID for this client")
+    """Issue one ``{client code}-###`` id. Use :class:`MemberCodeIssuer` for many."""
+    return await MemberCodeIssuer(member_repo).issue(
+        tenant_id=tenant_id, client_id=client_id, client_code=client_code
+    )
 
 
 class MemberRowChecker:
@@ -585,14 +602,14 @@ class MemberRowImporter:
         self._members = member_repo
         self._outbox = outbox
         self._secret = tenant_secret
+        self._codes = MemberCodeIssuer(member_repo)
 
     async def enrol(
         self, row: MemberCsvRow, data: MemberCreate, client_code: str
     ) -> EligibleMember:
         tenant_id = TenantId(self._user.tenant_id)
         client_id = ClientId(data.client_id)
-        employer_member_id = await issue_member_code(
-            self._members,
+        employer_member_id = await self._codes.issue(
             tenant_id=tenant_id,
             client_id=client_id,
             client_code=client_code,
@@ -623,12 +640,9 @@ class MemberRowImporter:
             if data.employment
             else None,
             coverage_start=data.coverage_start,
+            prepare=lambda new: _record_import_of(new, row.status),
+            verify_absent=False,
         )
-        _apply_imported_status(member, row.status)
-        member.record_import()
-        await self._members.save(member)
-        # One row per imported member, as before: the enrolment use case emits
-        # the creation and this sends it down the same path the routes use.
         await audit_change(member, AuditEventHandler(self._outbox), self._user)
         return member
 
@@ -666,6 +680,12 @@ def _apply_imported_status(member: EligibleMember, status: str | None) -> bool:
         return False
     transition(member)
     return True
+
+
+def _record_import_of(member: EligibleMember, status: str | None) -> None:
+    """Put a newly enrolled member into the state the roster row describes."""
+    _apply_imported_status(member, status)
+    member.record_import()
 
 
 class MemberRowUpdater:

@@ -54,6 +54,10 @@ class ImportRowOutcome(str, Enum):
     UNRESOLVED_MEMBER = "UnresolvedMember"
     UNRESOLVED_SERVICE = "UnresolvedService"
     REJECTED = "Rejected"
+    #: An Accepted row the historical write path refused at apply time (a
+    #: race with reference data, a constraint the writer enforces). Distinct
+    #: from every outcome above, which staging alone can reach.
+    FAILED = "Failed"
 
 
 class ImportBatchStatus(str, Enum):
