@@ -473,27 +473,6 @@
         "title": "AdvanceCaseRequest",
         "type": "object"
       },
-      "AliasConfidence": {
-        "description": "How much weight a legacy alias mapping carries.\n\n``INFERRED`` is a reading of the label that nobody has signed off, so it\nstays filterable: a reviewer can list exactly the mappings still awaiting\na clinical owner without re-deriving which ones those were.\n\n``REJECTED`` records that a reviewer read the mapping and refused it. It is\nkept rather than deleted so the same spelling is not inferred again by the\nnext import: a deleted row and a row nobody has seen are indistinguishable.\nA rejected alias maps nothing, so its legacy values stay unresolved, which\nis the honest outcome when the only reading on offer is wrong.",
-        "enum": [
-          "confirmed",
-          "inferred",
-          "rejected"
-        ],
-        "title": "AliasConfidence",
-        "type": "string"
-      },
-      "AliasResolutionState": {
-        "description": "Whether a source name has been reconciled to a practitioner.\n\n`AMBIGUOUS` and `UNMAPPED` are distinct review outcomes: the first has\ncandidates and no decision, the second has no candidate at all.",
-        "enum": [
-          "Unmapped",
-          "Ambiguous",
-          "Resolved",
-          "Rejected"
-        ],
-        "title": "AliasResolutionState",
-        "type": "string"
-      },
       "AmendClinicalNoteRequest": {
         "properties": {
           "body": {
@@ -5144,7 +5123,7 @@
             "type": "integer"
           },
           "sessions_prior": {
-            "description": "Completed sessions in the equal-length prior window, for the delta",
+            "description": "Completed sessions in the comparison window, for the delta",
             "title": "Sessions Prior",
             "type": "integer"
           }
@@ -5190,6 +5169,14 @@
           },
           "range": {
             "$ref": "#/components/schemas/RangeInfo"
+          },
+          "session_years": {
+            "description": "Years that actually have a completed session, newest first. What the year picker offers, so it never lists a year with nothing behind it. Empty for a tenant that has delivered nothing.",
+            "items": {
+              "type": "integer"
+            },
+            "title": "Session Years",
+            "type": "array"
           },
           "sessions_by_category": {
             "items": {
@@ -5419,103 +5406,6 @@
         ],
         "title": "DeliveryContext",
         "type": "string"
-      },
-      "DiagnosisAliasResponse": {
-        "properties": {
-          "confidence": {
-            "title": "Confidence",
-            "type": "string"
-          },
-          "diagnosis_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Diagnosis Id"
-          },
-          "diagnosis_type_id": {
-            "title": "Diagnosis Type Id",
-            "type": "string"
-          },
-          "id": {
-            "title": "Id",
-            "type": "string"
-          },
-          "normalised_key": {
-            "title": "Normalised Key",
-            "type": "string"
-          },
-          "raw_value": {
-            "title": "Raw Value",
-            "type": "string"
-          },
-          "source": {
-            "title": "Source",
-            "type": "string"
-          }
-        },
-        "required": [
-          "id",
-          "raw_value",
-          "normalised_key",
-          "diagnosis_type_id",
-          "diagnosis_id",
-          "source",
-          "confidence"
-        ],
-        "title": "DiagnosisAliasResponse",
-        "type": "object"
-      },
-      "DiagnosisAliasUpsert": {
-        "description": "Map a legacy spelling onto the taxonomy.\n\n``diagnosis_id`` stays optional because many legacy classifications name\nonly a type. Inventing a leaf to fill the gap would be worse than\nrecording the type alone.",
-        "properties": {
-          "confidence": {
-            "$ref": "#/components/schemas/AliasConfidence",
-            "default": "inferred",
-            "description": "'confirmed' once a clinical owner has signed it off"
-          },
-          "diagnosis_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "description": "Leaf, when the source named one",
-            "title": "Diagnosis Id"
-          },
-          "diagnosis_type_id": {
-            "description": "Taxonomy type it resolves to",
-            "title": "Diagnosis Type Id",
-            "type": "string"
-          },
-          "raw_value": {
-            "description": "The spelling as it arrives",
-            "minLength": 1,
-            "title": "Raw Value",
-            "type": "string"
-          },
-          "source": {
-            "description": "Where this mapping came from",
-            "maxLength": 50,
-            "minLength": 1,
-            "title": "Source",
-            "type": "string"
-          }
-        },
-        "required": [
-          "raw_value",
-          "diagnosis_type_id",
-          "source"
-        ],
-        "title": "DiagnosisAliasUpsert",
-        "type": "object"
       },
       "DiagnosisCapabilitiesResponse": {
         "description": "What the caller may change, so the UI can hide controls it cannot use.",
@@ -12230,174 +12120,6 @@
         "title": "ProviderAffiliationResponse",
         "type": "object"
       },
-      "ProviderAliasCreateRequest": {
-        "description": "Open a review queue entry for a name a source system uses.\n\nCreating one attributes nothing: the alias starts unmapped, and naming the\npractitioner is still the separate, audited resolve step.",
-        "properties": {
-          "source_system": {
-            "maxLength": 500,
-            "title": "Source System",
-            "type": "string"
-          },
-          "source_value": {
-            "maxLength": 500,
-            "title": "Source Value",
-            "type": "string"
-          }
-        },
-        "required": [
-          "source_system",
-          "source_value"
-        ],
-        "title": "ProviderAliasCreateRequest",
-        "type": "object"
-      },
-      "ProviderAliasListResponse": {
-        "properties": {
-          "has_more": {
-            "title": "Has More",
-            "type": "boolean"
-          },
-          "items": {
-            "items": {
-              "$ref": "#/components/schemas/ProviderAliasResponse"
-            },
-            "title": "Items",
-            "type": "array"
-          },
-          "limit": {
-            "title": "Limit",
-            "type": "integer"
-          },
-          "page": {
-            "title": "Page",
-            "type": "integer"
-          },
-          "total": {
-            "title": "Total",
-            "type": "integer"
-          }
-        },
-        "required": [
-          "items",
-          "total",
-          "page",
-          "limit",
-          "has_more"
-        ],
-        "title": "ProviderAliasListResponse",
-        "type": "object"
-      },
-      "ProviderAliasRejectRequest": {
-        "properties": {
-          "note": {
-            "maxLength": 500,
-            "title": "Note",
-            "type": "string"
-          }
-        },
-        "required": [
-          "note"
-        ],
-        "title": "ProviderAliasRejectRequest",
-        "type": "object"
-      },
-      "ProviderAliasResolveRequest": {
-        "description": "Explicit reconciliation. There is no automatic resolution endpoint.",
-        "properties": {
-          "provider_id": {
-            "maxLength": 25,
-            "minLength": 1,
-            "title": "Provider Id",
-            "type": "string"
-          }
-        },
-        "required": [
-          "provider_id"
-        ],
-        "title": "ProviderAliasResolveRequest",
-        "type": "object"
-      },
-      "ProviderAliasResponse": {
-        "properties": {
-          "candidate_provider_ids": {
-            "items": {
-              "type": "string"
-            },
-            "title": "Candidate Provider Ids",
-            "type": "array"
-          },
-          "created_at": {
-            "format": "date-time",
-            "title": "Created At",
-            "type": "string"
-          },
-          "id": {
-            "title": "Id",
-            "type": "string"
-          },
-          "normalized_value": {
-            "title": "Normalized Value",
-            "type": "string"
-          },
-          "provider_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Provider Id"
-          },
-          "review_note": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Review Note"
-          },
-          "source_system": {
-            "title": "Source System",
-            "type": "string"
-          },
-          "source_value": {
-            "title": "Source Value",
-            "type": "string"
-          },
-          "state": {
-            "$ref": "#/components/schemas/AliasResolutionState"
-          },
-          "tenant_id": {
-            "title": "Tenant Id",
-            "type": "string"
-          },
-          "updated_at": {
-            "format": "date-time",
-            "title": "Updated At",
-            "type": "string"
-          }
-        },
-        "required": [
-          "id",
-          "tenant_id",
-          "source_system",
-          "source_value",
-          "normalized_value",
-          "state",
-          "provider_id",
-          "candidate_provider_ids",
-          "review_note",
-          "created_at",
-          "updated_at"
-        ],
-        "title": "ProviderAliasResponse",
-        "type": "object"
-      },
       "ProviderCreate": {
         "additionalProperties": false,
         "description": "Create a practitioner. No account is linked and no lifecycle field is set.",
@@ -13374,6 +13096,9 @@
             "enum": [
               "this_week",
               "this_month",
+              "this_year",
+              "year",
+              "all_time",
               "last_30d",
               "last_90d",
               "last_180d",
@@ -13382,8 +13107,13 @@
             "title": "Preset",
             "type": "string"
           },
+          "prior_end": {
+            "description": "Exclusive end of the comparison window. Equal to `start` for every preset that compares against the stretch immediately before it; a year preset instead compares against the same dates a year earlier, so the two windows do not touch.",
+            "title": "Prior End",
+            "type": "string"
+          },
           "prior_start": {
-            "description": "Start of the equal-length window before this one, ISO 8601",
+            "description": "Inclusive start of the comparison window",
             "title": "Prior Start",
             "type": "string"
           },
@@ -13398,6 +13128,7 @@
           "start",
           "end",
           "prior_start",
+          "prior_end",
           "granularity"
         ],
         "title": "RangeInfo",
@@ -26085,6 +25816,9 @@
               "enum": [
                 "this_week",
                 "this_month",
+                "this_year",
+                "year",
+                "all_time",
                 "last_30d",
                 "last_90d",
                 "last_180d",
@@ -26128,6 +25862,26 @@
               ],
               "description": "Window end when range is custom, ISO 8601",
               "title": "End"
+            }
+          },
+          {
+            "description": "Calendar year when range is year",
+            "in": "query",
+            "name": "year",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maximum": 2999,
+                  "minimum": 1970,
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Calendar year when range is year",
+              "title": "Year"
             }
           }
         ],
@@ -26275,111 +26029,6 @@
           }
         ],
         "summary": "Create Diagnosis",
-        "tags": [
-          "diagnoses"
-        ]
-      }
-    },
-    "/diagnoses/aliases": {
-      "get": {
-        "operationId": "list_diagnosis_aliases_diagnoses_aliases_get",
-        "parameters": [
-          {
-            "description": "Filter to mappings still awaiting sign-off, or those confirmed",
-            "in": "query",
-            "name": "confidence",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "$ref": "#/components/schemas/AliasConfidence"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "description": "Filter to mappings still awaiting sign-off, or those confirmed",
-              "title": "Confidence"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "items": {
-                    "$ref": "#/components/schemas/DiagnosisAliasResponse"
-                  },
-                  "title": "Response List Diagnosis Aliases Diagnoses Aliases Get",
-                  "type": "array"
-                }
-              }
-            },
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ],
-        "summary": "List Diagnosis Aliases",
-        "tags": [
-          "diagnoses"
-        ]
-      },
-      "put": {
-        "description": "Map a legacy spelling onto the taxonomy, keyed on its normalised form.",
-        "operationId": "upsert_diagnosis_alias_diagnoses_aliases_put",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/DiagnosisAliasUpsert"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/DiagnosisAliasResponse"
-                }
-              }
-            },
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ],
-        "summary": "Upsert Diagnosis Alias",
         "tags": [
           "diagnoses"
         ]
@@ -34721,322 +34370,6 @@
         "summary": "Change Affiliation End",
         "tags": [
           "provider-affiliations"
-        ]
-      }
-    },
-    "/provider-aliases": {
-      "get": {
-        "operationId": "list_aliases_provider_aliases_get",
-        "parameters": [
-          {
-            "in": "query",
-            "name": "tenant_id",
-            "required": true,
-            "schema": {
-              "title": "Tenant Id",
-              "type": "string"
-            }
-          },
-          {
-            "in": "query",
-            "name": "source_system",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Source System"
-            }
-          },
-          {
-            "description": "Filter the review queue by outcome",
-            "in": "query",
-            "name": "state",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "$ref": "#/components/schemas/AliasResolutionState"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "description": "Filter the review queue by outcome",
-              "title": "State"
-            }
-          },
-          {
-            "description": "Only the spellings resolved to this practitioner",
-            "in": "query",
-            "name": "provider_id",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "description": "Only the spellings resolved to this practitioner",
-              "title": "Provider Id"
-            }
-          },
-          {
-            "description": "Page number",
-            "in": "query",
-            "name": "page",
-            "required": false,
-            "schema": {
-              "default": 1,
-              "description": "Page number",
-              "minimum": 1,
-              "title": "Page",
-              "type": "integer"
-            }
-          },
-          {
-            "description": "Items per page",
-            "in": "query",
-            "name": "limit",
-            "required": false,
-            "schema": {
-              "default": 20,
-              "description": "Items per page",
-              "maximum": 100,
-              "minimum": 1,
-              "title": "Limit",
-              "type": "integer"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProviderAliasListResponse"
-                }
-              }
-            },
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ],
-        "summary": "List Aliases",
-        "tags": [
-          "provider-aliases"
-        ]
-      },
-      "post": {
-        "description": "Put a source name into the review queue, unmapped.\n\nStaging reads decisions; it does not open them, so a source system whose\nnames nobody has queued has nothing for a reviewer to act on. This is how\nthose names arrive. Asking twice returns the entry that is already there\nrather than a second one, so a re-run of a seeding script cannot split one\nname across two queue entries or reopen a decision somebody made.",
-        "operationId": "create_alias_provider_aliases_post",
-        "parameters": [
-          {
-            "in": "query",
-            "name": "tenant_id",
-            "required": true,
-            "schema": {
-              "title": "Tenant Id",
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/ProviderAliasCreateRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "201": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProviderAliasResponse"
-                }
-              }
-            },
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ],
-        "summary": "Create Alias",
-        "tags": [
-          "provider-aliases"
-        ]
-      }
-    },
-    "/provider-aliases/{alias_id}/reject": {
-      "post": {
-        "description": "Record that this source value does not name a practitioner.",
-        "operationId": "reject_alias_provider_aliases__alias_id__reject_post",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "alias_id",
-            "required": true,
-            "schema": {
-              "title": "Alias Id",
-              "type": "string"
-            }
-          },
-          {
-            "in": "query",
-            "name": "tenant_id",
-            "required": true,
-            "schema": {
-              "title": "Tenant Id",
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/ProviderAliasRejectRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProviderAliasResponse"
-                }
-              }
-            },
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ],
-        "summary": "Reject Alias",
-        "tags": [
-          "provider-aliases"
-        ]
-      }
-    },
-    "/provider-aliases/{alias_id}/resolve": {
-      "post": {
-        "description": "Record that this source name is this practitioner.\n\nAdmin-only, because a wrong mapping silently reattributes historical work.",
-        "operationId": "resolve_alias_provider_aliases__alias_id__resolve_post",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "alias_id",
-            "required": true,
-            "schema": {
-              "title": "Alias Id",
-              "type": "string"
-            }
-          },
-          {
-            "in": "query",
-            "name": "tenant_id",
-            "required": true,
-            "schema": {
-              "title": "Tenant Id",
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/ProviderAliasResolveRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProviderAliasResponse"
-                }
-              }
-            },
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ],
-        "summary": "Resolve Alias",
-        "tags": [
-          "provider-aliases"
         ]
       }
     },
