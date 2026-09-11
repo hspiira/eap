@@ -85,22 +85,23 @@ class OutreachRecordRepositoryImpl(OutreachRecordRepository):
 
     async def save(self, entity: OutreachRecord) -> None:
         existing = await self._session.get(OutreachRecordModel, entity.id.value)
+        new_model = OutreachRecordMapper.to_model(entity)
         if existing is None:
-            self._session.add(OutreachRecordMapper.to_model(entity))
+            self._session.add(new_model)
         else:
-            existing.counsellor_id = entity.counsellor_id.value if entity.counsellor_id else None
-            existing.status = entity.status
-            existing.contact_attempts = entity.contact_attempts
-            existing.assigned_at = entity.assigned_at
-            existing.last_attempted_at = entity.last_attempted_at
-            existing.completed_at = entity.completed_at
-            existing.triage_instrument_code = entity.triage_instrument_code
-            existing.triage_responses = entity.triage_responses
-            existing.triage_scores = entity.triage_scores
-            existing.triage_risk_level = entity.triage_risk_level
-            existing.crisis_flag = entity.crisis_flag
-            existing.notes = entity.notes
-            existing.updated_at = entity.updated_at
+            existing.counsellor_id = new_model.counsellor_id
+            existing.status = new_model.status
+            existing.contact_attempts = new_model.contact_attempts
+            existing.assigned_at = new_model.assigned_at
+            existing.last_attempted_at = new_model.last_attempted_at
+            existing.completed_at = new_model.completed_at
+            existing.triage_instrument_code = new_model.triage_instrument_code
+            existing.triage_responses = new_model.triage_responses
+            existing.triage_scores = new_model.triage_scores
+            existing.triage_risk_level = new_model.triage_risk_level
+            existing.crisis_flag = new_model.crisis_flag
+            existing.notes = new_model.notes
+            existing.updated_at = new_model.updated_at
         await self._session.flush()
 
     async def delete(self, entity_id: OutreachRecordId) -> None:

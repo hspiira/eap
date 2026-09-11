@@ -1,6 +1,6 @@
 """Database model for restricted member next-of-kin contacts."""
 
-from sqlalchemy import Boolean, ForeignKey, String
+from sqlalchemy import Boolean, ForeignKey, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.infrastructure.models.base import (
@@ -17,10 +17,12 @@ class MemberNextOfKinModel(CuidMixin, TenantMixin, Base, TimestampMixin):
     member_id: Mapped[str] = mapped_column(
         ForeignKey("eligible_members.id", ondelete="CASCADE"), nullable=False, index=True
     )
-    name: Mapped[str] = mapped_column(String(255), nullable=False)
+    # Encrypted at rest; no blind index (no exact-match or sort lookup on the
+    # raw column, see MemberNextOfKinRepositoryImpl.list_for_member).
+    name: Mapped[str] = mapped_column(Text, nullable=False)
     relationship: Mapped[str] = mapped_column(
         String(50), ForeignKey("next_of_kin_relationships.code"), nullable=False
     )
-    phone: Mapped[str | None] = mapped_column(String(50), nullable=True)
-    email: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    phone: Mapped[str | None] = mapped_column(Text, nullable=True)
+    email: Mapped[str | None] = mapped_column(Text, nullable=True)
     is_primary: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False, index=True)

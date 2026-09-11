@@ -115,6 +115,7 @@ class ClinicalSubjectModel(CuidMixin, TenantMixin, Base, TimestampMixin):
     preferred_language: Mapped[str | None] = mapped_column(String(20), nullable=True)
     preferred_pronouns: Mapped[str | None] = mapped_column(String(50), nullable=True)
     preferred_contact_method: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    # Encrypted at rest.
     notes_for_continuity: Mapped[str | None] = mapped_column(Text, nullable=True)
     is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
     deactivated_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)

@@ -42,6 +42,7 @@ class CaseModel(CuidMixin, TenantMixin, Base, TimestampMixin):
     )
     authorization_id: Mapped[str | None] = mapped_column(String(25), nullable=True, index=True)
     referred_by_user_id: Mapped[str | None] = mapped_column(String(25), nullable=True)
+    # Encrypted at rest.
     referral_notes: Mapped[str | None] = mapped_column(Text, nullable=True)
     closed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     closure_reason: Mapped[CaseClosureReason | None] = mapped_column(

@@ -1,7 +1,6 @@
 """Care Callback campaign + outreach models (Phase 3 #D-CareCallback)."""
 
 from datetime import date, datetime
-from typing import Any
 
 from sqlalchemy import (
     Boolean,
@@ -87,10 +86,12 @@ class OutreachRecordModel(CuidMixin, TenantMixin, Base, TimestampMixin):
     )
     completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     triage_instrument_code: Mapped[str | None] = mapped_column(String(100), nullable=True)
-    triage_responses: Mapped[dict[str, Any] | None] = mapped_column(JSONB, nullable=True)
-    triage_scores: Mapped[dict[str, Any] | None] = mapped_column(JSONB, nullable=True)
+    # Encrypted at rest; stores base64 ciphertext of the JSON-serialised value.
+    triage_responses: Mapped[str | None] = mapped_column(Text, nullable=True)
+    triage_scores: Mapped[str | None] = mapped_column(Text, nullable=True)
     triage_risk_level: Mapped[TriageRiskLevel | None] = mapped_column(
         EnumValueType(TriageRiskLevel), nullable=True, index=True
     )
     crisis_flag: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    # Encrypted at rest.
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)

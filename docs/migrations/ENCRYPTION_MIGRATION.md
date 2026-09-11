@@ -108,6 +108,51 @@ it would be at request time.
   dependency in `login_rate_limit.py`. No other errors.
 - `ruff check` / `ruff format --check`: clean on every touched file.
 
+## Scope expansion: the remaining plaintext fields
+
+The user asked to encrypt the rest of the plaintext PII/clinical fields the
+background research had already found (see Background above) rather than
+leave them for later. Added to the same scheme:
+
+- `Case.referral_notes`, `ClinicalSubject.notes_for_continuity` (already
+  `TEXT` columns, encrypt/decrypt only, no widening).
+- `OutreachRecord.notes`, `.triage_responses`, `.triage_scores` (the latter
+  two follow the `ClinicalNote.body` pattern: JSON serialise, then encrypt;
+  unlike `.body` these are nullable, so `None` stays `None` through both
+  directions rather than becoming an empty JSON value).
+- `MemberNextOfKin.name`, `.phone`, `.email` (`VARCHAR` widened to `TEXT`,
+  same as `eligible_members.national_id`/`.passport_number`).
+
+Two correctness issues surfaced while wiring this up, both fixed as part of
+the same change rather than left for later:
+
+- `OutreachRecordRepositoryImpl.save()` updated an existing row by copying
+  plaintext values straight from the domain entity onto the ORM model,
+  bypassing `OutreachRecordMapper.to_model()` entirely. Every other
+  repository in this codebase builds the model via its mapper first and
+  copies encrypted fields from that; this one didn't, so an update (as
+  opposed to a create) would have written plaintext into the encrypted
+  columns. Fixed to route through the mapper like its siblings. Checked
+  every other save() path added by this and the prior encryption change
+  (`EligibleMemberRepositoryImpl`, `CaseRepositoryImpl`,
+  `ClinicalNoteRepositoryImpl`, `MemberNextOfKinRepositoryImpl`) and
+  confirmed none of them have the same bug.
+- `MemberNextOfKinRepositoryImpl.list_for_member()` ordered contacts with
+  `ORDER BY name ASC` at the SQL level. Once `name` is ciphertext, that
+  sorts encrypted bytes, not names. Fixed by dropping `name` from the SQL
+  `ORDER BY` (keeping `is_primary DESC`, which stays plaintext) and sorting
+  the decrypted entities by name in Python afterward. Checked every other
+  encrypted field added by this and the prior change for the same
+  ordering/exact-match risk (grep across `app/infrastructure/repositories/`)
+  and found no other instance.
+
+New migration `d6f8h0j2l4n6_encrypt_remaining_pii_fields.py` backfills all
+four tables, verified the same way as the first round: full upgrade and
+downgrade cycle against a disposable, isolated database, seeded with one
+real row per table, confirming the decrypted value matches the original
+plaintext exactly (including the JSON round-trip for the outreach triage
+fields) and that downgrade restores the original column types.
+
 ## evexia_db status
 
 Both migrations have run against the shared local `evexia_db`. This was not
@@ -127,8 +172,17 @@ earlier than confirmed. `evexia_db` is now at Alembic head `c5e7g9i1k3m5`.
 
 No production database has been touched.
 
+The new `d6f8h0j2l4n6` migration (the scope expansion above) has **not**
+been run against `evexia_db`. Checked directly: `cases.referral_notes`,
+`clinical_subjects.notes_for_continuity`, `outreach_records` (notes/triage),
+and `member_next_of_kin` all have 0 non-null/0 rows there today, so running
+it would be a schema-only, zero-data-impact change, but it has not been run
+without asking first this time.
+
 ## Outstanding
 
+- The new `d6f8h0j2l4n6` migration has not been applied to `evexia_db` or
+  any production database.
 - `scripts/generate_kms_kek.py` is a one-time bootstrap for
   `ENCRYPTION_KMS_KEY_ID`/`ENCRYPTION_KEK_CIPHERTEXT`, needed only if the
   `aws-kms` provider is turned on later. It has not been run against a real

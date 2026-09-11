@@ -1,5 +1,6 @@
 """Clinical case mapper."""
 
+from app.core.encryption import decrypt, encrypt
 from app.domain.entities.case import Case
 from app.domain.enums import (
     CaseClosureReason,
@@ -39,7 +40,7 @@ class CaseMapper:
             referred_by_user_id=UserId(model.referred_by_user_id)
             if model.referred_by_user_id
             else None,
-            referral_notes=model.referral_notes,
+            referral_notes=decrypt(model.referral_notes, tenant_id=model.tenant_id),
             closed_at=ensure_utc(model.closed_at) if model.closed_at else None,
             closure_reason=CaseClosureReason(model.closure_reason)
             if model.closure_reason
@@ -71,7 +72,7 @@ class CaseMapper:
             referred_by_user_id=entity.referred_by_user_id.value
             if entity.referred_by_user_id
             else None,
-            referral_notes=entity.referral_notes,
+            referral_notes=encrypt(entity.referral_notes, tenant_id=entity.tenant_id.value),
             closed_at=ensure_utc(entity.closed_at) if entity.closed_at else None,
             closure_reason=entity.closure_reason,
             closure_summary_note_id=entity.closure_summary_note_id,

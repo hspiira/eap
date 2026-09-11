@@ -62,12 +62,17 @@ class MemberNextOfKinRepositoryImpl(MemberNextOfKinRepository):
     async def list_for_member(
         self, tenant_id: TenantId, member_id: EligibleMemberId
     ) -> list[MemberNextOfKin]:
+        # name is encrypted, so alphabetical order can only be applied after
+        # decryption; is_primary stays a SQL-level sort since it is plaintext.
         result = await self._session.execute(
             select(MemberNextOfKinModel)
             .where(
                 MemberNextOfKinModel.tenant_id == tenant_id.value,
                 MemberNextOfKinModel.member_id == member_id.value,
             )
-            .order_by(MemberNextOfKinModel.is_primary.desc(), MemberNextOfKinModel.name.asc())
+            .order_by(MemberNextOfKinModel.is_primary.desc())
         )
-        return [MemberNextOfKinMapper.to_entity(model) for model in result.scalars().all()]
+        entities = [MemberNextOfKinMapper.to_entity(model) for model in result.scalars().all()]
+        entities.sort(key=lambda kin: kin.name.lower())
+        entities.sort(key=lambda kin: kin.is_primary, reverse=True)
+        return entities

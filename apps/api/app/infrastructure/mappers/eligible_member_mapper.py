@@ -145,7 +145,7 @@ class ClinicalSubjectMapper:
             preferred_language=model.preferred_language,
             preferred_pronouns=model.preferred_pronouns,
             preferred_contact_method=model.preferred_contact_method,
-            notes_for_continuity=model.notes_for_continuity,
+            notes_for_continuity=decrypt(model.notes_for_continuity, tenant_id=model.tenant_id),
             is_active=model.is_active,
             deactivated_at=ensure_utc(model.deactivated_at) if model.deactivated_at else None,
             created_at=ensure_utc(model.created_at),
@@ -163,7 +163,9 @@ class ClinicalSubjectMapper:
             preferred_language=entity.preferred_language,
             preferred_pronouns=entity.preferred_pronouns,
             preferred_contact_method=entity.preferred_contact_method,
-            notes_for_continuity=entity.notes_for_continuity,
+            notes_for_continuity=encrypt(
+                entity.notes_for_continuity, tenant_id=entity.tenant_id.value
+            ),
             is_active=entity.is_active,
             deactivated_at=ensure_utc(entity.deactivated_at) if entity.deactivated_at else None,
             created_at=ensure_utc(entity.created_at),
