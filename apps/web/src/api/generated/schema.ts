@@ -5653,6 +5653,33 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/session-imports/template": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Download the session import CSV template
+         * @description Return the supported extract columns with one Individual and one CompanyWide example row.
+         *
+         *     Column names match `provider_import_source.py`'s accepted spellings, using
+         *     the same "(CLEAN)" form the reference extract itself uses for the columns
+         *     that have one. "Client Type (Staff/Dep)" says who attended (an
+         *     individual, or the client at large); "Client Type" is unrelated and says
+         *     whether this is a new or repeat client engagement -- the two are easy to
+         *     conflate and both belong in a real extract.
+         */
+        get: operations["session_import_template_session_imports_template_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/session-imports/{batch_id}": {
         parameters: {
             query?: never;
@@ -26589,6 +26616,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    session_import_template_session_imports_template_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
                 };
             };
         };

@@ -262,3 +262,31 @@ class TestAbandon:
             f"/session-imports/b-1/abandon?tenant_id={TENANT}", json={"reason": "wrong file"}
         )
         assert response.status_code == 404
+
+
+class TestTemplate:
+    async def test_the_template_is_server_generated(self, api):
+        response = await api.http.get("/session-imports/template")
+
+        assert response.status_code == 200
+        assert response.headers["content-type"].startswith("text/csv")
+        assert response.text.splitlines()[0] == (
+            "Date,Company (CLEAN),Client-ID#,Counselor (CLEAN),Client Type (Staff/Dep),Gender,"
+            "Session Type,Session Category,Client Type,Intervention,Status (CLEAN),Rate (UGX),"
+            "Session #"
+        )
+        assert "Example Client" in response.text
+
+    async def test_the_template_shows_both_an_individual_and_a_company_wide_row(self, api):
+        """Client-ID# and Gender are blank on the company-wide row; nothing else demonstrates that shape."""
+        response = await api.http.get("/session-imports/template")
+        rows = response.text.strip().splitlines()
+        assert len(rows) == 3
+        assert ",Staff," in rows[1]
+        assert ",Group/Event," in rows[2]
+
+    async def test_a_non_admin_may_still_read_the_template(self, api):
+        """Staging is Admin-only; knowing the file shape is not."""
+        api.role = "Viewer"
+        response = await api.http.get("/session-imports/template")
+        assert response.status_code == 200

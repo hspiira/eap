@@ -32,6 +32,10 @@ export interface SessionImportRowParams {
 const APPLY_TIMEOUT_MS = 180_000
 
 export const sessionImportsApi = {
+  async getTemplate(): Promise<Blob> {
+    return apiClient.getBlob("/session-imports/template")
+  },
+
   /**
    * Judge an extract without writing anything.
    *

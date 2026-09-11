@@ -1,6 +1,6 @@
 import { useCallback, useMemo, useRef, useState } from "react"
 
-import { FileInput, Upload } from "lucide-react"
+import { Download, FileInput, Upload } from "lucide-react"
 
 import {
   type SessionImportApplyResult,
@@ -242,6 +242,20 @@ export function SessionImportDialog({ open, onOpenChange, onImported }: SessionI
     }
   }
 
+  const downloadTemplate = async () => {
+    try {
+      const blob = await sessionImportsApi.getTemplate()
+      const url = URL.createObjectURL(blob)
+      const anchor = document.createElement("a")
+      anchor.href = url
+      anchor.download = "session-import-template.csv"
+      anchor.click()
+      URL.revokeObjectURL(url)
+    } catch (cause) {
+      toast.showError(normalizeErrorMessage(cause, "Could not download the session template"))
+    }
+  }
+
   const cancelApply = () => {
     applyCancelledRef.current = true
   }
@@ -364,12 +378,25 @@ export function SessionImportDialog({ open, onOpenChange, onImported }: SessionI
                 onChange={(event) => setKeyColumn(event.target.value)}
               />
             </div>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="h-9 shrink-0"
+              onClick={() => void downloadTemplate()}
+            >
+              <Download className="mr-1.5 size-3.5" />
+              Template
+            </Button>
           </div>
           <p className="text-xs text-fg-muted">
             The source system names where the extract came from; practitioner name mappings are
             recorded against it. The source id column is optional and must be unique and filled on
             every row, because a blank one would key part of the file differently; leave it empty
-            and rows are keyed by file and row number. Files are limited to 10 MB.
+            and rows are keyed by file and row number. Download the template for the full column
+            list with one Individual and one company-wide example row; note that "Client Type
+            (Staff/Dep)" says who attended and "Client Type" is unrelated, saying whether this is a
+            new or repeat client engagement. Files are limited to 10 MB.
           </p>
 
           {error ? <p className="text-xs text-destructive">{error}</p> : null}

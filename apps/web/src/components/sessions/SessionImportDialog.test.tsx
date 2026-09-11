@@ -15,6 +15,7 @@ const stage = vi.fn()
 const apply = vi.fn()
 const listRows = vi.fn()
 const getBatch = vi.fn()
+const getTemplate = vi.fn()
 
 vi.mock("@/api/endpoints/session-imports", () => ({
   sessionImportsApi: {
@@ -22,6 +23,7 @@ vi.mock("@/api/endpoints/session-imports", () => ({
     apply: (...args: unknown[]) => apply(...args),
     listRows: (...args: unknown[]) => listRows(...args),
     getBatch: (...args: unknown[]) => getBatch(...args),
+    getTemplate: (...args: unknown[]) => getTemplate(...args),
     abandon: vi.fn(),
   },
 }))
@@ -73,6 +75,17 @@ describe("session import", () => {
   it("cannot apply a batch with nothing accepted", async () => {
     const screen = await stageFile({ UnresolvedMember: 10 })
     expect(await screen.findByRole("button", { name: /apply 0 rows/i })).toBeDisabled()
+  })
+})
+
+describe("template", () => {
+  it("downloads the server-generated template on request", async () => {
+    getTemplate.mockResolvedValue(new Blob(["Date,Company (CLEAN)\n"], { type: "text/csv" }))
+    const screen = renderWithProviders(
+      <SessionImportDialog open onOpenChange={() => {}} onImported={() => {}} />,
+    )
+    await userEvent.click(screen.getByRole("button", { name: /template/i }))
+    expect(getTemplate).toHaveBeenCalledOnce()
   })
 })
 

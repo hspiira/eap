@@ -5,9 +5,12 @@ owns; calling the live session use case here would merge the booking rules with
 historical acceptance, which decision 7 keeps apart.
 """
 
+import csv
 import hashlib
+import io
 
 from fastapi import APIRouter, Depends, Query, Request, UploadFile, status
+from fastapi.responses import StreamingResponse
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -41,7 +44,7 @@ from app.application.services.session_import_staging import (
 from app.application.use_cases.apply_session_import import ApplyImportBatchUseCase
 from app.core.authorization import require_same_tenant, require_tenant_role
 from app.core.database import get_db
-from app.core.security import TokenData
+from app.core.security import TokenData, get_current_user
 from app.domain.entities.session_import import (
     SessionImportBatchEntity,
     SessionImportRowEntity,
@@ -100,6 +103,82 @@ async def _require_batch(
             "Import batch not found", resource_type="SessionImportBatch", resource_id=batch_id
         )
     return batch
+
+
+@router.get(
+    "/template",
+    summary="Download the session import CSV template",
+)
+async def session_import_template(
+    current_user: TokenData = Depends(get_current_user),
+) -> StreamingResponse:
+    """Return the supported extract columns with one Individual and one CompanyWide example row.
+
+    Column names match `provider_import_source.py`'s accepted spellings, using
+    the same "(CLEAN)" form the reference extract itself uses for the columns
+    that have one. "Client Type (Staff/Dep)" says who attended (an
+    individual, or the client at large); "Client Type" is unrelated and says
+    whether this is a new or repeat client engagement -- the two are easy to
+    conflate and both belong in a real extract.
+    """
+    output = io.StringIO(newline="")
+    writer = csv.writer(output)
+    writer.writerow(
+        [
+            "Date",
+            "Company (CLEAN)",
+            "Client-ID#",
+            "Counselor (CLEAN)",
+            "Client Type (Staff/Dep)",
+            "Gender",
+            "Session Type",
+            "Session Category",
+            "Client Type",
+            "Intervention",
+            "Status (CLEAN)",
+            "Rate (UGX)",
+            "Session #",
+        ]
+    )
+    writer.writerow(
+        [
+            "2026-01-15",
+            "Example Client",
+            "EXM-001",
+            "Example Counsellor",
+            "Staff",
+            "Female",
+            "Physical",
+            "Individual",
+            "New",
+            "Individual Counselling",
+            "Completed",
+            "50000",
+            "1",
+        ]
+    )
+    writer.writerow(
+        [
+            "2026-01-16",
+            "Example Client",
+            "",
+            "Example Counsellor",
+            "Group/Event",
+            "",
+            "Physical",
+            "Group",
+            "",
+            "Health Talk",
+            "Completed",
+            "",
+            "",
+        ]
+    )
+    return StreamingResponse(
+        iter([output.getvalue()]),
+        media_type="text/csv",
+        headers={"Content-Disposition": 'attachment; filename="session-import-template.csv"'},
+    )
 
 
 @router.post(

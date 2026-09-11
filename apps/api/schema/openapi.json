@@ -39417,6 +39417,31 @@
         ]
       }
     },
+    "/session-imports/template": {
+      "get": {
+        "description": "Return the supported extract columns with one Individual and one CompanyWide example row.\n\nColumn names match `provider_import_source.py`'s accepted spellings, using\nthe same \"(CLEAN)\" form the reference extract itself uses for the columns\nthat have one. \"Client Type (Staff/Dep)\" says who attended (an\nindividual, or the client at large); \"Client Type\" is unrelated and says\nwhether this is a new or repeat client engagement -- the two are easy to\nconflate and both belong in a real extract.",
+        "operationId": "session_import_template_session_imports_template_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Download the session import CSV template",
+        "tags": [
+          "session-imports"
+        ]
+      }
+    },
     "/session-imports/{batch_id}": {
       "get": {
         "operationId": "get_batch_session_imports__batch_id__get",
