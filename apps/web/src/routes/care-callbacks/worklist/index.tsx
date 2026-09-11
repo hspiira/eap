@@ -21,6 +21,7 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { formatDate } from "@/lib/format"
+import { LIVE_REFRESH_MS } from "@/lib/query-client"
 import { enumParam, listSearchSchema } from "@/lib/search-params"
 import { cn } from "@/lib/utils"
 import { useAuthStore } from "@/store/slices/authSlice"
@@ -72,6 +73,8 @@ function useMyOutreachAcrossCampaigns(counsellorId: string | null) {
       queryKey: ["outreach-records", "for-campaign", c.id],
       queryFn: () => careCallbacksApi.listOutreachForCampaign(c.id, { limit: 200 }),
       enabled: !!counsellorId,
+      // A worklist is watched while callbacks are assigned to it.
+      refetchInterval: LIVE_REFRESH_MS,
     })),
   })
 

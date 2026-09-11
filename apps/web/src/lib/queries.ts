@@ -33,6 +33,8 @@ export interface UseEntityListOptions<T, P extends ListParams = ListParams> {
   listFn: (params: P) => Promise<PaginatedResponse<T>>
   enabled?: boolean
   staleTime?: number
+  /** Poll while the list is on screen. See LIVE_REFRESH_MS. */
+  refetchInterval?: number | false
 }
 
 export function useEntityList<T, P extends ListParams = ListParams>({
@@ -41,6 +43,7 @@ export function useEntityList<T, P extends ListParams = ListParams>({
   listFn,
   enabled,
   staleTime,
+  refetchInterval,
 }: UseEntityListOptions<T, P>) {
   return useQuery({
     queryKey: entityListKey(resource, params),
@@ -48,6 +51,7 @@ export function useEntityList<T, P extends ListParams = ListParams>({
     placeholderData: (prev) => prev,
     enabled,
     staleTime,
+    refetchInterval,
   } as UseQueryOptions<PaginatedResponse<T>>)
 }
 
@@ -57,6 +61,8 @@ export interface UseEntityDetailOptions<T> {
   detailFn: (id: string) => Promise<T>
   enabled?: boolean
   staleTime?: number
+  /** Poll while the record is on screen. See LIVE_REFRESH_MS. */
+  refetchInterval?: number | false
 }
 
 export function useEntityDetail<T>({
@@ -65,12 +71,14 @@ export function useEntityDetail<T>({
   detailFn,
   enabled,
   staleTime,
+  refetchInterval,
 }: UseEntityDetailOptions<T>) {
   return useQuery({
     queryKey: entityDetailKey(resource, id ?? ""),
     queryFn: () => detailFn(id as string),
     enabled: enabled !== undefined ? enabled : !!id,
     staleTime,
+    refetchInterval,
   } as UseQueryOptions<T>)
 }
 
