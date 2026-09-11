@@ -450,11 +450,19 @@ export function SessionImportDialog({ open, onOpenChange, onImported }: SessionI
       >
         <SheetHeader className="shrink-0 border-b border-fg/10 px-6 py-5 pr-14 text-left">
           <SheetTitle className="text-base text-fg">Import sessions</SheetTitle>
-          <SheetDescription className="text-xs leading-relaxed text-fg/60">
-            Staging writes nothing. It judges every row against the practitioners, clients, members
-            and services this environment holds now, and says per row what stopped it. Applying
-            writes only the accepted rows. Stage the same file again after the reference data
-            improves and the rest are judged afresh.
+          <SheetDescription asChild>
+            <ul className="list-disc space-y-1 pl-4 text-xs leading-relaxed text-fg/60">
+              <li>Staging writes nothing.</li>
+              <li>
+                Every row is judged against the practitioners, clients, members and services this
+                environment holds now, and each row says what stopped it.
+              </li>
+              <li>Applying writes only the accepted rows.</li>
+              <li>
+                Stage the same file again after the reference data improves and the rest are judged
+                afresh.
+              </li>
+            </ul>
           </SheetDescription>
         </SheetHeader>
 
@@ -509,13 +517,21 @@ export function SessionImportDialog({ open, onOpenChange, onImported }: SessionI
               Template
             </Button>
           </div>
-          <p className="text-xs text-fg-muted">
-            Judged against the activity-log workbook's practitioner, client and service names.
-            Download the template for the full column list with one Individual and one company-wide
-            example row; note that "Client Type (Staff/Dep)" says who attended and "Client Type" is
-            unrelated, saying whether this is a new or repeat client engagement. Files are limited
-            to 10 MB.
-          </p>
+          <ul className="list-disc space-y-1 pl-4 text-xs text-fg-muted">
+            <li>
+              Rows are judged against the activity-log workbook&apos;s practitioner, client and
+              service names.
+            </li>
+            <li>
+              Download the template for the full column list, with one Individual and one
+              company-wide example row.
+            </li>
+            <li>
+              &quot;Client Type (Staff/Dep)&quot; says who attended. &quot;Client Type&quot; is
+              unrelated and says whether this is a new or repeat client engagement.
+            </li>
+            <li>Files are limited to 10 MB.</li>
+          </ul>
 
           {error ? (
             <div className="flex flex-wrap items-center gap-2">
