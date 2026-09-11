@@ -69,7 +69,7 @@ async def create_utilisation_event_type(
         resource_id=created.id,
         after=created,
     )
-    invalidate_reference_cache(_RESOURCE)
+    await invalidate_reference_cache(_RESOURCE)
     return UtilisationEventTypeResponse.model_validate(created)
 
 
@@ -100,7 +100,7 @@ async def update_utilisation_event_type(
         before=before,
         after=updated,
     )
-    invalidate_reference_cache(_RESOURCE)
+    await invalidate_reference_cache(_RESOURCE)
     return UtilisationEventTypeResponse.model_validate(updated)
 
 
@@ -129,5 +129,5 @@ async def set_utilisation_event_type_active(
         before=before,
         after=updated,
     )
-    invalidate_reference_cache(_RESOURCE)
+    await invalidate_reference_cache(_RESOURCE)
     return UtilisationEventTypeResponse.model_validate(updated)

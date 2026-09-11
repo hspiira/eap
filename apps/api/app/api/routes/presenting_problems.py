@@ -68,7 +68,7 @@ async def create_presenting_problem(
         resource_id=created.id,
         after=created,
     )
-    invalidate_reference_cache(_RESOURCE)
+    await invalidate_reference_cache(_RESOURCE)
     return PresentingProblemResponse.model_validate(created)
 
 
@@ -99,7 +99,7 @@ async def update_presenting_problem(
         before=before,
         after=updated,
     )
-    invalidate_reference_cache(_RESOURCE)
+    await invalidate_reference_cache(_RESOURCE)
     return PresentingProblemResponse.model_validate(updated)
 
 
@@ -128,5 +128,5 @@ async def set_presenting_problem_active(
         before=before,
         after=updated,
     )
-    invalidate_reference_cache(_RESOURCE)
+    await invalidate_reference_cache(_RESOURCE)
     return PresentingProblemResponse.model_validate(updated)

@@ -95,7 +95,7 @@ async def create_specialty(
     specialty.record_created(UserId(current_user.user_id))
     await repo.save_specialty(specialty)
     await audit_change(specialty, audit_handler, current_user, request, tenant_id=PLATFORM_TENANT)
-    invalidate_reference_cache(_RESOURCE)
+    await invalidate_reference_cache(_RESOURCE)
     return _response(specialty)
 
 
@@ -122,7 +122,7 @@ async def retire_specialty(
     specialty.retire(UserId(current_user.user_id), at=utc_now())
     await repo.save_specialty(specialty)
     await audit_change(specialty, audit_handler, current_user, request, tenant_id=PLATFORM_TENANT)
-    invalidate_reference_cache(_RESOURCE)
+    await invalidate_reference_cache(_RESOURCE)
     return _response(specialty)
 
 

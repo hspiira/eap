@@ -135,7 +135,11 @@ class Settings(BaseSettings):
     )
     REDIS_URL: str = Field(
         default="",
-        description="Redis URL for login rate limit when LOGIN_RATE_LIMIT_BACKEND=redis",
+        description=(
+            "Redis URL. Backs the login rate limit when LOGIN_RATE_LIMIT_BACKEND=redis, "
+            "and the reference cache whenever it is set. Leave empty to cache in-process, "
+            "which is only correct on a single instance."
+        ),
     )
 
     LOGIN_LOCKOUT_THRESHOLD: int = Field(
@@ -318,6 +322,25 @@ class Settings(BaseSettings):
             warnings.warn(
                 "LOGIN_RATE_LIMIT_BACKEND is 'redis' but REDIS_URL is empty. "
                 "Falling back to memory backend.",
+                UserWarning,
+                stacklevel=2,
+            )
+
+        if self.is_production and self.LOGIN_RATE_LIMIT_BACKEND == "memory":
+            warnings.warn(
+                "LOGIN_RATE_LIMIT_BACKEND is 'memory' in production. The limit is "
+                "then counted per instance, so an attacker spreading attempts across "
+                "instances gets a multiple of it. Set it to 'redis' with REDIS_URL.",
+                UserWarning,
+                stacklevel=2,
+            )
+
+        if self.is_production and not (self.REDIS_URL or "").strip():
+            warnings.warn(
+                "REDIS_URL is empty in production, so the reference cache is "
+                "per-instance. An edit to a lookup table is then only invalidated on "
+                "the instance that served the write; every other instance serves the "
+                "old vocabulary until its entry expires.",
                 UserWarning,
                 stacklevel=2,
             )

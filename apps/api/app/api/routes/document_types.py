@@ -66,7 +66,7 @@ async def create_document_type(
         resource_id=created.id,
         after=created,
     )
-    invalidate_reference_cache(_RESOURCE)
+    await invalidate_reference_cache(_RESOURCE)
     return DocumentTypeResponse.model_validate(created)
 
 
@@ -97,7 +97,7 @@ async def update_document_type(
         before=before,
         after=updated,
     )
-    invalidate_reference_cache(_RESOURCE)
+    await invalidate_reference_cache(_RESOURCE)
     return DocumentTypeResponse.model_validate(updated)
 
 
@@ -126,5 +126,5 @@ async def set_document_type_active(
         before=before,
         after=updated,
     )
-    invalidate_reference_cache(_RESOURCE)
+    await invalidate_reference_cache(_RESOURCE)
     return DocumentTypeResponse.model_validate(updated)

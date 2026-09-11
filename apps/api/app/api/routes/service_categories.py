@@ -71,7 +71,7 @@ async def create_service_category(
         resource_id=created.id,
         after=created,
     )
-    invalidate_reference_cache(_RESOURCE)
+    await invalidate_reference_cache(_RESOURCE)
     return ServiceCategoryResponse.model_validate(created)
 
 
@@ -102,7 +102,7 @@ async def update_service_category(
         before=before,
         after=updated,
     )
-    invalidate_reference_cache(_RESOURCE)
+    await invalidate_reference_cache(_RESOURCE)
     return ServiceCategoryResponse.model_validate(updated)
 
 
@@ -131,5 +131,5 @@ async def set_service_category_active(
         before=before,
         after=updated,
     )
-    invalidate_reference_cache(_RESOURCE)
+    await invalidate_reference_cache(_RESOURCE)
     return ServiceCategoryResponse.model_validate(updated)

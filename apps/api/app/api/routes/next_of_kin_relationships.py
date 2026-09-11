@@ -70,7 +70,7 @@ async def create_next_of_kin_relationship(
         resource_id=created.id,
         after=created,
     )
-    invalidate_reference_cache(_RESOURCE)
+    await invalidate_reference_cache(_RESOURCE)
     return NextOfKinRelationshipResponse.model_validate(created)
 
 
@@ -104,7 +104,7 @@ async def update_next_of_kin_relationship(
         before=before,
         after=updated,
     )
-    invalidate_reference_cache(_RESOURCE)
+    await invalidate_reference_cache(_RESOURCE)
     return NextOfKinRelationshipResponse.model_validate(updated)
 
 
@@ -133,5 +133,5 @@ async def set_next_of_kin_relationship_active(
         before=before,
         after=updated,
     )
-    invalidate_reference_cache(_RESOURCE)
+    await invalidate_reference_cache(_RESOURCE)
     return NextOfKinRelationshipResponse.model_validate(updated)

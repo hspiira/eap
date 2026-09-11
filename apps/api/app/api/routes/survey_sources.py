@@ -66,7 +66,7 @@ async def create_survey_source(
         resource_id=created.id,
         after=created,
     )
-    invalidate_reference_cache(_RESOURCE)
+    await invalidate_reference_cache(_RESOURCE)
     return SurveySourceResponse.model_validate(created)
 
 
@@ -97,7 +97,7 @@ async def update_survey_source(
         before=before,
         after=updated,
     )
-    invalidate_reference_cache(_RESOURCE)
+    await invalidate_reference_cache(_RESOURCE)
     return SurveySourceResponse.model_validate(updated)
 
 
@@ -126,5 +126,5 @@ async def set_survey_source_active(
         before=before,
         after=updated,
     )
-    invalidate_reference_cache(_RESOURCE)
+    await invalidate_reference_cache(_RESOURCE)
     return SurveySourceResponse.model_validate(updated)
