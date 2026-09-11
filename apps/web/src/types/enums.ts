@@ -378,6 +378,21 @@ export enum PanelStatus {
 }
 
 /**
+ * Whether a source-system name has been reconciled to a practitioner: mirrors
+ * BE `AliasResolutionState`.
+ *
+ * `AMBIGUOUS` and `UNMAPPED` are distinct review outcomes. The first has
+ * candidates and no decision, the second has no candidate at all. Only
+ * `RESOLVED` lets an import attribute a row to a practitioner.
+ */
+export enum AliasResolutionState {
+  UNMAPPED = "Unmapped",
+  AMBIGUOUS = "Ambiguous",
+  RESOLVED = "Resolved",
+  REJECTED = "Rejected",
+}
+
+/**
  * Supplier approval of a provider organisation: mirrors BE
  * `OrganisationApprovalStatus`. Independent of `is_active`; an organisation may
  * deliver only when it is active and approved.
