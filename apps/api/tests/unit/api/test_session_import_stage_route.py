@@ -12,8 +12,10 @@ from sqlalchemy.exc import IntegrityError
 from app.api.dependencies import (
     get_audit_event_handler,
     get_client_repository,
+    get_diagnosis_repository,
     get_eligible_member_repository,
     get_service_repository,
+    get_user_repository,
 )
 from app.api.dependencies.provider_network import (
     get_provider_affiliation_repository,
@@ -62,10 +64,14 @@ async def api():
         clients=AsyncMock(),
         members=AsyncMock(),
         services=AsyncMock(),
+        diagnoses=AsyncMock(),
+        users=AsyncMock(),
         audit_handler=AsyncMock(),
         db=AsyncMock(),
     )
     state.imports.find_batch_by_hash.return_value = None
+    state.diagnoses.alias_lookup.return_value = {}
+    state.users.list_all.return_value = []
 
     def _user() -> TokenData:
         return TokenData(user_id="u-1", tenant_id=TENANT, role="Admin")
@@ -81,6 +87,8 @@ async def api():
     app.dependency_overrides[get_client_repository] = lambda: state.clients
     app.dependency_overrides[get_eligible_member_repository] = lambda: state.members
     app.dependency_overrides[get_service_repository] = lambda: state.services
+    app.dependency_overrides[get_diagnosis_repository] = lambda: state.diagnoses
+    app.dependency_overrides[get_user_repository] = lambda: state.users
     app.dependency_overrides[get_audit_event_handler] = lambda: state.audit_handler
     app.dependency_overrides[get_db] = lambda: state.db
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as http:

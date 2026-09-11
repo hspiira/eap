@@ -53,7 +53,7 @@ async function stageFile(counts: Record<string, number>) {
     <SessionImportDialog open onOpenChange={() => {}} onImported={() => {}} />,
   )
   const file = new File(["DATE\n2025-09-12\n"], "sessions.csv", { type: "text/csv" })
-  await user.upload(screen.getByLabelText("CSV file"), file)
+  await user.upload(screen.getByLabelText("CSV or Excel file"), file)
   await user.click(screen.getByRole("button", { name: /stage file/i }))
   return screen
 }
@@ -178,7 +178,7 @@ describe("restage conflict", () => {
       <SessionImportDialog open onOpenChange={() => {}} onImported={() => {}} />,
     )
     const file = new File(["DATE\n2025-09-12\n"], "sessions.csv", { type: "text/csv" })
-    await userEvent.upload(screen.getByLabelText("CSV file"), file)
+    await userEvent.upload(screen.getByLabelText("CSV or Excel file"), file)
     await userEvent.click(screen.getByRole("button", { name: /stage file/i }))
 
     const discardLink = await screen.findByText("Discard the stuck batch and retry")

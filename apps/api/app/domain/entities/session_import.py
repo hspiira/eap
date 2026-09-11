@@ -162,6 +162,11 @@ class SessionImportRowEntity:
     client_type: ClientType | None = None
     rate_ugx: int | None = None
     session_number: int | None = None
+    # Enrichment: never blocks a row, unlike the resolved subject above.
+    issue_topic: str | None = None
+    diagnosis_type_id: str | None = None
+    diagnosis_id: str | None = None
+    approved_by: str | None = None
 
     def __post_init__(self) -> None:
         if self.row_number < 1:

@@ -5,9 +5,6 @@ owns; calling the live session use case here would merge the booking rules with
 historical acceptance, which decision 7 keeps apart.
 """
 
-import csv
-import hashlib
-import io
 import logging
 from collections.abc import Sequence
 from datetime import datetime
@@ -20,8 +17,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.api.dependencies import (
     get_audit_event_handler,
     get_client_repository,
+    get_diagnosis_repository,
     get_eligible_member_repository,
     get_service_repository,
+    get_user_repository,
 )
 from app.api.dependencies.pagination import PageParams, pagination
 from app.api.dependencies.provider_network import (
@@ -43,6 +42,7 @@ from app.application.services.provider_alias_reconciliation import (
 from app.application.services.session_import_staging import (
     SessionImportStagingService,
     SourceRow,
+    canonical_content_hash,
     preflight_source_keys,
 )
 from app.application.use_cases.apply_session_import import ApplyImportBatchUseCase
@@ -54,10 +54,12 @@ from app.domain.entities.session_import import (
     SessionImportBatchEntity,
     SessionImportRowEntity,
 )
+from app.domain.enums import UserStatus
 from app.domain.enums.provider_network import ImportRowOutcome
 from app.domain.enums.tenancy import TenantRole
 from app.domain.exceptions import DomainError, NotFoundError
 from app.domain.repositories.client_repository import ClientRepository
+from app.domain.repositories.diagnosis_repository import DiagnosisRepository
 from app.domain.repositories.eligible_member_repository import EligibleMemberRepository
 from app.domain.repositories.provider_network_repository import (
     ProviderAffiliationRepository,
@@ -65,6 +67,7 @@ from app.domain.repositories.provider_network_repository import (
     SessionImportRepository,
 )
 from app.domain.repositories.service_repository import ServiceRepository
+from app.domain.repositories.user_repository import UserRepository
 from app.domain.value_objects.core import TenantId, UserId
 from app.domain.value_objects.provider_network import (
     SessionImportBatchId,
@@ -76,6 +79,7 @@ from app.shared.utils.datetime import utc_now
 from app.shared.utils.generators import generate_cuid
 from app.shared.utils.provider_import_source import parse_source_rows
 from app.shared.utils.route_audit_helper import audit_change
+from app.shared.utils.session_import_template import build_session_import_workbook
 
 logger = logging.getLogger(__name__)
 
@@ -115,12 +119,15 @@ async def _require_batch(
 
 @router.get(
     "/template",
-    summary="Download the session import CSV template",
+    summary="Download the session import workbook template",
 )
 async def session_import_template(
     current_user: TokenData = Depends(get_current_user),
+    clients: ClientRepository = Depends(get_client_repository),
+    diagnoses: DiagnosisRepository = Depends(get_diagnosis_repository),
+    users: UserRepository = Depends(get_user_repository),
 ) -> StreamingResponse:
-    """Return the supported extract columns with one Individual and one CompanyWide example row.
+    """An .xlsx workbook with the supported columns and one example row of each attendance kind.
 
     Column names match `provider_import_source.py`'s accepted spellings, using
     the same "(CLEAN)" form the reference extract itself uses for the columns
@@ -128,64 +135,27 @@ async def session_import_template(
     individual, or the client at large); "Client Type" is unrelated and says
     whether this is a new or repeat client engagement -- the two are easy to
     conflate and both belong in a real extract.
+
+    Columns backed by a fixed or tenant-scoped list get an Excel dropdown
+    sourced from a hidden reference sheet. That is a client-side aid only;
+    `provider_import_source.py` and the staging service validate every row
+    the same way whether or not the value came from the dropdown.
     """
-    output = io.StringIO(newline="")
-    writer = csv.writer(output)
-    writer.writerow(
-        [
-            "Date",
-            "Company (CLEAN)",
-            "Client-ID#",
-            "Counselor (CLEAN)",
-            "Client Type (Staff/Dep)",
-            "Gender",
-            "Session Type",
-            "Session Category",
-            "Client Type",
-            "Intervention",
-            "Status (CLEAN)",
-            "Rate (UGX)",
-            "Session #",
-        ]
-    )
-    writer.writerow(
-        [
-            "2026-01-15",
-            "Example Client",
-            "EXM-001",
-            "Example Counsellor",
-            "Staff",
-            "Female",
-            "Physical",
-            "Individual",
-            "New",
-            "Individual Counselling",
-            "Completed",
-            "50000",
-            "1",
-        ]
-    )
-    writer.writerow(
-        [
-            "2026-01-16",
-            "Example Client",
-            "",
-            "Example Counsellor",
-            "Group/Event",
-            "",
-            "Physical",
-            "Group",
-            "",
-            "Health Talk",
-            "Completed",
-            "",
-            "",
-        ]
+    tenant = TenantId(current_user.tenant_id)
+    tenant_clients = await clients.list_all(tenant, limit=1000)
+    diagnosis_types = await diagnoses.list_types()
+    diagnosis_list = await diagnoses.list_diagnoses()
+    active_users = await users.list_all(tenant, status=UserStatus.ACTIVE, limit=1000)
+    workbook = build_session_import_workbook(
+        client_codes=sorted({client.code for client in tenant_clients}),
+        diagnosis_types=sorted({t.name for t in diagnosis_types}),
+        diagnoses=sorted({d.name for d in diagnosis_list}),
+        approver_names=sorted({u.display_name for u in active_users if u.display_name}),
     )
     return StreamingResponse(
-        iter([output.getvalue()]),
-        media_type="text/csv",
-        headers={"Content-Disposition": 'attachment; filename="session-import-template.csv"'},
+        iter([workbook]),
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": 'attachment; filename="session-import-template.xlsx"'},
     )
 
 
@@ -212,6 +182,8 @@ async def stage_import(
     clients: ClientRepository = Depends(get_client_repository),
     members: EligibleMemberRepository = Depends(get_eligible_member_repository),
     services: ServiceRepository = Depends(get_service_repository),
+    diagnoses: DiagnosisRepository = Depends(get_diagnosis_repository),
+    users: UserRepository = Depends(get_user_repository),
     db: AsyncSession = Depends(get_db),
 ):
     """Stage rows for review. Writes no sessions and has no billing side effects.
@@ -223,8 +195,14 @@ async def stage_import(
     content = await file.read()
     if len(content) > MAX_IMPORT_BYTES:
         raise DomainError("Import file is larger than 10 MB", http_status=413)
-    file_hash = "sha256:" + hashlib.sha256(content).hexdigest()
     tenant = TenantId(tenant_id)
+
+    # Hashed from the parsed rows, not the upload's raw bytes: a CSV re-saved
+    # with different line endings, or an Excel workbook Excel rewrote on save
+    # despite no cell changing, must not read as a different file.
+    source_rows = parse_source_rows(content, source_record_key_field)
+    preflight_source_keys(source_rows, source_record_key_field)
+    file_hash = canonical_content_hash(source_rows)
 
     existing = await imports.find_batch_by_hash(tenant, file_hash)
     if existing is not None:
@@ -241,8 +219,6 @@ async def stage_import(
     # that has since improved. Rows that did import keep their keys and come
     # back as duplicates.
     await imports.release_superseded_rows(tenant, file_hash)
-    source_rows = parse_source_rows(content, source_record_key_field)
-    preflight_source_keys(source_rows, source_record_key_field)
     now = utc_now()
     batch = SessionImportBatchEntity(
         id=SessionImportBatchId(generate_cuid()),
@@ -285,6 +261,8 @@ async def stage_import(
         clients,
         members,
         services,
+        diagnoses,
+        users,
     )
     with measure_queries() as measured:
         await _stage_rows(
@@ -345,6 +323,10 @@ async def _stage_rows(
                 client_type=staged.normalised.client_type,
                 rate_ugx=staged.normalised.rate_ugx,
                 session_number=staged.normalised.session_number,
+                issue_topic=staged.normalised.issue_topic,
+                diagnosis_type_id=staged.normalised.diagnosis_type_id,
+                diagnosis_id=staged.normalised.diagnosis_id,
+                approved_by=staged.normalised.approved_by,
                 created_at=now,
             )
         )
@@ -393,6 +375,10 @@ async def list_rows(
                 raw_practitioner_name=row.raw_practitioner_name,
                 session_date=row.session_date,
                 reasons=list(row.reasons),
+                issue_topic=row.issue_topic,
+                diagnosis_type_id=row.diagnosis_type_id,
+                diagnosis_id=row.diagnosis_id,
+                approved_by=row.approved_by,
             )
             for row in items
         ],

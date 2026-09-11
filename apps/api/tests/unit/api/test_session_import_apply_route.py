@@ -12,8 +12,10 @@ from httpx import ASGITransport, AsyncClient
 
 from app.api.dependencies import (
     get_client_repository,
+    get_diagnosis_repository,
     get_eligible_member_repository,
     get_service_repository,
+    get_user_repository,
 )
 from app.api.dependencies.provider_network import (
     get_historical_session_writer,
@@ -83,6 +85,8 @@ async def api():
         clients=AsyncMock(),
         members=AsyncMock(),
         services=AsyncMock(),
+        diagnoses=AsyncMock(),
+        users=AsyncMock(),
         db=AsyncMock(),
         role="Admin",
     )
@@ -93,9 +97,13 @@ async def api():
     state.imports.count_imported_rows.return_value = 0
     state.imports.outcome_counts.return_value = {"UnresolvedMember": 1}
     state.clients.get_by_id.return_value = SimpleNamespace(tenant_id=TenantId(TENANT))
+    state.clients.list_all.return_value = []
     state.members.get_by_id.return_value = SimpleNamespace(tenant_id=TenantId(TENANT))
     state.services.get_by_id.return_value = SimpleNamespace(tenant_id=TenantId(TENANT))
     state.imports.mark_row_imported.return_value = True
+    state.diagnoses.list_types.return_value = []
+    state.diagnoses.list_diagnoses.return_value = []
+    state.users.list_all.return_value = []
 
     @asynccontextmanager
     async def _nested():
@@ -116,6 +124,8 @@ async def api():
     app.dependency_overrides[get_client_repository] = lambda: state.clients
     app.dependency_overrides[get_eligible_member_repository] = lambda: state.members
     app.dependency_overrides[get_service_repository] = lambda: state.services
+    app.dependency_overrides[get_diagnosis_repository] = lambda: state.diagnoses
+    app.dependency_overrides[get_user_repository] = lambda: state.users
     app.dependency_overrides[get_db] = lambda: state.db
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as http:
         state.http = http
@@ -272,26 +282,61 @@ class TestAbandon:
         assert response.status_code == 404
 
 
+def _load_workbook(content: bytes):
+    import io
+
+    import openpyxl
+
+    return openpyxl.load_workbook(io.BytesIO(content))
+
+
 class TestTemplate:
     async def test_the_template_is_server_generated(self, api):
         response = await api.http.get("/session-imports/template")
 
         assert response.status_code == 200
-        assert response.headers["content-type"].startswith("text/csv")
-        assert response.text.splitlines()[0] == (
-            "Date,Company (CLEAN),Client-ID#,Counselor (CLEAN),Client Type (Staff/Dep),Gender,"
-            "Session Type,Session Category,Client Type,Intervention,Status (CLEAN),Rate (UGX),"
-            "Session #"
+        assert response.headers["content-type"] == (
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
         )
-        assert "Example Client" in response.text
+        workbook = _load_workbook(response.content)
+        sheet = workbook["Sessions"]
+        assert [cell.value for cell in sheet[1]] == [
+            "Date",
+            "Company (CLEAN)",
+            "Client Code",
+            "Client-ID#",
+            "Counselor (CLEAN)",
+            "Client Type (Staff/Dep)",
+            "Gender",
+            "Session Type",
+            "Session Category",
+            "Client Type",
+            "Intervention",
+            "Status (CLEAN)",
+            "Rate (UGX)",
+            "Session #",
+            "Issue/Topic",
+            "Diagnosis Type",
+            "Diagnosis",
+            "Approved By",
+        ]
+        assert "Example Client" in [cell.value for cell in sheet[2]]
 
     async def test_the_template_shows_both_an_individual_and_a_company_wide_row(self, api):
         """Client-ID# and Gender are blank on the company-wide row; nothing else demonstrates that shape."""
         response = await api.http.get("/session-imports/template")
-        rows = response.text.strip().splitlines()
-        assert len(rows) == 3
-        assert ",Staff," in rows[1]
-        assert ",Group/Event," in rows[2]
+        sheet = _load_workbook(response.content)["Sessions"]
+        assert sheet.max_row == 3
+        assert [cell.value for cell in sheet[2]][5] == "Staff"
+        assert [cell.value for cell in sheet[3]][5] == "Group/Event"
+
+    async def test_dropdown_columns_reference_the_hidden_list_sheet(self, api):
+        response = await api.http.get("/session-imports/template")
+        workbook = _load_workbook(response.content)
+        assert "Reference Lists" in workbook.sheetnames
+        assert workbook["Reference Lists"].sheet_state == "hidden"
+        sheet = workbook["Sessions"]
+        assert len(sheet.data_validations.dataValidation) > 0
 
     async def test_a_non_admin_may_still_read_the_template(self, api):
         """Staging is Admin-only; knowing the file shape is not."""

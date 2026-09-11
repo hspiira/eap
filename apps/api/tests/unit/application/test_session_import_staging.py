@@ -74,8 +74,14 @@ def _service(*, resolution=None, affiliation=None, existing_row=None, member="de
     members.find_by_employer_member_ids.return_value = {"HR-1": resolved} if resolved else {}
     services = AsyncMock()
     services.get_by_name.return_value = SimpleNamespace(id=ServiceId("svc-1"))
+    diagnoses = AsyncMock()
+    diagnoses.alias_lookup.return_value = {}
+    users = AsyncMock()
+    users.list_all.return_value = []
     return (
-        SessionImportStagingService(aliases, affiliations, imports, clients, members, services),
+        SessionImportStagingService(
+            aliases, affiliations, imports, clients, members, services, diagnoses, users
+        ),
         imports,
     )
 

@@ -74,6 +74,11 @@ class HistoricalSessionRecord:
     client_type: ClientType | None = None
     rate_ugx: int | None = None
     session_number: int | None = None
+    # Enrichment: staging never blocks a row for lacking these.
+    issue_topic: str | None = None
+    diagnosis_type_id: str | None = None
+    diagnosis_id: str | None = None
+    approved_by: str | None = None
 
 
 class RecordHistoricalSessionUseCase:
@@ -123,6 +128,10 @@ class RecordHistoricalSessionUseCase:
             client_type=record.client_type,
             rate_ugx=record.rate_ugx,
             session_number=record.session_number,
+            issue_topic=record.issue_topic,
+            diagnosis_type_id=record.diagnosis_type_id,
+            diagnosis_id=record.diagnosis_id,
+            approved_by=record.approved_by,
         )
         await self._sessions.insert(session)
         return session

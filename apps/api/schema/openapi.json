@@ -15711,8 +15711,52 @@
       },
       "SessionImportRowPreview": {
         "properties": {
+          "approved_by": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Approved By"
+          },
           "delivery_context": {
             "$ref": "#/components/schemas/DeliveryContext"
+          },
+          "diagnosis_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Diagnosis Id"
+          },
+          "diagnosis_type_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Diagnosis Type Id"
+          },
+          "issue_topic": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Issue Topic"
           },
           "outcome": {
             "$ref": "#/components/schemas/ImportRowOutcome"
@@ -39419,7 +39463,7 @@
     },
     "/session-imports/template": {
       "get": {
-        "description": "Return the supported extract columns with one Individual and one CompanyWide example row.\n\nColumn names match `provider_import_source.py`'s accepted spellings, using\nthe same \"(CLEAN)\" form the reference extract itself uses for the columns\nthat have one. \"Client Type (Staff/Dep)\" says who attended (an\nindividual, or the client at large); \"Client Type\" is unrelated and says\nwhether this is a new or repeat client engagement -- the two are easy to\nconflate and both belong in a real extract.",
+        "description": "An .xlsx workbook with the supported columns and one example row of each attendance kind.\n\nColumn names match `provider_import_source.py`'s accepted spellings, using\nthe same \"(CLEAN)\" form the reference extract itself uses for the columns\nthat have one. \"Client Type (Staff/Dep)\" says who attended (an\nindividual, or the client at large); \"Client Type\" is unrelated and says\nwhether this is a new or repeat client engagement -- the two are easy to\nconflate and both belong in a real extract.\n\nColumns backed by a fixed or tenant-scoped list get an Excel dropdown\nsourced from a hidden reference sheet. That is a client-side aid only;\n`provider_import_source.py` and the staging service validate every row\nthe same way whether or not the value came from the dropdown.",
         "operationId": "session_import_template_session_imports_template_get",
         "responses": {
           "200": {
@@ -39436,7 +39480,7 @@
             "HTTPBearer": []
           }
         ],
-        "summary": "Download the session import CSV template",
+        "summary": "Download the session import workbook template",
         "tags": [
           "session-imports"
         ]

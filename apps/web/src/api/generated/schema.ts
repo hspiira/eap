@@ -5661,8 +5661,8 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * Download the session import CSV template
-         * @description Return the supported extract columns with one Individual and one CompanyWide example row.
+         * Download the session import workbook template
+         * @description An .xlsx workbook with the supported columns and one example row of each attendance kind.
          *
          *     Column names match `provider_import_source.py`'s accepted spellings, using
          *     the same "(CLEAN)" form the reference extract itself uses for the columns
@@ -5670,6 +5670,11 @@ export interface paths {
          *     individual, or the client at large); "Client Type" is unrelated and says
          *     whether this is a new or repeat client engagement -- the two are easy to
          *     conflate and both belong in a real extract.
+         *
+         *     Columns backed by a fixed or tenant-scoped list get an Excel dropdown
+         *     sourced from a hidden reference sheet. That is a client-side aid only;
+         *     `provider_import_source.py` and the staging service validate every row
+         *     the same way whether or not the value came from the dropdown.
          */
         get: operations["session_import_template_session_imports_template_get"];
         put?: never;
@@ -13707,7 +13712,15 @@ export interface components {
         };
         /** SessionImportRowPreview */
         SessionImportRowPreview: {
+            /** Approved By */
+            approved_by?: string | null;
             delivery_context: components["schemas"]["DeliveryContext"];
+            /** Diagnosis Id */
+            diagnosis_id?: string | null;
+            /** Diagnosis Type Id */
+            diagnosis_type_id?: string | null;
+            /** Issue Topic */
+            issue_topic?: string | null;
             outcome: components["schemas"]["ImportRowOutcome"];
             /** Provider Affiliation Id */
             provider_affiliation_id: string | null;

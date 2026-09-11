@@ -286,14 +286,22 @@ export function SessionImportDialog({ open, onOpenChange, onImported }: SessionI
     if (!window.showOpenFilePicker) return
     try {
       const [handle] = await window.showOpenFilePicker({
-        types: [{ description: "CSV", accept: { "text/csv": [".csv"] } }],
+        types: [
+          {
+            description: "CSV or Excel",
+            accept: {
+              "text/csv": [".csv"],
+              "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": [".xlsx"],
+            },
+          },
+        ],
         excludeAcceptAllOption: false,
         multiple: false,
       })
       selectFile(await handle.getFile(), handle)
     } catch (cause) {
       if (cause instanceof DOMException && cause.name === "AbortError") return
-      setError(normalizeErrorMessage(cause, "Could not open the CSV file"))
+      setError(normalizeErrorMessage(cause, "Could not open the file"))
     }
   }
 
@@ -311,7 +319,7 @@ export function SessionImportDialog({ open, onOpenChange, onImported }: SessionI
       }
       selectFile(await fileHandle.getFile(), fileHandle)
     } catch (cause) {
-      setError(normalizeErrorMessage(cause, "Could not refresh the CSV file"))
+      setError(normalizeErrorMessage(cause, "Could not refresh the file"))
     }
   }
 
@@ -357,7 +365,7 @@ export function SessionImportDialog({ open, onOpenChange, onImported }: SessionI
       const url = URL.createObjectURL(blob)
       const anchor = document.createElement("a")
       anchor.href = url
-      anchor.download = "session-import-template.csv"
+      anchor.download = "session-import-template.xlsx"
       anchor.click()
       URL.revokeObjectURL(url)
     } catch (cause) {
@@ -469,7 +477,7 @@ export function SessionImportDialog({ open, onOpenChange, onImported }: SessionI
         <div className="min-h-0 flex-1 space-y-4 overflow-y-auto px-6 py-5">
           <div className="flex flex-wrap items-center gap-2">
             <Label htmlFor="session-import-file" className="shrink-0">
-              CSV file
+              CSV or Excel file
             </Label>
             {supportsFilePicker ? (
               <>
@@ -500,7 +508,7 @@ export function SessionImportDialog({ open, onOpenChange, onImported }: SessionI
               <Input
                 id="session-import-file"
                 type="file"
-                accept=".csv,text/csv"
+                accept=".csv,text/csv,.xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
                 disabled={busy !== ""}
                 className="h-9 min-w-52 flex-1"
                 onChange={(event) => selectFile(event.target.files?.[0] ?? null)}
@@ -520,15 +528,21 @@ export function SessionImportDialog({ open, onOpenChange, onImported }: SessionI
           <ul className="list-disc space-y-1 pl-4 text-xs text-fg-muted">
             <li>
               Rows are judged against the activity-log workbook&apos;s practitioner, client and
-              service names.
+              service names. Client Code, if present, is used instead of the company name.
             </li>
             <li>
-              Download the template for the full column list, with one Individual and one
-              company-wide example row.
+              Download the template (.xlsx) for the full column list, with one Individual and one
+              company-wide example row. Columns backed by a fixed or tenant list get a dropdown on a
+              hidden sheet; every value is still validated server-side regardless of how it got into
+              the cell.
             </li>
             <li>
               &quot;Client Type (Staff/Dep)&quot; says who attended. &quot;Client Type&quot; is
               unrelated and says whether this is a new or repeat client engagement.
+            </li>
+            <li>
+              Issue/Topic, Diagnosis Type, Diagnosis and Approved By are optional enrichment: a row
+              is still imported even if none of them resolve.
             </li>
             <li>Files are limited to 10 MB.</li>
           </ul>

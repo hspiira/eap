@@ -217,6 +217,10 @@ class SessionImportRowPreview(BaseModel):
     raw_practitioner_name: str | None
     session_date: date | None
     reasons: list[str]
+    issue_topic: str | None = None
+    diagnosis_type_id: str | None = None
+    diagnosis_id: str | None = None
+    approved_by: str | None = None
 
 
 class SessionImportBatchResponse(BaseModel):

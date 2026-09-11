@@ -10,9 +10,10 @@ write entry point agent 1 owns, and calling the live session use case would
 merge the two rule sets that this separation exists to keep apart.
 """
 
+import hashlib
 from collections import defaultdict
 from collections.abc import Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import date, datetime
 
 from app.application.services.provider_alias_reconciliation import (
@@ -31,16 +32,21 @@ from app.domain.enums import (
     SessionClinicalStatus,
     SessionStatus,
     SessionType,
+    UserStatus,
 )
 from app.domain.enums.provider_network import DeliveryContext, ImportRowOutcome
 from app.domain.exceptions import DomainError
 from app.domain.repositories.client_repository import ClientRepository
+from app.domain.repositories.diagnosis_repository import DiagnosisRepository
 from app.domain.repositories.eligible_member_repository import EligibleMemberRepository
 from app.domain.repositories.provider_network_repository import (
     ProviderAffiliationRepository,
     SessionImportRepository,
 )
 from app.domain.repositories.service_repository import ServiceRepository
+from app.domain.repositories.user_repository import UserRepository
+from app.domain.services.diagnosis_alias import normalise_diagnosis_value
+from app.domain.services.provider_alias_normalisation import normalise_practitioner_name
 from app.domain.services.provider_network_calendar import boundary_day
 from app.domain.value_objects.core import ClientId, TenantId
 from app.domain.value_objects.provider_network import (
@@ -59,6 +65,10 @@ from app.shared.utils.session_import_normalisation import (
     map_session_type,
     map_status,
 )
+
+#: An approver name matching more than one active user in the tenant. Distinct
+#: from a `str` UserId so a preloaded ambiguous name is never mistaken for one.
+_AMBIGUOUS_APPROVER = object()
 
 _NAME_OUTCOMES = {
     NameOutcome.MISSING: ImportRowOutcome.MISSING_PRACTITIONER,
@@ -89,6 +99,7 @@ class SourceRow:
     member_id: str | None = None
     service_id: str | None = None
     raw_client_name: str | None = None
+    raw_client_code: str | None = None
     raw_member_ref: str | None = None
     raw_gender: str | None = None
     raw_audience: str | None = None
@@ -99,6 +110,10 @@ class SourceRow:
     raw_client_type: str | None = None
     raw_rate: str | None = None
     raw_session_number: str | None = None
+    raw_issue_topic: str | None = None
+    raw_diagnosis: str | None = None
+    raw_diagnosis_type: str | None = None
+    raw_approved_by: str | None = None
 
 
 @dataclass(frozen=True)
@@ -107,7 +122,12 @@ class Normalised:
 
     An unmapped value stays None here and leaves its reason on the row; an
     optional field that will not map must not block a row whose identities all
-    resolve.
+    resolve. `issue_topic`, `diagnosis_type_id`/`diagnosis_id` and
+    `approved_by` are enrichment for the same reason: a session that already
+    happened is not refused for lacking a clean diagnosis code or a
+    recognised approver name. There is no `feedback` field here: CLIENT
+    FEEDBACK is free text that PRIV-01 forbids reaching an employer aggregate
+    (session_import_normalisation.py), so it is never imported at all.
     """
 
     session_type: SessionType | None = None
@@ -117,6 +137,10 @@ class Normalised:
     client_type: ClientType | None = None
     rate_ugx: int | None = None
     session_number: int | None = None
+    issue_topic: str | None = None
+    diagnosis_type_id: str | None = None
+    diagnosis_id: str | None = None
+    approved_by: str | None = None
 
 
 @dataclass(frozen=True)
@@ -149,6 +173,8 @@ class SessionImportStagingService:
         clients: ClientRepository,
         members: EligibleMemberRepository,
         services: ServiceRepository,
+        diagnoses: DiagnosisRepository,
+        users: UserRepository,
     ):
         self._aliases = aliases
         self._affiliations = affiliations
@@ -156,10 +182,15 @@ class SessionImportStagingService:
         self._clients = clients
         self._members = members
         self._services = services
+        self._diagnoses = diagnoses
+        self._users = users
         self._client_cache: dict[str, ClientEntity | None] = {}
+        self._client_code_cache: dict[str, ClientEntity | None] = {}
         self._member_cache: dict[tuple[str, str], EligibleMember | None] = {}
         self._service_cache: dict[str, ServiceEntity | None] = {}
         self._staged_by_key: dict[str, SessionImportRowEntity | None] = {}
+        self._diagnosis_aliases: dict[str, tuple[str, str | None]] | None = None
+        self._approver_by_name: dict[str, str | object] | None = None
 
     async def preload(self, tenant_id: TenantId, rows: Sequence[SourceRow], file_hash: str) -> None:
         """Batch every lookup `stage_row` would otherwise repeat once per row.
@@ -170,6 +201,8 @@ class SessionImportStagingService:
         await self._preload_clients(tenant_id, rows)
         await self._preload_members(tenant_id, rows)
         await self._preload_services(tenant_id, rows)
+        await self._preload_diagnosis_aliases()
+        await self._preload_approvers(tenant_id)
         keys = [_replay_key(row, file_hash) for row in rows]
         if not keys:
             return
@@ -177,16 +210,54 @@ class SessionImportStagingService:
         for key in keys:
             self._staged_by_key.setdefault(key, found.get(key))
 
-    async def _preload_clients(self, tenant_id: TenantId, rows: Sequence[SourceRow]) -> None:
-        for name in {row.raw_client_name for row in rows if row.raw_client_name}:
-            self._client_cache.setdefault(
-                name, await self._clients.get_by_name_or_alias(tenant_id, name)
+    async def _preload_diagnosis_aliases(self) -> None:
+        if self._diagnosis_aliases is None:
+            self._diagnosis_aliases = await self._diagnoses.alias_lookup()
+
+    async def _preload_approvers(self, tenant_id: TenantId) -> None:
+        """Every active user's display name, normalised, for matching `Approved By`.
+
+        A name matching more than one active user is unusable as a lookup
+        key and is dropped rather than guessed at; the row's note says so.
+        """
+        if self._approver_by_name is not None:
+            return
+        by_name: dict[str, str | object] = {}
+        offset = 0
+        while True:
+            page = await self._users.list_all(
+                tenant_id, status=UserStatus.ACTIVE, limit=200, offset=offset
             )
+            for user in page:
+                if not user.display_name:
+                    continue
+                key = normalise_practitioner_name(user.display_name)
+                if not key:
+                    continue
+                if key in by_name and by_name[key] != user.id.value:
+                    by_name[key] = _AMBIGUOUS_APPROVER
+                else:
+                    by_name[key] = user.id.value
+            if len(page) < 200:
+                break
+            offset += 200
+        self._approver_by_name = by_name
+
+    async def _preload_clients(self, tenant_id: TenantId, rows: Sequence[SourceRow]) -> None:
+        for code in {row.raw_client_code for row in rows if row.raw_client_code}:
+            if code not in self._client_code_cache:
+                self._client_code_cache[code] = await self._clients.get_by_code(tenant_id, code)
+        names = {
+            row.raw_client_name for row in rows if not row.raw_client_code and row.raw_client_name
+        }
+        for name in names:
+            if name not in self._client_cache:
+                self._client_cache[name] = await self._clients.get_by_name_or_alias(tenant_id, name)
 
     async def _preload_members(self, tenant_id: TenantId, rows: Sequence[SourceRow]) -> None:
         wanted: dict[str, set[str]] = {}
         for row in rows:
-            client = self._client_cache.get(row.raw_client_name or "")
+            client = self._resolved_client_from_cache(row)
             if client is None or not row.raw_member_ref:
                 continue
             wanted.setdefault(client.id.value, set()).add(row.raw_member_ref)
@@ -273,18 +344,16 @@ class SessionImportStagingService:
         unmapped optional value only leaves a note.
         """
         normalised, notes = _normalised(row)
+        enrichment, enrichment_notes = await self._resolve_enrichment(tenant_id, row)
+        normalised = replace(normalised, **enrichment)
+        notes = notes + enrichment_notes
 
-        client = (
-            await self._client_named(tenant_id, row.raw_client_name)
-            if row.raw_client_name
-            else None
-        )
+        client = await self._resolve_client(tenant_id, row)
         if client is None:
             return _Subject(
                 held=(
                     ImportRowOutcome.UNRESOLVED_CLIENT,
-                    f"Company {row.raw_client_name!r} does not resolve to a client "
-                    "by name or alias",
+                    _client_unresolved_reason(row),
                 )
             )
 
@@ -345,10 +414,64 @@ class SessionImportStagingService:
             )
         return self._staged_by_key[replay_key]
 
-    async def _client_named(self, tenant_id: TenantId, name: str) -> ClientEntity | None:
-        if name not in self._client_cache:
-            self._client_cache[name] = await self._clients.get_by_name_or_alias(tenant_id, name)
-        return self._client_cache[name]
+    async def _resolve_client(self, tenant_id: TenantId, row: SourceRow) -> ClientEntity | None:
+        """Client Code first when the source carries one; company name is the fallback.
+
+        A row can only be keyed one way, so a code takes priority over a name
+        in the same row rather than requiring both to resolve.
+        """
+        if row.raw_client_code:
+            if row.raw_client_code not in self._client_code_cache:
+                self._client_code_cache[row.raw_client_code] = await self._clients.get_by_code(
+                    tenant_id, row.raw_client_code
+                )
+            return self._client_code_cache[row.raw_client_code]
+        if not row.raw_client_name:
+            return None
+        if row.raw_client_name not in self._client_cache:
+            self._client_cache[row.raw_client_name] = await self._clients.get_by_name_or_alias(
+                tenant_id, row.raw_client_name
+            )
+        return self._client_cache[row.raw_client_name]
+
+    def _resolved_client_from_cache(self, row: SourceRow) -> ClientEntity | None:
+        """A previously resolved client for this row, read-only, from `preload`'s caches."""
+        if row.raw_client_code:
+            return self._client_code_cache.get(row.raw_client_code)
+        return self._client_cache.get(row.raw_client_name or "")
+
+    async def _resolve_enrichment(
+        self, tenant_id: TenantId, row: SourceRow
+    ) -> tuple[dict[str, str | None], tuple[str, ...]]:
+        """Diagnosis and approver: enrichment, never an identity the row waits on."""
+        notes: list[str] = []
+        fields: dict[str, str | None] = {"issue_topic": row.raw_issue_topic}
+
+        diagnosis_type_id, diagnosis_id = None, None
+        if row.raw_diagnosis:
+            await self._preload_diagnosis_aliases()
+            aliases = self._diagnosis_aliases or {}
+            match = aliases.get(normalise_diagnosis_value(row.raw_diagnosis))
+            if match is None:
+                notes.append(f"Diagnosis {row.raw_diagnosis!r} has no alias and was left empty")
+            else:
+                diagnosis_type_id, diagnosis_id = match
+        fields["diagnosis_type_id"] = diagnosis_type_id
+        fields["diagnosis_id"] = diagnosis_id
+
+        approved_by = None
+        if row.raw_approved_by:
+            await self._preload_approvers(tenant_id)
+            by_name = self._approver_by_name or {}
+            match = by_name.get(normalise_practitioner_name(row.raw_approved_by))
+            if match is None:
+                notes.append(f"Approver {row.raw_approved_by!r} does not match an active user")
+            elif match is _AMBIGUOUS_APPROVER:
+                notes.append(f"Approver {row.raw_approved_by!r} matches more than one active user")
+            else:
+                approved_by = match
+        fields["approved_by"] = approved_by
+        return fields, tuple(notes)
 
     async def _member_of(
         self, tenant_id: TenantId, client_id: ClientId, ref: str
@@ -509,6 +632,12 @@ class SessionImportStagingService:
         )
 
 
+def _client_unresolved_reason(row: SourceRow) -> str:
+    if row.raw_client_code:
+        return f"Client code {row.raw_client_code!r} does not resolve to a client in this tenant"
+    return f"Company {row.raw_client_name!r} does not resolve to a client by name or alias"
+
+
 def _attendance(row: SourceRow) -> SessionAttendance:
     """Company-wide when either signal says so; a member row otherwise.
 
@@ -572,6 +701,49 @@ def _normalised(row: SourceRow) -> tuple[Normalised, tuple[str, ...]]:
         ),
         tuple(notes),
     )
+
+
+_ROW_SIGNATURE_FIELDS = (
+    "row_number",
+    "raw_practitioner_name",
+    "source_record_key",
+    "raw_client_name",
+    "raw_client_code",
+    "raw_member_ref",
+    "raw_gender",
+    "raw_audience",
+    "raw_session_type",
+    "raw_category",
+    "raw_status",
+    "raw_intervention",
+    "raw_client_type",
+    "raw_rate",
+    "raw_session_number",
+    "raw_issue_topic",
+    "raw_diagnosis",
+    "raw_diagnosis_type",
+    "raw_approved_by",
+)
+
+
+def canonical_content_hash(rows: Sequence[SourceRow]) -> str:
+    """A hash of what a file says, not the bytes it happens to be encoded as.
+
+    An Excel workbook re-saved with no cell actually changed can still differ
+    byte for byte (Excel rewrites its own internal metadata on every save),
+    and a CSV re-saved with different line endings does too. Hashing the
+    parsed rows instead means only a real content change produces a new hash,
+    which is what "restaging the same file" and the file-hash replay key
+    fallback both actually mean to guarantee.
+    """
+    body = "\n".join(_row_signature(row) for row in rows)
+    return "sha256:" + hashlib.sha256(body.encode("utf-8")).hexdigest()
+
+
+def _row_signature(row: SourceRow) -> str:
+    session_date = row.session_date.isoformat() if row.session_date else None
+    values = (session_date, *(getattr(row, field) for field in _ROW_SIGNATURE_FIELDS))
+    return "\x1f".join("" if value is None else str(value) for value in values)
 
 
 def _replay_key(row: SourceRow, file_hash: str) -> str:

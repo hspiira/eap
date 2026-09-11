@@ -43,7 +43,7 @@ real remaining items.
 | Typed profile promotion | provider module | Tier, region, panel and accreditation still live in the `provider_profile` JSON column. |
 | Suspension does not flag future bookings for review | provider module | Decision 7 requires it. Unimplemented. |
 | Attribution correction path | provider module | Only the rejection half of decision 2 is built. |
-| Member and service identity for the historical extract | **unowned** | Until it exists, applying a staged import imports zero rows. |
+| ~~Member and service identity for the historical extract~~ | provider module | **Resolved, date uncertain, no later than 2026-09-11.** `session_import_staging.py:_resolve_subject` resolves both; `apply_session_import.py`'s `ApplyImportBatchUseCase` writes real sessions via `RecordHistoricalSessionUseCase`. This row and the two other "imports zero rows" claims below were stale by the time a members-import-adjacent session found them while extending the session-import contract; corrected here rather than left to mislead the next reader. |
 | A `PersonId` carrying a user id | clinical case module | `case.py:79`, `case_use_cases.py:107`. Blocks closing the phase 5 PersonId check. |
 | Twenty mutating routes with no Viewer guard | session and care-callback modules | Pre-existing. Two in provider scope were fixed; the rest change authorization in modules this migration does not own. |
 | `NotFoundError` details are diagnostics presented as field errors | shared error handling | Affects every 404 in the app. |
@@ -656,9 +656,18 @@ readiness become phase 4. UI and API contracts accompany their owning phase.
         `RecordHistoricalSessionUseCase` is the write path: it does not consult
         the booking gate, refuses a future date, an unresolved or cross-tenant
         practitioner and an inconsistent context, and performs no billing,
-        drawdown or completion side effects. Applying imports zero rows today
-        because a staged row cannot name a member or a service. See finding 2;
-        that is a real gap, not a passing importer.
+        drawdown or completion side effects. **Correction, 2026-09-11: this
+        entry was stale.** Member and service identity now resolve at staging
+        (`session_import_staging.py:_resolve_subject`), apply is a chunked,
+        resumable write (`apply_session_import.py`), and 2026-09-10/11 added
+        `issue_topic`, `diagnosis_type_id`/`diagnosis_id` (resolved through the
+        existing `DiagnosisAlias` table), `approved_by` (resolved by matching
+        the source name against active users' display names, the same shape as
+        practitioner-name reconciliation but without a persisted alias table),
+        a Client Code column preferred over company-name resolution when
+        present, and an .xlsx template with tenant-scoped dropdowns alongside
+        the existing CSV path. See "Session import: activity-log fields and
+        .xlsx template, 2026-09-11" below for the full record.
   - [ ] Regenerate contracts; test expiry boundaries, organisation suspension,
         stale eligibility, imports for currently inactive practitioners,
         rejection of future bookings through import, and missing/ambiguous
@@ -710,8 +719,9 @@ owner has directed that provider-module work proceed on the main branch.
   is consistent with keeping import tooling backend-owned, but it means an
   operator cannot resolve an ambiguous name without direct API calls. A product
   owner should decide whether that is acceptable for the first import.
-- Member and service identity for the historical extract have no owner. See
-  finding 2. Until they do, applying a staged batch imports nothing.
+- ~~Member and service identity for the historical extract have no owner...~~
+  **Stale as of 2026-09-11**, corrected in the phase-4 entry above and in "To
+  fix" at the top of this document.
 - The privileged attribution-correction path from decision 2 is not built. Only
   the rejection half is implemented.
 - **Fixed 2026-09-07 on the main branch: CI was red on a provider audit
@@ -836,3 +846,135 @@ owner has directed that provider-module work proceed on the main branch.
   Deliberately deferred rather than done in a release that is already extending
   the chain; the migrations that matter here are covered by tests that execute
   them.
+
+## Session import: activity-log fields and .xlsx template, 2026-09-11
+
+Scope, at the user's request: revise the session-import contract to capture
+more of the activity-log workbook's fields (notes/topic, diagnosis and
+diagnosis type, an approver, a client code instead of a company name), and
+switch the downloadable template to `.xlsx` with dropdown validation on a
+hidden reference sheet. Grounded against a real source file the user provided
+(`Downloads/logs & More.xlsx`, "Activity Logs" sheet, 7,471 rows, 47 columns);
+several decisions below were corrected mid-work once that file's actual
+columns contradicted an earlier assumption.
+
+### What changed
+
+- **Parser** (`app/shared/utils/provider_import_source.py`): now accepts a
+  `Client Code` column (preferred) alongside the existing company-name
+  columns, plus `Issue/Topic`, `Diagnosis Type`, `Diagnosis`, `Approved By`.
+  Also now reads `.xlsx` directly (openpyxl, first sheet only, sniffed by the
+  zip magic bytes) as well as `.csv`; both funnel through the same
+  column-matching code once reduced to the same list-of-dicts shape.
+- **Staging** (`app/application/services/session_import_staging.py`):
+  `_resolve_client` tries `ClientRepository.get_by_code` first when a row
+  carries a code, falling back to the existing name-or-alias lookup
+  otherwise — the historical extract itself has no code column, so the
+  fallback stays load-bearing for that file, not dead code.
+  `_resolve_enrichment` resolves diagnosis via the existing
+  `DiagnosisRepository.alias_lookup()` (already shaped for an importer,
+  already populated — this predates today's work) and approver via a new
+  in-memory match: every active user's `display_name`, normalised the same
+  way practitioner names are, preloaded once per batch. An approver name
+  matching more than one active user is treated as unresolved rather than
+  guessed, same policy as practitioner ambiguity. None of the four enrichment
+  fields block a row: an unresolved diagnosis or approver leaves a note, the
+  same way an unmapped `session_type`/`category`/etc. already does. This
+  matches decision 7's own logic (a session that already happened is not
+  refused for today's data-quality gaps), it is not a new policy.
+- **Persistence**: `SessionImportRowEntity`/`SessionImportRowModel` gained
+  `issue_topic`, `diagnosis_type_id`, `diagnosis_id`, `approved_by`
+  (migration `f2h4j6l8n0p2`, verified against a real local PostgreSQL
+  instance in an isolated schema — upgrade adds all four, downgrade removes
+  them). `issue_topic` is encrypted at rest in the mapper
+  (`provider_network_mapper.py`), matching `ServiceSessionEntity.issue_topic`'s
+  own encryption.
+- **Write path**: `HistoricalSessionRecord` and `RecordHistoricalSessionUseCase`
+  (`historical_session_import.py`) now carry and set all four fields on the
+  created `ServiceSessionEntity`; `HistoricalSessionWriterAdapter` passes them
+  through from the staged row.
+- **Replay/dedup hash**: `stage_import` now hashes the *parsed rows*
+  (`canonical_content_hash`, new in `session_import_staging.py`), not the
+  upload's raw bytes. An Excel workbook re-saved with no cell changed still
+  rewrites its own internal metadata, and a re-saved CSV can change line
+  endings; either would previously have produced a new hash and defeated the
+  "restage the same file" conflict check silently. This changes what counts
+  as "the same file" for every future upload, csv or xlsx.
+- **Template** (`app/shared/utils/session_import_template.py`, new module):
+  `.xlsx` with a "Sessions" sheet (header + two example rows, one Individual
+  and one company-wide) and a hidden "Reference Lists" sheet. Columns backed
+  by a fixed list (category, status, gender, client-type, client-type-staff/
+  dep, intervention) or a tenant-scoped one (client codes, diagnosis types,
+  diagnoses, active users' display names) get an Excel dropdown pointed at
+  that sheet. This is a client-side aid only — a paste, a non-Excel editor,
+  or someone typing over the cell all still reach the same server-side
+  validation the dropdown would have blocked, and the code makes no attempt
+  to enforce otherwise.
+- **Frontend**: `SessionImportDialog.tsx` accepts `.xlsx` alongside `.csv` in
+  both the File System Access picker and the plain input, downloads the
+  template as `.xlsx`, and its help text now names Client Code and the four
+  enrichment fields.
+
+### Corrected mid-work, not assumed
+
+- `approved_by` cannot resolve by email or username as first proposed: the
+  real extract's `APPROVED BY` column is a bare name ("Helen Mbabazi"), no
+  email column exists for it. Switched to name-matching against active users
+  before writing any resolution code, not after.
+- `DIAGNOSIS TYPE`/`DIAGNOSIS` are two separate real columns in the source,
+  not one combined free-text field the way `historical_import.py`'s
+  (disconnected, non-persisting) validator models it. Resolution here is off
+  `DIAGNOSIS` alone through the alias table; `DIAGNOSIS TYPE` is captured as a
+  raw field but not independently resolved.
+- `CLIENT FEEDBACK` was added to the row/entity/model/mapper/write path, then
+  removed entirely once `session_import_normalisation.py`'s own docstring was
+  read closely: "PRIV-01 forbids free text reaching an employer aggregate...
+  It is never imported." That is an already-adopted decision this work has no
+  standing to reopen; it was not requested, and was reverted across every
+  layer it had touched rather than kept as a quiet exception.
+
+### Not done, flagged rather than guessed
+
+- `historical_import.py` (the separate, DB-free validator with a CLI wrapper
+  that does not write) still has its own empty `_DIAGNOSIS_TYPE`/`_DIAGNOSIS`
+  tables, explicitly marked "Do not populate them from engineering." Left
+  untouched; this work's diagnosis resolution runs entirely through the live
+  staging path's `DiagnosisRepository`, a different mechanism.
+- No cascading Diagnosis Type -> Diagnosis dropdown in the template (Excel's
+  dependent-dropdown pattern needs per-type named ranges and INDIRECT()
+  formulas). Both dropdowns are flat, independent lists; picking a diagnosis
+  under the "wrong" type is possible in the sheet and would only surface as a
+  mismatch on review, not as a validation error at entry.
+- Client Code dropdown and Approved By dropdown are tenant-scoped at
+  generation time only, capped at 1,000 rows each
+  (`ClientRepository.list_all`/`UserRepository.list_all` limits), unlike the
+  approver *resolution* at staging time, which does page through the full
+  active-user list. A tenant with over 1,000 clients or active users gets an
+  incomplete template dropdown but full, correct staging resolution either
+  way.
+
+### Verified
+
+- Backend: `ruff check`/`ruff format` on every touched file individually
+  (not the whole `app/`/`alembic/` tree — see the discovery below); full
+  `uv run pytest tests/unit` 2326 passed, 16 skipped; `lint-imports` 3 kept, 0
+  broken. The new migration verified against a real local PostgreSQL instance
+  in an isolated schema (2 tests: upgrade adds the four columns, downgrade
+  removes them). The generated `.xlsx` template round-trips through
+  `parse_source_rows` end to end (checked directly, not just unit-tested in
+  isolation).
+- Frontend: `tsc --noEmit` clean, `eslint` clean, `prettier --write` applied,
+  full `vitest run` 789 passed (94 files).
+- Not verified: no browser session exercised the rewritten
+  `SessionImportDialog` end to end against a live backend.
+
+### Discovery, self-inflicted and reverted, not left as a finding
+
+Ran `ruff check --fix`/`ruff format` scoped to `app/` and `alembic/` broadly
+partway through this work. `app/` was fine; `alembic/` rewrote 53 pre-existing
+migration files it had never been run against before (confirmed by the "not
+in the ruff gate" note directly above, written independently by an earlier
+agent). Reverted with `git restore apps/api/alembic/` before it went anywhere;
+the one new migration this work added was unaffected (untracked). Recorded
+here as a warning to run formatters scoped to the files actually touched,
+not the containing directory, particularly under `alembic/`.
