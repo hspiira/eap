@@ -17,7 +17,17 @@ from typing import Literal
 
 from pydantic import BaseModel, Field
 
-RangePreset = Literal["this_week", "this_month", "last_30d", "last_90d", "last_180d", "custom"]
+RangePreset = Literal[
+    "this_week",
+    "this_month",
+    "this_year",
+    "year",
+    "all_time",
+    "last_30d",
+    "last_90d",
+    "last_180d",
+    "custom",
+]
 Granularity = Literal["day", "week", "month"]
 
 
@@ -27,8 +37,14 @@ class RangeInfo(BaseModel):
     preset: RangePreset
     start: str = Field(..., description="Inclusive window start, ISO 8601")
     end: str = Field(..., description="Exclusive window end, ISO 8601")
-    prior_start: str = Field(
-        ..., description="Start of the equal-length window before this one, ISO 8601"
+    prior_start: str = Field(..., description="Inclusive start of the comparison window")
+    prior_end: str = Field(
+        ...,
+        description=(
+            "Exclusive end of the comparison window. Equal to `start` for every preset that "
+            "compares against the stretch immediately before it; a year preset instead "
+            "compares against the same dates a year earlier, so the two windows do not touch."
+        ),
     )
     granularity: Granularity = Field(
         ..., description="Bucket size of sessions_series, chosen from the window length"
@@ -40,7 +56,7 @@ class DashboardKpis(BaseModel):
 
     sessions: int = Field(..., description="Completed sessions inside the range")
     sessions_prior: int = Field(
-        ..., description="Completed sessions in the equal-length prior window, for the delta"
+        ..., description="Completed sessions in the comparison window, for the delta"
     )
     clients_served: int = Field(
         ..., description="Distinct clients with a completed session inside the range"
@@ -133,6 +149,14 @@ class DashboardResponse(BaseModel):
     """The whole dashboard in one authenticated, tenant-scoped read."""
 
     range: RangeInfo
+    session_years: list[int] = Field(
+        default_factory=list,
+        description=(
+            "Years that actually have a completed session, newest first. What the year "
+            "picker offers, so it never lists a year with nothing behind it. Empty for a "
+            "tenant that has delivered nothing."
+        ),
+    )
     kpis: DashboardKpis
     sessions_series: list[SeriesPoint]
     sessions_by_category: list[CategoryCount]

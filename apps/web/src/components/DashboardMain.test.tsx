@@ -49,15 +49,18 @@ describe("DashboardMain", () => {
     expect(screen.getByRole("heading", { name: "Top clients" })).toBeInTheDocument()
     expect(screen.getByRole("heading", { name: "By category" })).toBeInTheDocument()
     expect(screen.getByRole("heading", { name: "Services in demand" })).toBeInTheDocument()
-    expect(screen.getByRole("heading", { name: "Import health" })).toBeInTheDocument()
 
     expect(screen.getByText("Group Counselling")).toBeInTheDocument()
+  })
 
-    // Import health reads as a composition of the whole batch.
-    expect(screen.getByText("Accepted")).toBeInTheDocument()
-    expect(screen.getByText("Already held")).toBeInTheDocument()
-    expect(screen.getByText("Blocked")).toBeInTheDocument()
-    expect(screen.getByText("Member not on a roster")).toBeInTheDocument()
+  it("no longer carries the import health card", async () => {
+    renderWithProviders(<DashboardMain />)
+
+    await screen.findByText("Stanbic Bank")
+    expect(screen.queryByRole("heading", { name: "Import health" })).not.toBeInTheDocument()
+    // The backlog itself still has a home: the KPI tile and the attention panel.
+    expect(screen.getByText("Import backlog")).toBeInTheDocument()
+    expect(screen.getByText(/unblocks 7,103 import rows/)).toBeInTheDocument()
   })
 
   it("re-scopes the figures when the window changes", async () => {
@@ -74,6 +77,41 @@ describe("DashboardMain", () => {
     await waitFor(() => expect(week).toHaveAttribute("aria-pressed", "true"))
     expect(ninety).toHaveAttribute("aria-pressed", "false")
     expect(screen.getByText("this week")).toBeInTheDocument()
+  })
+
+  it("offers this year and all time beside the shorter windows", async () => {
+    const user = userEvent.setup()
+    renderWithProviders(<DashboardMain />)
+
+    await screen.findByRole("heading", { name: "Sessions delivered" })
+    const thisYear = screen.getByRole("button", { name: "This year" })
+    await user.click(thisYear)
+
+    await waitFor(() => expect(thisYear).toHaveAttribute("aria-pressed", "true"))
+    expect(screen.getByText("this year")).toBeInTheDocument()
+
+    const allTime = screen.getByRole("button", { name: "All time" })
+    await user.click(allTime)
+    await waitFor(() => expect(allTime).toHaveAttribute("aria-pressed", "true"))
+    expect(screen.getByText("all time")).toBeInTheDocument()
+  })
+
+  it("offers only the years the API says have sessions, and names the chosen one", async () => {
+    const user = userEvent.setup()
+    renderWithProviders(<DashboardMain />)
+
+    // The picker only exists once the API has said which years have sessions.
+    await screen.findByText("Stanbic Bank")
+    await user.click(await screen.findByRole("combobox", { name: "Year" }))
+
+    const offered = (await screen.findAllByRole("option")).map((o) => o.textContent)
+    expect(offered).toEqual(["2026", "2025", "2024"])
+
+    await user.click(screen.getByRole("option", { name: "2024" }))
+
+    // The window label names the year rather than a generic "selected year".
+    await waitFor(() => expect(screen.getAllByText("2024").length).toBeGreaterThan(0))
+    expect(screen.getByRole("button", { name: "90d" })).toHaveAttribute("aria-pressed", "false")
   })
 
   it("keeps the onboarding checklist off for a working tenant", async () => {

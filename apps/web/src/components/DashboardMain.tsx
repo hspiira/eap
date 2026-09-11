@@ -21,7 +21,6 @@ import {
 import { AttentionCard, buildAttentionItems } from "@/components/dashboard/AttentionCard"
 import { CardDelta } from "@/components/dashboard/CardBar"
 import { CategoryDonutCard } from "@/components/dashboard/CategoryDonutCard"
-import { ImportHealthCard } from "@/components/dashboard/ImportHealthCard"
 import { RangeFilter } from "@/components/dashboard/RangeFilter"
 import { SessionsAreaCard } from "@/components/dashboard/SessionsAreaCard"
 import { type StatSpec, StatStrip } from "@/components/dashboard/StatStrip"
@@ -65,7 +64,9 @@ export function DashboardMain() {
               loading={loading}
               error={error}
               refreshing={refreshing}
-              control={<RangeFilter value={range} onChange={setRange} />}
+              control={
+                <RangeFilter value={range} onChange={setRange} years={data?.session_years ?? []} />
+              }
             />
           </div>
           <div className="lg:col-span-4">
@@ -83,14 +84,6 @@ export function DashboardMain() {
           <div className="lg:col-span-4">
             <CategoryDonutCard categories={data?.sessions_by_category ?? []} loading={loading} />
           </div>
-        </div>
-
-        <div className="grid gap-4 lg:grid-cols-2">
-          <ImportHealthCard
-            batch={data?.import_batch}
-            queues={data?.import_queues ?? []}
-            loading={loading}
-          />
         </div>
 
         {data && data.kpis.clients_total === 0 ? <EmptyTenantOnboarding /> : null}
