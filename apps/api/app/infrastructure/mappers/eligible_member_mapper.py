@@ -1,5 +1,8 @@
 """Eligible-member + clinical-subject mappers."""
 
+from datetime import date
+
+from app.core.encryption import decrypt, encrypt
 from app.domain.entities.clinical_subject import ClinicalSubject
 from app.domain.entities.eligible_member import EligibleMember
 from app.domain.enums import EligibilityStatus, MemberGender, MemberRelation
@@ -17,6 +20,15 @@ from app.infrastructure.models.eligible_member_model import (
     EligibleMemberModel,
 )
 from app.shared.utils.datetime import ensure_utc
+
+
+def _decrypt_date(ciphertext: str | None, *, tenant_id: str) -> date | None:
+    plaintext = decrypt(ciphertext, tenant_id=tenant_id)
+    return date.fromisoformat(plaintext) if plaintext else None
+
+
+def _encrypt_date(value: date | None, *, tenant_id: str) -> str | None:
+    return encrypt(value.isoformat(), tenant_id=tenant_id) if value else None
 
 
 def _member_gender(value: str | None) -> MemberGender | None:
@@ -52,13 +64,13 @@ class EligibleMemberMapper:
             work_email=Email(model.work_email) if model.work_email else None,
             personal_email=Email(model.personal_email) if model.personal_email else None,
             display_label=model.display_label,
-            date_of_birth=model.date_of_birth,
+            date_of_birth=_decrypt_date(model.date_of_birth, tenant_id=model.tenant_id),
             gender=_member_gender(model.gender),
             phone=model.phone,
             staff_number=model.staff_number,
             import_source_id=model.import_source_id,
-            national_id=model.national_id,
-            passport_number=model.passport_number,
+            national_id=decrypt(model.national_id, tenant_id=model.tenant_id),
+            passport_number=decrypt(model.passport_number, tenant_id=model.tenant_id),
             employment=EmploymentDetails.build(
                 job_title=model.job_title,
                 job_classification=model.job_classification,
@@ -98,13 +110,13 @@ class EligibleMemberMapper:
             work_email=entity.work_email.value if entity.work_email else None,
             personal_email=entity.personal_email.value if entity.personal_email else None,
             display_label=entity.display_label,
-            date_of_birth=entity.date_of_birth,
+            date_of_birth=_encrypt_date(entity.date_of_birth, tenant_id=entity.tenant_id.value),
             gender=entity.gender,
             phone=entity.phone,
             staff_number=entity.staff_number,
             import_source_id=entity.import_source_id,
-            national_id=entity.national_id,
-            passport_number=entity.passport_number,
+            national_id=encrypt(entity.national_id, tenant_id=entity.tenant_id.value),
+            passport_number=encrypt(entity.passport_number, tenant_id=entity.tenant_id.value),
             job_title=employment.job_title,
             job_classification=employment.job_classification,
             skill=employment.skill,

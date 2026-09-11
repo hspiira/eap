@@ -74,6 +74,15 @@ async def lifespan(app: FastAPI):
         settings.LOGIN_RATE_LIMIT_BACKEND,
         settings.REDIS_URL or "",
     )
+    from app.core.encryption import get_key_provider, set_key_provider
+
+    set_key_provider(
+        get_key_provider(
+            settings.ENCRYPTION_KEY_PROVIDER,
+            kms_key_id=settings.ENCRYPTION_KMS_KEY_ID,
+            kek_ciphertext=settings.ENCRYPTION_KEK_CIPHERTEXT,
+        )
+    )
     if getattr(settings, "STRICT_ACTIVE_USER_CHECK", False):
         app.state.validate_active_user = _validate_active_user
     else:

@@ -1,7 +1,9 @@
 """Clinical note mapper."""
 
+import json
 from datetime import datetime, timedelta
 
+from app.core.encryption import decrypt, encrypt
 from app.domain.entities.clinical_note import ClinicalNote, NoteAmendment
 from app.domain.enums import ClinicalNoteType
 from app.domain.value_objects.core import (
@@ -46,14 +48,17 @@ class ClinicalNoteMapper:
             case_id=CaseId(model.case_id),
             clinical_subject_id=ClinicalSubjectId(model.clinical_subject_id),
             note_type=ClinicalNoteType(model.note_type),
-            body=model.body,
+            body=json.loads(decrypt(model.body, tenant_id=model.tenant_id)),
             author_id=UserId(model.author_id),
             session_id=SessionId(model.session_id) if model.session_id else None,
             signed_at=ensure_utc(model.signed_at) if model.signed_at else None,
             signed_by=UserId(model.signed_by) if model.signed_by else None,
             locked_at=ensure_utc(model.locked_at) if model.locked_at else None,
             lock_window=timedelta(seconds=model.lock_window_seconds),
-            amendments=tuple(_amendment_from_dict(a) for a in (model.amendments or [])),
+            amendments=tuple(
+                _amendment_from_dict(a)
+                for a in json.loads(decrypt(model.amendments, tenant_id=model.tenant_id))
+            ),
             created_at=ensure_utc(model.created_at),
             updated_at=ensure_utc(model.updated_at),
         )
@@ -68,14 +73,17 @@ class ClinicalNoteMapper:
             case_id=entity.case_id.value,
             clinical_subject_id=entity.clinical_subject_id.value,
             note_type=entity.note_type,
-            body=entity.body,
+            body=encrypt(json.dumps(entity.body), tenant_id=entity.tenant_id.value),
             author_id=entity.author_id.value,
             session_id=entity.session_id.value if entity.session_id else None,
             signed_at=ensure_utc(entity.signed_at) if entity.signed_at else None,
             signed_by=entity.signed_by.value if entity.signed_by else None,
             locked_at=ensure_utc(entity.locked_at) if entity.locked_at else None,
             lock_window_seconds=int(entity.lock_window.total_seconds()),
-            amendments=[_amendment_to_dict(a) for a in entity.amendments],
+            amendments=encrypt(
+                json.dumps([_amendment_to_dict(a) for a in entity.amendments]),
+                tenant_id=entity.tenant_id.value,
+            ),
             created_at=ensure_utc(entity.created_at),
             updated_at=ensure_utc(entity.updated_at),
         )
