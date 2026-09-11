@@ -71,7 +71,7 @@ export const MAIN_ITEMS: ReadonlyArray<NavItem> = [
     to: "/providers",
     label: "Providers",
     icon: UserRound,
-    matchPrefixes: ["/providers", "/provider-organisations"],
+    matchPrefixes: ["/providers", "/provider-organisations", "/provider-aliases"],
     aliases: ["practitioners", "therapists", "counsellors", "organisations"],
   },
   {
