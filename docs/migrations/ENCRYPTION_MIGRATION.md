@@ -108,11 +108,27 @@ it would be at request time.
   dependency in `login_rate_limit.py`. No other errors.
 - `ruff check` / `ruff format --check`: clean on every touched file.
 
+## evexia_db status
+
+Both migrations have run against the shared local `evexia_db`. This was not
+a planned, confirmed action: it happened by mistake while verifying a test
+fix, because `alembic upgrade head` was run with `TEST_DATABASE_URL` set,
+but this repo's Alembic config reads `settings.DATABASE_URL`, and
+`ENVIRONMENT=test` was not set, so `Settings` fell back to the repo-root
+`.env`, which points at `evexia_db`.
+
+Checked directly before deciding anything: `evexia_db` had 0 rows with
+`national_id`, 0 with `passport_number`, and 4 rows with `date_of_birth`
+(now encrypted in place); `clinical_notes` had 0 rows (schema-only change).
+Told the user immediately with the exact numbers and that the change was
+fully reversible via `downgrade()`. The user chose to leave it migrated
+rather than revert it, since it is the intended end state, just applied
+earlier than confirmed. `evexia_db` is now at Alembic head `c5e7g9i1k3m5`.
+
+No production database has been touched.
+
 ## Outstanding
 
-- **The two new migrations have not been run against `evexia_db` or any
-  production database.** Running a backfill against shared data needs
-  explicit confirmation before it happens; it has not been given yet.
 - `scripts/generate_kms_kek.py` is a one-time bootstrap for
   `ENCRYPTION_KMS_KEY_ID`/`ENCRYPTION_KEK_CIPHERTEXT`, needed only if the
   `aws-kms` provider is turned on later. It has not been run against a real
