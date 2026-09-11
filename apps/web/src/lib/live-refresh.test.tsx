@@ -53,8 +53,7 @@ describe("useEntityList polling", () => {
     const listFn = vi.fn().mockResolvedValue(page([{ id: "a" }]))
 
     renderHook(
-      () =>
-        useEntityList<Item>({ resource: "widgets", params: {}, listFn, refetchInterval: 50 }),
+      () => useEntityList<Item>({ resource: "widgets", params: {}, listFn, refetchInterval: 50 }),
       { wrapper },
     )
 
