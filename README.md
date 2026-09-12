@@ -35,11 +35,14 @@ Then start both dev servers:
 pnpm dev
 ```
 
-That runs the API on `http://localhost:8000` (Scalar API reference at `/docs`) and the
-frontend on `http://localhost:3000` in one terminal, with each line prefixed by
-which side it came from. If one crashes the other is stopped too, so you never
-end up with half the stack running. `pnpm dev:api` and `pnpm dev:web` still
-start them individually.
+That runs the API on `http://localhost:8000` (Scalar API reference at `/docs`), the
+frontend on `http://localhost:3000`, and the outbox worker, in one terminal, with
+each line prefixed by which side it came from. If one crashes the others are
+stopped too, so you never end up with half the stack running. `pnpm dev:api`,
+`pnpm dev:web` and `pnpm dev:outbox-worker` still start them individually; without
+the worker running, audited mutations enqueue but never reach `audit_logs` (see
+"The API needs a second, long-running process" below), so a local session
+started with only `dev:api` will show `/health/outbox` falling behind.
 
 Sign in at `http://localhost:3000` with tenant code `dev`, the seeded admin
 email, and the one-time password.
@@ -58,9 +61,10 @@ pnpm migrate:current  # show the database's current migration revision
 pnpm migrate:heads    # show every head; more than one means a branch to merge
 pnpm migrate:history  # show the migration history
 
-pnpm dev              # both dev servers, one terminal
+pnpm dev              # api, web and the outbox worker, one terminal
 pnpm dev:api          # uvicorn with reload, port 8000
 pnpm dev:web          # vite dev, port 3000
+pnpm dev:outbox-worker # drains outbox_events into audit_logs; see below
 
 pnpm verify           # everything CI runs, in CI's order
 pnpm lint             # ruff + format check + layering, eslint + prettier check
@@ -242,7 +246,8 @@ Two pieces of work outlive a request and cannot run on a serverless function:
   drains those rows into `audit_logs` and `entity_changes`. Nothing else does.
   If it is not running, the audit trail stays empty while the API looks
   healthy. Run exactly one replica: the dispatcher is safe under concurrency
-  but not yet efficient, as it has no `SKIP LOCKED`.
+  but not yet efficient, as it has no `SKIP LOCKED`. `pnpm dev` starts it
+  locally; a deployment needs the process below instead.
 - **Queued client imports**, handed to FastAPI `BackgroundTasks` by
   `POST /clients/import/jobs`. A function frozen after the response leaves the
   job in `processing`; it becomes retryable again after `STALE_IMPORT_AFTER`.

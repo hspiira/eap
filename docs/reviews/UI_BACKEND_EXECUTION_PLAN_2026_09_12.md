@@ -231,8 +231,35 @@ product work as a dependency of the nine corrective findings.
 ## Current evidence ledger
 
 - Planning: source review read; selected current source and Q2 checked at `92ef7194`.
-- Implemented: this execution plan only. No R1-R9 application fixes in this change.
-- Tested: documentation diff validation only. No application or runtime tests run.
+- R1 field policy: confirmed by the product owner, 2026-09-12 (see
+  `docs/design/PAGES_REDESIGN.md:397` for the prior Q2 answer this restates).
+  Clinical set: `notes`, `feedback`, `issue_topic`, `partner_name`,
+  `partner_relationship`, `diagnosis_type_id`, `diagnosis_id`,
+  `clinical_outcome`. Grant path unchanged (platform admin grants
+  `AccessScope.CLINICAL`). Operational identity fields (member/client/
+  provider names, scheduling, service) stay ungated. Not yet implemented.
+- R8a: implemented and committed (`04123e4a`). Landing assurance copy scoped
+  to encryption, lifecycle logging and archival; audit-console and universal
+  claims removed. `pnpm --filter @evexia/web typecheck` clean.
+- R7: implemented and committed (`8c9e1d3f`). Login-scoped `errorMessage`
+  override in `useApiForm`; failed login no longer claims a session expired.
+  851 frontend tests pass; typecheck clean.
+- R9: implemented and committed (`d84a9af8`). Duty-log chips deferred to
+  `lg:` (1024px); verified with Playwright screenshots at 390/640/661/768/
+  1023/1280px and 1280px at 125% zoom, no overlap at any width.
+- R2: investigated, partially closed. `pnpm dev` now also starts the outbox
+  worker (package.json). Local `evexia_db`'s worker path verified healthy
+  (synthetic event delivered in 1.4s with correct `occurred_at`; interrupt/
+  restart recovery confirmed via the pre-existing `com.evexia.outbox-worker`
+  launchd supervision; 20 existing integration tests pass fresh). The
+  2026-09-12 review's `depth=3582` reading was not reproduced and its target
+  database was not confirmed; root cause is recorded as a probable
+  environment mismatch, not verified, in
+  `docs/reviews/AUDIT_COVERAGE.md`. Production worker supervision still
+  unconfirmed. Not tested: production. Not deployed.
+- Tested: see each package above; no `pnpm verify` / full build run yet this
+  pass.
 - Deployed: none.
-- Pending decision: R1 field/scope and clinical-read audit policy confirmation by
-  the product owner with the access-control owner. Independent packages may proceed.
+- Pending decision: none blocking for R1-R9 as scoped. A dev-database safety
+  guard (recommended in `AUDIT_COVERAGE.md`'s R2 section) is a separate,
+  unimplemented follow-up for whoever owns deployment configuration.
