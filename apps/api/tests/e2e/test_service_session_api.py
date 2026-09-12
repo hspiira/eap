@@ -298,6 +298,75 @@ class TestListServiceSessions:
         assert other.status_code == 200
         assert other.json()["total"] == 0
 
+    async def test_status_accepts_several_values(
+        self, client: AsyncClient, session_test_tenant: dict, test_service_session: dict
+    ):
+        """R4: the single-value form still works, and now takes several too."""
+        tenant_id = session_test_tenant["id"]
+
+        response = await client.get(
+            f"/service-sessions/?tenant_id={tenant_id}&status=Scheduled&status=Cancelled"
+        )
+        assert response.status_code == 200, response.text
+        assert all(s["status"] in ("Scheduled", "Cancelled") for s in response.json()["items"])
+
+    async def test_excluded_statuses_never_push_out_an_eligible_booking(
+        self,
+        client: AsyncClient,
+        session_test_tenant: dict,
+        session_test_service: dict,
+        session_test_provider: dict,
+        session_test_client_person: dict,
+    ):
+        """R4: server-side status filtering, not a client-side page filter.
+
+        20 chronologically-first sessions are cancelled; one later, eligible
+        booking must still come back from a status-filtered, limit=20 page.
+        Filtering after the LIMIT would silently drop it.
+        """
+        tenant_id = session_test_tenant["id"]
+        base = datetime.now(UTC) + timedelta(days=300)
+
+        for i in range(20):
+            created = await client.post(
+                f"/service-sessions/?tenant_id={tenant_id}",
+                json={
+                    "service_id": session_test_service["id"],
+                    "provider_id": session_test_provider["id"],
+                    "member_id": session_test_client_person["id"],
+                    "scheduled_at": (base + timedelta(minutes=i)).isoformat(),
+                    "delivery_context": "Direct",
+                },
+            )
+            assert created.status_code == 201, created.text
+            cancelled = await client.post(
+                f"/service-sessions/{created.json()['id']}/cancel",
+                json={"reason": "excluded by design for this fixture"},
+            )
+            assert cancelled.status_code == 200, cancelled.text
+
+        eligible = await client.post(
+            f"/service-sessions/?tenant_id={tenant_id}",
+            json={
+                "service_id": session_test_service["id"],
+                "provider_id": session_test_provider["id"],
+                "member_id": session_test_client_person["id"],
+                "scheduled_at": (base + timedelta(minutes=21)).isoformat(),
+                "delivery_context": "Direct",
+            },
+        )
+        assert eligible.status_code == 201, eligible.text
+
+        response = await client.get(
+            f"/service-sessions/?tenant_id={tenant_id}&status=Scheduled&status=Rescheduled"
+            f"&sort_by=scheduled_at&sort_desc=false&limit=20"
+        )
+        assert response.status_code == 200, response.text
+        data = response.json()
+        assert eligible.json()["id"] in [s["id"] for s in data["items"]]
+        assert all(s["status"] in ("Scheduled", "Rescheduled") for s in data["items"])
+        assert data["total"] == 1
+
 
 # =============================================================================
 # LIFECYCLE TESTS (Complete, Cancel, Reschedule, No-Show, Archive, Restore)

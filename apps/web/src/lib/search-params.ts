@@ -20,6 +20,27 @@ export function enumParam<T extends string>(enumObj: Record<string, T>): SearchP
 }
 
 /**
+ * Parser that accepts one enum member or several, for a repeatable filter
+ * (`?status=Scheduled&status=Rescheduled`). Returns a single value when only
+ * one was given, so a single-value link still round-trips as one rather than
+ * a one-element array.
+ */
+export function enumOrArrayParam<T extends string>(
+  enumObj: Record<string, T>,
+): SearchParser<T | T[]> {
+  const values = Object.values(enumObj)
+  const isValid = (v: unknown): v is T => typeof v === "string" && values.includes(v as T)
+  return (value: unknown): T | T[] | undefined => {
+    if (Array.isArray(value)) {
+      const filtered = value.filter(isValid)
+      if (filtered.length === 0) return undefined
+      return filtered.length === 1 ? filtered[0] : filtered
+    }
+    return isValid(value) ? value : undefined
+  }
+}
+
+/**
  * Parser for a boolean flag. Absent means false, so the default state leaves no
  * trace in the query string.
  *

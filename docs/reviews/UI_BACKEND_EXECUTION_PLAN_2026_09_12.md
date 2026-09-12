@@ -267,6 +267,18 @@ product work as a dependency of the nine corrective findings.
   environment mismatch, not verified, in
   `docs/reviews/AUDIT_COVERAGE.md`. Production worker supervision still
   unconfirmed. Not tested: production. Not deployed.
+- R4: implemented. `list_all`/`count` accept repeated statuses via
+  `.in_()`; the list route takes `status` as a repeatable query param
+  (single form preserved). `UpcomingBookingsCard` and the sessions list's
+  "Upcoming" shortcut/dashboard links now request Scheduled+Rescheduled
+  server-side instead of post-filtering after the page limit. The
+  aggregate's own window upper bound (`midnight(now)+7d`) still differs by
+  up to ~24h from the card/list's (`now+7d`); recorded as an accepted,
+  unresolved gap in `docs/handoffs/SESSIONS_IMPLEMENTATION.md`, not silently
+  closed. Verified: new e2e gate test (20 excluded sessions, one eligible
+  booking still returned), existing repository/hydration tests pass
+  unchanged, full backend and frontend suites pass, contracts regenerated.
+  R5 (search) not yet done.
 - Tested: see each package above; no `pnpm verify` / full build run yet this
   pass.
 - Deployed: none.

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest"
 
-import { boolParam, enumParam, listSearchSchema } from "@/lib/search-params"
+import { boolParam, enumOrArrayParam, enumParam, listSearchSchema } from "@/lib/search-params"
 
 enum Tier {
   A = "A",
@@ -33,6 +33,32 @@ describe("boolParam", () => {
     expect(parse(false)).toBeUndefined()
     expect(parse(undefined)).toBeUndefined()
     expect(parse("")).toBeUndefined()
+  })
+})
+
+describe("enumOrArrayParam", () => {
+  const parse = enumOrArrayParam(Tier)
+
+  it("accepts a single valid value, unwrapped", () => {
+    expect(parse("A")).toBe("A")
+  })
+
+  it("accepts several values as an array", () => {
+    expect(parse(["A", "B"])).toEqual(["A", "B"])
+  })
+
+  it("collapses a one-element array back to a single value", () => {
+    expect(parse(["A"])).toBe("A")
+  })
+
+  it("drops invalid members and keeps the valid ones", () => {
+    expect(parse(["A", "Z"])).toBe("A")
+  })
+
+  it("is undefined for an unknown value or an all-invalid array", () => {
+    expect(parse("Z")).toBeUndefined()
+    expect(parse(["Z"])).toBeUndefined()
+    expect(parse([])).toBeUndefined()
   })
 })
 

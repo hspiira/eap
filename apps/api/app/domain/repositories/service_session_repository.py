@@ -112,12 +112,13 @@ class ServiceSessionRepository(BaseRepository[ServiceSessionEntity, SessionId]):
         member_id: EligibleMemberId | None = None,
         provider_id: ProviderId | None = None,
         service_id: ServiceId | None = None,
-        status: SessionStatus | None = None,
+        status: SessionStatus | Sequence[SessionStatus] | None = None,
         session_type: SessionType | None = None,
         category: SessionCategory | None = None,
         clinical_outcome: SessionClinicalStatus | None = None,
         scheduled_from: datetime | None = None,
         scheduled_to: datetime | None = None,
+        search: str | None = None,
         limit: int = 100,
         offset: int = 0,
         sort_by: str = "scheduled_at",
@@ -131,9 +132,10 @@ class ServiceSessionRepository(BaseRepository[ServiceSessionEntity, SessionId]):
             member_id: Filter by member identifier
             provider_id: Filter by provider identifier
             service_id: Filter by service identifier
-            status: Filter by session status
+            status: Filter by session status, or several
             scheduled_from: Only sessions scheduled at or after this instant
             scheduled_to: Only sessions scheduled at or before this instant
+            search: Matches on service, client or practitioner display name
             limit: Maximum number of results
             offset: Number of results to skip
             sort_by: Field to sort by
@@ -150,12 +152,13 @@ class ServiceSessionRepository(BaseRepository[ServiceSessionEntity, SessionId]):
         member_id: EligibleMemberId | None = None,
         provider_id: ProviderId | None = None,
         service_id: ServiceId | None = None,
-        status: SessionStatus | None = None,
+        status: SessionStatus | Sequence[SessionStatus] | None = None,
         session_type: SessionType | None = None,
         category: SessionCategory | None = None,
         clinical_outcome: SessionClinicalStatus | None = None,
         scheduled_from: datetime | None = None,
         scheduled_to: datetime | None = None,
+        search: str | None = None,
     ) -> int:
         """
         Count sessions matching filters.
@@ -167,9 +170,10 @@ class ServiceSessionRepository(BaseRepository[ServiceSessionEntity, SessionId]):
             member_id: Filter by member identifier
             provider_id: Filter by provider identifier
             service_id: Filter by service identifier
-            status: Filter by session status
+            status: Filter by session status, or several
             scheduled_from: Only sessions scheduled at or after this instant
             scheduled_to: Only sessions scheduled at or before this instant
+            search: Matches on service, client or practitioner display name
 
         Returns:
             Total count

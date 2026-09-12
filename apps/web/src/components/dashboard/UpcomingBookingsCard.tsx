@@ -29,10 +29,8 @@ import { CardBar, CardEmptyState, CardErrorState, CardStat } from "./CardBar"
 
 const SHOWN = 6
 const WINDOW_DAYS = 7
-const OPEN_BOOKING_STATUSES: ReadonlyArray<string> = [
-  SessionStatus.SCHEDULED,
-  SessionStatus.RESCHEDULED,
-]
+/** Matches the dashboard aggregate's own definition of "open" (dashboard_query_runner.py). */
+const OPEN_BOOKING_STATUSES = [SessionStatus.SCHEDULED, SessionStatus.RESCHEDULED]
 
 /** "Tue 02, 14:00" — enough to act on, short enough for one row. */
 function formatSlot(iso: string): string {
@@ -60,7 +58,8 @@ function useWeekAhead(enabled: boolean) {
   const [from] = useState(() => new Date())
   const to = new Date(from.getTime() + WINDOW_DAYS * 24 * 60 * 60 * 1000)
   const params = {
-    limit: 20,
+    limit: SHOWN,
+    status: OPEN_BOOKING_STATUSES,
     scheduled_from: from.toISOString(),
     scheduled_to: to.toISOString(),
     sort_by: "scheduled_at",
@@ -71,8 +70,7 @@ function useWeekAhead(enabled: boolean) {
     queryFn: () => serviceSessionsApi.list(params),
     staleTime: 60_000,
     enabled,
-    select: (page) =>
-      page.items.filter((s) => OPEN_BOOKING_STATUSES.includes(s.status)).slice(0, SHOWN),
+    select: (page) => page.items,
   })
 }
 
@@ -103,6 +101,7 @@ export function UpcomingBookingsCard({
         control={
           <Link
             to="/service-sessions"
+            search={{ status: OPEN_BOOKING_STATUSES, range: "7d" }}
             className="inline-flex items-center gap-1 text-xs text-fg-muted hover:text-primary"
           >
             Sessions
@@ -165,6 +164,7 @@ export function UpcomingBookingsCard({
             {overflow > 0 ? (
               <Link
                 to="/service-sessions"
+                search={{ status: OPEN_BOOKING_STATUSES, range: "7d" }}
                 className="mt-1.5 inline-flex items-center gap-1 text-xs text-fg-muted hover:text-primary"
               >
                 and {overflow} more this week

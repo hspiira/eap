@@ -2,7 +2,12 @@ import type { Schemas, ServiceSessionCreate } from "@/api/generated"
 
 type AvailabilityResponse = Schemas["AvailabilityResponse"]
 type SessionChain = Schemas["SessionChainResponse"]
-import type { SessionCategory, SessionClinicalStatus, SessionType } from "@/types/enums"
+import type {
+  SessionCategory,
+  SessionClinicalStatus,
+  SessionStatus,
+  SessionType,
+} from "@/types/enums"
 
 import apiClient from "../client"
 import type { ListParams, PaginatedResponse, ServiceSession } from "../types"
@@ -27,6 +32,8 @@ export interface ServiceSessionListParams extends ListParams {
   member_id?: string
   provider_id?: string
   service_id?: string
+  /** One status, or several (repeated `status=` query params). */
+  status?: SessionStatus | SessionStatus[]
   session_type?: SessionType
   category?: SessionCategory
   clinical_outcome?: SessionClinicalStatus
@@ -34,6 +41,8 @@ export interface ServiceSessionListParams extends ListParams {
   scheduled_from?: string
   /** ISO 8601 instant; inclusive upper bound on `scheduled_at`. */
   scheduled_to?: string
+  /** Matches service, client or practitioner display name. Never clinical fields. */
+  search?: string
 }
 
 export const serviceSessionsApi = {
@@ -85,8 +94,9 @@ export const serviceSessionsApi = {
   /**
    * Bookings whose date has passed that nobody has confirmed or closed.
    *
-   * Not expressible through `list`: its status filter takes one value, and
-   * this needs Scheduled or Rescheduled together. Oldest first.
+   * A separate endpoint rather than `list` with a status filter and a
+   * `scheduled_to: now`: "awaiting confirmation" is its own concept
+   * (Scheduled/Rescheduled past their date), not a generic query. Oldest first.
    */
   async awaitingConfirmation(params?: {
     provider_id?: string

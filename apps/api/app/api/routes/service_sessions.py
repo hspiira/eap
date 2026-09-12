@@ -970,7 +970,9 @@ async def list_service_sessions(
     member_id: str | None = Query(None, description="Filter by member identifier"),
     provider_id: str | None = Query(None, description="Filter by provider identifier"),
     service_id: str | None = Query(None, description="Filter by service identifier"),
-    status: SessionStatus | None = Query(None, description="Filter by session status"),
+    status: list[SessionStatus] = Query(
+        default=[], description="Filter by session status; repeat for several"
+    ),
     session_type: SessionType | None = Query(None, description="Filter by physical or online"),
     category: SessionCategory | None = Query(None, description="Filter by session category"),
     clinical_outcome: SessionClinicalStatus | None = Query(
@@ -981,6 +983,11 @@ async def list_service_sessions(
     ),
     scheduled_to: datetime | None = Query(
         None, description="Only sessions scheduled at or before this instant (ISO 8601)"
+    ),
+    search: str | None = Query(
+        None,
+        max_length=200,
+        description="Matches service, client or practitioner display name. Never clinical fields.",
     ),
     pg: PageParams = Depends(pagination()),
     sort_by: str = Query("scheduled_at", description="Field to sort by"),
@@ -1009,12 +1016,13 @@ async def list_service_sessions(
         member_id=EligibleMemberId(member_id) if member_id else None,
         provider_id=ProviderId(provider_id) if provider_id else None,
         service_id=ServiceId(service_id) if service_id else None,
-        status=status,
+        status=status or None,
         session_type=session_type,
         category=category,
         clinical_outcome=clinical_outcome,
         scheduled_from=scheduled_from,
         scheduled_to=scheduled_to,
+        search=search,
         limit=pg.limit,
         offset=pg.offset,
         sort_by=sort_by,
@@ -1027,12 +1035,13 @@ async def list_service_sessions(
         member_id=EligibleMemberId(member_id) if member_id else None,
         provider_id=ProviderId(provider_id) if provider_id else None,
         service_id=ServiceId(service_id) if service_id else None,
-        status=status,
+        status=status or None,
         session_type=session_type,
         category=category,
         clinical_outcome=clinical_outcome,
         scheduled_from=scheduled_from,
         scheduled_to=scheduled_to,
+        search=search,
     )
 
     await _audit_clinical_read(

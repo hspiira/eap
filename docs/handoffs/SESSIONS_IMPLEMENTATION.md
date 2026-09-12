@@ -485,3 +485,55 @@ same redaction logic across all 7 paths.
 `tests/e2e` suites pass; `pnpm contracts` regenerated cleanly; frontend
 `pnpm test` (854 passed) and `pnpm typecheck` pass. Not run: a production
 deployment check.
+
+## R4: session queues agree on status and window (2026-09-12)
+
+Closes R4 (`docs/reviews/UI_BACKEND_REVIEW_2026_09_12.md`). Depended on R1's
+projection contract landing first, which it did.
+
+**The bug**: `UpcomingBookingsCard.tsx` fetched 20 sessions with no status
+filter, then filtered to Scheduled/Rescheduled client-side after the server
+already applied `limit=20`. If the 20 chronologically-first sessions were
+cancelled or completed, a real upcoming booking fell off the page even
+though the dashboard's aggregate count said it existed.
+
+**Fix**: `list_all`/`count` (`service_session_repository.py`, domain
+interface and impl) now accept `status: SessionStatus | Sequence[SessionStatus]
+| None`, applied via `.in_()` in `extra_conditions` rather than the
+equality-only `filters` dict. The route's `status` query param is now
+`list[SessionStatus] = Query(default=[], ...)` (the existing convention in
+`providers.py`), so a single `?status=X` still works. The card now sends
+`status=[Scheduled, Rescheduled]` server-side and no longer post-filters.
+
+**Frontend `status` is now repeatable end to end**: `FilterParams.status` was
+already typed `string | string[]`, and `buildUrl` already serialized an
+array as repeated query params — both were ahead of the backend. Added
+`enumOrArrayParam` (`lib/search-params.ts`) so a list route's search schema
+can parse either shape (collapsing a one-element array back to a bare
+value, so an existing single-status link round-trips unchanged). The
+sessions list page's status dropdown stays single-select; only the
+"Upcoming" shortcut and the dashboard's links use the two-status array, and
+now send both Scheduled and Rescheduled (it previously sent only Scheduled).
+
+**Window boundary, only partly reconciled**: the sessions list page's `7d`
+range (`rangeBounds`) and the card's own window already used the same
+formula (`now` to `now + 7 days`), so those two already agreed. The
+dashboard aggregate (`dashboard.py::_upcoming`) does not: its count query
+uses `now` as the true lower bound (matching the other two) but
+`midnight(now) + 7 days` as the upper bound, for its day-bucket chart. That
+leaves up to ~24h of disagreement at the window's far edge between the
+aggregate's count and the card/list's row window. Not fixed here: changing
+`_upcoming`'s bucketing changes chart behavior elsewhere and was judged out
+of scope for this pass. Recorded as a known, accepted gap rather than
+silently left unstated.
+
+**Verified**: `TestListServiceSessions::test_status_accepts_several_values`
+and `test_excluded_statuses_never_push_out_an_eligible_booking` (the R4 gate
+fixture: 20 cancelled sessions followed by one eligible booking, still
+returned under a status-filtered, limit=20, sorted page); existing
+`test_service_session_repository_filters.py` and
+`test_session_list_hydration.py` suites pass unchanged. Frontend: `enumOrArrayParam`
+unit tests, `DashboardMain.test.tsx` updated to assert the status filter
+reaches the request rather than relying on client-side hiding. Full
+`tests/unit`+`tests/e2e` and frontend `pnpm test`/`typecheck` pass;
+`pnpm contracts` regenerated.

@@ -37640,21 +37640,18 @@
             }
           },
           {
-            "description": "Filter by session status",
+            "description": "Filter by session status; repeat for several",
             "in": "query",
             "name": "status",
             "required": false,
             "schema": {
-              "anyOf": [
-                {
-                  "$ref": "#/components/schemas/SessionStatus"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "description": "Filter by session status",
-              "title": "Status"
+              "default": [],
+              "description": "Filter by session status; repeat for several",
+              "items": {
+                "$ref": "#/components/schemas/SessionStatus"
+              },
+              "title": "Status",
+              "type": "array"
             }
           },
           {
@@ -37747,6 +37744,25 @@
               ],
               "description": "Only sessions scheduled at or before this instant (ISO 8601)",
               "title": "Scheduled To"
+            }
+          },
+          {
+            "description": "Matches service, client or practitioner display name. Never clinical fields.",
+            "in": "query",
+            "name": "search",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 200,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Matches service, client or practitioner display name. Never clinical fields.",
+              "title": "Search"
             }
           },
           {

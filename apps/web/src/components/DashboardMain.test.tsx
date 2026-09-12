@@ -85,8 +85,8 @@ describe("DashboardMain", () => {
     vi.mocked(dashboardApi.get).mockResolvedValueOnce(
       makeDashboard({
         upcoming: {
-          total: 2,
-          days: [{ bucket: "2026-09-14", label: "Mon 14", total: 2 }],
+          total: 1,
+          days: [{ bucket: "2026-09-14", label: "Mon 14", total: 1 }],
         },
       }),
     )
@@ -101,14 +101,8 @@ describe("DashboardMain", () => {
           member_display_label: "Afimani Joseph",
           provider_display_name: "Moses Mpanga",
         },
-        {
-          id: "ss-up-2",
-          scheduled_at: "2026-09-14T11:00:00Z",
-          status: "Cancelled",
-          service_name: "Cancelled thing",
-        },
       ],
-      total: 2,
+      total: 1,
       page: 1,
       limit: 20,
       has_more: false,
@@ -117,8 +111,11 @@ describe("DashboardMain", () => {
 
     expect(await screen.findByText("Individual Counselling")).toBeInTheDocument()
     expect(screen.getByText("Minet Uganda / Afimani Joseph · Moses Mpanga")).toBeInTheDocument()
-    // A cancelled future session is not a booking to prepare for.
-    expect(screen.queryByText("Cancelled thing")).not.toBeInTheDocument()
+    // R4: filtering to open bookings is the server's job now, not a client
+    // post-filter after a hard page limit.
+    expect(vi.mocked(serviceSessionsApi.list).mock.calls[0][0]).toMatchObject({
+      status: ["Scheduled", "Rescheduled"],
+    })
   })
 
   it("no longer carries the import health card", async () => {

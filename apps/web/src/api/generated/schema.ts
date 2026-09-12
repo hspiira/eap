@@ -25796,8 +25796,8 @@ export interface operations {
                 provider_id?: string | null;
                 /** @description Filter by service identifier */
                 service_id?: string | null;
-                /** @description Filter by session status */
-                status?: components["schemas"]["SessionStatus"] | null;
+                /** @description Filter by session status; repeat for several */
+                status?: components["schemas"]["SessionStatus"][];
                 /** @description Filter by physical or online */
                 session_type?: components["schemas"]["SessionType"] | null;
                 /** @description Filter by session category */
@@ -25808,6 +25808,8 @@ export interface operations {
                 scheduled_from?: string | null;
                 /** @description Only sessions scheduled at or before this instant (ISO 8601) */
                 scheduled_to?: string | null;
+                /** @description Matches service, client or practitioner display name. Never clinical fields. */
+                search?: string | null;
                 /** @description Field to sort by */
                 sort_by?: string;
                 /** @description Sort in descending order */
