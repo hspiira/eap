@@ -42,7 +42,7 @@ import { useListPage } from "@/hooks/useListPage"
 import { useTableSelection } from "@/hooks/useTableSelection"
 import { nameInitials } from "@/lib/display"
 import { normalizeErrorMessage } from "@/lib/errors"
-import { useEntityList } from "@/lib/queries"
+import { useEntityListPages } from "@/lib/queries"
 import { boolParam, enumOptions, enumParam, listSearchSchema } from "@/lib/search-params"
 import type { ProviderOrganisation } from "@/types/entities"
 import { OrganisationApprovalStatus, TenantRole } from "@/types/enums"
@@ -73,7 +73,7 @@ function ProviderOrganisationsListPage() {
   const isAdmin = useCurrentRole() === TenantRole.ADMIN
   const [editing, setEditing] = useState<ProviderOrganisation | null>(null)
 
-  const query = useEntityList<ProviderOrganisation, ProviderOrganisationListParams>({
+  const query = useEntityListPages<ProviderOrganisation, ProviderOrganisationListParams>({
     resource: "provider-organisations",
     params: {
       page: list.page,
@@ -158,6 +158,9 @@ function ProviderOrganisationsListPage() {
       />
 
       <EntityListView
+        onLoadMore={query.loadMore}
+        hasMore={query.hasMore}
+        loadingMore={query.loadingMore}
         columns={COLUMNS}
         items={items}
         rowKey={(row) => row.id}

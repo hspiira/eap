@@ -22,6 +22,8 @@ import { EmptyState } from "@/components/common/EmptyState"
 import { ErrorState } from "@/components/common/ErrorState"
 import { FilterBar, FilterChip, FilterSearch, FilterTrigger } from "@/components/common/FilterBar"
 import { IconButton } from "@/components/common/IconButton"
+import { InfiniteScrollSentinel } from "@/components/common/InfiniteScrollSentinel"
+import { PagedTableBody } from "@/components/common/PagedTableBody"
 import { PageShell } from "@/components/common/PageShell"
 import { TableSkeleton } from "@/components/common/PageSkeletons"
 import { SelectionBar } from "@/components/common/SelectionBar"
@@ -38,21 +40,15 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Pagination } from "@/components/ui/pagination"
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table"
+import { Table, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { UserFormSheet } from "@/components/UserFormSheet"
 import { useCanWrite } from "@/hooks/useCanWrite"
 import { NEWEST_FIRST, useListPage } from "@/hooks/useListPage"
 import { useTableSelection } from "@/hooks/useTableSelection"
+import { useVisiblePage } from "@/hooks/useVisiblePage"
 import { normalizeErrorMessage } from "@/lib/errors"
 import { formatDate } from "@/lib/format"
-import { useEntityList } from "@/lib/queries"
+import { useEntityListPages } from "@/lib/queries"
 import { enumParam, listSearchSchema } from "@/lib/search-params"
 import type { User } from "@/types/entities"
 import { AuthProvider, UserStatus } from "@/types/enums"
@@ -125,7 +121,9 @@ function UsersListPage() {
     setFilter("security", security)
   }
 
-  const query = useEntityList<User, UserListParams>({
+  const [visiblePage, setVisiblePage] = useVisiblePage(page)
+
+  const query = useEntityListPages<User, UserListParams>({
     resource: "users",
     params: {
       page,
@@ -317,21 +315,36 @@ function UsersListPage() {
                     </TableHead>
                   </TableRow>
                 </TableHeader>
-                <TableBody>
-                  {items.map((row) => (
+                <PagedTableBody
+                  items={items}
+                  anchorPage={page}
+                  limit={limit}
+                  rowKey={(row) => row.id}
+                  renderRow={(row) => (
                     <UserRow
-                      key={row.id}
                       row={row}
                       isSelected={selection.selectedIds.has(row.id)}
                       onToggle={() => selection.toggleSelect(row.id)}
                     />
-                  ))}
-                </TableBody>
+                  )}
+                  onVisiblePageChange={setVisiblePage}
+                />
               </Table>
+              <InfiniteScrollSentinel
+                onLoadMore={query.loadMore}
+                hasMore={query.hasMore}
+                loadingMore={query.loadingMore}
+              />
             </div>
             {total > 0 && (
               <div className="shrink-0 border-t border-fg/10 bg-surface px-3 py-2">
-                <Pagination page={page} total={total} limit={limit} onPageChange={setPage} />
+                <Pagination
+                  page={visiblePage}
+                  total={total}
+                  limit={limit}
+                  shownCount={items.length}
+                  onPageChange={setPage}
+                />
               </div>
             )}
           </>

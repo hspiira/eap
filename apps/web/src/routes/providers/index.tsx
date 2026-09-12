@@ -39,7 +39,7 @@ import { useListPage } from "@/hooks/useListPage"
 import { useTableSelection } from "@/hooks/useTableSelection"
 import { nameInitials } from "@/lib/display"
 import { normalizeErrorMessage } from "@/lib/errors"
-import { useEntityList } from "@/lib/queries"
+import { useEntityListPages } from "@/lib/queries"
 import { enumOptions, enumParam, listSearchSchema } from "@/lib/search-params"
 import type { Provider } from "@/types/entities"
 import {
@@ -94,7 +94,7 @@ function ProvidersListPage() {
   const isAdmin = useCurrentRole() === TenantRole.ADMIN
   const [editing, setEditing] = useState<Provider | null>(null)
 
-  const query = useEntityList<Provider, ProviderListParams>({
+  const query = useEntityListPages<Provider, ProviderListParams>({
     resource: "providers",
     params: {
       page: list.page,
@@ -202,6 +202,9 @@ function ProvidersListPage() {
       />
 
       <EntityListView
+        onLoadMore={query.loadMore}
+        hasMore={query.hasMore}
+        loadingMore={query.loadingMore}
         columns={COLUMNS}
         items={items}
         rowKey={(row) => row.id}

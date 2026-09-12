@@ -1,12 +1,15 @@
-import { Fragment, type ReactNode } from "react"
+import type { ReactNode } from "react"
 
 import { ErrorState } from "@/components/common/ErrorState"
+import { InfiniteScrollSentinel } from "@/components/common/InfiniteScrollSentinel"
+import { PagedTableBody } from "@/components/common/PagedTableBody"
 import { TableSkeleton } from "@/components/common/PageSkeletons"
 import { SortHeader, type SortState } from "@/components/common/SortHeader"
 import { ROW_BORDER, STICKY_TABLE_HEAD } from "@/components/common/tableStyles"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Pagination } from "@/components/ui/pagination"
-import { Table, TableBody, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { Table, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { useVisiblePage } from "@/hooks/useVisiblePage"
 
 export interface ListColumn {
   /** Column header content. */
@@ -42,6 +45,10 @@ export interface EntityListViewProps<T> {
   onToggleSelectAll?: () => void
   /** Trailing actions column header. Default true. */
   actions?: boolean
+  /** Appends the next page as the user reaches the bottom. Omit for click-only paging. */
+  onLoadMore?: () => void
+  hasMore?: boolean
+  loadingMore?: boolean
 }
 
 /**
@@ -73,8 +80,12 @@ export function EntityListView<T>({
   selectAllState,
   onToggleSelectAll,
   actions = true,
+  onLoadMore,
+  hasMore = false,
+  loadingMore = false,
 }: EntityListViewProps<T>) {
   const columnCount = columns.length + (selectable ? 1 : 0) + (actions ? 1 : 0)
+  const [visiblePage, setVisiblePage] = useVisiblePage(page)
 
   let body: ReactNode
   if (loading) {
@@ -122,16 +133,32 @@ export function EntityListView<T>({
                 )}
               </TableRow>
             </TableHeader>
-            <TableBody>
-              {items.map((row) => (
-                <Fragment key={rowKey(row)}>{renderRow(row)}</Fragment>
-              ))}
-            </TableBody>
+            <PagedTableBody
+              items={items}
+              anchorPage={page}
+              limit={limit}
+              rowKey={rowKey}
+              renderRow={renderRow}
+              onVisiblePageChange={setVisiblePage}
+            />
           </Table>
+          {onLoadMore ? (
+            <InfiniteScrollSentinel
+              onLoadMore={onLoadMore}
+              hasMore={hasMore}
+              loadingMore={loadingMore}
+            />
+          ) : null}
         </div>
         {total > 0 && (
           <div className="shrink-0 border-t border-fg/10 bg-surface px-3 py-2">
-            <Pagination page={page} total={total} limit={limit} onPageChange={onPageChange} />
+            <Pagination
+              page={visiblePage}
+              total={total}
+              limit={limit}
+              shownCount={items.length}
+              onPageChange={onPageChange}
+            />
           </div>
         )}
       </>

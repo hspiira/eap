@@ -7,6 +7,11 @@ export interface PaginationProps {
   page: number
   total: number
   limit: number
+  /**
+   * Rows actually on screen, which exceeds `limit` once scrolling has appended
+   * pages. Defaults to `limit`, the count when paging by click alone.
+   */
+  shownCount?: number
   onPageChange: (page: number) => void
   className?: string
 }
@@ -34,11 +39,18 @@ function getPageNumbers(current: number, totalPages: number): (number | "ellipsi
   return pages
 }
 
-export function Pagination({ page, total, limit, onPageChange, className }: PaginationProps) {
+export function Pagination({
+  page,
+  total,
+  limit,
+  shownCount,
+  onPageChange,
+  className,
+}: PaginationProps) {
   const totalPages = Math.max(1, Math.ceil(total / limit))
   const pages = getPageNumbers(page, totalPages)
   const from = total === 0 ? 0 : (page - 1) * limit + 1
-  const to = Math.min(page * limit, total)
+  const to = Math.min(from + (shownCount ?? limit) - 1, total)
 
   return (
     <div

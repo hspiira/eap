@@ -8,6 +8,8 @@ import { EmptyState } from "@/components/common/EmptyState"
 import { ErrorState } from "@/components/common/ErrorState"
 import { FilterBar, FilterSearch } from "@/components/common/FilterBar"
 import { IconButton } from "@/components/common/IconButton"
+import { InfiniteScrollSentinel } from "@/components/common/InfiniteScrollSentinel"
+import { PagedTableBody } from "@/components/common/PagedTableBody"
 import { PageShell } from "@/components/common/PageShell"
 import { nextSort, SortHeader, type SortState } from "@/components/common/SortHeader"
 import { STICKY_TABLE_HEAD } from "@/components/common/tableStyles"
@@ -21,17 +23,11 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Pagination } from "@/components/ui/pagination"
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table"
+import { Table, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { useDebouncedValue } from "@/hooks/useDebouncedValue"
+import { useVisiblePage } from "@/hooks/useVisiblePage"
 import { normalizeErrorMessage } from "@/lib/errors"
-import { useEntityList } from "@/lib/queries"
+import { useEntityListPages } from "@/lib/queries"
 import type { ClientTag } from "@/types/entities"
 
 export const Route = createFileRoute("/tags/")({
@@ -59,7 +55,9 @@ function TagsListPage() {
     setPage(1)
   }, [activeSearch])
 
-  const query = useEntityList({
+  const [visiblePage, setVisiblePage] = useVisiblePage(page)
+
+  const query = useEntityListPages({
     resource: "client-tags",
     params: {
       page,
@@ -150,16 +148,30 @@ function TagsListPage() {
                     </TableHead>
                   </TableRow>
                 </TableHeader>
-                <TableBody>
-                  {items.map((row) => (
-                    <TagRow key={row.id} row={row} onEdit={() => setEditingTag(row)} />
-                  ))}
-                </TableBody>
+                <PagedTableBody
+                  items={items}
+                  anchorPage={page}
+                  limit={limit}
+                  rowKey={(row) => row.id}
+                  renderRow={(row) => <TagRow row={row} onEdit={() => setEditingTag(row)} />}
+                  onVisiblePageChange={setVisiblePage}
+                />
               </Table>
+              <InfiniteScrollSentinel
+                onLoadMore={query.loadMore}
+                hasMore={query.hasMore}
+                loadingMore={query.loadingMore}
+              />
             </div>
             {total > 0 && (
               <div className="shrink-0 border-t border-fg/10 bg-surface px-3 py-2">
-                <Pagination page={page} total={total} limit={limit} onPageChange={setPage} />
+                <Pagination
+                  page={visiblePage}
+                  total={total}
+                  limit={limit}
+                  shownCount={items.length}
+                  onPageChange={setPage}
+                />
               </div>
             )}
           </>

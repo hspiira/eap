@@ -53,7 +53,7 @@ import { useCanWrite, useCurrentRole } from "@/hooks/useCanWrite"
 import { NEWEST_FIRST, useListPage } from "@/hooks/useListPage"
 import { useTableSelection } from "@/hooks/useTableSelection"
 import { normalizeErrorMessage } from "@/lib/errors"
-import { useEntityList } from "@/lib/queries"
+import { useEntityListPages } from "@/lib/queries"
 import { enumParam, listSearchSchema } from "@/lib/search-params"
 import type { Member, MemberStats } from "@/types/entities"
 import { EligibilityStatus, MemberRelation } from "@/types/enums"
@@ -124,7 +124,7 @@ function MembersListPage() {
   const [importOpen, setImportOpen] = useState(false)
   const [duplicatesOpen, setDuplicatesOpen] = useState(false)
   const role = useCurrentRole()
-  const query = useEntityList({
+  const query = useEntityListPages({
     resource: "members",
     params: {
       page: list.page,
@@ -351,6 +351,9 @@ function MembersListPage() {
       />
 
       <EntityListView
+        onLoadMore={query.loadMore}
+        hasMore={query.hasMore}
+        loadingMore={query.loadingMore}
         columns={COLUMNS}
         items={items}
         rowKey={(row) => row.id}
