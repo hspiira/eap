@@ -27,7 +27,7 @@ import {
 } from "@/components/ui/chart"
 import { Skeleton } from "@/components/ui/skeleton"
 
-import { CardBar, CardEmptyState, CardStat } from "./CardBar"
+import { CardBar, CardEmptyState, CardInsight, CardStat } from "./CardBar"
 
 const CHART_CONFIG = {
   physical: { label: "Physical", color: "var(--color-chart-1)" },
@@ -48,6 +48,7 @@ interface SessionsAreaCardProps extends AreaBodyProps {
   total: number
   delta?: React.ReactNode
   control?: React.ReactNode
+  insight?: string | null
 }
 
 export function SessionsAreaCard({
@@ -58,6 +59,7 @@ export function SessionsAreaCard({
   error,
   refreshing,
   control,
+  insight,
 }: SessionsAreaCardProps) {
   const split = totals(series)
   return (
@@ -75,6 +77,7 @@ export function SessionsAreaCard({
       <CardContent className="flex flex-1 flex-col justify-center p-3 pt-4">
         <AreaBody series={series} loading={loading} error={error} refreshing={refreshing} />
       </CardContent>
+      {loading || error ? null : <CardInsight text={insight ?? null} />}
     </Card>
   )
 }

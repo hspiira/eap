@@ -26,6 +26,9 @@ export function makeDashboard(overrides: Partial<DashboardResponse> = {}): Dashb
       clients_with_roster: 5,
       clients_total: 43,
       import_backlog: 7103,
+      value_delivered_ugx: 3_075_000,
+      sessions_unpriced: 2,
+      contracts_ending_soon: 0,
     },
     sessions_series: [
       { bucket: "2026-06-08", label: "8 Jun", physical: 1, online: 0, unknown: 0, total: 1 },
@@ -66,6 +69,20 @@ export function makeDashboard(overrides: Partial<DashboardResponse> = {}): Dashb
         change_pct: null,
       },
     ],
+    upcoming: {
+      total: 0,
+      days: [
+        { bucket: "2026-09-07", label: "Mon 07", total: 0 },
+        { bucket: "2026-09-08", label: "Tue 08", total: 0 },
+        { bucket: "2026-09-09", label: "Wed 09", total: 0 },
+        { bucket: "2026-09-10", label: "Thu 10", total: 0 },
+        { bucket: "2026-09-11", label: "Fri 11", total: 0 },
+        { bucket: "2026-09-12", label: "Sat 12", total: 0 },
+        { bucket: "2026-09-13", label: "Sun 13", total: 0 },
+      ],
+    },
+    risk: { crisis_flags_open: 0, incidents_open: 0, cases_open: 0 },
+    outcome_mix: null,
     data_quality: {
       sessions_missing_outcome: 186,
       sessions_missing_rate: 161,

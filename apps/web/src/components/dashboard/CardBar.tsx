@@ -99,3 +99,9 @@ export function CardDelta({
     </span>
   )
 }
+
+/** The sentence under a chart: computed from the same data, never filler. */
+export function CardInsight({ text }: { text: string | null }) {
+  if (!text) return null
+  return <p className="border-t border-border px-3 py-2 text-xs text-fg-muted">{text}</p>
+}

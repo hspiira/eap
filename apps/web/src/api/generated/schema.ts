@@ -9079,6 +9079,11 @@ export interface components {
              */
             clients_with_roster: number;
             /**
+             * Contracts Ending Soon
+             * @description Active contracts whose end date falls within the next 60 days
+             */
+            contracts_ending_soon: number;
+            /**
              * Covered Members
              * @description Eligible members with Active status
              */
@@ -9098,6 +9103,16 @@ export interface components {
              * @description Completed sessions in the comparison window, for the delta
              */
             sessions_prior: number;
+            /**
+             * Sessions Unpriced
+             * @description Completed sessions inside the range with no rate recorded
+             */
+            sessions_unpriced: number;
+            /**
+             * Value Delivered Ugx
+             * @description Sum of session rates over completed sessions inside the range. Only sessions that carry a rate contribute; sessions_unpriced says how many did not.
+             */
+            value_delivered_ugx: number;
         };
         /**
          * DashboardResponse
@@ -9106,7 +9121,13 @@ export interface components {
         DashboardResponse: {
             data_quality: components["schemas"]["DataQuality"];
             kpis: components["schemas"]["DashboardKpis"];
+            /**
+             * Outcome Mix
+             * @description Completed sessions grouped by clinical outcome, inside the range. Null for a caller without the clinical access scope; aggregate or not, outcomes are part of the clinical record and the wall fails closed.
+             */
+            outcome_mix?: components["schemas"]["OutcomeCount"][] | null;
             range: components["schemas"]["RangeInfo"];
+            risk: components["schemas"]["RiskCounts"];
             /**
              * Session Years
              * @description Years that actually have a completed session, newest first. What the year picker offers, so it never lists a year with nothing behind it. Empty for a tenant that has delivered nothing.
@@ -9120,6 +9141,7 @@ export interface components {
             top_clients: components["schemas"]["ClientSessions"][];
             /** Trending Services */
             trending_services: components["schemas"]["ServiceTrend"][];
+            upcoming: components["schemas"]["UpcomingBookings"];
         };
         /**
          * DataQuality
@@ -11665,6 +11687,20 @@ export interface components {
          * @enum {string}
          */
         OrganisationApprovalStatus: "Pending" | "Approved" | "Suspended" | "Revoked";
+        /**
+         * OutcomeCount
+         * @description Completed sessions per clinical outcome inside the range.
+         *
+         *     `outcome` is None for sessions whose outcome was never recorded; the
+         *     client renders that as its own "Not recorded" band rather than folding it
+         *     into a real outcome.
+         */
+        OutcomeCount: {
+            /** Outcome */
+            outcome: string | null;
+            /** Total */
+            total: number;
+        };
         /** OutreachAssignRequest */
         OutreachAssignRequest: {
             /** Counsellor Id */
@@ -12593,6 +12629,27 @@ export interface components {
             days: number;
             /** Rationale */
             rationale: string;
+        };
+        /**
+         * RiskCounts
+         * @description Open safety work. Stock figures; a crisis does not follow a range.
+         */
+        RiskCounts: {
+            /**
+             * Cases Open
+             * @description Clinical cases currently open
+             */
+            cases_open: number;
+            /**
+             * Crisis Flags Open
+             * @description Outreach records flagged crisis whose outreach is still open
+             */
+            crisis_flags_open: number;
+            /**
+             * Incidents Open
+             * @description Critical incidents not yet closed
+             */
+            incidents_open: number;
         };
         /**
          * SearchCategoryResult
@@ -14341,6 +14398,42 @@ export interface components {
          * @enum {string}
          */
         UgandaRegion: "Central" | "KampalaMetro" | "Eastern" | "Northern" | "WestNile" | "Western" | "SouthWestern" | "Karamoja";
+        /**
+         * UpcomingBookings
+         * @description The booking pipeline for the week ahead.
+         *
+         *     This reopens the earlier decision that scheduled bookings stay off the
+         *     dashboard: they are still not delivery and never enter the sessions
+         *     series, but they get their own card under their own name, which is what
+         *     that decision asked of them.
+         */
+        UpcomingBookings: {
+            /** Days */
+            days: components["schemas"]["UpcomingDay"][];
+            /**
+             * Total
+             * @description Open bookings in the next seven days
+             */
+            total: number;
+        };
+        /**
+         * UpcomingDay
+         * @description Bookings scheduled on one of the next seven days.
+         */
+        UpcomingDay: {
+            /**
+             * Bucket
+             * @description Day, YYYY-MM-DD
+             */
+            bucket: string;
+            /**
+             * Label
+             * @description Display label for the day
+             */
+            label: string;
+            /** Total */
+            total: number;
+        };
         /** UpdateClinicalNoteBodyRequest */
         UpdateClinicalNoteBodyRequest: {
             /** Body */

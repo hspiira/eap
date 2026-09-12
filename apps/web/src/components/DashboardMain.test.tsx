@@ -24,6 +24,7 @@ vi.mock("@tanstack/react-router", () => ({
 }))
 
 const { DashboardMain } = await import("@/components/DashboardMain")
+const { dashboardApi } = await import("@/api/endpoints/dashboard")
 
 describe("DashboardMain", () => {
   it("leads with the decision panel, ranked by what is blocking", async () => {
@@ -48,9 +49,28 @@ describe("DashboardMain", () => {
     expect(screen.getByRole("heading", { name: "Sessions delivered" })).toBeInTheDocument()
     expect(screen.getByRole("heading", { name: "Top clients" })).toBeInTheDocument()
     expect(screen.getByRole("heading", { name: "By category" })).toBeInTheDocument()
-    expect(screen.getByRole("heading", { name: "Services in demand" })).toBeInTheDocument()
+    expect(screen.getByRole("heading", { name: "Next 7 days" })).toBeInTheDocument()
 
-    expect(screen.getByText("Group Counselling")).toBeInTheDocument()
+    // The trending card gave way to the outcome mix; its ranking restated the
+    // area chart, and its percentages were noise against tiny denominators.
+    expect(screen.queryByRole("heading", { name: "Services in demand" })).not.toBeInTheDocument()
+    // Outcomes are clinical: the fixture carries none, so no card either.
+    expect(screen.queryByRole("heading", { name: "Clinical outcomes" })).not.toBeInTheDocument()
+  })
+
+  it("shows the outcome mix only when the API sent it", async () => {
+    vi.mocked(dashboardApi.get).mockResolvedValueOnce(
+      makeDashboard({
+        outcome_mix: [
+          { outcome: "Completed", total: 3 },
+          { outcome: null, total: 2 },
+        ],
+      }),
+    )
+    renderWithProviders(<DashboardMain />)
+
+    expect(await screen.findByRole("heading", { name: "Clinical outcomes" })).toBeInTheDocument()
+    expect(screen.getByText("Not recorded")).toBeInTheDocument()
   })
 
   it("no longer carries the import health card", async () => {

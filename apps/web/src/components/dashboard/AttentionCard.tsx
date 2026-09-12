@@ -57,6 +57,9 @@ const SEVERITY_STYLE: Record<Severity, string> = {
 
 const SEVERITY_RANK: Record<Severity, number> = { high: 0, medium: 1, low: 2, signal: 3 }
 
+/** A crisis outranks every same-severity queue regardless of queue length. */
+const CRISIS_PRIORITY_BOOST = 100_000
+
 /**
  * Turn the aggregate into a ranked action list. Order is by severity first
  * and size second, so the largest queue does not outrank a smaller one that
@@ -65,8 +68,42 @@ const SEVERITY_RANK: Record<Severity, number> = { high: 0, medium: 1, low: 2, si
 export function buildAttentionItems(data: DashboardResponse): AttentionItem[] {
   const quality = data.data_quality
   const backlog = data.kpis.import_backlog
+  const risk = data.risk
   const items: (AttentionItem & { size: number })[] = []
 
+  if (risk.crisis_flags_open > 0) {
+    items.push({
+      key: "crisis",
+      severity: "high",
+      size: risk.crisis_flags_open + CRISIS_PRIORITY_BOOST,
+      headline: `Respond to ${risk.crisis_flags_open} open crisis ${risk.crisis_flags_open === 1 ? "flag" : "flags"}`,
+      consequence: "someone reported at risk is waiting on outreach",
+      action: "Worklist",
+      to: "/care-callbacks/worklist",
+    })
+  }
+  if (risk.incidents_open > 0) {
+    items.push({
+      key: "incidents",
+      severity: "high",
+      size: risk.incidents_open,
+      headline: `Work ${risk.incidents_open} open critical ${risk.incidents_open === 1 ? "incident" : "incidents"}`,
+      consequence: "an incident response is still running",
+      action: "Incidents",
+      to: "/incidents",
+    })
+  }
+  if (data.kpis.contracts_ending_soon > 0) {
+    items.push({
+      key: "renewals",
+      severity: "medium",
+      size: data.kpis.contracts_ending_soon,
+      headline: `Renew ${data.kpis.contracts_ending_soon} ${data.kpis.contracts_ending_soon === 1 ? "contract" : "contracts"} ending within 60 days`,
+      consequence: "cover lapses at the end date",
+      action: "Contracts",
+      to: "/contracts",
+    })
+  }
   if (quality.clients_without_roster > 0) {
     items.push({
       key: "rosters",
