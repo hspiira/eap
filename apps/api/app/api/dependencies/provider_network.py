@@ -22,7 +22,6 @@ from app.domain.repositories.practitioner_import_repository import (
 )
 from app.domain.repositories.provider_network_repository import (
     ProviderAffiliationRepository,
-    ProviderAliasRepository,
     ProviderOrganisationRepository,
     ProviderSpecialtyRepository,
     SessionImportRepository,
@@ -59,16 +58,6 @@ async def get_provider_specialty_repository(
     )
 
     return ProviderSpecialtyRepositoryImpl(db)
-
-
-async def get_provider_alias_repository(
-    db: AsyncSession = Depends(get_db),
-) -> ProviderAliasRepository:
-    from app.infrastructure.repositories.provider_network_repository import (
-        ProviderAliasRepositoryImpl,
-    )
-
-    return ProviderAliasRepositoryImpl(db)
 
 
 async def get_session_import_repository(

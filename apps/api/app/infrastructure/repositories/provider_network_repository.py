@@ -7,7 +7,6 @@ from sqlalchemy import Select, func, or_, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.domain.entities.provider_affiliation import ProviderAffiliationEntity
-from app.domain.entities.provider_alias import ProviderAliasEntity
 from app.domain.entities.provider_organisation import ProviderOrganisationEntity
 from app.domain.entities.provider_specialty import (
     ProviderSpecialtyEntity,
@@ -20,7 +19,6 @@ from app.domain.entities.session_import import (
 from app.domain.enums.provider_network import ImportBatchStatus, ImportRowOutcome
 from app.domain.repositories.provider_network_repository import (
     ProviderAffiliationRepository,
-    ProviderAliasRepository,
     ProviderOrganisationRepository,
     ProviderSpecialtyRepository,
     SessionImportRepository,
@@ -29,20 +27,17 @@ from app.domain.services.provider_network_calendar import boundary_day
 from app.domain.value_objects.core import ProviderId, TenantId
 from app.domain.value_objects.provider_network import (
     ProviderAffiliationId,
-    ProviderAliasId,
     ProviderOrganisationId,
     ProviderSpecialtyId,
     SessionImportBatchId,
 )
 from app.infrastructure.mappers.provider_network_mapper import (
     ProviderAffiliationMapper,
-    ProviderAliasMapper,
     ProviderOrganisationMapper,
     ProviderSpecialtyMapper,
     SessionImportMapper,
 )
 from app.infrastructure.models.provider_affiliation_model import ProviderAffiliationModel
-from app.infrastructure.models.provider_alias_model import ProviderAliasModel
 from app.infrastructure.models.provider_organisation_model import ProviderOrganisationModel
 from app.infrastructure.models.provider_specialty_model import (
     ProviderSpecialtyLinkModel,
@@ -335,63 +330,6 @@ class ProviderSpecialtyRepositoryImpl(ProviderSpecialtyRepository):
         await self.session.delete(model)
         await self.session.flush()
         return True
-
-
-class ProviderAliasRepositoryImpl(ProviderAliasRepository):
-    def __init__(self, session: AsyncSession):
-        self.session = session
-
-    async def find_alias(
-        self, tenant_id: TenantId, source_system: str, normalized_value: str
-    ) -> ProviderAliasEntity | None:
-        model = await self.session.scalar(
-            select(ProviderAliasModel).where(
-                ProviderAliasModel.tenant_id == tenant_id.value,
-                ProviderAliasModel.source_system == source_system,
-                ProviderAliasModel.normalized_value == normalized_value,
-            )
-        )
-        return ProviderAliasMapper.to_entity(model) if model else None
-
-    async def get_alias(
-        self, tenant_id: TenantId, alias_id: ProviderAliasId
-    ) -> ProviderAliasEntity | None:
-        model = await self.session.scalar(
-            select(ProviderAliasModel).where(
-                ProviderAliasModel.id == alias_id.value,
-                ProviderAliasModel.tenant_id == tenant_id.value,
-            )
-        )
-        return ProviderAliasMapper.to_entity(model) if model else None
-
-    async def list_aliases(
-        self,
-        tenant_id: TenantId,
-        *,
-        source_system: str | None = None,
-        state: str | None = None,
-        provider_id: ProviderId | None = None,
-        limit: int = 20,
-        offset: int = 0,
-    ) -> tuple[Sequence[ProviderAliasEntity], int]:
-        statement = select(ProviderAliasModel).where(
-            ProviderAliasModel.tenant_id == tenant_id.value
-        )
-        if source_system:
-            statement = statement.where(ProviderAliasModel.source_system == source_system)
-        if state:
-            statement = statement.where(ProviderAliasModel.state == state)
-        if provider_id:
-            statement = statement.where(ProviderAliasModel.provider_id == provider_id.value)
-        total = await _count(self.session, statement)
-        rows = await self.session.scalars(
-            statement.order_by(ProviderAliasModel.normalized_value).limit(limit).offset(offset)
-        )
-        return [ProviderAliasMapper.to_entity(m) for m in rows], total
-
-    async def save_alias(self, alias: ProviderAliasEntity) -> None:
-        await self.session.merge(ProviderAliasMapper.to_model(alias))
-        await self.session.flush()
 
 
 class SessionImportRepositoryImpl(SessionImportRepository):

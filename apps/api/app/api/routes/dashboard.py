@@ -80,13 +80,27 @@ UNRESOLVED_OUTCOMES = (
 
 
 class ResolvedRange:
-    """The window a request asks for, with its prior window and bucket size."""
+    """The window a request asks for, with its comparison window and bucket size.
 
-    def __init__(self, preset: RangePreset, start: datetime, end: datetime):
+    The comparison defaults to the stretch of equal length immediately before
+    the window. A year preset passes its own instead: a year is read against
+    the same dates a year earlier, not against the months that happen to
+    precede it.
+    """
+
+    def __init__(
+        self,
+        preset: RangePreset,
+        start: datetime,
+        end: datetime,
+        prior_start: datetime | None = None,
+        prior_end: datetime | None = None,
+    ):
         self.preset = preset
         self.start = start
         self.end = end
-        self.prior_start = start - (end - start)
+        self.prior_start = prior_start if prior_start is not None else start - (end - start)
+        self.prior_end = prior_end if prior_end is not None else start
         self.granularity: Granularity = _granularity_for(end - start)
 
     def to_info(self) -> RangeInfo:
@@ -95,6 +109,7 @@ class ResolvedRange:
             start=self.start.isoformat(),
             end=self.end.isoformat(),
             prior_start=self.prior_start.isoformat(),
+            prior_end=self.prior_end.isoformat(),
             granularity=self.granularity,
         )
 
@@ -134,17 +149,79 @@ def _custom_range(start_raw: str | None, end_raw: str | None, now: datetime) -> 
     return ResolvedRange("custom", start, end)
 
 
-def resolve_range(preset: RangePreset, start_raw: str | None, end_raw: str | None) -> ResolvedRange:
+def _a_year_earlier(moment: datetime) -> datetime:
+    """The same calendar moment in the previous year.
+
+    Shifted by the calendar rather than by 365 days: a leap year is 366 days
+    long, so subtracting its duration from 1 January lands on 2 January and
+    the comparison window silently gains a day. 29 February has no counterpart
+    and falls back to the 28th.
+    """
+    try:
+        return moment.replace(year=moment.year - 1)
+    except ValueError:
+        return moment.replace(year=moment.year - 1, day=28)
+
+
+def _year_range(preset: RangePreset, year: int, now: datetime) -> ResolvedRange:
+    """One calendar year, against the same stretch of the year before.
+
+    The current year stops at now rather than running to 31 December, so a
+    part-finished year is compared with the same part of the year before it
+    and not against twelve months it has not reached yet.
+    """
+    if year > now.year:
+        raise ValidationException("year cannot be in the future")
+    start = _midnight(now).replace(year=year, month=1, day=1)
+    end = now if year == now.year else start.replace(year=year + 1)
+    return ResolvedRange(preset, start, end, _a_year_earlier(start), _a_year_earlier(end))
+
+
+def _all_time_range(now: datetime, earliest: datetime | None) -> ResolvedRange:
+    """Everything on record. No comparison window: there is nothing before it."""
+    start = _midnight(earliest.astimezone(UTC)) if earliest else _midnight(now)
+    return ResolvedRange("all_time", start, now, start, start)
+
+
+def resolve_range(
+    preset: RangePreset,
+    start_raw: str | None,
+    end_raw: str | None,
+    *,
+    year: int | None = None,
+    earliest: datetime | None = None,
+) -> ResolvedRange:
     """Turn a preset, or an explicit pair of dates, into a concrete window."""
     now = utc_now()
     if preset == "custom":
         return _custom_range(start_raw, end_raw, now)
+    if preset == "all_time":
+        return _all_time_range(now, earliest)
+    if preset == "this_year":
+        return _year_range(preset, now.year, now)
+    if preset == "year":
+        if year is None:
+            raise ValidationException("year is required when range is year")
+        return _year_range(preset, year, now)
     if preset == "this_week":
         return ResolvedRange(preset, _midnight(now) - timedelta(days=now.weekday()), now)
     if preset == "this_month":
         return ResolvedRange(preset, _midnight(now).replace(day=1), now)
     days = {"last_30d": 30, "last_90d": 90, "last_180d": 180}[preset]
     return ResolvedRange(preset, now - timedelta(days=days), now)
+
+
+def _session_years(earliest: datetime | None) -> list[int]:
+    """Years the picker may offer, newest first. Empty when nothing is delivered.
+
+    Derived from the first delivery rather than listed by hand, so the picker
+    never offers a year with nothing behind it. A year in between with no
+    sessions still appears; the gap is the answer, and hiding it would read
+    as though the year never existed.
+    """
+    if earliest is None:
+        return []
+    return list(range(utc_now().year, earliest.astimezone(UTC).year - 1, -1))
 
 
 def _bucket_start(moment: datetime, granularity: Granularity) -> date:
@@ -310,20 +387,25 @@ async def get_dashboard(
     ),
     start: str | None = Query(None, description="Window start when range is custom, ISO 8601"),
     end: str | None = Query(None, description="Window end when range is custom, ISO 8601"),
+    year: int | None = Query(
+        None, ge=1970, le=2999, description="Calendar year when range is year"
+    ),
     _current_user: TokenData = Depends(require_same_tenant),
     runner=Depends(get_dashboard_query_runner),
 ) -> DashboardResponse:
     """All dashboard figures in one read, computed against the same instant."""
-    window = resolve_range(range_preset, start, end)
+    earliest = await runner.earliest_session(tenant_id)
+    window = resolve_range(range_preset, start, end, year=year, earliest=earliest)
 
     sessions, sessions_prior, clients_served = await runner.session_kpis(
-        tenant_id, window.start, window.end, window.prior_start
+        tenant_id, window.start, window.end, window.prior_start, window.prior_end
     )
     covered, with_roster, clients_total = await runner.coverage(tenant_id)
     import_batch, import_queues, backlog = await _import_state(runner, tenant_id)
 
     return DashboardResponse(
         range=window.to_info(),
+        session_years=_session_years(earliest),
         kpis=DashboardKpis(
             sessions=sessions,
             sessions_prior=sessions_prior,

@@ -35,7 +35,6 @@ from app.infrastructure.models.contact_model import ContactModel
 from app.infrastructure.models.contract_model import ContractModel
 from app.infrastructure.models.critical_incident_model import CriticalIncidentModel
 from app.infrastructure.models.diagnosis_model import (
-    DiagnosisAliasModel,
     DiagnosisModel,
     DiagnosisTypeModel,
     TenantDiagnosisSettingModel,
@@ -85,7 +84,6 @@ from app.infrastructure.models.practitioner_import_model import (
 )
 from app.infrastructure.models.presenting_problem_model import PresentingProblemModel
 from app.infrastructure.models.provider_affiliation_model import ProviderAffiliationModel
-from app.infrastructure.models.provider_alias_model import ProviderAliasModel
 from app.infrastructure.models.provider_engagement_document_model import (
     ProviderEngagementDocumentModel,
 )
@@ -151,7 +149,6 @@ __all__ = [
     "MemberImportRowModel",
     "MemberNextOfKinModel",
     "NextOfKinRelationshipModel",
-    "DiagnosisAliasModel",
     "DiagnosisTypeModel",
     "TenantDiagnosisSettingModel",
     "DocumentModel",
@@ -176,7 +173,6 @@ __all__ = [
     "PractitionerImportBatchModel",
     "PractitionerImportRowModel",
     "ProviderAffiliationModel",
-    "ProviderAliasModel",
     "ProviderEngagementDocumentModel",
     "ProviderModel",
     "ProviderOrganisationModel",

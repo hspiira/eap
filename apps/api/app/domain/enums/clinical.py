@@ -94,22 +94,3 @@ class TriageInstrumentCode(str, Enum):
     WSAS = "WSAS"
     DASS21 = "DASS21"
     PCL5 = "PCL5"
-
-
-class AliasConfidence(str, Enum):
-    """How much weight a legacy alias mapping carries.
-
-    ``INFERRED`` is a reading of the label that nobody has signed off, so it
-    stays filterable: a reviewer can list exactly the mappings still awaiting
-    a clinical owner without re-deriving which ones those were.
-
-    ``REJECTED`` records that a reviewer read the mapping and refused it. It is
-    kept rather than deleted so the same spelling is not inferred again by the
-    next import: a deleted row and a row nobody has seen are indistinguishable.
-    A rejected alias maps nothing, so its legacy values stay unresolved, which
-    is the honest outcome when the only reading on offer is wrong.
-    """
-
-    CONFIRMED = "confirmed"
-    INFERRED = "inferred"
-    REJECTED = "rejected"

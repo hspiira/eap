@@ -25,7 +25,6 @@ import { IconButton } from "@/components/common/IconButton"
 import { PageShell } from "@/components/common/PageShell"
 import { TableSkeleton } from "@/components/common/PageSkeletons"
 import { ROW_BORDER, STICKY_TABLE_HEAD } from "@/components/common/tableStyles"
-import { AliasReviewPanel } from "@/components/diagnoses/AliasReviewPanel"
 import { DiagnosisFormSheet } from "@/components/DiagnosisFormSheet"
 import { Button } from "@/components/ui/button"
 import {
@@ -196,7 +195,6 @@ function DiagnosesPage() {
 
         {/* Legacy mappings nobody has signed off. Above the taxonomy because it
             is a queue that should empty, not part of browsing it. */}
-        {canManage && !loading && !error ? <AliasReviewPanel tree={tree} /> : null}
 
         {loading ? (
           <div className="p-3">

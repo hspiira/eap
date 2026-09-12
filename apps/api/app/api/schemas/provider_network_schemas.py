@@ -7,7 +7,6 @@ from pydantic import AfterValidator, BaseModel, ConfigDict, EmailStr, Field
 
 from app.api.schemas.base import OptionalSanitizedStr, SanitizedStr
 from app.domain.enums.provider_network import (
-    AliasResolutionState,
     DeliveryContext,
     ImportBatchStatus,
     ImportRowOutcome,
@@ -157,49 +156,6 @@ class ProviderSpecialtyLinkResponse(BaseModel):
     specialty_code: str
     specialty_label: str
     specialty_is_active: bool
-
-
-class ProviderAliasResponse(BaseModel):
-    id: str
-    tenant_id: str
-    source_system: str
-    source_value: str
-    normalized_value: str
-    state: AliasResolutionState
-    provider_id: str | None
-    candidate_provider_ids: list[str]
-    review_note: str | None
-    created_at: datetime
-    updated_at: datetime
-
-
-class ProviderAliasListResponse(BaseModel):
-    items: list[ProviderAliasResponse]
-    total: int
-    page: int
-    limit: int
-    has_more: bool
-
-
-class ProviderAliasCreateRequest(BaseModel):
-    """Open a review queue entry for a name a source system uses.
-
-    Creating one attributes nothing: the alias starts unmapped, and naming the
-    practitioner is still the separate, audited resolve step.
-    """
-
-    source_system: NonBlankStr = Field(..., max_length=100)
-    source_value: NonBlankStr = Field(..., max_length=500)
-
-
-class ProviderAliasResolveRequest(BaseModel):
-    """Explicit reconciliation. There is no automatic resolution endpoint."""
-
-    provider_id: str = Field(..., min_length=1, max_length=25)
-
-
-class ProviderAliasRejectRequest(BaseModel):
-    note: NonBlankStr
 
 
 class SessionImportAbandonRequest(BaseModel):

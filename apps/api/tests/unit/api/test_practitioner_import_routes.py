@@ -14,7 +14,6 @@ from app.api.dependencies import get_audit_event_handler, get_provider_repositor
 from app.api.dependencies.provider_network import (
     get_practitioner_import_repository,
     get_provider_affiliation_repository,
-    get_provider_alias_repository,
     get_provider_organisation_repository,
 )
 from app.api.routes.practitioner_imports import router
@@ -118,7 +117,6 @@ async def api():
     app.dependency_overrides[get_current_user] = _user
     app.dependency_overrides[get_current_user_entity] = _user_entity
     app.dependency_overrides[get_practitioner_import_repository] = lambda: state.imports
-    app.dependency_overrides[get_provider_alias_repository] = lambda: state.aliases
     app.dependency_overrides[get_provider_repository] = lambda: state.providers
     app.dependency_overrides[get_provider_organisation_repository] = lambda: state.organisations
     app.dependency_overrides[get_provider_affiliation_repository] = lambda: state.affiliations

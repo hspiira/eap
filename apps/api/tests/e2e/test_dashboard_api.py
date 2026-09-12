@@ -7,7 +7,7 @@ batch, and the derived data-quality queues. A second tenant's data proves
 the scoping.
 """
 
-from datetime import timedelta
+from datetime import UTC, datetime, timedelta
 
 import pytest
 from httpx import AsyncClient
@@ -61,7 +61,8 @@ def _session(
     client_id: str,
     provider_id: str,
     *,
-    days_ago: int,
+    days_ago: int = 0,
+    at: datetime | None = None,
     service_id: str = "svc-talk",
     session_type: SessionType | None = SessionType.PHYSICAL,
     status: SessionStatus = SessionStatus.COMPLETED,
@@ -77,7 +78,7 @@ def _session(
         service_id=service_id,
         provider_id=provider_id,
         client_id=client_id,
-        scheduled_at=now - timedelta(days=days_ago),
+        scheduled_at=at if at is not None else now - timedelta(days=days_ago),
         status=status,
         session_type=session_type,
         attendance=SessionAttendance.COMPANY_WIDE,
@@ -336,3 +337,127 @@ async def test_dashboard_empty_tenant(client: AsyncClient, db_session: AsyncSess
     assert body["import_queues"] == []
     assert body["trending_services"] == []
     assert all(p["total"] == 0 for p in body["sessions_series"])
+
+
+async def _seed_across_years(db: AsyncSession) -> None:
+    """One tenant, one client, sessions in three separate calendar years."""
+    db.add(_tenant(TENANT))
+    await db.flush()
+    db.add(_client_row(TENANT, "cl-yr", "Yearly Co", "YEAR"))
+    db.add(
+        ProviderModel(
+            id="prov-yr", tenant_id=TENANT, display_name="Counsellor", status=BaseStatus.ACTIVE
+        )
+    )
+    db.add(ServiceModel(id="svc-talk", tenant_id=TENANT, name="Health Talk"))
+    await db.flush()
+    db.add_all(
+        [
+            _session(TENANT, "cl-yr", "prov-yr", at=datetime(2023, 6, 1, 10, tzinfo=UTC)),
+            _session(TENANT, "cl-yr", "prov-yr", at=datetime(2024, 3, 4, 10, tzinfo=UTC)),
+            _session(TENANT, "cl-yr", "prov-yr", at=datetime(2024, 8, 9, 10, tzinfo=UTC)),
+            _session(TENANT, "cl-yr", "prov-yr", at=datetime(2025, 2, 2, 10, tzinfo=UTC)),
+        ]
+    )
+    await db.commit()
+
+
+@pytest.mark.asyncio
+async def test_dashboard_offers_only_years_that_have_sessions(
+    client: AsyncClient, db_session: AsyncSession
+):
+    await _seed_across_years(db_session)
+
+    response = await client.get("/dashboard", params={"tenant_id": TENANT, "range": "this_year"})
+
+    assert response.status_code == 200, response.text
+    years = response.json()["session_years"]
+    assert years == sorted(years, reverse=True)
+    assert min(years) == 2023, years
+    assert 2022 not in years
+
+
+@pytest.mark.asyncio
+async def test_dashboard_with_no_sessions_offers_no_years(
+    client: AsyncClient, db_session: AsyncSession
+):
+    db_session.add(_tenant(TENANT))
+    await db_session.commit()
+
+    response = await client.get("/dashboard", params={"tenant_id": TENANT})
+
+    assert response.status_code == 200, response.text
+    body = response.json()
+    assert body["session_years"] == []
+    # And all time over nothing is today, not a run of empty months from 1970.
+    all_time = await client.get("/dashboard", params={"tenant_id": TENANT, "range": "all_time"})
+    assert len(all_time.json()["sessions_series"]) == 1
+
+
+@pytest.mark.asyncio
+async def test_dashboard_year_range_counts_only_that_year(
+    client: AsyncClient, db_session: AsyncSession
+):
+    await _seed_across_years(db_session)
+
+    response = await client.get(
+        "/dashboard", params={"tenant_id": TENANT, "range": "year", "year": 2024}
+    )
+
+    assert response.status_code == 200, response.text
+    body = response.json()
+    assert body["range"]["preset"] == "year"
+    assert body["range"]["start"].startswith("2024-01-01")
+    assert body["range"]["end"].startswith("2025-01-01")
+    assert body["kpis"]["sessions"] == 2
+    # Against the whole of 2023, which held one.
+    assert body["kpis"]["sessions_prior"] == 1
+    assert body["range"]["granularity"] == "month"
+
+
+@pytest.mark.asyncio
+async def test_dashboard_year_range_needs_a_year(client: AsyncClient, db_session: AsyncSession):
+    await _seed_across_years(db_session)
+
+    response = await client.get("/dashboard", params={"tenant_id": TENANT, "range": "year"})
+
+    assert response.status_code == 422, response.text
+
+
+@pytest.mark.asyncio
+async def test_dashboard_all_time_starts_at_the_first_session(
+    client: AsyncClient, db_session: AsyncSession
+):
+    await _seed_across_years(db_session)
+
+    response = await client.get("/dashboard", params={"tenant_id": TENANT, "range": "all_time"})
+
+    assert response.status_code == 200, response.text
+    body = response.json()
+    assert body["range"]["start"].startswith("2023-06-01")
+    assert body["kpis"]["sessions"] == 4
+    # Nothing precedes all time, so the tile shows no comparison.
+    assert body["kpis"]["sessions_prior"] == 0
+    assert body["range"]["prior_start"] == body["range"]["prior_end"]
+
+
+@pytest.mark.asyncio
+async def test_dashboard_all_time_is_not_capped_at_three_years(
+    client: AsyncClient, db_session: AsyncSession
+):
+    """MAX_RANGE_DAYS rejects a custom window this long; a computed one stands."""
+    db_session.add(_tenant(TENANT))
+    await db_session.flush()
+    db_session.add(_client_row(TENANT, "cl-old", "Old Co", "OLD"))
+    db_session.add(
+        ProviderModel(id="prov-old", tenant_id=TENANT, display_name="C", status=BaseStatus.ACTIVE)
+    )
+    db_session.add(ServiceModel(id="svc-talk", tenant_id=TENANT, name="Health Talk"))
+    await db_session.flush()
+    db_session.add(_session(TENANT, "cl-old", "prov-old", at=datetime(2016, 1, 5, 10, tzinfo=UTC)))
+    await db_session.commit()
+
+    response = await client.get("/dashboard", params={"tenant_id": TENANT, "range": "all_time"})
+
+    assert response.status_code == 200, response.text
+    assert response.json()["range"]["start"].startswith("2016-01-05")

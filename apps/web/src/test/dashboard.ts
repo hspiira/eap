@@ -14,8 +14,10 @@ export function makeDashboard(overrides: Partial<DashboardResponse> = {}): Dashb
       start: "2026-06-09T00:00:00Z",
       end: "2026-09-07T00:00:00Z",
       prior_start: "2026-03-11T00:00:00Z",
+      prior_end: "2026-06-09T00:00:00Z",
       granularity: "week",
     },
+    session_years: [2026, 2025, 2024],
     kpis: {
       sessions: 41,
       sessions_prior: 43,

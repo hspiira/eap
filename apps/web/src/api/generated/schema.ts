@@ -2240,27 +2240,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/diagnoses/aliases": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** List Diagnosis Aliases */
-        get: operations["list_diagnosis_aliases_diagnoses_aliases_get"];
-        /**
-         * Upsert Diagnosis Alias
-         * @description Map a legacy spelling onto the taxonomy, keyed on its normalised form.
-         */
-        put: operations["upsert_diagnosis_alias_diagnoses_aliases_put"];
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/diagnoses/capabilities": {
         parameters: {
             query?: never;
@@ -4488,75 +4467,6 @@ export interface paths {
          *     already attributed to this affiliation.
          */
         patch: operations["change_affiliation_end_provider_affiliations__affiliation_id__patch"];
-        trace?: never;
-    };
-    "/provider-aliases": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** List Aliases */
-        get: operations["list_aliases_provider_aliases_get"];
-        put?: never;
-        /**
-         * Create Alias
-         * @description Put a source name into the review queue, unmapped.
-         *
-         *     Staging reads decisions; it does not open them, so a source system whose
-         *     names nobody has queued has nothing for a reviewer to act on. This is how
-         *     those names arrive. Asking twice returns the entry that is already there
-         *     rather than a second one, so a re-run of a seeding script cannot split one
-         *     name across two queue entries or reopen a decision somebody made.
-         */
-        post: operations["create_alias_provider_aliases_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/provider-aliases/{alias_id}/reject": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Reject Alias
-         * @description Record that this source value does not name a practitioner.
-         */
-        post: operations["reject_alias_provider_aliases__alias_id__reject_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/provider-aliases/{alias_id}/resolve": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Resolve Alias
-         * @description Record that this source name is this practitioner.
-         *
-         *     Admin-only, because a wrong mapping silently reattributes historical work.
-         */
-        post: operations["resolve_alias_provider_aliases__alias_id__resolve_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
         trace?: never;
     };
     "/provider-organisations": {
@@ -6928,31 +6838,6 @@ export interface components {
         AdvanceCaseRequest: {
             target: components["schemas"]["CaseStatus"];
         };
-        /**
-         * AliasConfidence
-         * @description How much weight a legacy alias mapping carries.
-         *
-         *     ``INFERRED`` is a reading of the label that nobody has signed off, so it
-         *     stays filterable: a reviewer can list exactly the mappings still awaiting
-         *     a clinical owner without re-deriving which ones those were.
-         *
-         *     ``REJECTED`` records that a reviewer read the mapping and refused it. It is
-         *     kept rather than deleted so the same spelling is not inferred again by the
-         *     next import: a deleted row and a row nobody has seen are indistinguishable.
-         *     A rejected alias maps nothing, so its legacy values stay unresolved, which
-         *     is the honest outcome when the only reading on offer is wrong.
-         * @enum {string}
-         */
-        AliasConfidence: "confirmed" | "inferred" | "rejected";
-        /**
-         * AliasResolutionState
-         * @description Whether a source name has been reconciled to a practitioner.
-         *
-         *     `AMBIGUOUS` and `UNMAPPED` are distinct review outcomes: the first has
-         *     candidates and no decision, the second has no candidate at all.
-         * @enum {string}
-         */
-        AliasResolutionState: "Unmapped" | "Ambiguous" | "Resolved" | "Rejected";
         /** AmendClinicalNoteRequest */
         AmendClinicalNoteRequest: {
             /** Body */
@@ -9105,7 +8990,7 @@ export interface components {
             sessions: number;
             /**
              * Sessions Prior
-             * @description Completed sessions in the equal-length prior window, for the delta
+             * @description Completed sessions in the comparison window, for the delta
              */
             sessions_prior: number;
         };
@@ -9121,6 +9006,11 @@ export interface components {
             import_queues: components["schemas"]["ImportQueueEntry"][];
             kpis: components["schemas"]["DashboardKpis"];
             range: components["schemas"]["RangeInfo"];
+            /**
+             * Session Years
+             * @description Years that actually have a completed session, newest first. What the year picker offers, so it never lists a year with nothing behind it. Empty for a tenant that has delivered nothing.
+             */
+            session_years?: number[];
             /** Sessions By Category */
             sessions_by_category: components["schemas"]["CategoryCount"][];
             /** Sessions Series */
@@ -9216,58 +9106,6 @@ export interface components {
          * @enum {string}
          */
         DeliveryContext: "Direct" | "Organisation" | "Unknown";
-        /** DiagnosisAliasResponse */
-        DiagnosisAliasResponse: {
-            /** Confidence */
-            confidence: string;
-            /** Diagnosis Id */
-            diagnosis_id: string | null;
-            /** Diagnosis Type Id */
-            diagnosis_type_id: string;
-            /** Id */
-            id: string;
-            /** Normalised Key */
-            normalised_key: string;
-            /** Raw Value */
-            raw_value: string;
-            /** Source */
-            source: string;
-        };
-        /**
-         * DiagnosisAliasUpsert
-         * @description Map a legacy spelling onto the taxonomy.
-         *
-         *     ``diagnosis_id`` stays optional because many legacy classifications name
-         *     only a type. Inventing a leaf to fill the gap would be worse than
-         *     recording the type alone.
-         */
-        DiagnosisAliasUpsert: {
-            /**
-             * @description 'confirmed' once a clinical owner has signed it off
-             * @default inferred
-             */
-            confidence: components["schemas"]["AliasConfidence"];
-            /**
-             * Diagnosis Id
-             * @description Leaf, when the source named one
-             */
-            diagnosis_id?: string | null;
-            /**
-             * Diagnosis Type Id
-             * @description Taxonomy type it resolves to
-             */
-            diagnosis_type_id: string;
-            /**
-             * Raw Value
-             * @description The spelling as it arrives
-             */
-            raw_value: string;
-            /**
-             * Source
-             * @description Where this mapping came from
-             */
-            source: string;
-        };
         /**
          * DiagnosisCapabilitiesResponse
          * @description What the caller may change, so the UI can hide controls it cannot use.
@@ -12125,75 +11963,6 @@ export interface components {
             valid_until: string | null;
         };
         /**
-         * ProviderAliasCreateRequest
-         * @description Open a review queue entry for a name a source system uses.
-         *
-         *     Creating one attributes nothing: the alias starts unmapped, and naming the
-         *     practitioner is still the separate, audited resolve step.
-         */
-        ProviderAliasCreateRequest: {
-            /** Source System */
-            source_system: string;
-            /** Source Value */
-            source_value: string;
-        };
-        /** ProviderAliasListResponse */
-        ProviderAliasListResponse: {
-            /** Has More */
-            has_more: boolean;
-            /** Items */
-            items: components["schemas"]["ProviderAliasResponse"][];
-            /** Limit */
-            limit: number;
-            /** Page */
-            page: number;
-            /** Total */
-            total: number;
-        };
-        /** ProviderAliasRejectRequest */
-        ProviderAliasRejectRequest: {
-            /** Note */
-            note: string;
-        };
-        /**
-         * ProviderAliasResolveRequest
-         * @description Explicit reconciliation. There is no automatic resolution endpoint.
-         */
-        ProviderAliasResolveRequest: {
-            /** Provider Id */
-            provider_id: string;
-        };
-        /** ProviderAliasResponse */
-        ProviderAliasResponse: {
-            /** Candidate Provider Ids */
-            candidate_provider_ids: string[];
-            /**
-             * Created At
-             * Format: date-time
-             */
-            created_at: string;
-            /** Id */
-            id: string;
-            /** Normalized Value */
-            normalized_value: string;
-            /** Provider Id */
-            provider_id: string | null;
-            /** Review Note */
-            review_note: string | null;
-            /** Source System */
-            source_system: string;
-            /** Source Value */
-            source_value: string;
-            state: components["schemas"]["AliasResolutionState"];
-            /** Tenant Id */
-            tenant_id: string;
-            /**
-             * Updated At
-             * Format: date-time
-             */
-            updated_at: string;
-        };
-        /**
          * ProviderCreate
          * @description Create a practitioner. No account is linked and no lifecycle field is set.
          */
@@ -12542,10 +12311,15 @@ export interface components {
              * Preset
              * @enum {string}
              */
-            preset: "this_week" | "this_month" | "last_30d" | "last_90d" | "last_180d" | "custom";
+            preset: "this_week" | "this_month" | "this_year" | "year" | "all_time" | "last_30d" | "last_90d" | "last_180d" | "custom";
+            /**
+             * Prior End
+             * @description Exclusive end of the comparison window. Equal to `start` for every preset that compares against the stretch immediately before it; a year preset instead compares against the same dates a year earlier, so the two windows do not touch.
+             */
+            prior_end: string;
             /**
              * Prior Start
-             * @description Start of the equal-length window before this one, ISO 8601
+             * @description Inclusive start of the comparison window
              */
             prior_start: string;
             /**
@@ -19225,11 +18999,13 @@ export interface operations {
             query: {
                 tenant_id: string;
                 /** @description Window the flow figures cover */
-                range?: "this_week" | "this_month" | "last_30d" | "last_90d" | "last_180d" | "custom";
+                range?: "this_week" | "this_month" | "this_year" | "year" | "all_time" | "last_30d" | "last_90d" | "last_180d" | "custom";
                 /** @description Window start when range is custom, ISO 8601 */
                 start?: string | null;
                 /** @description Window end when range is custom, ISO 8601 */
                 end?: string | null;
+                /** @description Calendar year when range is year */
+                year?: number | null;
             };
             header?: never;
             path?: never;
@@ -19311,71 +19087,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["DiagnosisResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    list_diagnosis_aliases_diagnoses_aliases_get: {
-        parameters: {
-            query?: {
-                /** @description Filter to mappings still awaiting sign-off, or those confirmed */
-                confidence?: components["schemas"]["AliasConfidence"] | null;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["DiagnosisAliasResponse"][];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    upsert_diagnosis_alias_diagnoses_aliases_put: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["DiagnosisAliasUpsert"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["DiagnosisAliasResponse"];
                 };
             };
             /** @description Validation Error */
@@ -24118,155 +23829,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ProviderAffiliationResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    list_aliases_provider_aliases_get: {
-        parameters: {
-            query: {
-                tenant_id: string;
-                source_system?: string | null;
-                /** @description Filter the review queue by outcome */
-                state?: components["schemas"]["AliasResolutionState"] | null;
-                /** @description Only the spellings resolved to this practitioner */
-                provider_id?: string | null;
-                /** @description Page number */
-                page?: number;
-                /** @description Items per page */
-                limit?: number;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ProviderAliasListResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    create_alias_provider_aliases_post: {
-        parameters: {
-            query: {
-                tenant_id: string;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["ProviderAliasCreateRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ProviderAliasResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    reject_alias_provider_aliases__alias_id__reject_post: {
-        parameters: {
-            query: {
-                tenant_id: string;
-            };
-            header?: never;
-            path: {
-                alias_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["ProviderAliasRejectRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ProviderAliasResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    resolve_alias_provider_aliases__alias_id__resolve_post: {
-        parameters: {
-            query: {
-                tenant_id: string;
-            };
-            header?: never;
-            path: {
-                alias_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["ProviderAliasResolveRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ProviderAliasResponse"];
                 };
             };
             /** @description Validation Error */

@@ -9,7 +9,6 @@ from abc import ABC, abstractmethod
 
 from app.domain.entities.diagnosis import (
     Diagnosis,
-    DiagnosisAlias,
     DiagnosisType,
     TenantOverlay,
 )
@@ -98,22 +97,11 @@ class DiagnosisRepository(ABC):
         local_label: str | None = None,
     ) -> TenantOverlay: ...
 
-    # === Legacy aliases ===
-
     @abstractmethod
-    async def list_aliases(self, *, confidence: str | None = None) -> list[DiagnosisAlias]: ...
+    async def name_lookup(self) -> dict[str, tuple[str, str | None]]:
+        """Normalised taxonomy name to (type id, diagnosis id), for the importer.
 
-    @abstractmethod
-    async def upsert_alias(
-        self,
-        *,
-        raw_value: str,
-        diagnosis_type_id: str,
-        diagnosis_id: str | None,
-        source: str,
-        confidence: str,
-    ) -> DiagnosisAlias: ...
-
-    @abstractmethod
-    async def alias_lookup(self) -> dict[str, tuple[str, str | None]]:
-        """Normalised key to (type id, diagnosis id), shaped for the importer."""
+        Covers both levels: a diagnosis name gives its own id and its type's, a
+        type name gives the type alone. A diagnosis wins a collision, being the
+        more precise of the two.
+        """

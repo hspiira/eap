@@ -65,7 +65,12 @@ class DashboardQueryRunner:
         return int((await self._session.execute(stmt)).scalar_one() or 0)
 
     async def session_kpis(
-        self, tenant_id: str, start: datetime, end: datetime, prior_start: datetime
+        self,
+        tenant_id: str,
+        start: datetime,
+        end: datetime,
+        prior_start: datetime,
+        prior_end: datetime,
     ) -> tuple[int, int, int]:
         current = await self._count(
             select(func.count(ServiceSessionModel.id)).where(
@@ -74,7 +79,7 @@ class DashboardQueryRunner:
         )
         prior = await self._count(
             select(func.count(ServiceSessionModel.id)).where(
-                *_completed_sessions(tenant_id), *_within(prior_start, start)
+                *_completed_sessions(tenant_id), *_within(prior_start, prior_end)
             )
         )
         clients_served = await self._count(
@@ -83,6 +88,19 @@ class DashboardQueryRunner:
             )
         )
         return current, prior, clients_served
+
+    async def earliest_session(self, tenant_id: str) -> datetime | None:
+        """When this tenant first delivered anything. None when it never has.
+
+        The floor for "all time", and the first year the year picker offers.
+        Without it an all-time window has no honest start, and the series
+        back-fills empty buckets from whatever date it was handed.
+        """
+        return await self._session.scalar(
+            select(func.min(ServiceSessionModel.scheduled_at)).where(
+                *_completed_sessions(tenant_id)
+            )
+        )
 
     async def coverage(self, tenant_id: str) -> tuple[int, int, int]:
         covered = await self._count(

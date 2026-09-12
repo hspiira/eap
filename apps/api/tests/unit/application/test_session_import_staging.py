@@ -6,13 +6,11 @@ from unittest.mock import AsyncMock
 
 import pytest
 
-from app.application.services.provider_alias_reconciliation import (
-    NameOutcome,
-    NameResolution,
-)
 from app.application.services.session_import_staging import (
     FILE_ROW_KEY_STRATEGY,
     SOURCE_KEY_STRATEGY,
+    NameOutcome,
+    NameResolution,
     SessionImportStagingService,
     SourceRow,
     preflight_source_keys,

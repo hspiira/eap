@@ -1,30 +1,25 @@
-"""Vocabulary write controls and alias reconciliation authorization."""
+"""Specialty catalogue write controls and link selection authorization."""
 
 from types import SimpleNamespace
 from unittest.mock import AsyncMock
 
-import pytest
 import pytest_asyncio
 from fastapi import FastAPI
 from httpx import ASGITransport, AsyncClient
 
 from app.api.dependencies import get_audit_event_handler
 from app.api.dependencies.provider_network import (
-    get_provider_alias_repository,
     get_provider_specialty_repository,
 )
-from app.api.routes.provider_aliases import router as alias_router
 from app.api.routes.provider_specialties import router as specialty_router
 from app.core.authorization import get_current_user_entity, require_platform_admin
 from app.core.database import get_db
 from app.core.exception_handlers import register_exception_handlers
 from app.core.security import TokenData, get_current_user
-from app.domain.entities.provider_alias import ProviderAliasEntity
 from app.domain.entities.provider_specialty import ProviderSpecialtyEntity
-from app.domain.enums.provider_network import AliasResolutionState
 from app.domain.enums.tenancy import TenantRole
-from app.domain.value_objects.core import ProviderId, TenantId, UserId
-from app.domain.value_objects.provider_network import ProviderAliasId, ProviderSpecialtyId
+from app.domain.value_objects.core import TenantId
+from app.domain.value_objects.provider_network import ProviderSpecialtyId
 from app.shared.utils.datetime import utc_now
 
 TENANT = "t-1"
@@ -42,28 +37,13 @@ def _specialty(is_active: bool = True) -> ProviderSpecialtyEntity:
     )
 
 
-def _alias() -> ProviderAliasEntity:
-    now = utc_now()
-    return ProviderAliasEntity(
-        id=ProviderAliasId("al-1"),
-        tenant_id=TenantId(TENANT),
-        source_system="sessions-csv",
-        source_value="Dr Alice Nakato",
-        normalized_value="alice nakato",
-        created_at=now,
-        updated_at=now,
-    )
-
-
 @pytest_asyncio.fixture
 async def api():
     app = FastAPI()
     app.include_router(specialty_router)
-    app.include_router(alias_router)
     register_exception_handlers(app)
     state = SimpleNamespace(
         specialties=AsyncMock(),
-        aliases=AsyncMock(),
         audit=AsyncMock(),
         db=AsyncMock(),
         role="Admin",
@@ -71,7 +51,6 @@ async def api():
     )
     state.specialties.get_specialty.return_value = _specialty()
     state.specialties.list_specialties.return_value = [_specialty()]
-    state.aliases.get_alias.return_value = _alias()
 
     def _user() -> TokenData:
         return TokenData(user_id="u-1", tenant_id=TENANT, role=state.role)
@@ -90,7 +69,6 @@ async def api():
     app.dependency_overrides[get_current_user_entity] = _user_entity
     app.dependency_overrides[require_platform_admin] = _platform_admin
     app.dependency_overrides[get_provider_specialty_repository] = lambda: state.specialties
-    app.dependency_overrides[get_provider_alias_repository] = lambda: state.aliases
     app.dependency_overrides[get_audit_event_handler] = lambda: state.audit
     app.dependency_overrides[get_db] = lambda: state.db
     state.app = app
@@ -155,123 +133,3 @@ class TestLinkSelection:
         )
         assert response.status_code == 403
         api.specialties.add_link.assert_not_awaited()
-
-
-class TestAliasReconciliation:
-    async def test_an_admin_may_resolve_an_alias(self, api):
-        response = await api.http.post(
-            f"/provider-aliases/al-1/resolve?tenant_id={TENANT}",
-            json={"provider_id": "prov-1"},
-        )
-        assert response.status_code == 200, response.text
-        body = response.json()
-        assert body["state"] == "Resolved"
-        assert body["provider_id"] == "prov-1"
-
-    @pytest.mark.parametrize("role", ["User", "Viewer"])
-    async def test_a_non_admin_may_not_resolve_an_alias(self, api, role):
-        """A wrong mapping silently reattributes historical work."""
-        api.role = role
-        response = await api.http.post(
-            f"/provider-aliases/al-1/resolve?tenant_id={TENANT}",
-            json={"provider_id": "prov-1"},
-        )
-        assert response.status_code == 403
-        api.aliases.save_alias.assert_not_awaited()
-
-    async def test_resolving_is_audited_with_the_actor(self, api):
-        await api.http.post(
-            f"/provider-aliases/al-1/resolve?tenant_id={TENANT}",
-            json={"provider_id": "prov-1"},
-        )
-        api.audit.handle_events.assert_awaited()
-        events = (
-            api.audit.handle_events.await_args.kwargs.get("events")
-            or (api.audit.handle_events.await_args.args[0])
-        )
-        assert any(type(e).__name__ == "ProviderAliasResolved" for e in events)
-
-    async def test_rejecting_requires_a_note(self, api):
-        response = await api.http.post(
-            f"/provider-aliases/al-1/reject?tenant_id={TENANT}", json={"note": "   "}
-        )
-        assert response.status_code == 422
-        api.aliases.save_alias.assert_not_awaited()
-
-    async def test_an_admin_may_queue_a_source_name(self, api):
-        """Staging reads decisions and never opens one, so names arrive here."""
-        api.aliases.find_alias.return_value = None
-        response = await api.http.post(
-            f"/provider-aliases?tenant_id={TENANT}",
-            json={"source_system": "activity-log", "source_value": "Dr Alice Nakato"},
-        )
-        assert response.status_code == 201, response.text
-        body = response.json()
-        assert body["state"] == "Unmapped"
-        assert body["provider_id"] is None
-        assert body["normalized_value"] == "alice nakato"
-
-    async def test_queueing_a_name_twice_returns_the_entry_already_there(self, api):
-        """A re-run must not split one name across two queue entries."""
-        api.aliases.find_alias.return_value = _alias()
-        response = await api.http.post(
-            f"/provider-aliases?tenant_id={TENANT}",
-            json={"source_system": "sessions-csv", "source_value": "dr. alice nakato"},
-        )
-        assert response.status_code == 201, response.text
-        assert response.json()["id"] == "al-1"
-        api.aliases.save_alias.assert_not_awaited()
-
-    async def test_queueing_never_reopens_a_decision(self, api):
-        resolved = _alias()
-        resolved.resolve(ProviderId("prov-1"), UserId("u-1"), at=utc_now())
-        api.aliases.find_alias.return_value = resolved
-        response = await api.http.post(
-            f"/provider-aliases?tenant_id={TENANT}",
-            json={"source_system": "sessions-csv", "source_value": "Alice Nakato"},
-        )
-        assert response.json()["state"] == "Resolved"
-        api.aliases.save_alias.assert_not_awaited()
-
-    async def test_a_name_that_normalises_to_nothing_is_refused(self, api):
-        api.aliases.find_alias.return_value = None
-        response = await api.http.post(
-            f"/provider-aliases?tenant_id={TENANT}",
-            json={"source_system": "activity-log", "source_value": "Dr."},
-        )
-        assert response.status_code == 422
-        api.aliases.save_alias.assert_not_awaited()
-
-    @pytest.mark.parametrize("role", ["User", "Viewer"])
-    async def test_a_non_admin_may_not_queue_a_source_name(self, api, role):
-        api.role = role
-        api.aliases.find_alias.return_value = None
-        response = await api.http.post(
-            f"/provider-aliases?tenant_id={TENANT}",
-            json={"source_system": "activity-log", "source_value": "Dr Alice Nakato"},
-        )
-        assert response.status_code == 403
-        api.aliases.save_alias.assert_not_awaited()
-
-    async def test_queueing_attributes_nothing(self, api):
-        """The entry names no practitioner; resolving is still its own step."""
-        api.aliases.find_alias.return_value = None
-        await api.http.post(
-            f"/provider-aliases?tenant_id={TENANT}",
-            json={"source_system": "activity-log", "source_value": "Dr Alice Nakato"},
-        )
-        saved = api.aliases.save_alias.await_args.args[0]
-        assert saved.provider_id is None
-        assert saved.state is AliasResolutionState.UNMAPPED
-
-    async def test_there_is_no_automatic_resolution_endpoint(self, api):
-        """Identity is never inferred; every resolution names an actor."""
-        paths = {getattr(route, "path", "") for route in api.app.routes}
-        assert not any("auto" in path or "match" in path for path in paths)
-
-    async def test_another_tenants_alias_is_refused(self, api):
-        response = await api.http.post(
-            "/provider-aliases/al-1/resolve?tenant_id=t-other",
-            json={"provider_id": "prov-1"},
-        )
-        assert response.status_code == 403

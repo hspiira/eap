@@ -28,8 +28,6 @@ export type DiagnosisUpdate = Schemas["DiagnosisUpdate"]
 export type DiagnosisOverlay = Schemas["DiagnosisOverlayResponse"]
 export type DiagnosisOverlayUpdate = Schemas["DiagnosisOverlayUpdate"]
 export type DiagnosisCapabilities = Schemas["DiagnosisCapabilitiesResponse"]
-export type DiagnosisAlias = Schemas["DiagnosisAliasResponse"]
-export type DiagnosisAliasUpsert = Schemas["DiagnosisAliasUpsert"]
 
 export const diagnosesApi = {
   async getTypes(): Promise<DiagnosisType[]> {
@@ -90,20 +88,5 @@ export const diagnosesApi = {
 
   async setOverlay(data: DiagnosisOverlayUpdate): Promise<DiagnosisOverlay> {
     return apiClient.put<DiagnosisOverlay>("/diagnoses/settings", data)
-  },
-
-  /**
-   * Legacy spellings and the taxonomy row each resolves to. Platform admin
-   * only, since an alias decides what a legacy session is counted as.
-   */
-  async listAliases(confidence?: "confirmed" | "inferred" | "rejected"): Promise<DiagnosisAlias[]> {
-    return apiClient.get<DiagnosisAlias[]>(
-      "/diagnoses/aliases",
-      confidence ? { confidence } : undefined,
-    )
-  },
-
-  async upsertAlias(data: DiagnosisAliasUpsert): Promise<DiagnosisAlias> {
-    return apiClient.put<DiagnosisAlias>("/diagnoses/aliases", data)
   },
 }

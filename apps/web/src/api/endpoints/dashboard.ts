@@ -18,7 +18,7 @@ export const dashboardApi = {
   async get(range: DashboardRange, options?: RequestOptions): Promise<DashboardResponse> {
     return apiClient.get<DashboardResponse>(
       "/dashboard",
-      { range: range.preset, start: range.start, end: range.end },
+      { range: range.preset, start: range.start, end: range.end, year: range.year },
       options,
     )
   },

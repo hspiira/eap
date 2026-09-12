@@ -19,12 +19,22 @@ const KPI_PARAMS = { page: 1, limit: 1 } as const
 const ONE_MINUTE = 60_000
 
 export type RangePreset =
-  "this_week" | "this_month" | "last_30d" | "last_90d" | "last_180d" | "custom"
+  | "this_week"
+  | "this_month"
+  | "this_year"
+  | "year"
+  | "all_time"
+  | "last_30d"
+  | "last_90d"
+  | "last_180d"
+  | "custom"
 
 export interface DashboardRange {
   preset: RangePreset
   start?: string
   end?: string
+  /** The calendar year, when preset is "year". */
+  year?: number
 }
 
 export const DEFAULT_RANGE: DashboardRange = { preset: "last_90d" }
@@ -32,6 +42,9 @@ export const DEFAULT_RANGE: DashboardRange = { preset: "last_90d" }
 const RANGE_LABELS: Record<RangePreset, string> = {
   this_week: "this week",
   this_month: "this month",
+  this_year: "this year",
+  year: "selected year",
+  all_time: "all time",
   last_30d: "last 30 days",
   last_90d: "last 90 days",
   last_180d: "last 6 months",
@@ -39,6 +52,7 @@ const RANGE_LABELS: Record<RangePreset, string> = {
 }
 
 export function rangeLabel(range: DashboardRange): string {
+  if (range.preset === "year" && range.year) return String(range.year)
   return RANGE_LABELS[range.preset]
 }
 

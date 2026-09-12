@@ -11,6 +11,13 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import type { DashboardRange, RangePreset } from "@/lib/dashboard"
 import { cn } from "@/lib/utils"
 
@@ -20,6 +27,8 @@ const PRESETS: ReadonlyArray<{ value: RangePreset; label: string }> = [
   { value: "last_30d", label: "30d" },
   { value: "last_90d", label: "90d" },
   { value: "last_180d", label: "6m" },
+  { value: "this_year", label: "This year" },
+  { value: "all_time", label: "All time" },
 ]
 
 interface RangeFilterProps {
@@ -27,9 +36,14 @@ interface RangeFilterProps {
   onChange: (range: DashboardRange) => void
 }
 
-export function RangeFilter({ value, onChange }: RangeFilterProps) {
+interface RangeFilterOwnProps extends RangeFilterProps {
+  /** Years with at least one session, newest first, as the API reports them. */
+  years: ReadonlyArray<number>
+}
+
+export function RangeFilter({ value, onChange, years }: RangeFilterOwnProps) {
   return (
-    <div className="flex items-center gap-1 rounded-md border border-border p-0.5">
+    <div className="flex flex-wrap items-center gap-1 rounded-md border border-border p-0.5">
       {PRESETS.map((preset) => (
         <PresetButton
           key={preset.value}
@@ -38,8 +52,42 @@ export function RangeFilter({ value, onChange }: RangeFilterProps) {
           onSelect={() => onChange({ preset: preset.value })}
         />
       ))}
+      <YearPicker value={value} onChange={onChange} years={years} />
       <CustomRangePopover value={value} onChange={onChange} />
     </div>
+  )
+}
+
+/**
+ * Offers only years the tenant actually delivered in, so the list never
+ * promises a year with nothing behind it. Absent entirely until there is at
+ * least one, which spares a new tenant a control that can only disappoint.
+ */
+function YearPicker({ value, onChange, years }: RangeFilterOwnProps) {
+  if (years.length === 0) return null
+  const active = value.preset === "year"
+  return (
+    <Select
+      value={active && value.year ? String(value.year) : ""}
+      onValueChange={(next) => onChange({ preset: "year", year: Number(next) })}
+    >
+      <SelectTrigger
+        aria-label="Year"
+        className={cn(
+          "h-7 w-auto gap-1 border-0 px-2 text-xs font-medium shadow-none",
+          active ? "bg-primary/10 text-primary" : "text-fg-muted",
+        )}
+      >
+        <SelectValue placeholder="Year" />
+      </SelectTrigger>
+      <SelectContent align="end">
+        {years.map((year) => (
+          <SelectItem key={year} value={String(year)}>
+            {year}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
   )
 }
 
