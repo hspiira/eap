@@ -53,12 +53,14 @@ describe("DashboardMain", () => {
     expect(screen.getByText("Group Counselling")).toBeInTheDocument()
   })
 
-  it("no longer carries the import health card", async () => {
+  it("shows which queues the import backlog is sitting in", async () => {
+    // A single blocked count says a batch is stuck without saying on what, and
+    // the remedy differs per queue: add a practitioner, import a roster, fix a
+    // date. The KPI tile and attention panel keep carrying the total.
     renderWithProviders(<DashboardMain />)
 
     await screen.findByText("Stanbic Bank")
-    expect(screen.queryByRole("heading", { name: "Import health" })).not.toBeInTheDocument()
-    // The backlog itself still has a home: the KPI tile and the attention panel.
+    expect(screen.getByRole("heading", { name: "Import health" })).toBeInTheDocument()
     expect(screen.getByText("Import backlog")).toBeInTheDocument()
     expect(screen.getByText(/unblocks 7,103 import rows/)).toBeInTheDocument()
   })

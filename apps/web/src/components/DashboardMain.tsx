@@ -21,6 +21,7 @@ import {
 import { AttentionCard, buildAttentionItems } from "@/components/dashboard/AttentionCard"
 import { CardDelta } from "@/components/dashboard/CardBar"
 import { CategoryDonutCard } from "@/components/dashboard/CategoryDonutCard"
+import { ImportHealthCard } from "@/components/dashboard/ImportHealthCard"
 import { RangeFilter } from "@/components/dashboard/RangeFilter"
 import { SessionsAreaCard } from "@/components/dashboard/SessionsAreaCard"
 import { type StatSpec, StatStrip } from "@/components/dashboard/StatStrip"
@@ -85,6 +86,12 @@ export function DashboardMain() {
             <CategoryDonutCard categories={data?.sessions_by_category ?? []} loading={loading} />
           </div>
         </div>
+
+        <ImportHealthCard
+          batch={data?.import_batch ?? null}
+          queues={data?.import_queues ?? []}
+          loading={loading}
+        />
 
         {data && data.kpis.clients_total === 0 ? <EmptyTenantOnboarding /> : null}
       </div>

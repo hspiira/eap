@@ -137,9 +137,7 @@ class ImportBatchSummary(BaseModel):
     accepted: int
     duplicate: int
     blocked: int = Field(..., description="Rows staging held, for any reason")
-    failed: int = Field(
-        0, description="Accepted rows the write path refused at apply time"
-    )
+    failed: int = Field(0, description="Accepted rows the write path refused at apply time")
     applied_at: str | None = None
 
 

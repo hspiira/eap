@@ -77,6 +77,7 @@ export function makeDashboard(overrides: Partial<DashboardResponse> = {}): Dashb
       accepted: 283,
       duplicate: 85,
       blocked: 7103,
+      failed: 0,
       applied_at: "2026-09-07T20:34:38Z",
     },
     data_quality: {
