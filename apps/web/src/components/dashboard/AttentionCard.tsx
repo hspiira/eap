@@ -249,7 +249,7 @@ function AttentionRow({ item }: { item: AttentionItem }) {
           <span className="text-xs text-fg-muted">{item.consequence}</span>
         ) : null}
       </span>
-      <span className="flex shrink-0 items-center gap-1 text-xs font-medium text-fg-muted group-hover:text-primary">
+      <span className="flex shrink-0 items-center gap-1 text-xs font-medium text-fg-muted group-hover:underline">
         {item.action}
         <ArrowRight className="size-3.5" />
       </span>

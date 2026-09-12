@@ -124,12 +124,7 @@ function CampaignsListPage() {
             My worklist
           </Button>
           {canWrite && (
-            <Button
-              variant="primary"
-              size="sm"
-              className="h-7 gap-1.5 px-2.5"
-              onClick={() => setAddOpen(true)}
-            >
+            <Button size="sm" className="h-7 gap-1.5 px-2.5" onClick={() => setAddOpen(true)}>
               <Plus className="size-3.5" />
               New campaign
             </Button>
@@ -188,12 +183,7 @@ function CampaignsListPage() {
             }
             action={
               hasFilters || !canWrite ? null : (
-                <Button
-                  variant="primary"
-                  size="sm"
-                  className="gap-1.5"
-                  onClick={() => setAddOpen(true)}
-                >
+                <Button size="sm" className="gap-1.5" onClick={() => setAddOpen(true)}>
                   <Plus className="size-4" />
                   New campaign
                 </Button>
@@ -333,12 +323,12 @@ function CampaignRow({
         >
           <span
             aria-hidden
-            className="grid size-6 shrink-0 place-items-center bg-primary/10 text-primary"
+            className="grid size-6 shrink-0 place-items-center bg-fg/6 text-fg-muted"
           >
             <Phone className="size-3" />
           </span>
           <span className="min-w-0">
-            <span className="block truncate text-sm font-medium text-fg group-hover:text-primary">
+            <span className="block truncate text-sm font-medium text-fg group-hover:underline">
               {row.name}
             </span>
             <span className="block truncate text-xs text-fg-muted">Target: {row.target_count}</span>

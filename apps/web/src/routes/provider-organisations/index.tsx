@@ -99,12 +99,7 @@ function ProviderOrganisationsListPage() {
       title="Organisations"
       actions={
         canWrite ? (
-          <Button
-            variant="primary"
-            size="sm"
-            className="h-7 gap-1.5 px-2.5"
-            onClick={() => list.setAddOpen(true)}
-          >
+          <Button size="sm" className="h-7 gap-1.5 px-2.5" onClick={() => list.setAddOpen(true)}>
             <Plus className="size-3.5" />
             Add organisation
           </Button>
@@ -190,7 +185,7 @@ function ProviderOrganisationsListPage() {
             }
             action={
               canWrite && !hasFilters ? (
-                <Button variant="primary" size="sm" onClick={() => list.setAddOpen(true)}>
+                <Button size="sm" onClick={() => list.setAddOpen(true)}>
                   Add organisation
                 </Button>
               ) : null

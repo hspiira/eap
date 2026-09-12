@@ -435,7 +435,7 @@ function RosterRow({
         <span className="flex items-center gap-2.5">
           <span
             aria-hidden
-            className="grid size-6 shrink-0 place-items-center bg-primary/10 text-primary"
+            className="grid size-6 shrink-0 place-items-center bg-fg/6 text-fg-muted"
           >
             <User className="size-3.5" />
           </span>

@@ -237,7 +237,7 @@ function AccountSummary({ user, onLogout }: AccountSummaryProps) {
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div className="flex items-center gap-4">
           <span
-            className="grid size-12 shrink-0 place-items-center rounded-sm bg-primary/10 text-lg font-semibold text-primary"
+            className="grid size-12 shrink-0 place-items-center rounded-sm bg-fg/6 text-lg font-semibold text-fg-muted"
             aria-hidden
           >
             {initial}

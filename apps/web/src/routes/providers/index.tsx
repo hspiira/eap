@@ -130,12 +130,7 @@ function ProvidersListPage() {
       title="Practitioners"
       actions={
         canWrite ? (
-          <Button
-            variant="primary"
-            size="sm"
-            className="h-7 gap-1.5 px-2.5"
-            onClick={() => list.setAddOpen(true)}
-          >
+          <Button size="sm" className="h-7 gap-1.5 px-2.5" onClick={() => list.setAddOpen(true)}>
             <Plus className="size-3.5" />
             Add practitioner
           </Button>
@@ -234,7 +229,7 @@ function ProvidersListPage() {
             }
             action={
               canWrite && !hasFilters ? (
-                <Button variant="primary" size="sm" onClick={() => list.setAddOpen(true)}>
+                <Button size="sm" onClick={() => list.setAddOpen(true)}>
                   Add practitioner
                 </Button>
               ) : null

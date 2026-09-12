@@ -46,7 +46,7 @@ export function Hero({ caseData }: { caseData: Case }) {
     <div className="flex shrink-0 items-center gap-3 border-b border-fg/10 bg-surface px-5 py-3">
       <span
         aria-hidden
-        className="grid size-9 shrink-0 place-items-center rounded-sm bg-primary/10 text-primary"
+        className="grid size-9 shrink-0 place-items-center rounded-sm bg-fg/6 text-fg-muted"
       >
         <HeartPulse className="size-4" />
       </span>

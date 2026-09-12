@@ -694,7 +694,7 @@ function LockedServiceSummary({
     <div className="flex items-center gap-2.5 rounded-sm border border-fg/15 bg-surface px-3 py-2">
       <span
         aria-hidden
-        className="grid size-7 shrink-0 place-items-center bg-primary/10 text-[10px] font-semibold text-primary"
+        className="grid size-7 shrink-0 place-items-center bg-fg/6 text-[10px] font-semibold text-fg-muted"
       >
         SV
       </span>
@@ -725,7 +725,7 @@ function LockedMemberSummary({ memberId, member }: { memberId: string; member: M
     <div className="flex items-center gap-2.5 rounded-sm border border-fg/15 bg-surface px-3 py-2">
       <span
         aria-hidden
-        className="grid size-7 shrink-0 place-items-center bg-primary/10 text-[10px] font-semibold text-primary"
+        className="grid size-7 shrink-0 place-items-center bg-fg/6 text-[10px] font-semibold text-fg-muted"
       >
         {resolved ? nameInitials(memberLabel(resolved)) : "··"}
       </span>

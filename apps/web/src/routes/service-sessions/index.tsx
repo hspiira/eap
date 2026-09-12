@@ -481,11 +481,11 @@ function SessionRow({
         >
           <span
             aria-hidden
-            className="grid size-6 shrink-0 place-items-center bg-primary/10 text-primary"
+            className="grid size-6 shrink-0 place-items-center bg-fg/6 text-fg-muted"
           >
             {row.member_id ? <User className="size-3" /> : <Users className="size-3" />}
           </span>
-          <span className="truncate text-sm font-medium text-fg group-hover:text-primary">
+          <span className="truncate text-sm font-medium text-fg group-hover:underline">
             {attendeeLabel}
           </span>
         </Link>

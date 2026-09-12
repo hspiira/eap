@@ -149,7 +149,7 @@ function MemberDetail({ member }: { member: Member }) {
                 <div className="mb-5 flex items-center gap-3 border-b border-fg/10 bg-surface px-4 py-3">
                   <span
                     aria-hidden
-                    className="grid size-9 place-items-center bg-primary/10 text-xs font-semibold text-primary"
+                    className="grid size-9 place-items-center bg-fg/6 text-xs font-semibold text-fg-muted"
                   >
                     {nameInitials(label)}
                   </span>

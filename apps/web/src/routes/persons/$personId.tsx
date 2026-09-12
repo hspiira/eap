@@ -261,7 +261,7 @@ function PersonDetailPage() {
                       >
                         <span
                           aria-hidden
-                          className="grid size-7 shrink-0 place-items-center bg-primary/10 text-[10px] font-semibold text-primary"
+                          className="grid size-7 shrink-0 place-items-center bg-fg/6 text-[10px] font-semibold text-fg-muted"
                         >
                           {personInitials(primaryEmployee)}
                         </span>
@@ -365,7 +365,7 @@ function Hero({
     <div className="flex shrink-0 items-center gap-3 border-b border-fg/10 bg-surface px-5 py-3">
       <span
         aria-hidden
-        className="grid size-9 shrink-0 place-items-center rounded-sm bg-primary/10 text-xs font-semibold text-primary"
+        className="grid size-9 shrink-0 place-items-center rounded-sm bg-fg/6 text-xs font-semibold text-fg-muted"
       >
         {personInitials(person, user)}
       </span>
@@ -418,7 +418,7 @@ function DetailRail({ person, client, user, onAction, actionLoading }: DetailRai
           >
             <span
               aria-hidden
-              className="grid size-7 shrink-0 place-items-center bg-primary/10 text-[10px] font-semibold text-primary"
+              className="grid size-7 shrink-0 place-items-center bg-fg/6 text-[10px] font-semibold text-fg-muted"
             >
               {nameInitials(client.name)}
             </span>
@@ -439,7 +439,7 @@ function DetailRail({ person, client, user, onAction, actionLoading }: DetailRai
           >
             <span
               aria-hidden
-              className="grid size-7 shrink-0 place-items-center bg-primary/10 text-primary"
+              className="grid size-7 shrink-0 place-items-center bg-fg/6 text-fg-muted"
             >
               <UserCog className="size-3.5" />
             </span>

@@ -92,7 +92,7 @@ export function Hero({
     <div className="flex shrink-0 flex-wrap items-center gap-x-3 gap-y-1 border-b border-fg/10 bg-gradient-to-r from-primary/[0.06] via-surface to-surface px-5 py-3">
       <span
         aria-hidden
-        className="grid size-9 shrink-0 place-items-center rounded-sm bg-primary/10 text-primary"
+        className="grid size-9 shrink-0 place-items-center rounded-sm bg-fg/6 text-fg-muted"
       >
         {companyWide ? <Users className="size-4" /> : <CalendarClock className="size-4" />}
       </span>

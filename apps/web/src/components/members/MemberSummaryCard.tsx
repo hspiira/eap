@@ -26,7 +26,7 @@ export function MemberSummaryCard({ member, onClose }: { member: Member; onClose
       <header className="flex items-start gap-3 border-b border-fg/10 px-4 py-3">
         <span
           aria-hidden
-          className="grid size-9 shrink-0 place-items-center bg-primary/10 text-xs font-semibold text-primary"
+          className="grid size-9 shrink-0 place-items-center bg-fg/6 text-xs font-semibold text-fg-muted"
         >
           {nameInitials(label)}
         </span>
@@ -90,7 +90,7 @@ export function MemberSummaryPlaceholder({
 }) {
   return (
     <div className="flex flex-1 flex-col items-center justify-center gap-1 border border-dashed border-fg/15 p-8 text-center">
-      <div className="mb-2 grid size-9 place-items-center bg-primary/10">
+      <div className="mb-2 grid size-9 place-items-center bg-fg/6">
         <Users className="size-4 text-primary" />
       </div>
       <h3 className="text-sm font-semibold text-fg">Pick a member</h3>

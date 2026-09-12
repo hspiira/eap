@@ -8,19 +8,15 @@ import { cn } from "@/lib/utils"
 /**
  * Pill buttons, matching the landing page.
  *
- * Three filled weights, and which one to reach for is a rule, not a taste:
+ * Buttons are monochrome. `default` is near-black on light and near-white on
+ * dark; the rest are outline, ghost and link. There is deliberately no
+ * brand-coloured button: a list page renders one create action, twenty
+ * checkboxes and twenty avatars, and colouring the button too left green
+ * reading as decoration rather than as meaning.
  *
- * - `default` is near-black. Every ordinary action: toolbars, table rows,
- *   dialogs, anything a person does many times a screen. A brand-coloured
- *   button on every row makes the brand shout where it means nothing.
- * - `primary` is the brand. **At most one per page**, for the action the page
- *   exists to offer: the create button in a page header, a form's submit.
- * - `highlight` is the one saturated fill, rarer still. Its colour sits at
- *   1.16:1 on white, so it can never be text, a border, an icon or a chart
- *   stroke; it works only as a block with near-black type on it.
- *
- * The brand also keeps links, active nav, selected rows and focus rings, so
- * dropping it from ordinary buttons quietens it rather than removing it.
+ * Colour is for emphasis, and it earns its place elsewhere: state badges,
+ * charts, selected rows, links. `destructive` is the one exception here,
+ * because a delete is a warning and not a preference.
  */
 const buttonVariants = cva(
   "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-full text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
@@ -28,11 +24,9 @@ const buttonVariants = cva(
     variants: {
       variant: {
         default: "bg-action text-action-fg hover:bg-action/90",
-        primary: "bg-primary text-primary-foreground shadow hover:bg-primary/90",
         destructive: "bg-destructive text-destructive-foreground hover:bg-destructive/90",
         outline: "border border-input bg-background hover:bg-accent hover:text-accent-foreground",
         secondary: "bg-secondary text-secondary-foreground hover:bg-secondary/80",
-        highlight: "bg-highlight text-highlight-fg hover:bg-highlight/90",
         ghost: "hover:bg-accent hover:text-accent-foreground",
         link: "rounded-none text-primary underline-offset-4 hover:underline",
       },

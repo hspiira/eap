@@ -119,12 +119,7 @@ function ServiceAssignmentsListPage() {
         <>
           <IconButton label="Export" icon={Download} />
           <span className="mx-1 h-4 w-px bg-fg/15" aria-hidden />
-          <Button
-            variant="primary"
-            size="sm"
-            className="h-7 gap-1.5 px-2.5"
-            onClick={() => setAddOpen(true)}
-          >
+          <Button size="sm" className="h-7 gap-1.5 px-2.5" onClick={() => setAddOpen(true)}>
             <Plus className="size-3.5" />
             Add assignment
           </Button>
@@ -179,12 +174,7 @@ function ServiceAssignmentsListPage() {
             }
             action={
               hasFilters ? null : (
-                <Button
-                  variant="primary"
-                  size="sm"
-                  className="gap-1.5"
-                  onClick={() => setAddOpen(true)}
-                >
+                <Button size="sm" className="gap-1.5" onClick={() => setAddOpen(true)}>
                   <Plus className="size-4" />
                   Add assignment
                 </Button>
@@ -257,11 +247,11 @@ function AssignmentRow({ row }: { row: ServiceAssignment }) {
         >
           <span
             aria-hidden
-            className="grid size-6 shrink-0 place-items-center bg-primary/10 text-[10px] font-semibold text-primary"
+            className="grid size-6 shrink-0 place-items-center bg-fg/6 text-[10px] font-semibold text-fg-muted"
           >
             CT
           </span>
-          <span className="text-sm text-fg group-hover:text-primary font-mono">
+          <span className="text-sm text-fg group-hover:underline font-mono">
             {row.contract_id.slice(0, 8)}
           </span>
         </Link>

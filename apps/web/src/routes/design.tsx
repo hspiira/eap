@@ -274,13 +274,12 @@ function ButtonsSpecimen() {
     <GallerySection
       id="buttons"
       title="Buttons"
-      description="Pill buttons, matching the landing page. Default is near-black and carries every ordinary action. Primary is the brand and is allowed at most once per page, for the action the page exists to offer. Highlight is rarer still: a fill only, never text or a stroke."
+      description="Pill buttons, matching the landing page. Monochrome by design: there is no brand-coloured button, because a list page already carries the brand on its checkboxes, links and selected rows. Destructive is the one exception, since a delete is a warning rather than a preference."
     >
       <GallerySpecimen label="Variants">
         <div className="flex flex-wrap items-center gap-3">
           <Button variant="default">Default</Button>
-          <Button variant="primary">Primary</Button>
-          <Button variant="highlight">Highlight</Button>
+          <Button>Primary</Button>
           <Button variant="secondary">Secondary</Button>
           <Button variant="outline">Outline</Button>
           <Button variant="destructive">Destructive</Button>

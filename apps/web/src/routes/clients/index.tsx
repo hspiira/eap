@@ -390,7 +390,6 @@ function ClientsListPage() {
                 onClick={() => setImportOpen(true)}
               />
               <Button
-                variant="primary"
                 size="sm"
                 className="h-7 gap-1.5 px-2.5"
                 onClick={() => setAddModalOpen(true)}
@@ -529,12 +528,7 @@ function ClientsListPage() {
             }
             action={
               hasFilters || !canWrite ? null : (
-                <Button
-                  variant="primary"
-                  size="sm"
-                  className="gap-1.5"
-                  onClick={() => setAddModalOpen(true)}
-                >
+                <Button size="sm" className="gap-1.5" onClick={() => setAddModalOpen(true)}>
                   <Plus className="size-4" />
                   Add client
                 </Button>

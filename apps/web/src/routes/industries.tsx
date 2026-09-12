@@ -169,12 +169,7 @@ function IndustriesPage() {
           <>
             <IconButton label="Export" icon={Download} />
             <span className="mx-1 h-4 w-px bg-fg/15" aria-hidden />
-            <Button
-              variant="primary"
-              size="sm"
-              className="h-7 gap-1.5 px-2.5"
-              onClick={() => setCreateOpen(true)}
-            >
+            <Button size="sm" className="h-7 gap-1.5 px-2.5" onClick={() => setCreateOpen(true)}>
               <Plus className="size-3.5" />
               Add industry
             </Button>
@@ -322,7 +317,7 @@ async function pageOf(id: string, sort: SortState, limit: number): Promise<numbe
 function DetailsPlaceholder() {
   return (
     <div className="flex flex-1 flex-col items-center justify-center gap-1 text-center">
-      <div className="mb-2 grid size-9 place-items-center bg-primary/10">
+      <div className="mb-2 grid size-9 place-items-center bg-fg/6">
         <BarChart3 className="size-4 text-primary" />
       </div>
       <h3 className="text-sm font-semibold text-fg">Pick an industry</h3>

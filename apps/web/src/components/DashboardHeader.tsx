@@ -159,7 +159,7 @@ function AccountAvatar({ label, size }: { label: string; size: "sm" | "md" }) {
   return (
     <span
       className={cn(
-        "grid shrink-0 place-items-center rounded-sm bg-primary/10 font-semibold text-primary",
+        "grid shrink-0 place-items-center rounded-sm bg-fg/6 font-semibold text-fg-muted",
         size === "sm" ? "size-6 text-[10px]" : "size-8 text-sm",
       )}
       aria-hidden

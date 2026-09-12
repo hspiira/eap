@@ -170,7 +170,6 @@ function DiagnosesPage() {
         actions={
           canManage ? (
             <Button
-              variant="primary"
               size="sm"
               className="h-7 gap-1.5 px-2.5"
               onClick={() => setSheet({ target: { kind: "type" }, editing: null })}
@@ -396,10 +395,7 @@ function TypeDetailsCard({
   return (
     <div className="flex min-h-0 flex-col overflow-hidden border border-fg/10 bg-surface">
       <header className="flex items-start gap-2.5 border-b border-fg/10 px-3 py-2.5">
-        <span
-          aria-hidden
-          className="grid size-7 shrink-0 place-items-center bg-primary/10 text-primary"
-        >
+        <span aria-hidden className="grid size-7 shrink-0 place-items-center bg-fg/6 text-fg-muted">
           <Stethoscope className="size-3.5" />
         </span>
         <div className="min-w-0 flex-1">
@@ -517,7 +513,7 @@ function DiagnosisRow({
 function DetailsPlaceholder() {
   return (
     <div className="flex flex-1 flex-col items-center justify-center gap-1 border border-dashed border-fg/15 p-8 text-center">
-      <div className="mb-2 grid size-9 place-items-center bg-primary/10">
+      <div className="mb-2 grid size-9 place-items-center bg-fg/6">
         <Stethoscope className="size-4 text-primary" />
       </div>
       <h3 className="text-sm font-semibold text-fg">Pick a type</h3>

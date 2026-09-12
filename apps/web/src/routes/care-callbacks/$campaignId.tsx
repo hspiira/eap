@@ -309,7 +309,7 @@ function CampaignDetail({
                           >
                             <span
                               aria-hidden
-                              className="grid size-5 shrink-0 place-items-center bg-primary/10 text-[10px] font-semibold text-primary"
+                              className="grid size-5 shrink-0 place-items-center bg-fg/6 text-[10px] font-semibold text-fg-muted"
                             >
                               U
                             </span>

@@ -153,12 +153,7 @@ function UsersListPage() {
           <IconButton label="Export" icon={Download} />
           <span className="mx-1 h-4 w-px bg-fg/15" aria-hidden />
           {canWrite && (
-            <Button
-              variant="primary"
-              size="sm"
-              className="h-7 gap-1.5 px-2.5"
-              onClick={() => setAddOpen(true)}
-            >
+            <Button size="sm" className="h-7 gap-1.5 px-2.5" onClick={() => setAddOpen(true)}>
               <Plus className="size-3.5" />
               Add user
             </Button>
@@ -210,12 +205,7 @@ function UsersListPage() {
             }
             action={
               hasFilters || !canWrite ? null : (
-                <Button
-                  variant="primary"
-                  size="sm"
-                  className="gap-1.5"
-                  onClick={() => setAddOpen(true)}
-                >
+                <Button size="sm" className="gap-1.5" onClick={() => setAddOpen(true)}>
                   <Plus className="size-4" />
                   Add user
                 </Button>
@@ -373,11 +363,11 @@ function UserRow({
         <Link to="/users/$userId" params={{ userId: row.id }} className="flex items-center gap-2.5">
           <span
             aria-hidden
-            className="grid size-6 shrink-0 place-items-center bg-primary/10 text-primary"
+            className="grid size-6 shrink-0 place-items-center bg-fg/6 text-fg-muted"
           >
             <UserCog className="size-3" />
           </span>
-          <span className="text-sm font-medium text-fg group-hover:text-primary">{row.email}</span>
+          <span className="text-sm font-medium text-fg group-hover:underline">{row.email}</span>
         </Link>
       </TableCell>
       <TableCell className="text-center">

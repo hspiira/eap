@@ -168,12 +168,7 @@ function ContractsListPage() {
           <IconButton label="Export" icon={Download} />
           <span className="mx-1 h-4 w-px bg-fg/15" aria-hidden />
           {canWrite && (
-            <Button
-              variant="primary"
-              size="sm"
-              className="h-7 gap-1.5 px-2.5"
-              onClick={() => setAddOpen(true)}
-            >
+            <Button size="sm" className="h-7 gap-1.5 px-2.5" onClick={() => setAddOpen(true)}>
               <Plus className="size-3.5" />
               Add contract
             </Button>
@@ -235,12 +230,7 @@ function ContractsListPage() {
             }
             action={
               hasFilters || !canWrite ? null : (
-                <Button
-                  variant="primary"
-                  size="sm"
-                  className="gap-1.5"
-                  onClick={() => setAddOpen(true)}
-                >
+                <Button size="sm" className="gap-1.5" onClick={() => setAddOpen(true)}>
                   <Plus className="size-4" />
                   Add contract
                 </Button>
@@ -317,11 +307,11 @@ function ContractRow({ row, clientsById }: { row: Contract; clientsById: Map<str
         >
           <span
             aria-hidden
-            className="grid size-6 shrink-0 place-items-center bg-primary/10 text-primary"
+            className="grid size-6 shrink-0 place-items-center bg-fg/6 text-fg-muted"
           >
             <FileSignature className="size-3" />
           </span>
-          <span className="truncate text-sm font-medium text-fg group-hover:text-primary">
+          <span className="truncate text-sm font-medium text-fg group-hover:underline">
             {clientName}
           </span>
         </Link>

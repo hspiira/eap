@@ -167,7 +167,7 @@ function ServiceAssignmentDetailPage() {
                       >
                         <span
                           aria-hidden
-                          className="grid size-7 shrink-0 place-items-center bg-primary/10 text-primary"
+                          className="grid size-7 shrink-0 place-items-center bg-fg/6 text-fg-muted"
                         >
                           <FileSignature className="size-3.5" />
                         </span>
@@ -190,7 +190,7 @@ function ServiceAssignmentDetailPage() {
                       <div className="flex items-center gap-2.5 rounded-sm border border-fg/10 bg-bg px-3 py-2">
                         <span
                           aria-hidden
-                          className="grid size-7 shrink-0 place-items-center bg-primary/10 text-primary"
+                          className="grid size-7 shrink-0 place-items-center bg-fg/6 text-fg-muted"
                         >
                           <Wrench className="size-3.5" />
                         </span>
@@ -244,7 +244,7 @@ function Hero({
     <div className="flex shrink-0 items-center gap-3 border-b border-fg/10 bg-surface px-5 py-3">
       <span
         aria-hidden
-        className="grid size-9 shrink-0 place-items-center rounded-sm bg-primary/10 text-primary"
+        className="grid size-9 shrink-0 place-items-center rounded-sm bg-fg/6 text-fg-muted"
       >
         <FileCheck className="size-4" />
       </span>
@@ -298,7 +298,7 @@ function DetailRail({ assignment, contract, onAction, actionLoading }: DetailRai
           >
             <span
               aria-hidden
-              className="grid size-7 shrink-0 place-items-center bg-primary/10 text-primary"
+              className="grid size-7 shrink-0 place-items-center bg-fg/6 text-fg-muted"
             >
               <FileSignature className="size-3.5" />
             </span>

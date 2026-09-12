@@ -244,12 +244,7 @@ function MembersListPage() {
             />
           ) : null}
           {canWrite ? (
-            <Button
-              variant="primary"
-              size="sm"
-              className="h-7 gap-1.5 px-2.5"
-              onClick={() => list.setAddOpen(true)}
-            >
+            <Button size="sm" className="h-7 gap-1.5 px-2.5" onClick={() => list.setAddOpen(true)}>
               <Plus className="size-3.5" />
               Add member
             </Button>
@@ -381,7 +376,7 @@ function MembersListPage() {
             }
             action={
               canWrite && !hasFilters ? (
-                <Button variant="primary" size="sm" onClick={() => list.setAddOpen(true)}>
+                <Button size="sm" onClick={() => list.setAddOpen(true)}>
                   Add member
                 </Button>
               ) : null
@@ -579,11 +574,11 @@ function MemberRow({
         >
           <span
             aria-hidden
-            className="grid size-6 shrink-0 place-items-center bg-primary/10 text-primary"
+            className="grid size-6 shrink-0 place-items-center bg-fg/6 text-fg-muted"
           >
             <User className="size-3.5" />
           </span>
-          <span className="truncate text-sm font-medium text-fg group-hover:text-primary">
+          <span className="truncate text-sm font-medium text-fg group-hover:underline">
             {label}
           </span>
         </Link>

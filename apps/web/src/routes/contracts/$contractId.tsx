@@ -263,7 +263,7 @@ function Hero({ contract, client }: { contract: Contract; client: Client | null 
     <div className="flex shrink-0 items-center gap-3 border-b border-fg/10 bg-surface px-5 py-3">
       <span
         aria-hidden
-        className="grid size-9 shrink-0 place-items-center rounded-sm bg-primary/10 text-primary"
+        className="grid size-9 shrink-0 place-items-center rounded-sm bg-fg/6 text-fg-muted"
       >
         <FileSignature className="size-4" />
       </span>
@@ -317,7 +317,7 @@ function DetailRail({ contract, client, onAction, actionLoading }: DetailRailPro
           >
             <span
               aria-hidden
-              className="grid size-7 shrink-0 place-items-center bg-primary/10 text-[10px] font-semibold text-primary"
+              className="grid size-7 shrink-0 place-items-center bg-fg/6 text-[10px] font-semibold text-fg-muted"
             >
               {nameInitials(client.name)}
             </span>
@@ -453,7 +453,7 @@ function ServicesPanel({
                   <Link
                     to="/service-assignments/$assignmentId"
                     params={{ assignmentId: a.id }}
-                    className="text-sm text-fg group-hover:text-primary"
+                    className="text-sm text-fg group-hover:underline"
                   >
                     {serviceNames.get(a.service_id) ??
                       (servicesQuery.isPending ? "Loading…" : "Unknown service")}

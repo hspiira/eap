@@ -233,7 +233,7 @@ function Hero({ service }: { service: Service }) {
     <div className="flex shrink-0 items-center gap-3 border-b border-fg/10 bg-surface px-5 py-3">
       <span
         aria-hidden
-        className="grid size-9 shrink-0 place-items-center rounded-sm bg-primary/10 text-primary"
+        className="grid size-9 shrink-0 place-items-center rounded-sm bg-fg/6 text-fg-muted"
       >
         <Wrench className="size-4" />
       </span>
@@ -288,7 +288,7 @@ function ContractsPanel({
                 <Link
                   to="/contracts/$contractId"
                   params={{ contractId: a.contract_id }}
-                  className="text-sm text-fg group-hover:text-primary font-mono"
+                  className="text-sm text-fg group-hover:underline font-mono"
                 >
                   {a.contract_id.slice(0, 8)}
                 </Link>

@@ -115,7 +115,7 @@ export function LinkRow({
       {meta ? <span className="shrink-0 text-xs text-fg-muted">· {meta}</span> : null}
       <ChevronRight
         aria-hidden
-        className="size-3.5 shrink-0 text-primary/60 transition-transform group-hover:translate-x-0.5 group-hover:text-primary"
+        className="size-3.5 shrink-0 text-primary/60 transition-transform group-hover:translate-x-0.5 group-hover:underline"
       />
     </Link>
   )

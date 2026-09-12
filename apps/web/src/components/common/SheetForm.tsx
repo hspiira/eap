@@ -126,7 +126,7 @@ export function SheetForm({
               <Button
                 type="submit"
                 size="sm"
-                variant={destructive ? "destructive" : "primary"}
+                variant={destructive ? "destructive" : "default"}
                 disabled={isSubmitting}
                 className="min-w-[6.5rem]"
               >

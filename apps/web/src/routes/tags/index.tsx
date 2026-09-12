@@ -90,12 +90,7 @@ function TagsListPage() {
         <>
           <IconButton label="Export" icon={Download} />
           <span className="mx-1 h-4 w-px bg-fg/15" aria-hidden />
-          <Button
-            variant="primary"
-            size="sm"
-            className="h-7 gap-1.5 px-2.5"
-            onClick={() => setCreatingTag(true)}
-          >
+          <Button size="sm" className="h-7 gap-1.5 px-2.5" onClick={() => setCreatingTag(true)}>
             <Plus className="size-3.5" />
             New tag
           </Button>
@@ -123,12 +118,7 @@ function TagsListPage() {
             }
             action={
               activeSearch ? null : (
-                <Button
-                  variant="primary"
-                  size="sm"
-                  className="gap-1.5"
-                  onClick={() => setCreatingTag(true)}
-                >
+                <Button size="sm" className="gap-1.5" onClick={() => setCreatingTag(true)}>
                   <Plus className="size-4" />
                   New tag
                 </Button>
@@ -195,7 +185,7 @@ function TagRow({ row, onEdit }: { row: ClientTag; onEdit: () => void }) {
             className="block size-2.5 shrink-0 border border-fg/20"
             style={swatch ? { backgroundColor: swatch } : undefined}
           />
-          <span className="text-sm font-medium text-fg group-hover:text-primary">{row.name}</span>
+          <span className="text-sm font-medium text-fg group-hover:underline">{row.name}</span>
         </Button>
       </TableCell>
       <TableCell>

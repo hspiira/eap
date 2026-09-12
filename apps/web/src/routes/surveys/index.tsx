@@ -89,12 +89,7 @@ function SurveysListPage() {
         <>
           <IconButton label="Export" icon={Download} />
           <span className="mx-1 h-4 w-px bg-fg/15" aria-hidden />
-          <Button
-            variant="primary"
-            size="sm"
-            className="h-7 gap-1.5 px-2.5"
-            onClick={() => setAddOpen(true)}
-          >
+          <Button size="sm" className="h-7 gap-1.5 px-2.5" onClick={() => setAddOpen(true)}>
             <Plus className="size-3.5" />
             New survey
           </Button>
@@ -147,12 +142,7 @@ function SurveysListPage() {
             }
             action={
               hasFilters ? null : (
-                <Button
-                  variant="primary"
-                  size="sm"
-                  className="gap-1.5"
-                  onClick={() => setAddOpen(true)}
-                >
+                <Button size="sm" className="gap-1.5" onClick={() => setAddOpen(true)}>
                   <Plus className="size-4" />
                   New survey
                 </Button>
@@ -216,12 +206,12 @@ function SurveyRow({
         >
           <span
             aria-hidden
-            className="grid size-6 shrink-0 place-items-center bg-primary/10 text-primary"
+            className="grid size-6 shrink-0 place-items-center bg-fg/6 text-fg-muted"
           >
             <ClipboardList className="size-3" />
           </span>
           <span className="min-w-0">
-            <span className="block truncate text-sm font-medium text-fg group-hover:text-primary">
+            <span className="block truncate text-sm font-medium text-fg group-hover:underline">
               {row.name}
             </span>
             <span className="block truncate text-xs text-fg-muted">{row.external_form_id}</span>

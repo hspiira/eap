@@ -62,9 +62,7 @@ function ClientRow({ client, max }: { client: ClientSessions; max: number }) {
       className="group grid grid-cols-[7rem_1fr] items-center gap-3 rounded-md py-0.5 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring sm:grid-cols-[9rem_1fr]"
       aria-label={`${client.client_name}: ${client.total} sessions`}
     >
-      <span className="truncate text-sm text-fg group-hover:text-primary">
-        {client.client_name}
-      </span>
+      <span className="truncate text-sm text-fg group-hover:underline">{client.client_name}</span>
       <span className="flex items-center gap-2">
         <span
           className="h-7 rounded-sm bg-chart-1 transition-[width]"

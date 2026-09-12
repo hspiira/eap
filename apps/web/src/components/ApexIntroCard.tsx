@@ -14,7 +14,7 @@ export function ApexIntroCard({ className }: ApexIntroCardProps = {}) {
       <CardContent className="grid gap-3 p-4">
         <div className="flex items-start gap-3">
           <span
-            className="grid size-10 shrink-0 place-items-center rounded-md bg-primary/10 text-primary"
+            className="grid size-10 shrink-0 place-items-center rounded-md bg-fg/6 text-fg-muted"
             aria-hidden
           >
             <Sparkles className="size-5" />

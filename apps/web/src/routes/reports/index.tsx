@@ -135,7 +135,7 @@ function CardHeader({ template, icon: Icon }: { template: ReportTemplate; icon: 
     <div className="flex items-start gap-3">
       <span
         aria-hidden
-        className="grid size-8 shrink-0 place-items-center rounded-sm bg-primary/10 text-primary"
+        className="grid size-8 shrink-0 place-items-center rounded-sm bg-fg/6 text-fg-muted"
       >
         <Icon className="size-4" />
       </span>
