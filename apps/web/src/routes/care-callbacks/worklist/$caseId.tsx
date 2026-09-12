@@ -1,7 +1,7 @@
 import { useState } from "react"
 
 import { useQuery, useQueryClient } from "@tanstack/react-query"
-import { createFileRoute, useNavigate } from "@tanstack/react-router"
+import { createFileRoute } from "@tanstack/react-router"
 import { ArrowLeft, Headphones } from "lucide-react"
 
 import { careCallbacksApi } from "@/api/endpoints/care-callbacks"
@@ -11,11 +11,13 @@ import {
   Hero,
   TerminateDialog,
 } from "@/components/care-callbacks/CaseTriageWidgets"
+import { BackButton } from "@/components/common/BackButton"
 import { EmptyState } from "@/components/common/EmptyState"
 import { PageShell } from "@/components/common/PageShell"
 import { DetailSkeleton } from "@/components/common/PageSkeletons"
 import { Button } from "@/components/ui/button"
 import { useToast } from "@/contexts/ToastContext"
+import { useBackTo } from "@/hooks/useBackTo"
 import { normalizeErrorMessage } from "@/lib/errors"
 import { entityDetailKey } from "@/lib/queries"
 import { useAuthStore } from "@/store/slices/authSlice"
@@ -26,7 +28,7 @@ export const Route = createFileRoute("/care-callbacks/worklist/$caseId")({
 
 function CaseDetailPage() {
   const { caseId } = Route.useParams()
-  const navigate = useNavigate()
+  const back = useBackTo("/care-callbacks/worklist")
   const queryClient = useQueryClient()
   const { showSuccess, showError } = useToast()
   const userId = useAuthStore((s) => s.user_id)
@@ -99,12 +101,7 @@ function CaseDetailPage() {
           title="Record not found"
           description="It may have been reassigned or the campaign archived."
           action={
-            <Button
-              variant="outline"
-              size="sm"
-              className="gap-1.5"
-              onClick={() => navigate({ to: "/care-callbacks/worklist" })}
-            >
+            <Button variant="outline" size="sm" className="gap-1.5" onClick={back}>
               <ArrowLeft className="size-4" />
               Back to worklist
             </Button>
@@ -122,19 +119,7 @@ function CaseDetailPage() {
       icon={Headphones}
       trail={[{ label: "Care" }, { label: "My worklist", to: "/care-callbacks/worklist" }]}
       title={`Callback ${outreach.member_id.slice(0, 8)}`}
-      actions={
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          onClick={() => navigate({ to: "/care-callbacks/worklist" })}
-          aria-label="Back to worklist"
-          title="Back to worklist"
-          className="size-7 p-0 text-fg/70"
-        >
-          <ArrowLeft className="size-3.5" />
-        </Button>
-      }
+      actions={<BackButton to="/care-callbacks/worklist" label="Back to worklist" />}
     >
       <Hero outreach={outreach} campaignName={campaign?.name ?? null} />
 
@@ -149,7 +134,7 @@ function CaseDetailPage() {
         onConfirm={handleEscalate}
       />
 
-      <div className="min-h-0 flex-1 overflow-y-auto bg-bg">
+      <div className="min-h-0 flex-1 overflow-y-auto bg-bg" data-scroll-restoration-id="detail">
         <div className="grid grid-cols-12 gap-5 px-5 py-5">
           <div className="col-span-12 min-w-0 lg:col-span-8">
             {outreach.notes ? (

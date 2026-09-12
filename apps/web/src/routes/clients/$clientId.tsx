@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react"
 
 import { useQuery, useQueryClient } from "@tanstack/react-query"
-import { createFileRoute, useNavigate } from "@tanstack/react-router"
+import { createFileRoute } from "@tanstack/react-router"
 import { Building2, SquarePen } from "lucide-react"
 
 import { clientsApi } from "@/api/endpoints/clients"
@@ -33,6 +33,7 @@ import { MemberFormSheet } from "@/components/MemberFormSheet"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { useToast } from "@/contexts/ToastContext"
+import { useBackTo } from "@/hooks/useBackTo"
 import { useCanWrite } from "@/hooks/useCanWrite"
 import { useDocumentTitle } from "@/hooks/useDocumentTitle"
 import { useTabSearchParam } from "@/hooks/useTabSearchParam"
@@ -96,7 +97,7 @@ const WINDOW_PAGE = 100
 
 function ClientDetailPage() {
   const { clientId } = Route.useParams()
-  const navigate = useNavigate()
+  const back = useBackTo("/clients")
   const queryClient = useQueryClient()
   const [actionLoading, setActionLoading] = useState(false)
   const toast = useToast()
@@ -345,7 +346,7 @@ function ClientDetailPage() {
     icon: Building2,
     breadcrumb: "Organization & Clients · Clients",
     entity: "client",
-    backTo: () => navigate({ to: "/clients" }),
+    backTo: back,
     backLabel: "Back to clients",
   })
   if (state || !client) return state
@@ -402,7 +403,7 @@ function ClientDetailPage() {
         }}
       />
 
-      <div className="min-h-0 flex-1 overflow-y-auto bg-bg">
+      <div className="min-h-0 flex-1 overflow-y-auto bg-bg" data-scroll-restoration-id="detail">
         <div className="grid grid-cols-12 gap-5 px-5 pb-5">
           <div
             className={`col-span-12 min-w-0 ${tab === "overview" || tab === "setup" ? "lg:col-span-8" : ""}`}

@@ -1,7 +1,7 @@
 import { useState } from "react"
 
 import { useQueryClient } from "@tanstack/react-query"
-import { createFileRoute, useNavigate } from "@tanstack/react-router"
+import { createFileRoute } from "@tanstack/react-router"
 import { Building, SquarePen } from "lucide-react"
 
 import { providerOrganisationsApi } from "@/api/endpoints/provider-organisations"
@@ -17,6 +17,7 @@ import { ProviderOrganisationFormSheet } from "@/components/providers/ProviderOr
 import { ReasonDialog } from "@/components/providers/ReasonDialog"
 import { Button } from "@/components/ui/button"
 import { useToast } from "@/contexts/ToastContext"
+import { useBackTo } from "@/hooks/useBackTo"
 import { useCanWrite, useCurrentRole } from "@/hooks/useCanWrite"
 import { useTabSearchParam } from "@/hooks/useTabSearchParam"
 import { normalizeErrorMessage } from "@/lib/errors"
@@ -98,7 +99,6 @@ function ApprovalCommands({
 
 function ProviderOrganisationDetailPage() {
   const { organisationId } = Route.useParams()
-  const navigate = useNavigate()
   const queryClient = useQueryClient()
   const toast = useToast()
   const canWrite = useCanWrite()
@@ -113,7 +113,7 @@ function ProviderOrganisationDetailPage() {
     detailFn: providerOrganisationsApi.getById,
   })
 
-  const back = () => void navigate({ to: "/provider-organisations" })
+  const back = useBackTo("/provider-organisations")
   const state = renderDetailState(query, {
     icon: Building,
     breadcrumb: "Provider organisations",
@@ -179,7 +179,10 @@ function ProviderOrganisationDetailPage() {
         organisation={organisation}
       />
 
-      <div className="flex min-h-0 flex-1 overflow-y-auto bg-bg">
+      <div
+        className="flex min-h-0 flex-1 overflow-y-auto bg-bg"
+        data-scroll-restoration-id="detail"
+      >
         <div className="grid w-full grid-cols-12 gap-5 px-5 py-5">
           <div className="col-span-12 min-w-0 lg:col-span-8">
             <Tabs value={tab} onValueChange={(value) => setTab(value as TabValue)}>

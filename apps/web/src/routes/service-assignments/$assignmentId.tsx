@@ -1,12 +1,13 @@
 import { useCallback, useState } from "react"
 
 import { useQuery, useQueryClient } from "@tanstack/react-query"
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router"
-import { ArrowLeft, FileCheck, FileSignature, SquarePen, Wrench } from "lucide-react"
+import { createFileRoute, Link } from "@tanstack/react-router"
+import { FileCheck, FileSignature, SquarePen, Wrench } from "lucide-react"
 
 import { contractsApi } from "@/api/endpoints/contracts"
 import { serviceAssignmentsApi } from "@/api/endpoints/service-assignments"
 import { servicesApi } from "@/api/endpoints/services"
+import { BackButton } from "@/components/common/BackButton"
 import {
   DetailCard,
   DetailGrid,
@@ -23,6 +24,7 @@ import { ServiceAssignmentFormSheet } from "@/components/ServiceAssignmentFormSh
 import { CATEGORY_LABELS } from "@/components/ServiceFormSheet"
 import { Button } from "@/components/ui/button"
 import { useToast } from "@/contexts/ToastContext"
+import { useBackTo } from "@/hooks/useBackTo"
 import { useTabSearchParam } from "@/hooks/useTabSearchParam"
 import { normalizeErrorMessage } from "@/lib/errors"
 import { formatDay } from "@/lib/format"
@@ -39,7 +41,7 @@ const TAB_VALUES: ReadonlyArray<TabValue> = ["overview", "history"]
 
 function ServiceAssignmentDetailPage() {
   const { assignmentId } = Route.useParams()
-  const navigate = useNavigate()
+  const back = useBackTo("/service-assignments")
   const queryClient = useQueryClient()
   const [actionLoading, setActionLoading] = useState(false)
   const toast = useToast()
@@ -90,7 +92,7 @@ function ServiceAssignmentDetailPage() {
     icon: FileCheck,
     breadcrumb: "Commercial · Service assignments",
     entity: "assignment",
-    backTo: () => navigate({ to: "/service-assignments" }),
+    backTo: back,
     backLabel: "Back to assignments",
   })
   if (state || !assignment) return state
@@ -105,17 +107,7 @@ function ServiceAssignmentDetailPage() {
       breadcrumb={`Commercial · Service Assignments · ${label}`}
       actions={
         <>
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            onClick={() => navigate({ to: "/service-assignments" })}
-            aria-label="Back to assignments"
-            title="Back to assignments"
-            className="size-7 p-0 text-fg/70"
-          >
-            <ArrowLeft className="size-3.5" />
-          </Button>
+          <BackButton to="/service-assignments" label="Back to assignments" />
           <Button
             size="sm"
             variant="outline"
@@ -140,7 +132,7 @@ function ServiceAssignmentDetailPage() {
         }
       />
 
-      <div className="min-h-0 flex-1 overflow-y-auto bg-bg">
+      <div className="min-h-0 flex-1 overflow-y-auto bg-bg" data-scroll-restoration-id="detail">
         <div className="grid grid-cols-12 gap-5 px-5 py-5">
           <div className="col-span-12 min-w-0 lg:col-span-8">
             <Tabs value={tab} onValueChange={(v) => setTab(v as TabValue)}>

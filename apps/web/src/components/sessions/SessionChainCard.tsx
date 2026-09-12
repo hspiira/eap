@@ -12,7 +12,6 @@
  */
 
 import { useQuery } from "@tanstack/react-query"
-
 import { ChevronRight, CornerDownRight } from "lucide-react"
 
 import { serviceSessionsApi } from "@/api/endpoints/service-sessions"

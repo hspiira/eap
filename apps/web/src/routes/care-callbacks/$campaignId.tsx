@@ -1,7 +1,7 @@
 import { useState } from "react"
 
 import { useQuery, useQueryClient } from "@tanstack/react-query"
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router"
+import { createFileRoute, Link } from "@tanstack/react-router"
 import { ArrowLeft, FileBarChart, Phone } from "lucide-react"
 
 import { careCallbacksApi } from "@/api/endpoints/care-callbacks"
@@ -14,6 +14,7 @@ import {
   EnrolDialog,
   Hero,
 } from "@/components/care-callbacks/CampaignDetailWidgets"
+import { BackButton } from "@/components/common/BackButton"
 import { DetailCard, DetailGrid, DetailRow } from "@/components/common/DetailPrimitives"
 import { EmptyState } from "@/components/common/EmptyState"
 import { PageShell } from "@/components/common/PageShell"
@@ -21,6 +22,7 @@ import { DetailSkeleton } from "@/components/common/PageSkeletons"
 import { Tab, TabPanel, Tabs, TabsList } from "@/components/common/Tabs"
 import { Button } from "@/components/ui/button"
 import { useToast } from "@/contexts/ToastContext"
+import { useBackTo } from "@/hooks/useBackTo"
 import { useTabSearchParam } from "@/hooks/useTabSearchParam"
 import { normalizeErrorMessage } from "@/lib/errors"
 import { formatDate } from "@/lib/format"
@@ -43,7 +45,7 @@ const TAB_VALUES: ReadonlyArray<TabValue> = ["overview", "cases", "aggregate", "
 
 function CampaignDetailPage() {
   const { campaignId } = Route.useParams()
-  const navigate = useNavigate()
+  const back = useBackTo("/care-callbacks")
   const queryClient = useQueryClient()
   const { showSuccess, showError } = useToast()
   const [actionLoading, setActionLoading] = useState(false)
@@ -136,12 +138,7 @@ function CampaignDetailPage() {
           title="Campaign not found"
           description="It may have been archived or never existed."
           action={
-            <Button
-              variant="outline"
-              size="sm"
-              className="gap-1.5"
-              onClick={() => navigate({ to: "/care-callbacks" })}
-            >
+            <Button variant="outline" size="sm" className="gap-1.5" onClick={back}>
               <ArrowLeft className="size-4" />
               Back to campaigns
             </Button>
@@ -210,7 +207,6 @@ function CampaignDetail({
   onEditPool: () => void
   onEnrol: () => void
 }) {
-  const navigate = useNavigate()
   const [tab, setTab] = useTabSearchParam<TabValue>(TAB_VALUES, "overview")
 
   const total = campaign.target_count
@@ -229,17 +225,7 @@ function CampaignDetail({
       breadcrumb={`Care · Callback campaigns · ${campaign.name}`}
       actions={
         <>
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            onClick={() => navigate({ to: "/care-callbacks" })}
-            aria-label="Back to campaigns"
-            title="Back to campaigns"
-            className="size-7 p-0 text-fg/70"
-          >
-            <ArrowLeft className="size-3.5" />
-          </Button>
+          <BackButton to="/care-callbacks" label="Back to campaigns" />
           <Link
             to="/reports/$templateSlug"
             params={{ templateSlug: "care-callback-summary" }}
@@ -254,7 +240,7 @@ function CampaignDetail({
     >
       <Hero campaign={campaign} client={client} />
 
-      <div className="min-h-0 flex-1 overflow-y-auto bg-bg">
+      <div className="min-h-0 flex-1 overflow-y-auto bg-bg" data-scroll-restoration-id="detail">
         <div className="grid grid-cols-12 gap-5 px-5 py-5">
           <div className="col-span-12 min-w-0 lg:col-span-8">
             <Tabs value={tab} onValueChange={(v) => setTab(v as TabValue)}>

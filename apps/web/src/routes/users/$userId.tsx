@@ -1,18 +1,11 @@
 import { useCallback, useState } from "react"
 
 import { useQueryClient } from "@tanstack/react-query"
-import { createFileRoute, useNavigate } from "@tanstack/react-router"
-import {
-  ArrowLeft,
-  BadgeCheck,
-  KeyRound,
-  ShieldCheck,
-  ShieldOff,
-  SquarePen,
-  UserCog,
-} from "lucide-react"
+import { createFileRoute } from "@tanstack/react-router"
+import { BadgeCheck, KeyRound, ShieldCheck, ShieldOff, SquarePen, UserCog } from "lucide-react"
 
 import { usersApi } from "@/api/endpoints/users"
+import { BackButton } from "@/components/common/BackButton"
 import { DetailCard, DetailGrid, DetailRow } from "@/components/common/DetailPrimitives"
 import { renderDetailState } from "@/components/common/DetailStates"
 import { EmptyState } from "@/components/common/EmptyState"
@@ -33,6 +26,7 @@ import { Input } from "@/components/ui/input"
 import { UserFormSheet } from "@/components/UserFormSheet"
 import { AccessScopesCard, DetailRail, Hero, RoleCard } from "@/components/users/UserDetailWidgets"
 import { useToast } from "@/contexts/ToastContext"
+import { useBackTo } from "@/hooks/useBackTo"
 import { useCanWrite } from "@/hooks/useCanWrite"
 import { useTabSearchParam } from "@/hooks/useTabSearchParam"
 import { normalizeErrorMessage } from "@/lib/errors"
@@ -51,7 +45,7 @@ const TAB_VALUES: ReadonlyArray<TabValue> = ["overview", "security", "preference
 
 function UserDetailPage() {
   const { userId } = Route.useParams()
-  const navigate = useNavigate()
+  const back = useBackTo("/users")
   const queryClient = useQueryClient()
   const [actionLoading, setActionLoading] = useState(false)
   const toast = useToast()
@@ -138,7 +132,7 @@ function UserDetailPage() {
     icon: UserCog,
     breadcrumb: "People · Platform Users",
     entity: "user",
-    backTo: () => navigate({ to: "/users" }),
+    backTo: back,
     backLabel: "Back to users",
   })
   if (state || !user) return state
@@ -149,17 +143,7 @@ function UserDetailPage() {
       breadcrumb={`People · Platform Users · ${user.email}`}
       actions={
         <>
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            onClick={() => navigate({ to: "/users" })}
-            aria-label="Back to users"
-            title="Back to users"
-            className="size-7 p-0 text-fg/70"
-          >
-            <ArrowLeft className="size-3.5" />
-          </Button>
+          <BackButton to="/users" label="Back to users" />
           {canWrite && (
             <Button
               size="sm"
@@ -185,7 +169,7 @@ function UserDetailPage() {
         }
       />
 
-      <div className="min-h-0 flex-1 overflow-y-auto bg-bg">
+      <div className="min-h-0 flex-1 overflow-y-auto bg-bg" data-scroll-restoration-id="detail">
         <div className="grid grid-cols-12 gap-5 px-5 py-5">
           <div className="col-span-12 min-w-0 lg:col-span-8">
             <Tabs value={tab} onValueChange={(v) => setTab(v as TabValue)}>

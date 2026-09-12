@@ -40,6 +40,10 @@ vi.mock("@/components/ServiceSessionFormSheet", () => ({ ServiceSessionFormSheet
 vi.mock("@tanstack/react-router", async () => {
   const { useEffect, useReducer } = await import("react")
   return {
+    // useBackTo steps back through history; these tests render pages cold, so
+    // canGoBack is false and the back control falls through to its list route.
+    useRouter: () => ({ history: { back: () => {} } }),
+    useCanGoBack: () => false,
     createFileRoute: () => (options: unknown) => ({
       options,
       useParams: () => ({ sessionId: "sess-1" }),

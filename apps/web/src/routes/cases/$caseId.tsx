@@ -1,8 +1,8 @@
 import { useState } from "react"
 
 import { useQuery, useQueryClient } from "@tanstack/react-query"
-import { createFileRoute, useNavigate } from "@tanstack/react-router"
-import { ArrowLeft, HeartPulse } from "lucide-react"
+import { createFileRoute } from "@tanstack/react-router"
+import { HeartPulse } from "lucide-react"
 
 import { casesApi } from "@/api/endpoints/cases"
 import { clinicalNotesApi } from "@/api/endpoints/clinical-notes"
@@ -17,12 +17,13 @@ import {
   OverviewPanel,
   ReferOutDialog,
 } from "@/components/cases/CaseDetailWidgets"
+import { BackButton } from "@/components/common/BackButton"
 import { renderDetailState } from "@/components/common/DetailStates"
 import { PageShell } from "@/components/common/PageShell"
 import { RequireClinicalScope } from "@/components/common/RequireClinicalScope"
 import { Tab, TabPanel, Tabs, TabsList } from "@/components/common/Tabs"
-import { Button } from "@/components/ui/button"
 import { useToast } from "@/contexts/ToastContext"
+import { useBackTo } from "@/hooks/useBackTo"
 import { useTabSearchParam } from "@/hooks/useTabSearchParam"
 import { normalizeErrorMessage } from "@/lib/errors"
 import { entityDetailKey, useEntityDetail } from "@/lib/queries"
@@ -41,7 +42,7 @@ const TAB_VALUES: ReadonlyArray<TabValue> = ["overview", "notes"]
 
 function CaseDetailPage() {
   const { caseId } = Route.useParams()
-  const navigate = useNavigate()
+  const back = useBackTo("/cases")
   const queryClient = useQueryClient()
   const { showSuccess, showError } = useToast()
   const [tab, setTab] = useTabSearchParam<TabValue>(TAB_VALUES, "overview")
@@ -126,7 +127,7 @@ function CaseDetailPage() {
     icon: HeartPulse,
     breadcrumb: "Clinical · Cases",
     entity: "case",
-    backTo: () => navigate({ to: "/cases" }),
+    backTo: back,
     backLabel: "Back to cases",
   })
   if (state || !caseData) return state
@@ -136,19 +137,7 @@ function CaseDetailPage() {
       icon={HeartPulse}
       trail={[{ label: "Clinical" }, { label: "Cases", to: "/cases" }]}
       title={`Case ${caseData.clinical_subject_id.slice(0, 8)}`}
-      actions={
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          onClick={() => navigate({ to: "/cases" })}
-          aria-label="Back to cases"
-          title="Back to cases"
-          className="size-7 p-0 text-fg/70"
-        >
-          <ArrowLeft className="size-3.5" />
-        </Button>
-      }
+      actions={<BackButton to="/cases" label="Back to cases" />}
     >
       <Hero caseData={caseData} />
 
@@ -176,7 +165,7 @@ function CaseDetailPage() {
       />
       <CreateNoteDialog open={noteOpen} onOpenChange={setNoteOpen} onConfirm={handleCreateNote} />
 
-      <div className="min-h-0 flex-1 overflow-y-auto bg-bg">
+      <div className="min-h-0 flex-1 overflow-y-auto bg-bg" data-scroll-restoration-id="detail">
         <div className="grid grid-cols-12 gap-5 px-5 py-5">
           <div className="col-span-12 min-w-0 lg:col-span-8">
             <Tabs value={tab} onValueChange={(v) => setTab(v as TabValue)}>

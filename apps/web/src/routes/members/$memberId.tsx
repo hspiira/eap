@@ -1,7 +1,7 @@
 import { useCallback, useState } from "react"
 
 import { useQuery, useQueryClient } from "@tanstack/react-query"
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router"
+import { createFileRoute, Link } from "@tanstack/react-router"
 import { ArrowLeft, SquarePen, Users } from "lucide-react"
 
 import { membersApi } from "@/api/endpoints/members"
@@ -24,6 +24,7 @@ import { MemberBeneficiaries, MemberNextOfKinCard } from "@/components/MemberDet
 import { MemberFormSheet } from "@/components/MemberFormSheet"
 import { Button } from "@/components/ui/button"
 import { useToast } from "@/contexts/ToastContext"
+import { useBackTo } from "@/hooks/useBackTo"
 import { useCanWrite, useHasClinicalScope } from "@/hooks/useCanWrite"
 import { nameInitials } from "@/lib/display"
 import { normalizeErrorMessage } from "@/lib/errors"
@@ -37,7 +38,7 @@ export const Route = createFileRoute("/members/$memberId")({ component: MemberDe
 
 function MemberDetailPage() {
   const { memberId } = Route.useParams()
-  const navigate = useNavigate()
+  const back = useBackTo("/members")
   const query = useQuery({
     queryKey: entityDetailKey("members", memberId),
     queryFn: () => membersApi.getById(memberId),
@@ -50,7 +51,7 @@ function MemberDetailPage() {
         title="Member not found"
         description="This member may have been removed or belongs to another tenant."
         action={
-          <Button className="rounded-none" onClick={() => navigate({ to: "/members" })}>
+          <Button className="rounded-none" onClick={back}>
             Back to members
           </Button>
         }
@@ -62,7 +63,7 @@ function MemberDetailPage() {
 }
 
 function MemberDetail({ member }: { member: Member }) {
-  const navigate = useNavigate()
+  const back = useBackTo("/members")
   const queryClient = useQueryClient()
   const canWrite = useCanWrite()
   const toast = useToast()
@@ -105,7 +106,7 @@ function MemberDetail({ member }: { member: Member }) {
             variant="ghost"
             size="sm"
             className="size-7 rounded-none p-0"
-            onClick={() => navigate({ to: "/members" })}
+            onClick={back}
             aria-label="Back to members"
           >
             <ArrowLeft className="size-3.5" />
@@ -134,7 +135,10 @@ function MemberDetail({ member }: { member: Member }) {
         }
       />
 
-      <div className="flex min-h-0 flex-1 overflow-y-auto bg-bg">
+      <div
+        className="flex min-h-0 flex-1 overflow-y-auto bg-bg"
+        data-scroll-restoration-id="detail"
+      >
         <div className="grid w-full grid-cols-12 gap-5 px-5 py-5">
           <div className="col-span-12 min-w-0 lg:col-span-8">
             <Tabs value={tab} onValueChange={setTab}>

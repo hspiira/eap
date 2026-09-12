@@ -68,7 +68,7 @@ const TEMPLATES: ReportTemplate[] = [
 function ReportsLandingPage() {
   return (
     <PageShell icon={FileBarChart} breadcrumb="Reports">
-      <div className="min-h-0 flex-1 overflow-y-auto bg-bg">
+      <div className="min-h-0 flex-1 overflow-y-auto bg-bg" data-scroll-restoration-id="detail">
         <div className="mx-auto max-w-5xl space-y-5 px-5 py-5">
           <header>
             <h1 className="text-base font-semibold text-fg">Templates</h1>
