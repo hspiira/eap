@@ -390,7 +390,12 @@ async def _upcoming(runner, tenant_id: str, now: datetime) -> UpcomingBookings:
         )
         for day in (start.date() + timedelta(days=offset) for offset in range(UPCOMING_DAYS))
     ]
-    return UpcomingBookings(total=sum(point.total for point in days), days=days)
+    return UpcomingBookings(
+        total=sum(point.total for point in days),
+        days=days,
+        scheduled_from=now,
+        scheduled_to=end - timedelta(microseconds=1),
+    )
 
 
 async def _outcome_mix(

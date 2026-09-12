@@ -15,12 +15,18 @@ from datetime import UTC, datetime, timedelta
 
 import pytest
 from httpx import AsyncClient
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.application.services.outbox_consumers import make_audit_consumer
 from app.application.services.outbox_dispatcher import OutboxDispatcher
+from app.core.authorization import get_audit_log_for_current_tenant
+from app.core.security import TokenData, get_current_user
+from app.infrastructure.models.audit_model import AuditLogModel
+from app.infrastructure.models.outbox_model import OutboxEventModel
 from app.infrastructure.repositories.audit_repository import AuditRepositoryImpl
 from app.infrastructure.repositories.outbox_repository import OutboxRepositoryImpl
+from app.main import app
 
 pytestmark = pytest.mark.asyncio
 
@@ -315,6 +321,87 @@ class TestChangesAreRedactedThroughTheReadApi:
     DB layer only, per docs/reviews/UI_BACKEND_EXECUTION_PLAN_2026_09_12.md.
     """
 
+    @pytest.mark.parametrize("read_list", [False, True])
+    @pytest.mark.parametrize("fail_enqueue", [False, True])
+    async def test_clinical_reads_persist_or_fail_without_releasing_content(
+        self,
+        client_with_clinical_scope: AsyncClient,
+        session_test_tenant: dict,
+        session_test_service: dict,
+        session_test_provider: dict,
+        session_test_client_person: dict,
+        db_session: AsyncSession,
+        monkeypatch,
+        read_list: bool,
+        fail_enqueue: bool,
+    ):
+        tenant_id = session_test_tenant["id"]
+        created = await client_with_clinical_scope.post(
+            f"/service-sessions/?tenant_id={tenant_id}",
+            json={
+                "service_id": session_test_service["id"],
+                "provider_id": session_test_provider["id"],
+                "member_id": session_test_client_person["id"],
+                "scheduled_at": (datetime.now(UTC) + timedelta(days=500)).isoformat(),
+                "delivery_context": "Direct",
+            },
+        )
+        assert created.status_code == 201, created.text
+        session_id = created.json()["id"]
+        updated = await client_with_clinical_scope.patch(
+            f"/service-sessions/{session_id}", json={"notes": "private read test content"}
+        )
+        assert updated.status_code == 200, updated.text
+        original_enqueue = OutboxRepositoryImpl.enqueue
+
+        async def enqueue_then_fail(repository, **kwargs):
+            await original_enqueue(repository, **kwargs)
+            raise RuntimeError("Synthetic enqueue failure")
+
+        if fail_enqueue:
+            monkeypatch.setattr(OutboxRepositoryImpl, "enqueue", enqueue_then_fail)
+        path = (
+            f"/service-sessions/?tenant_id={tenant_id}"
+            if read_list
+            else f"/service-sessions/{session_id}"
+        )
+        response = await client_with_clinical_scope.get(path)
+        events = (
+            (
+                await db_session.execute(
+                    select(OutboxEventModel).where(
+                        OutboxEventModel.event_type == "ServiceSessionClinicalRead"
+                    )
+                )
+            )
+            .scalars()
+            .all()
+        )
+        if fail_enqueue:
+            assert response.status_code == 500, response.text
+            assert "private read test content" not in response.text
+            assert events == []
+            return
+        assert response.status_code == 200, response.text
+        assert "private read test content" in response.text
+        assert len(events) == 1
+        event = events[0]
+        assert event.payload["event_data"] == {"session_ids": [session_id], "count": 1}
+        assert "private read test content" not in str(event.payload)
+        occurred_at = event.occurred_at
+        await _drain(db_session)
+        logs = (await db_session.execute(select(AuditLogModel))).scalars().all()
+        reads = [
+            log
+            for log in logs
+            if (log.extra_metadata or {}).get("event_type") == "ServiceSessionClinicalRead"
+        ]
+        assert len(reads) == 1
+        assert reads[0].tenant_id == tenant_id
+        assert reads[0].user_id == "test-user-id"
+        assert reads[0].occurred_at == occurred_at
+        assert reads[0].action_type == ("LIST" if read_list else "VIEW")
+
     async def test_a_clinical_field_edit_is_redacted_in_the_http_response(
         self,
         client_with_clinical_scope: AsyncClient,
@@ -364,6 +451,42 @@ class TestChangesAreRedactedThroughTheReadApi:
 class TestAuditLogsStayWithinTheirTenant:
     """A same-named resource in another tenant must not leak into a query."""
 
+    @pytest.mark.parametrize("suffix", ["", "/changes"])
+    async def test_detail_dependencies_enforce_tenant_isolation(
+        self, client: AsyncClient, audit_test_tenant: dict, db_session: AsyncSession, suffix: str
+    ):
+        tenant_id = audit_test_tenant["id"]
+        created = await client.post(
+            f"/clients/?tenant_id={tenant_id}",
+            json={"name": "Audit Isolation", "code": "AISO", "contact_info": {}},
+        )
+        assert created.status_code == 201, created.text
+        await _drain(db_session)
+        logs = await client.get(
+            "/audit/logs", params={"tenant_id": tenant_id, "resource_id": created.json()["id"]}
+        )
+        audit_id = logs.json()["items"][0]["id"]
+        previous = app.dependency_overrides.copy()
+        app.dependency_overrides.pop(get_audit_log_for_current_tenant)
+        try:
+            app.dependency_overrides[get_current_user] = lambda: TokenData(
+                user_id="test-user-id", tenant_id=tenant_id, email="test@example.com"
+            )
+            own = await client.get(f"/audit/logs/{audit_id}{suffix}")
+            assert own.status_code == 200, own.text
+            app.dependency_overrides[get_current_user] = lambda: TokenData(
+                user_id="other-user", tenant_id="other-tenant", email="other@example.com"
+            )
+            denied = await client.get(f"/audit/logs/{audit_id}{suffix}")
+            missing = await client.get(f"/audit/logs/nonexistent{suffix}")
+            assert denied.status_code == missing.status_code == 404
+            for field in ("error", "message", "details"):
+                assert denied.json().get(field) == missing.json().get(field)
+            assert "Audit Isolation" not in denied.text
+        finally:
+            app.dependency_overrides.clear()
+            app.dependency_overrides.update(previous)
+
     async def test_a_client_created_in_one_tenant_does_not_appear_in_another(
         self, client: AsyncClient, audit_test_tenant: dict, db_session: AsyncSession
     ):
@@ -392,20 +515,3 @@ class TestAuditLogsStayWithinTheirTenant:
         assert response.status_code == 200, response.text
         assert response.json()["total"] == 0
         assert response.json()["items"] == []
-
-
-# =============================================================================
-# INTEGRATION NOTES
-# =============================================================================
-#
-# Content-verifying coverage for the list/filter/redaction/tenant-isolation
-# axes lives in TestAuditLogFilters, TestChangesAreRedactedThroughTheReadApi
-# and TestAuditLogsStayWithinTheirTenant above. Remaining gap, not closed
-# here: GET /audit/logs/{id} and GET /audit/logs/{id}/changes use
-# get_audit_log_for_current_tenant, which the shared `client` fixture
-# overrides with a version that skips the tenant check entirely
-# (tests/conftest.py, `override_get_audit_log`) — so no HTTP test in this
-# file can prove cross-tenant isolation for those two routes specifically;
-# only the list endpoint's isolation (proven above) and the production
-# dependency code itself cover that path. Fixing the shared fixture affects
-# every other test file using it and was judged out of scope here.

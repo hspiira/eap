@@ -45,6 +45,49 @@ TENANT = "tenant-dash-1"
 OTHER_TENANT = "tenant-dash-2"
 
 
+@pytest.mark.asyncio
+async def test_upcoming_window_matches_session_queue_at_both_boundaries(
+    client: AsyncClient, db_session: AsyncSession, monkeypatch
+):
+    await _seed(db_session)
+    now = utc_now().replace(hour=12, minute=0, second=0, microsecond=0)
+    end = now.replace(hour=0) + timedelta(days=7)
+    monkeypatch.setattr("app.api.routes.dashboard.utc_now", lambda: now)
+    expected = set()
+    for instant in (
+        now - timedelta(microseconds=1),
+        now,
+        end - timedelta(microseconds=1),
+        end,
+        end + timedelta(hours=1),
+    ):
+        booking = _session(
+            TENANT, "cl-dash-a", "prov-dash-1", days_ago=0, status=SessionStatus.SCHEDULED
+        )
+        booking.scheduled_at = instant
+        db_session.add(booking)
+        if now <= instant < end:
+            expected.add(booking.id)
+    await db_session.commit()
+    response = await client.get("/dashboard", params={"tenant_id": TENANT})
+    assert response.status_code == 200, response.text
+    upcoming = response.json()["upcoming"]
+    queue = await client.get(
+        "/service-sessions/",
+        params={
+            "tenant_id": TENANT,
+            "status": ["Scheduled", "Rescheduled"],
+            "scheduled_from": upcoming["scheduled_from"],
+            "scheduled_to": upcoming["scheduled_to"],
+            "sort_by": "scheduled_at",
+            "sort_desc": "false",
+        },
+    )
+    assert queue.status_code == 200, queue.text
+    assert upcoming["total"] == queue.json()["total"] == len(expected)
+    assert {booking["id"] for booking in queue.json()["items"]} == expected
+
+
 def _tenant(tenant_id: str) -> TenantModel:
     return TenantModel(id=tenant_id, name=tenant_id, code=tenant_id, settings={})
 

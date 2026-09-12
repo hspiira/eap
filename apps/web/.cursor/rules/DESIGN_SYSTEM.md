@@ -31,8 +31,8 @@ Use ONLY these colors from the approved palette:
 
 ## Design Principles
 
-### NO Rounded Corners
-- **CRITICAL**: All buttons, cards, inputs, and components must have sharp, square corners
+### Corner treatment
+- Cards, inputs, and other non-button components use sharp, square corners.
 - Buttons use `rounded-full`, as explicitly requested by the user.
 - Use `rounded-none` in Tailwind (or no border-radius) for other elements.
 - Only add rounded corners if explicitly requested by the user

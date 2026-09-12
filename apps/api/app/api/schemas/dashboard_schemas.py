@@ -13,6 +13,7 @@ the requested range. Stock figures (covered members, the import backlog) count
 what stands today and carry no range.
 """
 
+from datetime import datetime
 from typing import Literal
 
 from pydantic import BaseModel, Field
@@ -159,6 +160,8 @@ class UpcomingBookings(BaseModel):
 
     total: int = Field(..., description="Open bookings in the next seven days")
     days: list[UpcomingDay]
+    scheduled_from: datetime = Field(..., description="Inclusive booking window start")
+    scheduled_to: datetime = Field(..., description="Inclusive booking window end")
 
 
 class RiskCounts(BaseModel):

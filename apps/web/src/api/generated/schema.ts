@@ -14485,6 +14485,18 @@ export interface components {
             /** Days */
             days: components["schemas"]["UpcomingDay"][];
             /**
+             * Scheduled From
+             * Format: date-time
+             * @description Inclusive booking window start
+             */
+            scheduled_from: string;
+            /**
+             * Scheduled To
+             * Format: date-time
+             * @description Inclusive booking window end
+             */
+            scheduled_to: string;
+            /**
              * Total
              * @description Open bookings in the next seven days
              */

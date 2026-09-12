@@ -446,6 +446,24 @@ a decision for whoever owns deployment configuration, not one made here.
 
 ## R8b: the audit console, 2026-09-12/13
 
+Completion correction, 2026-09-13: the detail/changes test-harness gap described
+below is now covered. Two HTTP tests temporarily remove the shared loader override,
+use the real `get_audit_log_for_current_tenant`, prove own-tenant access and require
+404 for another tenant on both endpoints. Four further HTTP tests verify LIST/VIEW
+clinical reads reach persisted audit records with the original timestamp and actor,
+or roll back the outbox and return 500 if enqueue fails after a write. The audit
+suite passes all 25 cases. The existing role policy has not been changed.
+
+The audit navigation flag now defaults to enabled: Settings > Audits, `/audit`.
+The local outbox probe was rechecked healthy with depth zero and no failed events;
+20 audit/outbox integration cases passed in isolated local test schemas. This is
+local evidence, not production verification. Production target details are pending.
+
+Build tooling follow-up: the browser build reports Vite 7 while the installed
+builder requests Vite 8. The build and browser tests pass. The dependency owner
+should reconcile supported versions in a separate upgrade; this pass does not
+change dependencies or suppress the warning.
+
 Built against the existing read API (`app/api/routes/audit.py`); no route,
 schema, or authorization change. `pnpm contracts` was not re-run because
 nothing OpenAPI-visible changed.

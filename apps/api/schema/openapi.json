@@ -17271,6 +17271,18 @@
             "title": "Days",
             "type": "array"
           },
+          "scheduled_from": {
+            "description": "Inclusive booking window start",
+            "format": "date-time",
+            "title": "Scheduled From",
+            "type": "string"
+          },
+          "scheduled_to": {
+            "description": "Inclusive booking window end",
+            "format": "date-time",
+            "title": "Scheduled To",
+            "type": "string"
+          },
           "total": {
             "description": "Open bookings in the next seven days",
             "title": "Total",
@@ -17279,7 +17291,9 @@
         },
         "required": [
           "total",
-          "days"
+          "days",
+          "scheduled_from",
+          "scheduled_to"
         ],
         "title": "UpcomingBookings",
         "type": "object"

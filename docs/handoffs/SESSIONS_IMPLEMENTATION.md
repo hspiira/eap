@@ -488,6 +488,15 @@ deployment check.
 
 ## R4: session queues agree on status and window (2026-09-12)
 
+Completion correction, 2026-09-13: the window exception below is reopened and fixed.
+`UpcomingBookings` now includes the server's inclusive `scheduled_from` and
+`scheduled_to`. The card and linked queue reuse both verbatim; range changes clear
+them. The original seven UTC calendar-day aggregate is retained, with its exclusive
+next-midnight boundary represented as the prior microsecond for the inclusive list
+API. `test_upcoming_window_matches_session_queue_at_both_boundaries` checks both
+ends, excludes next midnight and reconciles ids and totals. The earlier "Closes R4"
+statement was premature while that exception remained.
+
 Closes R4 (`docs/reviews/UI_BACKEND_REVIEW_2026_09_12.md`). Depended on R1's
 projection contract landing first, which it did.
 

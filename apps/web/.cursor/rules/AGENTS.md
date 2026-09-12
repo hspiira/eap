@@ -10,8 +10,8 @@
   - NURTURING: `#D0B5B3` (dusty rose) - for secondary actions, highlights
   - Use **white** for backgrounds; avoid cream/beige unless explicitly requested
 
-### NO Rounded Corners
-- **CRITICAL**: All buttons, cards, inputs, and components MUST have sharp, square corners
+### Corner treatment
+- Cards, inputs, and other non-button components use sharp, square corners.
 - Buttons use `rounded-full`, as explicitly requested by the user.
 - Use `rounded-none` for other elements covered by this rule.
 - Only add rounded corners if the user explicitly requests it
