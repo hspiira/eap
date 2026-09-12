@@ -5300,6 +5300,31 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/service-sessions/{session_id}/chain": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * The sessions immediately before and after this one
+         * @description One hop each way along the chain of care.
+         *
+         *     The stored link points backwards, so the forward half has to be looked up.
+         *     One hop rather than the whole episode: there is no container holding a
+         *     course of care, because the thing that would hold it is a case and a
+         *     session may not reach one.
+         */
+        get: operations["get_session_chain_service_sessions__session_id__chain_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/service-sessions/{session_id}/complete": {
         parameters: {
             query?: never;
@@ -13009,8 +13034,6 @@ export interface components {
              * @description Required for a CompanyWide session. For an Individual session it is taken from the member, so that the two cannot disagree
              */
             client_id?: string | null;
-            /** @description New or repeat client */
-            client_type?: components["schemas"]["ClientType"] | null;
             /** @description Clinical continuation outcome */
             clinical_outcome?: components["schemas"]["SessionClinicalStatus"] | null;
             /** @description Direct or Organisation. Unknown is rejected: it belongs to historical import */
@@ -13086,11 +13109,6 @@ export interface components {
              * @description Service identifier
              */
             service_id: string;
-            /**
-             * Session Number
-             * @description Ordinal session number for this client
-             */
-            session_number?: number | null;
             /** @description Physical or online */
             session_type?: components["schemas"]["SessionType"] | null;
         };
@@ -13472,6 +13490,23 @@ export interface components {
          * @enum {string}
          */
         SessionCategory: "Individual" | "Group" | "Family" | "Couples";
+        /**
+         * SessionChainResponse
+         * @description One session's place in the chain of care around it.
+         *
+         *     One hop each way. A chain is walked a step at a time because there is no
+         *     container holding the whole episode: a case would be that container, and a
+         *     session may not reach one.
+         */
+        SessionChainResponse: {
+            /**
+             * Following
+             * @description Sessions booked off the back of this one
+             */
+            following?: components["schemas"]["ServiceSessionResponse"][];
+            /** @description The session this one was booked off the back of */
+            previous?: components["schemas"]["ServiceSessionResponse"] | null;
+        };
         /**
          * SessionClinicalStatus
          * @description Clinical continuation outcome recorded by the counsellor at session end.
@@ -25781,6 +25816,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ServiceSessionResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_session_chain_service_sessions__session_id__chain_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                session_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SessionChainResponse"];
                 };
             };
             /** @description Validation Error */

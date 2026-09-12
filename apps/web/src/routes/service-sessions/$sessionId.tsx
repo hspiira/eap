@@ -22,6 +22,7 @@ import {
   Hero,
   RescheduleDialog,
 } from "@/components/sessions/SessionDetailWidgets"
+import { SessionChainCard } from "@/components/sessions/SessionChainCard"
 import { SessionOverviewCards } from "@/components/sessions/SessionOverviewCards"
 import { Button } from "@/components/ui/button"
 import { useToast } from "@/contexts/ToastContext"
@@ -272,6 +273,20 @@ function ServiceSessionDetailPage() {
                   provider={provider}
                   diagnosisLabel={diagnosisLabel}
                 />
+                <section className="mt-4 border border-fg/10 bg-surface p-4">
+                  <h3 className="mb-2 text-xs font-medium uppercase tracking-wide text-fg-muted">
+                    Chain of care
+                  </h3>
+                  <SessionChainCard
+                    session={session}
+                    onSelectSession={(id) =>
+                      void navigate({
+                        to: "/service-sessions/$sessionId",
+                        params: { sessionId: id },
+                      })
+                    }
+                  />
+                </section>
               </TabPanel>
 
               <TabPanel value="feedback">

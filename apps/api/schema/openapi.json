@@ -14264,17 +14264,6 @@
             "description": "Required for a CompanyWide session. For an Individual session it is taken from the member, so that the two cannot disagree",
             "title": "Client Id"
           },
-          "client_type": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/ClientType"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "description": "New or repeat client"
-          },
           "clinical_outcome": {
             "anyOf": [
               {
@@ -14439,19 +14428,6 @@
             "description": "Service identifier",
             "title": "Service Id",
             "type": "string"
-          },
-          "session_number": {
-            "anyOf": [
-              {
-                "minimum": 1.0,
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "description": "Ordinal session number for this client",
-            "title": "Session Number"
           },
           "session_type": {
             "anyOf": [
@@ -15273,6 +15249,32 @@
         ],
         "title": "SessionCategory",
         "type": "string"
+      },
+      "SessionChainResponse": {
+        "description": "One session's place in the chain of care around it.\n\nOne hop each way. A chain is walked a step at a time because there is no\ncontainer holding the whole episode: a case would be that container, and a\nsession may not reach one.",
+        "properties": {
+          "following": {
+            "description": "Sessions booked off the back of this one",
+            "items": {
+              "$ref": "#/components/schemas/ServiceSessionResponse"
+            },
+            "title": "Following",
+            "type": "array"
+          },
+          "previous": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ServiceSessionResponse"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The session this one was booked off the back of"
+          }
+        },
+        "title": "SessionChainResponse",
+        "type": "object"
       },
       "SessionClinicalStatus": {
         "description": "Clinical continuation outcome recorded by the counsellor at session end.\n\nDistinct from SessionStatus (scheduling lifecycle).\nTO_BE_CONTINUED:  client returns for follow-up (xlsx: T).\nREFERRED:         client referred elsewhere (xlsx: R).\nCOMPLETED:        case episode closed this session (xlsx: C).\nTERMINATED:       engagement ended without completing.",
@@ -38008,6 +38010,54 @@
           }
         ],
         "summary": "Cancel a service session",
+        "tags": [
+          "service-sessions"
+        ]
+      }
+    },
+    "/service-sessions/{session_id}/chain": {
+      "get": {
+        "description": "One hop each way along the chain of care.\n\nThe stored link points backwards, so the forward half has to be looked up.\nOne hop rather than the whole episode: there is no container holding a\ncourse of care, because the thing that would hold it is a case and a\nsession may not reach one.",
+        "operationId": "get_session_chain_service_sessions__session_id__chain_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "session_id",
+            "required": true,
+            "schema": {
+              "title": "Session Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessionChainResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "The sessions immediately before and after this one",
         "tags": [
           "service-sessions"
         ]

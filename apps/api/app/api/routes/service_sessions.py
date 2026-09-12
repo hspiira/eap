@@ -43,6 +43,7 @@ from app.api.schemas.service_session_schemas import (
     ServiceSessionResponse,
     ServiceSessionUpdate,
     ServiceSessionUpdateFeedback,
+    SessionChainResponse,
     SessionDrawdownResponse,
 )
 from app.application.use_cases.authorization_drawdown import (
@@ -67,6 +68,7 @@ from app.core.security import TokenData, get_current_user
 from app.domain.entities.eligible_member import EligibleMember
 from app.domain.entities.service_session import ServiceSessionEntity
 from app.domain.enums import (
+    ClientType,
     SessionAttendance,
     SessionCategory,
     SessionClinicalStatus,
@@ -121,10 +123,27 @@ from app.shared.utils.route_audit_helper import audit_change
 router = APIRouter(prefix="/service-sessions", tags=["service-sessions"])
 
 
+def derived_client_type(ordinal: int | None, stored: ClientType | None) -> ClientType | None:
+    """New on a member's first session, Repeat on every one after it.
+
+    Counted rather than asked, because a person filling a booking form has no
+    way of knowing and the dates already say. "New" means new to this system:
+    someone seen for years before go-live reads as New, which is a limit of the
+    data rather than of the rule and is said on screen rather than hidden.
+
+    Falls back to what was stored when there is nothing to count within, which
+    is a company-wide talk: it belongs to a client and no member.
+    """
+    if ordinal is None:
+        return stored
+    return ClientType.NEW if ordinal == 1 else ClientType.REPEAT
+
+
 def to_service_session_response(
     session: ServiceSessionEntity,
     provider_organisation_id: str | None = None,
     names: SessionNames | None = None,
+    ordinal: int | None = None,
 ) -> ServiceSessionResponse:
     """Map ServiceSessionEntity to API response using public properties."""
     names = names or SessionNames()
@@ -163,14 +182,14 @@ def to_service_session_response(
         diagnosis_type_id=session.diagnosis_type_id,
         diagnosis_id=session.diagnosis_id,
         approved_by=session.approved_by,
-        session_number=session.session_number,
+        session_number=ordinal if ordinal is not None else session.session_number,
         follow_up_of_session_id=(
             session.follow_up_of_session_id.value if session.follow_up_of_session_id else None
         ),
         partner_name=session.partner_name,
         partner_relationship=session.partner_relationship,
         headcount=session.headcount,
-        client_type=session.client_type,
+        client_type=derived_client_type(ordinal, session.client_type),
         clinical_outcome=session.clinical_outcome,
     )
 
@@ -258,26 +277,6 @@ async def _resolve_follow_up(
     return previous
 
 
-def _derived_session_number(
-    supplied: int | None, previous: ServiceSessionEntity | None
-) -> int | None:
-    """The ordinal this session carries, counted from the one it follows.
-
-    Typed ordinals go wrong: they are entered per session, by hand, from
-    memory. Counting from the chain removes every entry after the first.
-
-    A chain whose first session carries no ordinal stays unnumbered rather than
-    starting at 1. The system does not know whether that session was the
-    person's first or their fifth somewhere else, and an invented ordinal would
-    read exactly like a counted one.
-    """
-    if supplied is not None:
-        return supplied
-    if previous is None or previous.session_number is None:
-        return None
-    return previous.session_number + 1
-
-
 async def _require_free(
     session_repo: ServiceSessionRepository,
     tenant_id: TenantId,
@@ -356,15 +355,17 @@ async def _one(
     session: ServiceSessionEntity,
     reader: SessionAttributionReader,
     names: SessionNameReader,
+    session_repo: ServiceSessionRepository | None = None,
 ) -> ServiceSessionResponse:
     """One session, with the organisation and display names resolved for it."""
-    return (await _many([session], reader, names))[0]
+    return (await _many([session], reader, names, session_repo))[0]
 
 
 async def _many(
     sessions: Sequence[ServiceSessionEntity],
     reader: SessionAttributionReader,
     names: SessionNameReader,
+    session_repo: ServiceSessionRepository | None = None,
 ) -> list[ServiceSessionResponse]:
     """Sessions with attribution and names resolved in bulk rather than per row.
 
@@ -385,9 +386,17 @@ async def _many(
         provider_ids=[s.provider_id.value for s in sessions],
         service_ids=[s.service_id.value for s in sessions],
     )
+    ordinals = (
+        await session_repo.session_ordinals(sessions[0].tenant_id, [s.id.value for s in sessions])
+        if session_repo is not None
+        else {}
+    )
     return [
         to_service_session_response(
-            session, organisations.get(session.provider_affiliation_id or ""), resolved
+            session,
+            organisations.get(session.provider_affiliation_id or ""),
+            resolved,
+            ordinals.get(session.id.value),
         )
         for session in sessions
     ]
@@ -479,7 +488,9 @@ async def create_service_session(
         scheduled_at,
         duration_minutes=service.duration_minutes,
     )
-    previous = await _resolve_follow_up(session_repo, tenant_id, data, member)
+    # Validated for its own sake: the link is the durable fact, and it must
+    # name a real session of the same person before it is stored.
+    await _resolve_follow_up(session_repo, tenant_id, data, member)
     session = await CreateServiceSessionUseCase(session_repo, contract_repo).execute(
         session_id=SessionId(generate_cuid()),
         tenant_id=TenantId(tenant_id),
@@ -499,18 +510,16 @@ async def create_service_session(
         diagnosis_type_id=data.diagnosis_type_id,
         diagnosis_id=data.diagnosis_id,
         approved_by=data.approved_by,
-        session_number=_derived_session_number(data.session_number, previous),
         follow_up_of_session_id=(
             SessionId(data.follow_up_of_session_id) if data.follow_up_of_session_id else None
         ),
         partner_name=data.partner_name,
         partner_relationship=data.partner_relationship,
         headcount=data.headcount,
-        client_type=data.client_type,
         clinical_outcome=data.clinical_outcome,
     )
     await audit_change(session, audit_handler, current_user, request, tenant_id=tenant_id)
-    return await _one(session, attribution_reader, name_reader)
+    return await _one(session, attribution_reader, name_reader, session_repo)
 
 
 @router.post(
@@ -554,7 +563,8 @@ async def complete_service_session(
         member_repo=member_repo,
     )
     return ServiceSessionCompleteResponse(
-        session=await _one(session, attribution_reader, name_reader), drawdown=drawdown
+        session=await _one(session, attribution_reader, name_reader, session_repo),
+        drawdown=drawdown,
     )
 
 
@@ -626,7 +636,7 @@ async def cancel_service_session(
         tenant_id=current_user.tenant_id,
     )
     await audit_change(session, audit_handler, current_user, request)
-    return await _one(session, attribution_reader, name_reader)
+    return await _one(session, attribution_reader, name_reader, session_repo)
 
 
 @router.post(
@@ -687,7 +697,7 @@ async def reschedule_service_session(
         tenant_id=current_user.tenant_id,
     )
     await audit_change(session, audit_handler, current_user, request)
-    return await _one(session, attribution_reader, name_reader)
+    return await _one(session, attribution_reader, name_reader, session_repo)
 
 
 @router.post(
@@ -712,7 +722,7 @@ async def mark_no_show_service_session(
         session.id, ServiceSessionTransition.MARK_NO_SHOW, tenant_id=current_user.tenant_id
     )
     await audit_change(session, audit_handler, current_user, request)
-    return await _one(session, attribution_reader, name_reader)
+    return await _one(session, attribution_reader, name_reader, session_repo)
 
 
 @router.patch(
@@ -750,11 +760,10 @@ async def update_service_session(
         approved_by=data.approved_by,
         partner_name=data.partner_name,
         partner_relationship=data.partner_relationship,
-        client_type=data.client_type,
         clinical_outcome=data.clinical_outcome,
     )
     await audit_change(session, audit_handler, current_user, request, old_entity=before)
-    return await _one(session, attribution_reader, name_reader)
+    return await _one(session, attribution_reader, name_reader, session_repo)
 
 
 @router.patch(
@@ -783,7 +792,7 @@ async def update_service_session_feedback(
         tenant_id=current_user.tenant_id,
     )
     await audit_change(session, audit_handler, current_user, request)
-    return await _one(session, attribution_reader, name_reader)
+    return await _one(session, attribution_reader, name_reader, session_repo)
 
 
 @router.post(
@@ -808,7 +817,7 @@ async def archive_service_session(
         session.id, ServiceSessionTransition.ARCHIVE, tenant_id=current_user.tenant_id
     )
     await audit_change(session, audit_handler, current_user, request)
-    return await _one(session, attribution_reader, name_reader)
+    return await _one(session, attribution_reader, name_reader, session_repo)
 
 
 @router.post(
@@ -833,7 +842,7 @@ async def restore_service_session(
         session.id, ServiceSessionTransition.RESTORE, tenant_id=current_user.tenant_id
     )
     await audit_change(session, audit_handler, current_user, request)
-    return await _one(session, attribution_reader, name_reader)
+    return await _one(session, attribution_reader, name_reader, session_repo)
 
 
 # ==================== QUERIES (Direct Repository) ====================
@@ -929,7 +938,7 @@ async def list_service_sessions(
     )
 
     return ServiceSessionListResponse(
-        items=await _many(sessions, attribution_reader, name_reader),
+        items=await _many(sessions, attribution_reader, name_reader, session_repo),
         total=total,
         page=pg.page,
         limit=pg.limit,
@@ -1023,11 +1032,46 @@ async def list_sessions_awaiting_confirmation(
         offset=pg.offset,
     )
     return ServiceSessionListResponse(
-        items=await _many(sessions, attribution_reader, name_reader),
+        items=await _many(sessions, attribution_reader, name_reader, session_repo),
         total=total,
         page=pg.page,
         limit=pg.limit,
         has_more=(pg.offset + len(sessions)) < total,
+    )
+
+
+@router.get(
+    "/{session_id}/chain",
+    response_model=SessionChainResponse,
+    summary="The sessions immediately before and after this one",
+)
+@readonly()
+async def get_session_chain(
+    session: ServiceSessionEntity = Depends(get_service_session_for_current_tenant),
+    session_repo: ServiceSessionRepository = Depends(get_service_session_repository),
+    attribution_reader: SessionAttributionReader = Depends(get_session_attribution_reader),
+    name_reader: SessionNameReader = Depends(get_session_name_reader),
+):
+    """One hop each way along the chain of care.
+
+    The stored link points backwards, so the forward half has to be looked up.
+    One hop rather than the whole episode: there is no container holding a
+    course of care, because the thing that would hold it is a case and a
+    session may not reach one.
+    """
+    previous_entity = (
+        await session_repo.get_by_id(session.follow_up_of_session_id)
+        if session.follow_up_of_session_id
+        else None
+    )
+    following = await session_repo.list_follow_ups(session.tenant_id, session.id)
+    return SessionChainResponse(
+        previous=(
+            await _one(previous_entity, attribution_reader, name_reader, session_repo)
+            if previous_entity is not None
+            else None
+        ),
+        following=await _many(following, attribution_reader, name_reader, session_repo),
     )
 
 
@@ -1041,10 +1085,11 @@ async def get_service_session(
     session: ServiceSessionEntity = Depends(get_service_session_for_current_tenant),
     attribution_reader: SessionAttributionReader = Depends(get_session_attribution_reader),
     name_reader: SessionNameReader = Depends(get_session_name_reader),
+    session_repo: ServiceSessionRepository = Depends(get_service_session_repository),
     db: AsyncSession = Depends(get_db),
 ):
     """Get service session by ID."""
-    return await _one(session, attribution_reader, name_reader)
+    return await _one(session, attribution_reader, name_reader, session_repo)
 
 
 @router.get(
@@ -1066,7 +1111,7 @@ async def get_sessions_by_member(
     sessions = await GetServiceSessionUseCase(session_repo).execute_by_member(
         TenantId(tenant_id), EligibleMemberId(member_id)
     )
-    return await _many(sessions, attribution_reader, name_reader)
+    return await _many(sessions, attribution_reader, name_reader, session_repo)
 
 
 @router.get(
@@ -1088,7 +1133,7 @@ async def get_sessions_by_provider(
     sessions = await GetServiceSessionUseCase(session_repo).execute_by_provider(
         TenantId(tenant_id), ProviderId(provider_id)
     )
-    return await _many(sessions, attribution_reader, name_reader)
+    return await _many(sessions, attribution_reader, name_reader, session_repo)
 
 
 @router.get(
@@ -1110,4 +1155,4 @@ async def get_sessions_by_service(
     sessions = await GetServiceSessionUseCase(session_repo).execute_by_service(
         TenantId(tenant_id), ServiceId(service_id)
     )
-    return await _many(sessions, attribution_reader, name_reader)
+    return await _many(sessions, attribution_reader, name_reader, session_repo)

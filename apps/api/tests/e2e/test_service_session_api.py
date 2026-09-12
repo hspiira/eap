@@ -1428,51 +1428,41 @@ class TestSessionNumbering:
 
         assert numbers == [2, 3, 4]
 
-    async def test_a_typed_number_still_wins(
+    async def test_the_first_session_numbers_itself(
         self,
-        client: AsyncClient,
-        session_test_tenant: dict,
-        session_test_service: dict,
-        session_test_provider: dict,
-        session_test_client_person: dict,
+        client,
+        session_test_tenant,
+        session_test_service,
+        session_test_provider,
+        session_test_client_person,
     ):
-        """The import supplies its own ordinals, and a correction must stick."""
-        tenant_id = session_test_tenant["id"]
-        first = await self._book(
+        """Nothing is typed. A person filling a form cannot know the ordinal."""
+        response = await self._book(
             client,
-            tenant_id,
+            session_test_tenant["id"],
             session_test_service,
             session_test_provider,
             session_test_client_person,
             at=datetime.now(UTC) + timedelta(days=62),
-            session_number=1,
         )
 
-        second = await self._book(
-            client,
-            tenant_id,
-            session_test_service,
-            session_test_provider,
-            session_test_client_person,
-            at=datetime.now(UTC) + timedelta(days=69),
-            follow_up_of_session_id=first.json()["id"],
-            session_number=9,
-        )
+        assert response.status_code == 201, response.text
+        assert response.json()["session_number"] == 1
 
-        assert second.json()["session_number"] == 9
-
-    async def test_an_unnumbered_chain_stays_unnumbered(
+    async def test_a_backdated_session_takes_its_place_and_pushes_the_others_along(
         self,
-        client: AsyncClient,
-        session_test_tenant: dict,
-        session_test_service: dict,
-        session_test_provider: dict,
-        session_test_client_person: dict,
+        client,
+        session_test_tenant,
+        session_test_service,
+        session_test_provider,
+        session_test_client_person,
     ):
-        """Not 1. The system cannot tell a person's first session from their
-        fifth somewhere else, and an invented ordinal reads like a counted one."""
+        """The ordinal is a view of the dates, so a backlog entry resequences.
+
+        Nothing is renumbered because nothing was numbered.
+        """
         tenant_id = session_test_tenant["id"]
-        first = await self._book(
+        later = await self._book(
             client,
             tenant_id,
             session_test_service,
@@ -1480,19 +1470,19 @@ class TestSessionNumbering:
             session_test_client_person,
             at=datetime.now(UTC) + timedelta(days=63),
         )
-        assert first.json()["session_number"] is None
+        assert later.json()["session_number"] == 1
 
-        second = await self._book(
+        await self._book(
             client,
             tenant_id,
             session_test_service,
             session_test_provider,
             session_test_client_person,
-            at=datetime.now(UTC) + timedelta(days=70),
-            follow_up_of_session_id=first.json()["id"],
+            at=datetime.now(UTC) - timedelta(days=5),
         )
 
-        assert second.json()["session_number"] is None
+        reread = await client.get(f"/service-sessions/{later.json()['id']}")
+        assert reread.json()["session_number"] == 2
 
     async def test_a_follow_up_cannot_name_an_unknown_session(
         self,
@@ -1599,7 +1589,7 @@ class TestAFollowUpMayChangeIntervention:
                 "delivery_context": "Direct",
             }
             if previous is None:
-                body["session_number"] = 1
+                pass
             else:
                 body["follow_up_of_session_id"] = previous
             response = await client.post(f"/service-sessions/?tenant_id={tenant_id}", json=body)
@@ -1658,3 +1648,214 @@ class TestAFollowUpMayChangeIntervention:
 
         assert crossing.status_code == 201, crossing.text
         assert crossing.json()["session_number"] == 2
+
+
+class TestClientTypeIsCounted:
+    """New or Repeat is read off the dates, not asked on a form.
+
+    It used to be a field someone typed, carried in from the counsellor's
+    spreadsheet. Nothing in the platform read it.
+    """
+
+    async def _book(self, client, tenant_id, service, provider, member, *, at):
+        return await client.post(
+            f"/service-sessions/?tenant_id={tenant_id}",
+            json={
+                "service_id": service["id"],
+                "provider_id": provider["id"],
+                "member_id": member["id"],
+                "scheduled_at": at.isoformat(),
+                "delivery_context": "Direct",
+            },
+        )
+
+    async def test_a_members_first_session_is_new_and_the_next_is_repeat(
+        self,
+        client,
+        session_test_tenant,
+        session_test_service,
+        session_test_provider,
+        session_test_client_person,
+    ):
+        tenant_id = session_test_tenant["id"]
+        first = await self._book(
+            client,
+            tenant_id,
+            session_test_service,
+            session_test_provider,
+            session_test_client_person,
+            at=datetime.now(UTC) + timedelta(days=110),
+        )
+        second = await self._book(
+            client,
+            tenant_id,
+            session_test_service,
+            session_test_provider,
+            session_test_client_person,
+            at=datetime.now(UTC) + timedelta(days=117),
+        )
+
+        assert first.json()["client_type"] == "New"
+        assert second.json()["client_type"] == "Repeat"
+
+    async def test_a_backdated_session_takes_over_as_the_new_one(
+        self,
+        client,
+        session_test_tenant,
+        session_test_service,
+        session_test_provider,
+        session_test_client_person,
+    ):
+        """Same counting as the ordinal, so the two can never disagree."""
+        tenant_id = session_test_tenant["id"]
+        booked = await self._book(
+            client,
+            tenant_id,
+            session_test_service,
+            session_test_provider,
+            session_test_client_person,
+            at=datetime.now(UTC) + timedelta(days=111),
+        )
+        assert booked.json()["client_type"] == "New"
+
+        earlier = await self._book(
+            client,
+            tenant_id,
+            session_test_service,
+            session_test_provider,
+            session_test_client_person,
+            at=datetime.now(UTC) - timedelta(days=9),
+        )
+
+        assert earlier.json()["client_type"] == "New"
+        reread = await client.get(f"/service-sessions/{booked.json()['id']}")
+        assert reread.json()["client_type"] == "Repeat"
+
+    async def test_the_form_can_no_longer_send_one(
+        self,
+        client,
+        session_test_tenant,
+        session_test_service,
+        session_test_provider,
+        session_test_client_person,
+    ):
+        """Accepting a value it then ignores would be worse than refusing it."""
+        response = await client.post(
+            f"/service-sessions/?tenant_id={session_test_tenant['id']}",
+            json={
+                "service_id": session_test_service["id"],
+                "provider_id": session_test_provider["id"],
+                "member_id": session_test_client_person["id"],
+                "scheduled_at": (datetime.now(UTC) + timedelta(days=112)).isoformat(),
+                "delivery_context": "Direct",
+                "client_type": "Repeat",
+                "session_number": 7,
+            },
+        )
+
+        assert response.status_code == 201, response.text
+        # Counted, not taken from the request.
+        assert response.json()["client_type"] == "New"
+        assert response.json()["session_number"] == 1
+
+
+class TestSessionChain:
+    async def _book(self, client, tenant_id, service, provider, member, *, at, follows=None):
+        body = {
+            "service_id": service["id"],
+            "provider_id": provider["id"],
+            "member_id": member["id"],
+            "scheduled_at": at.isoformat(),
+            "delivery_context": "Direct",
+        }
+        if follows:
+            body["follow_up_of_session_id"] = follows
+        return await client.post(f"/service-sessions/?tenant_id={tenant_id}", json=body)
+
+    async def test_the_middle_of_a_chain_sees_both_ways(
+        self,
+        client,
+        session_test_tenant,
+        session_test_service,
+        session_test_provider,
+        session_test_client_person,
+    ):
+        tenant_id = session_test_tenant["id"]
+        first = await self._book(
+            client,
+            tenant_id,
+            session_test_service,
+            session_test_provider,
+            session_test_client_person,
+            at=datetime.now(UTC) + timedelta(days=120),
+        )
+        second = await self._book(
+            client,
+            tenant_id,
+            session_test_service,
+            session_test_provider,
+            session_test_client_person,
+            at=datetime.now(UTC) + timedelta(days=127),
+            follows=first.json()["id"],
+        )
+        third = await self._book(
+            client,
+            tenant_id,
+            session_test_service,
+            session_test_provider,
+            session_test_client_person,
+            at=datetime.now(UTC) + timedelta(days=134),
+            follows=second.json()["id"],
+        )
+
+        response = await client.get(f"/service-sessions/{second.json()['id']}/chain")
+
+        assert response.status_code == 200, response.text
+        body = response.json()
+        assert body["previous"]["id"] == first.json()["id"]
+        assert [f["id"] for f in body["following"]] == [third.json()["id"]]
+
+    async def test_a_lone_session_has_nothing_either_way(
+        self,
+        client,
+        session_test_tenant,
+        session_test_service,
+        session_test_provider,
+        session_test_client_person,
+    ):
+        booked = await self._book(
+            client,
+            session_test_tenant["id"],
+            session_test_service,
+            session_test_provider,
+            session_test_client_person,
+            at=datetime.now(UTC) + timedelta(days=121),
+        )
+
+        response = await client.get(f"/service-sessions/{booked.json()['id']}/chain")
+
+        assert response.status_code == 200, response.text
+        assert response.json()["previous"] is None
+        assert response.json()["following"] == []
+
+    async def test_the_chain_is_not_swallowed_by_the_session_id_route(
+        self,
+        client,
+        session_test_tenant,
+        session_test_service,
+        session_test_provider,
+        session_test_client_person,
+    ):
+        booked = await self._book(
+            client,
+            session_test_tenant["id"],
+            session_test_service,
+            session_test_provider,
+            session_test_client_person,
+            at=datetime.now(UTC) + timedelta(days=122),
+        )
+
+        response = await client.get(f"/service-sessions/{booked.json()['id']}/chain")
+
+        assert response.status_code == 200, response.text
+        assert "following" in response.json()

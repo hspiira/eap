@@ -240,6 +240,59 @@ class ServiceSessionRepositoryImpl(
             ServiceSessionModel.deleted_at.is_(None),
         ]
 
+    async def list_follow_ups(
+        self, tenant_id: TenantId, session_id: SessionId
+    ) -> Sequence[ServiceSessionEntity]:
+        models = await self.session.scalars(
+            select(ServiceSessionModel)
+            .where(
+                ServiceSessionModel.tenant_id == tenant_id.value,
+                ServiceSessionModel.deleted_at.is_(None),
+                ServiceSessionModel.follow_up_of_session_id == session_id.value,
+            )
+            .order_by(ServiceSessionModel.scheduled_at)
+        )
+        return [ServiceSessionMapper.to_entity(m) for m in models]
+
+    async def session_ordinals(
+        self, tenant_id: TenantId, session_ids: Sequence[str]
+    ) -> dict[str, int]:
+        """One window query for the whole page, not one per row.
+
+        Ranks every session of each member involved, then keeps only the rows
+        asked about. Cancelled sessions are left out of the count: a booking
+        nobody attended is not a session in a person's course of care.
+        """
+        if not session_ids:
+            return {}
+        members = select(ServiceSessionModel.member_id).where(
+            ServiceSessionModel.tenant_id == tenant_id.value,
+            ServiceSessionModel.id.in_(session_ids),
+            ServiceSessionModel.member_id.is_not(None),
+        )
+        counted = (
+            select(
+                ServiceSessionModel.id.label("id"),
+                func.row_number()
+                .over(
+                    partition_by=ServiceSessionModel.member_id,
+                    order_by=(ServiceSessionModel.scheduled_at, ServiceSessionModel.id),
+                )
+                .label("ordinal"),
+            )
+            .where(
+                ServiceSessionModel.tenant_id == tenant_id.value,
+                ServiceSessionModel.deleted_at.is_(None),
+                ServiceSessionModel.status != SessionStatus.CANCELLED.value,
+                ServiceSessionModel.member_id.in_(members),
+            )
+            .subquery()
+        )
+        rows = await self.session.execute(
+            select(counted.c.id, counted.c.ordinal).where(counted.c.id.in_(session_ids))
+        )
+        return {row.id: int(row.ordinal) for row in rows}
+
     async def find_clashing_booking(
         self,
         tenant_id: TenantId,

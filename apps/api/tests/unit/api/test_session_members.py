@@ -107,6 +107,7 @@ async def api():
     # No clash unless a case says otherwise; an unconfigured AsyncMock returns
     # a truthy mock, which the booking gate would read as a double-booking.
     state.sessions.find_clashing_booking.return_value = None
+    state.sessions.session_ordinals.return_value = {}
     state.clients = AsyncMock()
     state.clients.get_by_id.return_value = SimpleNamespace(
         id=ClientId("c1"), tenant_id=TenantId("t1")

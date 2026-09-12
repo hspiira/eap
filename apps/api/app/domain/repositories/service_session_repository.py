@@ -176,6 +176,31 @@ class ServiceSessionRepository(BaseRepository[ServiceSessionEntity, SessionId]):
         """
 
     @abstractmethod
+    async def list_follow_ups(
+        self, tenant_id: TenantId, session_id: SessionId
+    ) -> Sequence[ServiceSessionEntity]:
+        """The sessions booked off the back of this one, earliest first.
+
+        The stored link points backwards, so this is the only way to read the
+        chain forwards.
+        """
+
+    @abstractmethod
+    async def session_ordinals(
+        self, tenant_id: TenantId, session_ids: Sequence[str]
+    ) -> dict[str, int]:
+        """Each session's place in its member's history, counted by date.
+
+        Derived rather than stored so it cannot drift, and so a session entered
+        late for a date in the past takes its rightful place and pushes the
+        later ones along. Nothing is renumbered because nothing was numbered:
+        the ordinal is a view of the dates.
+
+        Company-wide sessions are absent. A talk belongs to a client and no
+        member, so there is no history to count it within.
+        """
+
+    @abstractmethod
     async def find_clashing_booking(
         self,
         tenant_id: TenantId,

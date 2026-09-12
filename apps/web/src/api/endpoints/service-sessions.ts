@@ -1,6 +1,7 @@
 import type { Schemas, ServiceSessionCreate } from "@/api/generated"
 
 type AvailabilityResponse = Schemas["AvailabilityResponse"]
+type SessionChain = Schemas["SessionChainResponse"]
 import type { SessionCategory, SessionClinicalStatus, SessionType } from "@/types/enums"
 
 import apiClient from "../client"
@@ -55,6 +56,16 @@ export const serviceSessionsApi = {
    */
   async list(params?: ServiceSessionListParams): Promise<PaginatedResponse<ServiceSession>> {
     return apiClient.get<PaginatedResponse<ServiceSession>>("/service-sessions", params)
+  },
+
+  /**
+   * The sessions immediately before and after this one.
+   *
+   * One hop each way. The stored link points backwards, so the forward half
+   * has to be looked up rather than read off the session.
+   */
+  async chain(sessionId: string): Promise<SessionChain> {
+    return apiClient.get<SessionChain>(`/service-sessions/${sessionId}/chain`)
   },
 
   /**
