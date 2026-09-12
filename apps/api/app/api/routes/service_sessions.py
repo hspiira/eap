@@ -229,6 +229,55 @@ async def _require_bookable(
 MAX_AVAILABILITY_CHECKS = 100
 
 
+async def _resolve_follow_up(
+    session_repo: ServiceSessionRepository,
+    tenant_id: str,
+    data: ServiceSessionCreate,
+    member: EligibleMember | None,
+) -> ServiceSessionEntity | None:
+    """The session this booking follows, checked before it is trusted.
+
+    A follow-up is a claim about a person's care continuing, so it has to name
+    a session of the same person in the same tenant. Unchecked, a caller could
+    chain one client's session onto another's and the ordinal derived from it
+    would count somebody else's history.
+    """
+    if not data.follow_up_of_session_id:
+        return None
+    previous = await session_repo.get_by_id(SessionId(data.follow_up_of_session_id))
+    if previous is None or previous.tenant_id.value != tenant_id:
+        raise NotFoundError(
+            "Session to follow not found",
+            resource_type="ServiceSession",
+            resource_id=data.follow_up_of_session_id,
+        )
+    if previous.member_id != (member.id if member else None):
+        raise ValidationException(
+            "A follow-up must name a session of the same person",
+        )
+    return previous
+
+
+def _derived_session_number(
+    supplied: int | None, previous: ServiceSessionEntity | None
+) -> int | None:
+    """The ordinal this session carries, counted from the one it follows.
+
+    Typed ordinals go wrong: they are entered per session, by hand, from
+    memory. Counting from the chain removes every entry after the first.
+
+    A chain whose first session carries no ordinal stays unnumbered rather than
+    starting at 1. The system does not know whether that session was the
+    person's first or their fifth somewhere else, and an invented ordinal would
+    read exactly like a counted one.
+    """
+    if supplied is not None:
+        return supplied
+    if previous is None or previous.session_number is None:
+        return None
+    return previous.session_number + 1
+
+
 async def _require_free(
     session_repo: ServiceSessionRepository,
     tenant_id: TenantId,
@@ -430,6 +479,7 @@ async def create_service_session(
         scheduled_at,
         duration_minutes=service.duration_minutes,
     )
+    previous = await _resolve_follow_up(session_repo, tenant_id, data, member)
     session = await CreateServiceSessionUseCase(session_repo, contract_repo).execute(
         session_id=SessionId(generate_cuid()),
         tenant_id=TenantId(tenant_id),
@@ -449,7 +499,7 @@ async def create_service_session(
         diagnosis_type_id=data.diagnosis_type_id,
         diagnosis_id=data.diagnosis_id,
         approved_by=data.approved_by,
-        session_number=data.session_number,
+        session_number=_derived_session_number(data.session_number, previous),
         follow_up_of_session_id=(
             SessionId(data.follow_up_of_session_id) if data.follow_up_of_session_id else None
         ),

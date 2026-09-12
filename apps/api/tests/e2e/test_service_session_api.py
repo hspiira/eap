@@ -1337,3 +1337,324 @@ class TestFollowUpSessions:
         assert response.status_code == 201, response.text
         assert response.json()["clinical_outcome"] == "ToBeContinued"
         assert response.json()["follow_up_of_session_id"] is None
+
+
+class TestSessionNumbering:
+    """The ordinal is counted from the chain, not typed.
+
+    A typed ordinal is entered per session, by hand, from memory. Counting from
+    the session a booking follows removes every entry after the first. See
+    decision 7 in docs/design/REALTIME_SESSION_CAPTURE.md.
+    """
+
+    async def _book(self, client, tenant_id, service, provider, member, *, at, **extra):
+        return await client.post(
+            f"/service-sessions/?tenant_id={tenant_id}",
+            json={
+                "service_id": service["id"],
+                "provider_id": provider["id"],
+                "member_id": member["id"],
+                "scheduled_at": at.isoformat(),
+                "delivery_context": "Direct",
+                **extra,
+            },
+        )
+
+    async def test_a_follow_up_counts_on_from_the_session_it_follows(
+        self,
+        client: AsyncClient,
+        session_test_tenant: dict,
+        session_test_service: dict,
+        session_test_provider: dict,
+        session_test_client_person: dict,
+    ):
+        tenant_id = session_test_tenant["id"]
+        first = await self._book(
+            client,
+            tenant_id,
+            session_test_service,
+            session_test_provider,
+            session_test_client_person,
+            at=datetime.now(UTC) + timedelta(days=60),
+            session_number=1,
+        )
+        assert first.status_code == 201, first.text
+
+        second = await self._book(
+            client,
+            tenant_id,
+            session_test_service,
+            session_test_provider,
+            session_test_client_person,
+            at=datetime.now(UTC) + timedelta(days=67),
+            follow_up_of_session_id=first.json()["id"],
+        )
+
+        assert second.status_code == 201, second.text
+        assert second.json()["session_number"] == 2
+
+    async def test_the_count_carries_along_a_chain(
+        self,
+        client: AsyncClient,
+        session_test_tenant: dict,
+        session_test_service: dict,
+        session_test_provider: dict,
+        session_test_client_person: dict,
+    ):
+        tenant_id = session_test_tenant["id"]
+        previous = await self._book(
+            client,
+            tenant_id,
+            session_test_service,
+            session_test_provider,
+            session_test_client_person,
+            at=datetime.now(UTC) + timedelta(days=61),
+            session_number=1,
+        )
+        numbers = []
+        for week in range(2, 5):
+            nxt = await self._book(
+                client,
+                tenant_id,
+                session_test_service,
+                session_test_provider,
+                session_test_client_person,
+                at=datetime.now(UTC) + timedelta(days=61 + week * 7),
+                follow_up_of_session_id=previous.json()["id"],
+            )
+            assert nxt.status_code == 201, nxt.text
+            numbers.append(nxt.json()["session_number"])
+            previous = nxt
+
+        assert numbers == [2, 3, 4]
+
+    async def test_a_typed_number_still_wins(
+        self,
+        client: AsyncClient,
+        session_test_tenant: dict,
+        session_test_service: dict,
+        session_test_provider: dict,
+        session_test_client_person: dict,
+    ):
+        """The import supplies its own ordinals, and a correction must stick."""
+        tenant_id = session_test_tenant["id"]
+        first = await self._book(
+            client,
+            tenant_id,
+            session_test_service,
+            session_test_provider,
+            session_test_client_person,
+            at=datetime.now(UTC) + timedelta(days=62),
+            session_number=1,
+        )
+
+        second = await self._book(
+            client,
+            tenant_id,
+            session_test_service,
+            session_test_provider,
+            session_test_client_person,
+            at=datetime.now(UTC) + timedelta(days=69),
+            follow_up_of_session_id=first.json()["id"],
+            session_number=9,
+        )
+
+        assert second.json()["session_number"] == 9
+
+    async def test_an_unnumbered_chain_stays_unnumbered(
+        self,
+        client: AsyncClient,
+        session_test_tenant: dict,
+        session_test_service: dict,
+        session_test_provider: dict,
+        session_test_client_person: dict,
+    ):
+        """Not 1. The system cannot tell a person's first session from their
+        fifth somewhere else, and an invented ordinal reads like a counted one."""
+        tenant_id = session_test_tenant["id"]
+        first = await self._book(
+            client,
+            tenant_id,
+            session_test_service,
+            session_test_provider,
+            session_test_client_person,
+            at=datetime.now(UTC) + timedelta(days=63),
+        )
+        assert first.json()["session_number"] is None
+
+        second = await self._book(
+            client,
+            tenant_id,
+            session_test_service,
+            session_test_provider,
+            session_test_client_person,
+            at=datetime.now(UTC) + timedelta(days=70),
+            follow_up_of_session_id=first.json()["id"],
+        )
+
+        assert second.json()["session_number"] is None
+
+    async def test_a_follow_up_cannot_name_an_unknown_session(
+        self,
+        client: AsyncClient,
+        session_test_tenant: dict,
+        session_test_service: dict,
+        session_test_provider: dict,
+        session_test_client_person: dict,
+    ):
+        response = await self._book(
+            client,
+            session_test_tenant["id"],
+            session_test_service,
+            session_test_provider,
+            session_test_client_person,
+            at=datetime.now(UTC) + timedelta(days=64),
+            follow_up_of_session_id="does-not-exist",
+        )
+
+        assert response.status_code == 404, response.text
+
+    async def test_a_follow_up_cannot_chain_onto_another_person(
+        self,
+        client: AsyncClient,
+        session_test_tenant: dict,
+        session_test_service: dict,
+        session_test_provider: dict,
+        session_test_client_person: dict,
+    ):
+        """Otherwise the ordinal would count somebody else's history."""
+        tenant_id = session_test_tenant["id"]
+        talk = await client.post(
+            f"/service-sessions/?tenant_id={tenant_id}",
+            json={
+                "service_id": session_test_service["id"],
+                "provider_id": session_test_provider["id"],
+                "attendance": "CompanyWide",
+                "client_id": session_test_client_person["client_id"],
+                "headcount": 30,
+                "scheduled_at": (datetime.now(UTC) + timedelta(days=65)).isoformat(),
+                "delivery_context": "Direct",
+            },
+        )
+        assert talk.status_code == 201, talk.text
+
+        response = await self._book(
+            client,
+            tenant_id,
+            session_test_service,
+            session_test_provider,
+            session_test_client_person,
+            at=datetime.now(UTC) + timedelta(days=72),
+            follow_up_of_session_id=talk.json()["id"],
+        )
+
+        assert response.status_code == 422, response.text
+
+
+class TestAFollowUpMayChangeIntervention:
+    """Care moves between interventions: individual, then couples, then family.
+
+    Those are separate services that share the ShortTermCounselling category,
+    which is also what an authorisation is keyed on. The follow-up link does not
+    pin the service, so the chain survives the change.
+    """
+
+    async def _service(self, client, tenant_id, name, category):
+        response = await client.post(
+            f"/services/?tenant_id={tenant_id}",
+            json={
+                "name": name,
+                "description": name,
+                "category": category,
+                "duration_minutes": 60,
+                "is_group_service": False,
+            },
+        )
+        assert response.status_code == 201, response.text
+        return response.json()
+
+    async def test_a_chain_moves_from_individual_to_couples_to_family(
+        self,
+        client: AsyncClient,
+        session_test_tenant: dict,
+        session_test_provider: dict,
+        session_test_client_person: dict,
+    ):
+        tenant_id = session_test_tenant["id"]
+        individual = await self._service(
+            client, tenant_id, "Individual Counselling", "ShortTermCounselling"
+        )
+        couples = await self._service(
+            client, tenant_id, "Couple Counselling", "ShortTermCounselling"
+        )
+        family = await self._service(client, tenant_id, "Family Therapy", "ShortTermCounselling")
+
+        previous, numbers, services = None, [], []
+        for offset, service in enumerate((individual, couples, family)):
+            body = {
+                "service_id": service["id"],
+                "provider_id": session_test_provider["id"],
+                "member_id": session_test_client_person["id"],
+                "scheduled_at": (datetime.now(UTC) + timedelta(days=80 + offset * 7)).isoformat(),
+                "delivery_context": "Direct",
+            }
+            if previous is None:
+                body["session_number"] = 1
+            else:
+                body["follow_up_of_session_id"] = previous
+            response = await client.post(f"/service-sessions/?tenant_id={tenant_id}", json=body)
+            assert response.status_code == 201, response.text
+            previous = response.json()["id"]
+            numbers.append(response.json()["session_number"])
+            services.append(response.json()["service_id"])
+
+        # The intervention changes at every step; the count does not restart.
+        assert numbers == [1, 2, 3]
+        assert services == [individual["id"], couples["id"], family["id"]]
+        assert len(set(services)) == 3
+
+    async def test_the_chain_is_not_pinned_to_one_service_category_either(
+        self,
+        client: AsyncClient,
+        session_test_tenant: dict,
+        session_test_provider: dict,
+        session_test_client_person: dict,
+    ):
+        """Recorded rather than asserted as correct: nothing currently stops a
+        follow-up crossing into another category, and whether it should is an
+        open question in docs/design/REALTIME_SESSION_CAPTURE.md."""
+        tenant_id = session_test_tenant["id"]
+        counselling = await self._service(
+            client, tenant_id, "Individual Counselling B", "ShortTermCounselling"
+        )
+        crisis = await self._service(
+            client, tenant_id, "Crisis Intervention B", "CrisisIntervention"
+        )
+
+        first = await client.post(
+            f"/service-sessions/?tenant_id={tenant_id}",
+            json={
+                "service_id": counselling["id"],
+                "provider_id": session_test_provider["id"],
+                "member_id": session_test_client_person["id"],
+                "scheduled_at": (datetime.now(UTC) + timedelta(days=90)).isoformat(),
+                "delivery_context": "Direct",
+                "session_number": 1,
+            },
+        )
+        assert first.status_code == 201, first.text
+
+        crossing = await client.post(
+            f"/service-sessions/?tenant_id={tenant_id}",
+            json={
+                "service_id": crisis["id"],
+                "provider_id": session_test_provider["id"],
+                "member_id": session_test_client_person["id"],
+                "scheduled_at": (datetime.now(UTC) + timedelta(days=97)).isoformat(),
+                "delivery_context": "Direct",
+                "follow_up_of_session_id": first.json()["id"],
+            },
+        )
+
+        assert crossing.status_code == 201, crossing.text
+        assert crossing.json()["session_number"] == 2
