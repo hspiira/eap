@@ -479,9 +479,15 @@ async def test_dashboard_value_upcoming_risk_and_contracts(
     today = utc_now().date()
     db_session.add_all(
         [
-            _session(TENANT, "cl-dash-a", "prov-dash-1", days_ago=-2, status=SessionStatus.SCHEDULED),
-            _session(TENANT, "cl-dash-a", "prov-dash-1", days_ago=-2, status=SessionStatus.RESCHEDULED),
-            _session(TENANT, "cl-dash-a", "prov-dash-1", days_ago=-30, status=SessionStatus.SCHEDULED),
+            _session(
+                TENANT, "cl-dash-a", "prov-dash-1", days_ago=-2, status=SessionStatus.SCHEDULED
+            ),
+            _session(
+                TENANT, "cl-dash-a", "prov-dash-1", days_ago=-2, status=SessionStatus.RESCHEDULED
+            ),
+            _session(
+                TENANT, "cl-dash-a", "prov-dash-1", days_ago=-30, status=SessionStatus.SCHEDULED
+            ),
             ContractModel(
                 id="ct-dash-soon",
                 tenant_id=TENANT,

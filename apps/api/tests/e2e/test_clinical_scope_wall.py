@@ -114,7 +114,6 @@ class TestTheWall:
         r_hr = await wall_client.get("/auth/me", headers=_bearer(token_hr))
         assert r_hr.json()["access_scopes"] == []
 
-
     async def test_dashboard_outcome_mix_follows_the_wall(
         self, wall_client: AsyncClient, seeded: Any
     ) -> None:

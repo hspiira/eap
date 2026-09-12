@@ -4,9 +4,8 @@
  * rather than repeating it in prose above them.
  */
 
-import type { ElementType, ReactNode } from "react"
-
 import { CircleAlert } from "lucide-react"
+import type { ElementType, ReactNode } from "react"
 
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
