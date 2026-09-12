@@ -12,7 +12,7 @@ import logging
 from collections.abc import Sequence
 from copy import deepcopy
 from dataclasses import dataclass
-from typing import Literal
+from typing import Any, Literal
 
 from fastapi import (
     APIRouter,
@@ -127,6 +127,7 @@ from app.shared.decorators import readonly, transactional
 from app.shared.handlers.audit_event_handler import AuditEventHandler
 from app.shared.utils.batched_commit import BatchedCommit
 from app.shared.utils.datetime import utc_now
+from app.shared.utils.errors import ErrorResponse
 from app.shared.utils.generators import generate_cuid
 from app.shared.utils.member_csv import MemberCsvRow, parse_member_csv
 from app.shared.utils.route_audit_helper import audit_change
@@ -134,6 +135,11 @@ from app.shared.utils.route_audit_helper import audit_change
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/members", tags=["members"])
+
+
+def _error_response(description: str) -> dict[str, Any]:
+    """Describe one error status this router can return, for the OpenAPI schema."""
+    return {"model": ErrorResponse, "description": description}
 
 
 def _employment(data: MemberEmployment | None) -> EmploymentDetails | None:
@@ -328,7 +334,16 @@ async def _audit(
     )
 
 
-@router.post("", response_model=MemberResponse, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "",
+    response_model=MemberResponse,
+    status_code=status.HTTP_201_CREATED,
+    responses={
+        404: _error_response("Client not found in this tenant"),
+        409: _error_response("Member code already exists for this client"),
+        422: _error_response("Member code was set on create, or the primary employee is invalid"),
+    },
+)
 @transactional()
 async def create_member(
     request: Request,
@@ -1182,7 +1197,15 @@ def _csv_cell(value: str | None) -> str | None:
     return value
 
 
-@router.patch("/{member_id}", response_model=MemberResponse)
+@router.patch(
+    "/{member_id}",
+    response_model=MemberResponse,
+    responses={
+        404: _error_response("Member not found"),
+        409: _error_response("Member code already exists, or beneficiaries block the change"),
+        422: _error_response("Update would leave the member invalid, or names itself as primary"),
+    },
+)
 @transactional()
 async def update_member(
     request: Request,
@@ -1247,7 +1270,14 @@ async def _transition_member(
     return member
 
 
-@router.put("/{member_id}/account", response_model=MemberResponse)
+@router.put(
+    "/{member_id}/account",
+    response_model=MemberResponse,
+    responses={
+        404: _error_response("Member or user account not found"),
+        409: _error_response("User account is linked to another member"),
+    },
+)
 @transactional()
 async def link_member_account(
     request: Request,
@@ -1311,7 +1341,15 @@ async def unlink_member_account(
     return _response(member)
 
 
-@router.post("/{member_id}/merge", response_model=MemberMergeResponse)
+@router.post(
+    "/{member_id}/merge",
+    response_model=MemberMergeResponse,
+    responses={
+        404: _error_response("Target or source member not found"),
+        409: _error_response("Members belong to different clients"),
+        422: _error_response("Source and target members must differ"),
+    },
+)
 @transactional()
 async def merge_members(
     request: Request,
