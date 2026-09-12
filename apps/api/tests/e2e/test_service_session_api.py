@@ -2224,3 +2224,144 @@ class TestClinicalScopeGating:
             f"/service-sessions/{session['id']}?tenant_id={other_tenant.json()['id']}"
         )
         assert response.status_code == 404
+
+
+class TestSessionSearch:
+    """R5: bounded server search over service, client and practitioner names."""
+
+    async def test_a_matching_search_changes_items_and_total(
+        self, client: AsyncClient, session_test_tenant: dict, test_service_session: dict
+    ):
+        tenant_id = session_test_tenant["id"]
+
+        response = await client.get(f"/service-sessions/?tenant_id={tenant_id}&search=Test+Service")
+
+        assert response.status_code == 200, response.text
+        data = response.json()
+        assert data["total"] == 1
+        assert data["items"][0]["id"] == test_service_session["id"]
+
+    async def test_a_nonmatching_search_returns_nothing(
+        self, client: AsyncClient, session_test_tenant: dict, test_service_session: dict
+    ):
+        tenant_id = session_test_tenant["id"]
+
+        response = await client.get(f"/service-sessions/?tenant_id={tenant_id}&search=NoSuchThing")
+
+        assert response.status_code == 200, response.text
+        assert response.json() == {
+            "items": [],
+            "total": 0,
+            "page": 1,
+            "limit": 20,
+            "has_more": False,
+        }
+
+    async def test_search_matches_client_and_practitioner_names_too(
+        self, client: AsyncClient, session_test_tenant: dict, test_service_session: dict
+    ):
+        tenant_id = session_test_tenant["id"]
+
+        by_client = await client.get(f"/service-sessions/?tenant_id={tenant_id}&search=employer")
+        assert by_client.json()["total"] == 1
+
+        by_provider = await client.get(
+            f"/service-sessions/?tenant_id={tenant_id}&search=practitioner"
+        )
+        assert by_provider.json()["total"] == 1
+
+    async def test_search_is_case_insensitive(
+        self, client: AsyncClient, session_test_tenant: dict, test_service_session: dict
+    ):
+        tenant_id = session_test_tenant["id"]
+
+        response = await client.get(f"/service-sessions/?tenant_id={tenant_id}&search=SESSION test")
+        assert response.json()["total"] == 1
+
+    async def test_wildcard_characters_search_literally_not_as_wildcards(
+        self, client: AsyncClient, session_test_tenant: dict, test_service_session: dict
+    ):
+        """None of the fixture names contain a literal `%` or `_`.
+
+        An unescaped search would treat `%` as "match anything" and return
+        every session; escaped, it must return none.
+        """
+        tenant_id = session_test_tenant["id"]
+
+        response = await client.get(f"/service-sessions/?tenant_id={tenant_id}&search=%25")
+        assert response.status_code == 200, response.text
+        assert response.json()["total"] == 0
+
+    async def test_search_stays_within_the_caller_s_tenant(
+        self,
+        client: AsyncClient,
+        session_test_tenant: dict,
+        session_test_provider: dict,
+        session_test_client_person: dict,
+        test_service_session: dict,
+    ):
+        """A same-named service in another tenant must not leak into this search."""
+        other_tenant = await client.post(
+            "/tenants/", json={"name": "Other Tenant", "code": "other-search"}
+        )
+        assert other_tenant.status_code == 201
+        other_tenant_id = other_tenant.json()["id"]
+
+        other_service = await client.post(
+            f"/services/?tenant_id={other_tenant_id}",
+            json={
+                "name": "Session Test Service",
+                "description": "Same name, different tenant",
+                "category": "WellnessCoaching",
+                "duration_minutes": 60,
+                "is_group_service": False,
+            },
+        )
+        assert other_service.status_code == 201, other_service.text
+
+        response = await client.get(
+            f"/service-sessions/?tenant_id={session_test_tenant['id']}&search=Test+Service"
+        )
+        assert response.status_code == 200, response.text
+        assert response.json()["total"] == 1
+        assert response.json()["items"][0]["id"] == test_service_session["id"]
+
+    async def test_search_composes_with_pagination_and_sorting(
+        self,
+        client: AsyncClient,
+        session_test_tenant: dict,
+        session_test_service: dict,
+        session_test_provider: dict,
+        session_test_client_person: dict,
+    ):
+        tenant_id = session_test_tenant["id"]
+        base = datetime.now(UTC) + timedelta(days=400)
+        created_ids = []
+        for i in range(3):
+            created = await client.post(
+                f"/service-sessions/?tenant_id={tenant_id}",
+                json={
+                    "service_id": session_test_service["id"],
+                    "provider_id": session_test_provider["id"],
+                    "member_id": session_test_client_person["id"],
+                    "scheduled_at": (base + timedelta(days=i)).isoformat(),
+                    "delivery_context": "Direct",
+                },
+            )
+            assert created.status_code == 201, created.text
+            created_ids.append(created.json()["id"])
+
+        page = await client.get(
+            f"/service-sessions/?tenant_id={tenant_id}&search=Test+Service"
+            f"&sort_by=scheduled_at&sort_desc=false&page=1&limit=2"
+        )
+        assert page.status_code == 200, page.text
+        data = page.json()
+        assert data["total"] == 3
+        assert [s["id"] for s in data["items"]] == created_ids[:2]
+
+        second_page = await client.get(
+            f"/service-sessions/?tenant_id={tenant_id}&search=Test+Service"
+            f"&sort_by=scheduled_at&sort_desc=false&page=2&limit=2"
+        )
+        assert [s["id"] for s in second_page.json()["items"]] == created_ids[2:]

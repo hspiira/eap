@@ -537,3 +537,57 @@ unit tests, `DashboardMain.test.tsx` updated to assert the status filter
 reaches the request rather than relying on client-side hiding. Full
 `tests/unit`+`tests/e2e` and frontend `pnpm test`/`typecheck` pass;
 `pnpm contracts` regenerated.
+
+**Process note**: the plan asked for R4 and R5 as separate commits. The
+repository's `_search_condition`/`_escape_like` and the route's `search`
+query param (R5's backend half) were written and reviewed alongside R4's
+`_status_condition` in the same file and ended up in the R4 commit
+(`91424adc`) before this was caught. Not unwound: both are independently
+correct and tested, and a git-history rewrite to separate them after the
+fact carried more risk than the sequencing was worth. This entry is the
+honest record of what happened; the R5 section below covers what verifying
+and closing that already-committed backend logic, plus the frontend side,
+actually involved.
+
+## R5: session search, over names, not clinical content (2026-09-12)
+
+Closes R5. Backend logic (`_search_condition`, `service_sessions.py`'s
+`search` query param) shipped in the R4 commit per the process note above;
+this pass verified it end-to-end and did the remaining frontend-adjacent
+work.
+
+**Mechanism**: `search` matches `ServiceModel.name`, `ClientModel.name` and
+`ProviderModel.display_name`, each resolved via its own bounded
+(`_SEARCH_MATCH_LIMIT = 500`), tenant-scoped `ILIKE` query, then combined
+into `ServiceSessionModel.service_id/client_id/provider_id IN (...)` via
+`extra_conditions` — never a join onto `service_sessions`, so a session
+naming one of each is never duplicated and the sessions table carries no
+denormalised name to scan. `%`/`_`/`\` in the search term are backslash-escaped
+(`_escape_like`) before reaching `ILIKE`, so a literal percent sign searches
+literally instead of matching everything. Clinical fields (notes, feedback,
+diagnosis, etc.) are never searched. Shared between `list_all` and `count`,
+so a match changes both the page and the total together.
+
+**Frontend**: `apps/web/src/routes/service-sessions/index.tsx` already sent
+`search: activeSearch` to the list endpoint before this pass (the review's
+finding was that the backend ignored it, not that the frontend was
+missing); no frontend code change was needed once the backend accepted the
+param. `ServiceSessionListParams.search` and `.status` were given explicit
+types (previously inherited only from the generic `FilterParams`) for
+clarity.
+
+**Not indexed**: `ProviderModel.display_name` carries no index. A
+leading-wildcard `ILIKE '%term%'` cannot use a plain B-tree index regardless
+(would need a trigram/GIN index), so this is a full scan of `providers`
+per search, bounded only in rows returned. Left alone per the plan's
+"measure query plans before adding indexes" — no query-plan measurement was
+done in this pass, so this is flagged, not sized.
+
+**Verified**: `TestSessionSearch` (7 e2e cases against local Postgres):
+matching search changes items and total; nonmatching returns an empty page;
+service, client and practitioner names all match; case-insensitive; a
+literal `%` matches nothing (proving escaping, not just absence of a
+crash); a same-named service in another tenant does not leak in; pagination
+and sorting compose correctly with an active search across 3 sessions.
+Existing `tests/unit`+`tests/e2e` suites unaffected (already verified under
+R4's run, since the backend logic was already present).

@@ -278,7 +278,18 @@ product work as a dependency of the nine corrective findings.
   closed. Verified: new e2e gate test (20 excluded sessions, one eligible
   booking still returned), existing repository/hydration tests pass
   unchanged, full backend and frontend suites pass, contracts regenerated.
-  R5 (search) not yet done.
+- R5: implemented. Bounded, tenant-scoped search over service/client/
+  practitioner display names, resolved separately per entity and applied
+  as `IN` on the session's own FK columns rather than joined onto
+  `service_sessions`; wildcard characters escaped; shared between list and
+  count. Process deviation: this backend logic shipped inside the R4
+  commit rather than its own, caught after the fact and not unwound (see
+  `docs/handoffs/SESSIONS_IMPLEMENTATION.md`'s process note). Frontend
+  needed no change; it already sent `search`. Verified: 7 new e2e cases
+  (matching/nonmatching, per-field match, case-insensitivity, wildcard
+  escaping, cross-tenant isolation, pagination+sorting composition) against
+  local Postgres. `ProviderModel.display_name` is unindexed; flagged, not
+  measured or sized.
 - Tested: see each package above; no `pnpm verify` / full build run yet this
   pass.
 - Deployed: none.
