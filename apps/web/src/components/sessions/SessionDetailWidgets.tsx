@@ -18,14 +18,19 @@ import { useEffect, useMemo, useState } from "react"
 
 import { useQuery } from "@tanstack/react-query"
 import { Link } from "@tanstack/react-router"
-import { Building, CalendarClock, CalendarRange, Lock, Users, Wrench } from "lucide-react"
+import { CalendarClock, CalendarRange, Lock, Users } from "lucide-react"
 
 import { casesApi } from "@/api/endpoints/cases"
-import { DetailCard, RailSection, Stat } from "@/components/common/DetailPrimitives"
+import {
+  DetailCard,
+  DetailGrid,
+  DetailRow,
+  LinkRow,
+  RailSection,
+} from "@/components/common/DetailPrimitives"
 import { FormField } from "@/components/common/FormField"
 import { LifecycleActions } from "@/components/common/LifecycleActions"
 import { StatusBadge } from "@/components/common/StatusBadge"
-import { CATEGORY_LABELS } from "@/components/ServiceFormSheet"
 import {
   EligibilityFailureNotice,
   eligibilityReasons,
@@ -145,92 +150,59 @@ export function DetailRail({ session, service, member, onAction, actionLoading }
   return (
     <div className="space-y-5">
       <RailSection title="At a glance">
-        <div className="grid grid-cols-2 gap-3">
-          <Stat label="Duration" value={session.duration != null ? `${session.duration}m` : "-"} />
-          <Stat
+        <DetailGrid>
+          <DetailRow
+            label="Duration"
+            value={session.duration != null ? `${session.duration}m` : null}
+          />
+          <DetailRow
             label={companyWide ? "Attended" : "Session no."}
             value={
               companyWide
                 ? session.headcount != null
                   ? String(session.headcount)
-                  : "-"
+                  : null
                 : session.session_number != null
                   ? `#${session.session_number}`
-                  : "-"
+                  : null
             }
           />
-          <Stat
+          <DetailRow
             label="Rate"
-            value={session.rate_ugx != null ? `UGX ${session.rate_ugx.toLocaleString()}` : "-"}
+            value={session.rate_ugx != null ? `UGX ${session.rate_ugx.toLocaleString()}` : null}
           />
-          <Stat
+          <DetailRow
             label="Reschedules"
             value={session.reschedule_count != null ? String(session.reschedule_count) : "0"}
           />
-        </div>
+        </DetailGrid>
       </RailSection>
 
       <RailSection title="Linked">
-        <div className="space-y-2">
+        <DetailGrid>
           {service ? (
-            <Link
+            <LinkRow
+              label="Service"
+              value={service.name}
               to="/services/$serviceId"
               params={{ serviceId: service.id }}
-              className="flex items-center gap-2.5 rounded-sm border border-fg/10 bg-surface px-3 py-2 transition-colors hover:border-fg/25"
-            >
-              <span
-                aria-hidden
-                className="grid size-7 shrink-0 place-items-center bg-primary/10 text-primary"
-              >
-                <Wrench className="size-3.5" />
-              </span>
-              <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-medium text-fg">{service.name}</p>
-                <p className="truncate text-[11px] text-fg-muted">
-                  {service.category ? CATEGORY_LABELS[service.category] : "-"}
-                </p>
-              </div>
-            </Link>
+            />
           ) : null}
-          <Link
+          <LinkRow
+            label="Client"
+            value={session.client_name ?? "Open client"}
             to="/clients/$clientId"
             params={{ clientId: session.client_id }}
-            className="flex items-center gap-2.5 rounded-sm border border-fg/10 bg-surface px-3 py-2 transition-colors hover:border-fg/25"
-          >
-            <span
-              aria-hidden
-              className="grid size-7 shrink-0 place-items-center bg-primary/10 text-primary"
-            >
-              <Building className="size-3.5" />
-            </span>
-            <div className="min-w-0 flex-1">
-              <p className="truncate text-sm font-medium text-fg">
-                {session.client_name ?? "Open client"}
-              </p>
-              <p className="truncate text-[11px] text-fg-muted">Client</p>
-            </div>
-          </Link>
+          />
           {member ? (
-            <Link
+            <LinkRow
+              label="Member"
+              value={memberLabel(member)}
               to="/members/$memberId"
               params={{ memberId: member.id }}
-              className="flex items-center gap-2.5 rounded-sm border border-fg/10 bg-surface px-3 py-2 transition-colors hover:border-fg/25"
-            >
-              <span
-                aria-hidden
-                className="grid size-7 shrink-0 place-items-center bg-primary/10 text-primary"
-              >
-                <Users className="size-3.5" />
-              </span>
-              <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-medium text-fg">{memberLabel(member)}</p>
-                <p className="truncate text-[11px] text-fg-muted">
-                  {getStatusLabel(member.relation)}
-                </p>
-              </div>
-            </Link>
+            />
           ) : null}
-        </div>
+        </DetailGrid>
       </RailSection>
 
       <RailSection title="Lifecycle">

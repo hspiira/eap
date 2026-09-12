@@ -9,11 +9,13 @@ import { membersApi } from "@/api/endpoints/members"
 import { providersApi } from "@/api/endpoints/providers"
 import { serviceSessionsApi } from "@/api/endpoints/service-sessions"
 import { servicesApi } from "@/api/endpoints/services"
+import { DetailCard } from "@/components/common/DetailPrimitives"
 import { renderDetailState } from "@/components/common/DetailStates"
 import { EntityActivityPanel } from "@/components/common/EntityActivityPanel"
 import { PageShell } from "@/components/common/PageShell"
 import { Tab, TabPanel, Tabs, TabsList } from "@/components/common/Tabs"
 import { ServiceSessionFormSheet } from "@/components/ServiceSessionFormSheet"
+import { SessionChainCard } from "@/components/sessions/SessionChainCard"
 import {
   CancelDialog,
   CompleteDialog,
@@ -22,7 +24,6 @@ import {
   Hero,
   RescheduleDialog,
 } from "@/components/sessions/SessionDetailWidgets"
-import { SessionChainCard } from "@/components/sessions/SessionChainCard"
 import { SessionOverviewCards } from "@/components/sessions/SessionOverviewCards"
 import { Button } from "@/components/ui/button"
 import { useToast } from "@/contexts/ToastContext"
@@ -273,20 +274,19 @@ function ServiceSessionDetailPage() {
                   provider={provider}
                   diagnosisLabel={diagnosisLabel}
                 />
-                <section className="mt-4 border border-fg/10 bg-surface p-4">
-                  <h3 className="mb-2 text-xs font-medium uppercase tracking-wide text-fg-muted">
-                    Chain of care
-                  </h3>
-                  <SessionChainCard
-                    session={session}
-                    onSelectSession={(id) =>
-                      void navigate({
-                        to: "/service-sessions/$sessionId",
-                        params: { sessionId: id },
-                      })
-                    }
-                  />
-                </section>
+                <div className="mt-4">
+                  <DetailCard title="Chain of care">
+                    <SessionChainCard
+                      session={session}
+                      onSelectSession={(id) =>
+                        void navigate({
+                          to: "/service-sessions/$sessionId",
+                          params: { sessionId: id },
+                        })
+                      }
+                    />
+                  </DetailCard>
+                </div>
               </TabPanel>
 
               <TabPanel value="feedback">

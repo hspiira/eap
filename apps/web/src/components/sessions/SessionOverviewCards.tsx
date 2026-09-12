@@ -1,12 +1,9 @@
-import { Link } from "@tanstack/react-router"
-import { Wrench } from "lucide-react"
-
-import { DetailCard, DetailGrid, DetailRow } from "@/components/common/DetailPrimitives"
+import { DetailCard, DetailGrid, DetailRow, LinkRow } from "@/components/common/DetailPrimitives"
 import { StatusBadge } from "@/components/common/StatusBadge"
 import { CATEGORY_LABELS } from "@/components/ServiceFormSheet"
 import { SessionDeliveryLabel } from "@/components/sessions/SessionAttribution"
 import { useHasClinicalScope } from "@/hooks/useCanWrite"
-import { memberLabel, nameInitials } from "@/lib/display"
+import { memberLabel } from "@/lib/display"
 import { formatDateTime } from "@/lib/format"
 import type { Member, Provider, Service, ServiceSession } from "@/types/entities"
 import { SessionAttendance, SessionCategory } from "@/types/enums"
@@ -24,11 +21,10 @@ function ScheduleCard({ session }: { session: ServiceSession }) {
   return (
     <DetailCard title="Schedule">
       <DetailGrid>
-        <DetailRow label="Scheduled at" value={formatDateTime(session.scheduled_at)} fullWidth />
+        <DetailRow label="Scheduled at" value={formatDateTime(session.scheduled_at)} />
         <DetailRow
           label="Completed at"
           value={session.completed_at ? formatDateTime(session.completed_at) : null}
-          fullWidth
         />
         <DetailRow label="Status" value={<StatusBadge status={session.status} />} />
         <DetailRow
@@ -52,60 +48,34 @@ function DeliveryCard({
 }: Omit<CardProps, "member" | "diagnosisLabel">) {
   const serviceName = service?.name ?? session.service_name
   const practitionerName = provider?.display_name ?? session.provider_display_name
+  const practitionerMeta = [provider?.provider_profile.tier, provider?.provider_profile.region]
+    .filter(Boolean)
+    .join(" · ")
   return (
     <DetailCard title="Service and practitioner">
-      {serviceName ? (
-        <Link
-          to="/services/$serviceId"
-          params={{ serviceId: session.service_id }}
-          className="mb-2 flex items-center gap-2.5 rounded-sm border border-fg/10 bg-bg px-3 py-2 transition-colors hover:border-fg/25"
-        >
-          <span
-            aria-hidden
-            className="grid size-7 shrink-0 place-items-center bg-primary/10 text-primary"
-          >
-            <Wrench className="size-3.5" />
-          </span>
-          <div className="min-w-0 flex-1">
-            <p className="truncate text-sm font-medium text-fg">{serviceName}</p>
-            <p className="truncate text-[11px] text-fg-muted">
-              {service?.category ? CATEGORY_LABELS[service.category] : "-"}
-            </p>
-          </div>
-        </Link>
-      ) : null}
-      {practitionerName && session.provider_id ? (
-        <Link
-          to="/providers/$providerId"
-          params={{ providerId: session.provider_id }}
-          className="flex items-center gap-2.5 rounded-sm border border-fg/10 bg-bg px-3 py-2 transition-colors hover:border-fg/25"
-        >
-          <span
-            aria-hidden
-            className="grid size-7 shrink-0 place-items-center bg-primary/10 text-[10px] font-semibold text-primary"
-          >
-            {nameInitials(practitionerName)}
-          </span>
-          <div className="min-w-0 flex-1">
-            <p className="truncate text-sm font-medium text-fg">{practitionerName}</p>
-            <p className="truncate text-[11px] text-fg-muted">
-              {provider?.provider_profile.tier || provider?.provider_profile.region
-                ? [provider.provider_profile.tier, provider.provider_profile.region]
-                    .filter(Boolean)
-                    .join(" · ")
-                : "Practitioner"}
-            </p>
-          </div>
-        </Link>
-      ) : (
-        <p className="text-xs text-fg-muted">No practitioner assigned.</p>
-      )}
-      <div className="mt-2 border-t border-fg/10 pt-2">
-        <p className="text-[11px] font-medium tracking-wide text-fg-muted">Delivered through</p>
-        <div className="mt-0.5">
-          <SessionDeliveryLabel session={session} />
-        </div>
-      </div>
+      <DetailGrid>
+        {serviceName ? (
+          <LinkRow
+            label="Service"
+            value={serviceName}
+            meta={service?.category ? CATEGORY_LABELS[service.category] : null}
+            to="/services/$serviceId"
+            params={{ serviceId: session.service_id }}
+          />
+        ) : null}
+        {practitionerName && session.provider_id ? (
+          <LinkRow
+            label="Practitioner"
+            value={practitionerName}
+            meta={practitionerMeta || null}
+            to="/providers/$providerId"
+            params={{ providerId: session.provider_id }}
+          />
+        ) : (
+          <DetailRow label="Practitioner" value={null} />
+        )}
+        <DetailRow label="Delivered through" value={<SessionDeliveryLabel session={session} />} />
+      </DetailGrid>
     </DetailCard>
   )
 }
@@ -115,17 +85,11 @@ function EngagementCard({ session }: { session: ServiceSession }) {
   return (
     <DetailCard title="Engagement">
       <DetailGrid>
-        <DetailRow
+        <LinkRow
           label="Client"
-          value={
-            <Link
-              to="/clients/$clientId"
-              params={{ clientId: session.client_id }}
-              className="text-primary hover:underline"
-            >
-              {session.client_name ?? "Open client"}
-            </Link>
-          }
+          value={session.client_name ?? "Open client"}
+          to="/clients/$clientId"
+          params={{ clientId: session.client_id }}
         />
         <DetailRow
           label="Mode of delivery"
@@ -159,25 +123,14 @@ function SubjectCard({ session, member }: { session: ServiceSession; member: Mem
   }
   return (
     <DetailCard title="Subject">
-      <Link
-        to="/members/$memberId"
-        params={{ memberId: session.member_id }}
-        className="flex items-center gap-2.5 rounded-sm border border-fg/10 bg-bg px-3 py-2 transition-colors hover:border-fg/25"
-      >
-        <span
-          aria-hidden
-          className="grid size-7 shrink-0 place-items-center bg-primary/10 text-[10px] font-semibold text-primary"
-        >
-          {nameInitials(label)}
-        </span>
-        <div className="min-w-0 flex-1">
-          <p className="truncate text-sm font-medium text-fg">{label}</p>
-          <p className="truncate text-[11px] text-fg-muted">
-            {member ? getStatusLabel(member.relation) : "Member"}
-          </p>
-        </div>
-      </Link>
       <DetailGrid>
+        <LinkRow
+          label="Member"
+          value={label}
+          meta={member ? getStatusLabel(member.relation) : null}
+          to="/members/$memberId"
+          params={{ memberId: session.member_id }}
+        />
         <DetailRow
           label="New or returning"
           value={session.client_type ? getStatusLabel(session.client_type) : null}
@@ -271,7 +224,7 @@ export function SessionOverviewCards({
   )
 
   return (
-    <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+    <div className="grid grid-cols-1 gap-4 lg:grid-cols-2 lg:items-start">
       <ScheduleCard session={session} />
       {companyWide ? (
         <EngagementCard session={session} />
