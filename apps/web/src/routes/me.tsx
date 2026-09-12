@@ -6,7 +6,6 @@ import { AlertCircle, Building2, Inbox, LogOut, User as UserIcon } from "lucide-
 import { z } from "zod"
 
 import { usersApi } from "@/api/endpoints/users"
-import { AppLayout } from "@/components/AppLayout"
 import { AtRiskPage } from "@/components/AtRiskPage"
 import { FormField } from "@/components/common/FormField"
 import { PageShell } from "@/components/common/PageShell"
@@ -85,22 +84,22 @@ function MeBody() {
     const meta = VIEW_META[view]
     const Content = meta.component
     return (
-      <AppLayout>
+      <>
         <PageShell icon={meta.icon} trail={[{ label: "Profile", to: "/me" }]} title={meta.label}>
           <Content />
         </PageShell>
-      </AppLayout>
+      </>
     )
   }
 
   return (
-    <AppLayout>
+    <>
       <PageShell icon={UserIcon} breadcrumb="Profile">
         <div className="mx-auto w-full max-w-3xl space-y-8 px-6 py-8">
           {userId ? <ProfileBody userId={userId} /> : <DetailSkeleton />}
         </div>
       </PageShell>
-    </AppLayout>
+    </>
   )
 }
 

@@ -90,7 +90,7 @@
   --chart-good: #0ca30c;
   --chart-serious: #ec835a;
 
-  --ring: var(--brand);
+  --ring: var(--action);
   --selection-bg: rgb(52 211 153 / 0.18);
 
   /* shadcn aliases. */

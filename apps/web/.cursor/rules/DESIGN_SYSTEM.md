@@ -33,7 +33,8 @@ Use ONLY these colors from the approved palette:
 
 ### NO Rounded Corners
 - **CRITICAL**: All buttons, cards, inputs, and components must have sharp, square corners
-- Use `rounded-none` in Tailwind (or no border-radius)
+- Buttons use `rounded-full`, as explicitly requested by the user.
+- Use `rounded-none` in Tailwind (or no border-radius) for other elements.
 - Only add rounded corners if explicitly requested by the user
 
 ### Flat Colors Only
@@ -50,9 +51,9 @@ Use ONLY these colors from the approved palette:
 ## Component Guidelines
 
 ### Buttons
-- Sharp corners (`rounded-none`)
+- Fully rounded corners (`rounded-full`)
 - Flat colors (no gradients)
-- Use `natural` for primary, `nurturing` for secondary
+- Use shared `action` and `action-fg` tokens for default buttons.
 - No shadows unless needed for accessibility
 
 ### Cards/Containers

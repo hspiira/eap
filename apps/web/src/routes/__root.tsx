@@ -7,6 +7,7 @@ import { createRootRoute, HeadContent, Outlet, Scripts } from "@tanstack/react-r
 import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools"
 
 import { AppBootstrap } from "../components/AppBootstrap"
+import { PersistentAppLayout } from "../components/common/PersistentAppLayout"
 import { ErrorBoundary } from "../components/ui/ErrorBoundary"
 import { NotFound } from "../components/ui/NotFound"
 import { ToastProvider } from "../contexts/ToastContext"
@@ -79,5 +80,9 @@ function RootDocument({ children }: { children: React.ReactNode }) {
 }
 
 function RootLayout() {
-  return <Outlet />
+  return (
+    <PersistentAppLayout>
+      <Outlet />
+    </PersistentAppLayout>
+  )
 }

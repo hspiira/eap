@@ -5,7 +5,7 @@
   --token-surface-muted: var(--palette-neutral-50);
 
   --token-border: #bfc4c9;
-  --token-border-focus: var(--palette-natural);
+  --token-border-focus: var(--action);
   --token-text: #000000;
   --token-text-muted: #333333;
   --token-selection: rgba(16, 58, 16, 0.12);

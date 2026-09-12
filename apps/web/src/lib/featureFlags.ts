@@ -17,7 +17,7 @@ function envFlag(name: string, defaultValue: boolean): boolean {
 
 export const featureFlags = {
   contacts: envFlag("CONTACTS", false),
-  audit: envFlag("AUDIT", false),
+  audit: envFlag("AUDIT", true),
   activities: envFlag("ACTIVITIES", false),
   kpis: envFlag("KPIS", false),
   documents: envFlag("DOCUMENTS", false),

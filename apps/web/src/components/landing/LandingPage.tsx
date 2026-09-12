@@ -134,11 +134,7 @@ function SiteHeader() {
           ))}
         </nav>
 
-        <Button
-          asChild
-          size="sm"
-          className="h-9 rounded-full bg-(--lp-fg) px-4 text-(--lp-page) shadow-none hover:bg-(--lp-fg)/85"
-        >
+        <Button asChild size="sm" className="h-9 rounded-full px-4">
           <Link to="/auth/login" search={EMPTY_AUTH_SEARCH}>
             Sign in
           </Link>
@@ -171,21 +167,12 @@ function Hero() {
           className="lp-rise flex flex-wrap items-center gap-x-3 gap-y-3"
           style={{ "--lp-delay": "0.2s" } as React.CSSProperties}
         >
-          <Button
-            asChild
-            size="lg"
-            className="h-12 rounded-full bg-(--lp-brand) px-6 text-[15px] text-(--lp-page) shadow-none hover:bg-(--lp-brand)/90"
-          >
-            <Link to="/auth/login" search={EMPTY_AUTH_SEARCH}>
-              Sign in to the console
-              <ArrowRight className="size-4" />
-            </Link>
-          </Button>
+          <SignInButton label="Sign in to the console" />
           <Button
             asChild
             variant="ghost"
             size="lg"
-            className="h-12 rounded-full px-5 text-[15px] text-(--lp-fg) hover:bg-(--lp-wash)"
+            className="h-12 rounded-full px-5 text-[15px] text-fg"
           >
             <a href="#flow">See how care moves</a>
           </Button>
@@ -317,6 +304,26 @@ function Assurance() {
   )
 }
 
+function SignInButton({ label }: { label: string }) {
+  return (
+    <Button
+      asChild
+      size="lg"
+      className="lp-sign-in group h-12 gap-5 rounded-full py-1.5 pl-6 pr-1.5 text-[15px]"
+    >
+      <Link to="/auth/login" search={EMPTY_AUTH_SEARCH}>
+        {label}
+        <span
+          aria-hidden="true"
+          className="grid size-9 shrink-0 place-items-center overflow-hidden rounded-full bg-action-fg text-action transition-colors group-hover:bg-highlight group-hover:text-highlight-fg group-focus-visible:bg-highlight group-focus-visible:text-highlight-fg"
+        >
+          <ArrowRight className="lp-sign-in-arrow size-4" />
+        </span>
+      </Link>
+    </Button>
+  )
+}
+
 function Closing() {
   return (
     <section className="mx-auto w-full max-w-[80rem] px-5 py-20 md:px-8 md:py-28">
@@ -324,16 +331,7 @@ function Closing() {
         <h2 className="lp-display max-w-[24ch] text-[clamp(2rem,4.4vw,3.75rem)]">
           Pick up the programme where you left it.
         </h2>
-        <Button
-          asChild
-          size="lg"
-          className="h-12 rounded-full bg-(--lp-brand) px-6 text-[15px] text-(--lp-page) shadow-none hover:bg-(--lp-brand)/90"
-        >
-          <Link to="/auth/login" search={EMPTY_AUTH_SEARCH}>
-            Sign in
-            <ArrowRight className="size-4" />
-          </Link>
-        </Button>
+        <SignInButton label="Sign in" />
       </div>
     </section>
   )
