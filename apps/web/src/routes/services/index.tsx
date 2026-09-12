@@ -6,6 +6,8 @@ import { EmptyState } from "@/components/common/EmptyState"
 import { ErrorState } from "@/components/common/ErrorState"
 import { FilterBar, FilterChip, FilterSearch, FilterTrigger } from "@/components/common/FilterBar"
 import { IconButton } from "@/components/common/IconButton"
+import { InfiniteScrollSentinel } from "@/components/common/InfiniteScrollSentinel"
+import { PagedTableBody } from "@/components/common/PagedTableBody"
 import { PageShell } from "@/components/common/PageShell"
 import { TableSkeleton } from "@/components/common/PageSkeletons"
 import { SortHeader } from "@/components/common/SortHeader"
@@ -22,17 +24,11 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Pagination } from "@/components/ui/pagination"
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table"
+import { Table, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { NEWEST_FIRST, useListPage } from "@/hooks/useListPage"
+import { useVisiblePage } from "@/hooks/useVisiblePage"
 import { normalizeErrorMessage } from "@/lib/errors"
-import { useEntityList } from "@/lib/queries"
+import { useEntityListPages } from "@/lib/queries"
 import { listSearchSchema } from "@/lib/search-params"
 import type { Service } from "@/types/entities"
 import { BaseStatus } from "@/types/enums"
@@ -102,7 +98,9 @@ function ServicesListPage() {
   const handleGroupChange = (next: GroupFilter) =>
     setFilter("group", next === "all" ? undefined : next)
 
-  const query = useEntityList<Service, ServiceListParams>({
+  const [visiblePage, setVisiblePage] = useVisiblePage(page)
+
+  const query = useEntityListPages<Service, ServiceListParams>({
     resource: "services",
     params: {
       page,
@@ -191,7 +189,10 @@ function ServicesListPage() {
           />
         ) : (
           <>
-            <div className="relative min-h-0 flex-1 overflow-auto">
+            <div
+              className="relative min-h-0 flex-1 overflow-auto"
+              data-scroll-restoration-id="list"
+            >
               <Table className="w-full caption-bottom text-sm" scrollable={false}>
                 <TableHeader className={STICKY_TABLE_HEAD}>
                   <TableRow className={`hover:bg-transparent ${ROW_BORDER}`}>
@@ -224,16 +225,30 @@ function ServicesListPage() {
                     </TableHead>
                   </TableRow>
                 </TableHeader>
-                <TableBody>
-                  {items.map((row) => (
-                    <ServiceRow key={row.id} row={row} />
-                  ))}
-                </TableBody>
+                <PagedTableBody
+                  items={items}
+                  anchorPage={page}
+                  limit={limit}
+                  rowKey={(row) => row.id}
+                  renderRow={(row) => <ServiceRow row={row} />}
+                  onVisiblePageChange={setVisiblePage}
+                />
               </Table>
+              <InfiniteScrollSentinel
+                onLoadMore={query.loadMore}
+                hasMore={query.hasMore}
+                loadingMore={query.loadingMore}
+              />
             </div>
             {total > 0 && (
               <div className="shrink-0 border-t border-fg/10 bg-surface px-3 py-2">
-                <Pagination page={page} total={total} limit={limit} onPageChange={setPage} />
+                <Pagination
+                  page={visiblePage}
+                  total={total}
+                  limit={limit}
+                  shownCount={items.length}
+                  onPageChange={setPage}
+                />
               </div>
             )}
           </>
@@ -258,7 +273,7 @@ function ServiceRow({ row }: { row: Service }) {
         >
           <span
             aria-hidden
-            className="grid size-6 shrink-0 place-items-center bg-primary/10 text-primary"
+            className="grid size-6 shrink-0 place-items-center bg-fg/6 text-fg-muted"
           >
             <Wrench className="size-3" />
           </span>

@@ -10,6 +10,7 @@
 
 import {
   type QueryKey,
+  useInfiniteQuery,
   useMutation,
   type UseMutationOptions,
   useQuery,
@@ -53,6 +54,86 @@ export function useEntityList<T, P extends ListParams = ListParams>({
     staleTime,
     refetchInterval,
   } as UseQueryOptions<PaginatedResponse<T>>)
+}
+
+/**
+ * A list that grows as the user scrolls, without losing the page controls.
+ *
+ * `params.page` is the anchor: the first page shown, and where a jump from the
+ * pagination bar lands. Scrolling appends the pages after it. Anything that
+ * changes the query key, a filter, the search, the sort or the anchor itself,
+ * drops the appended pages and starts again, which is what the user means by
+ * re-filtering a list.
+ *
+ * The shape of `data` matches `useEntityList` so a page can keep reading
+ * `data.items` and `data.total`, with `total` taken from the newest page
+ * fetched rather than the oldest.
+ */
+export function useEntityListPages<T, P extends ListParams = ListParams>({
+  resource,
+  params,
+  listFn,
+  enabled,
+  staleTime,
+  refetchInterval,
+  anchorPage,
+  pageParams,
+}: UseEntityListOptions<T, P> & {
+  /** The first page to show, when it is not `params.page`. */
+  anchorPage?: number
+  /**
+   * How a page number reaches the API. Defaults to `{ page }`; an endpoint
+   * that takes an offset supplies its own, or every page after the first
+   * repeats the rows of the anchor.
+   */
+  pageParams?: (page: number) => Partial<P>
+}) {
+  const anchor = anchorPage ?? params.page ?? 1
+  const query = useInfiniteQuery({
+    queryKey: entityListKey(resource, params),
+    queryFn: ({ pageParam }) =>
+      listFn({
+        ...params,
+        ...(pageParams ? pageParams(pageParam as number) : { page: pageParam as number }),
+      }),
+    initialPageParam: anchor,
+    // Counted from the page that was asked for, not the one the response
+    // reports: an endpoint paged by offset has no page number to echo back.
+    getNextPageParam: (last: PaginatedResponse<T>, _all, lastParam) =>
+      last.has_more ? (lastParam as number) + 1 : undefined,
+    placeholderData: (prev) => prev,
+    enabled,
+    staleTime,
+    refetchInterval,
+  })
+
+  const pages = query.data?.pages as PaginatedResponse<T>[] | undefined
+  const data = pages
+    ? {
+        items: pages.flatMap((p) => p.items),
+        total: pages[pages.length - 1]?.total ?? 0,
+        page: anchor,
+        limit: pages[0]?.limit ?? params.limit ?? 0,
+        has_more: pages[pages.length - 1]?.has_more ?? false,
+      }
+    : undefined
+
+  return {
+    ...query,
+    data,
+    /**
+     * Held back while placeholder pages from the previous filter are showing.
+     * Appending onto those would fetch the old query's next page and splice
+     * rows the user has just filtered out back into the table.
+     */
+    hasMore: query.hasNextPage && !query.isPlaceholderData,
+    loadingMore: query.isFetchingNextPage,
+    loadMore: () => {
+      if (query.hasNextPage && !query.isFetchingNextPage && !query.isPlaceholderData) {
+        void query.fetchNextPage()
+      }
+    },
+  }
 }
 
 export interface UseEntityDetailOptions<T> {

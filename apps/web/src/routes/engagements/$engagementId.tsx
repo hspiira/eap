@@ -1,9 +1,10 @@
 import { useQuery } from "@tanstack/react-query"
-import { createFileRoute, useNavigate } from "@tanstack/react-router"
+import { createFileRoute } from "@tanstack/react-router"
 import { AlertTriangle, ArrowLeft, Briefcase } from "lucide-react"
 
 import { clientsApi } from "@/api/endpoints/clients"
 import { engagementsApi } from "@/api/endpoints/engagements"
+import { BackButton } from "@/components/common/BackButton"
 import { DetailCard, DetailGrid, DetailRow } from "@/components/common/DetailPrimitives"
 import { EmptyState } from "@/components/common/EmptyState"
 import { PageShell } from "@/components/common/PageShell"
@@ -18,6 +19,7 @@ import {
 } from "@/components/engagements/EngagementDetailWidgets"
 import { Button } from "@/components/ui/button"
 import { useToast } from "@/contexts/ToastContext"
+import { useBackTo } from "@/hooks/useBackTo"
 import { useTabSearchParam } from "@/hooks/useTabSearchParam"
 import { defaultErrorMessage, normalizeErrorMessage } from "@/lib/errors"
 import { formatDate, formatDateTime } from "@/lib/format"
@@ -34,7 +36,7 @@ const TAB_VALUES: ReadonlyArray<TabValue> = ["overview", "deliverables", "hours"
 
 function EngagementDetailPage() {
   const { engagementId } = Route.useParams()
-  const navigate = useNavigate()
+  const back = useBackTo("/engagements")
   const { showSuccess, showError } = useToast()
   const [tab, setTab] = useTabSearchParam<TabValue>(TAB_VALUES, "overview")
 
@@ -80,12 +82,7 @@ function EngagementDetailPage() {
           title="Engagement not found"
           description="It may have been cancelled or never existed."
           action={
-            <Button
-              variant="outline"
-              size="sm"
-              className="gap-1.5"
-              onClick={() => navigate({ to: "/engagements" })}
-            >
+            <Button variant="outline" size="sm" className="gap-1.5" onClick={back}>
               <ArrowLeft className="size-4" />
               Back to engagements
             </Button>
@@ -107,23 +104,11 @@ function EngagementDetailPage() {
     <PageShell
       icon={Briefcase}
       breadcrumb={`Commercial · Engagements · ${engagement.name}`}
-      actions={
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          onClick={() => navigate({ to: "/engagements" })}
-          aria-label="Back to engagements"
-          title="Back to engagements"
-          className="size-7 p-0 text-fg/70"
-        >
-          <ArrowLeft className="size-3.5" />
-        </Button>
-      }
+      actions={<BackButton to="/engagements" label="Back to engagements" />}
     >
       <Hero engagement={engagement} client={client} overdue={overdue} />
 
-      <div className="min-h-0 flex-1 overflow-y-auto bg-bg">
+      <div className="min-h-0 flex-1 overflow-y-auto bg-bg" data-scroll-restoration-id="detail">
         <div className="grid grid-cols-12 gap-5 px-5 py-5">
           <div className="col-span-12 min-w-0 lg:col-span-8">
             <Tabs value={tab} onValueChange={(v) => setTab(v as TabValue)}>

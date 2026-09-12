@@ -2,18 +2,21 @@ import { useCallback, useState } from "react"
 
 import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { createFileRoute, useNavigate } from "@tanstack/react-router"
-import { ArrowLeft, CalendarClock, SquarePen } from "lucide-react"
+import { CalendarClock, SquarePen, Waypoints } from "lucide-react"
 
 import { diagnosesApi } from "@/api/endpoints/diagnoses"
 import { membersApi } from "@/api/endpoints/members"
 import { providersApi } from "@/api/endpoints/providers"
 import { serviceSessionsApi } from "@/api/endpoints/service-sessions"
 import { servicesApi } from "@/api/endpoints/services"
+import { BackButton } from "@/components/common/BackButton"
+import { DetailCard } from "@/components/common/DetailPrimitives"
 import { renderDetailState } from "@/components/common/DetailStates"
 import { EntityActivityPanel } from "@/components/common/EntityActivityPanel"
 import { PageShell } from "@/components/common/PageShell"
 import { Tab, TabPanel, Tabs, TabsList } from "@/components/common/Tabs"
 import { ServiceSessionFormSheet } from "@/components/ServiceSessionFormSheet"
+import { SessionChainCard } from "@/components/sessions/SessionChainCard"
 import {
   CancelDialog,
   CompleteDialog,
@@ -25,6 +28,7 @@ import {
 import { SessionOverviewCards } from "@/components/sessions/SessionOverviewCards"
 import { Button } from "@/components/ui/button"
 import { useToast } from "@/contexts/ToastContext"
+import { useBackTo } from "@/hooks/useBackTo"
 import { useTabSearchParam } from "@/hooks/useTabSearchParam"
 import { normalizeErrorMessage } from "@/lib/errors"
 import { formatDateTime } from "@/lib/format"
@@ -42,6 +46,7 @@ const TAB_VALUES: ReadonlyArray<TabValue> = ["overview", "feedback", "history"]
 function ServiceSessionDetailPage() {
   const { sessionId } = Route.useParams()
   const navigate = useNavigate()
+  const back = useBackTo("/service-sessions")
   const queryClient = useQueryClient()
   const { showSuccess, showError } = useToast()
   const [actionLoading, setActionLoading] = useState(false)
@@ -178,7 +183,7 @@ function ServiceSessionDetailPage() {
     icon: CalendarClock,
     breadcrumb: "Delivery · Sessions",
     entity: "session",
-    backTo: () => navigate({ to: "/service-sessions" }),
+    backTo: back,
     backLabel: "Back to sessions",
   })
   if (state || !session) return state
@@ -189,17 +194,7 @@ function ServiceSessionDetailPage() {
       breadcrumb={`Delivery · Sessions · ${formatDateTime(session.scheduled_at)}`}
       actions={
         <>
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            onClick={() => navigate({ to: "/service-sessions" })}
-            aria-label="Back to sessions"
-            title="Back to sessions"
-            className="size-7 p-0 text-fg/70"
-          >
-            <ArrowLeft className="size-3.5" />
-          </Button>
+          <BackButton to="/service-sessions" label="Back to sessions" />
           <Button
             size="sm"
             variant="outline"
@@ -254,7 +249,7 @@ function ServiceSessionDetailPage() {
         }}
       />
 
-      <div className="min-h-0 flex-1 overflow-y-auto bg-bg">
+      <div className="min-h-0 flex-1 overflow-y-auto bg-bg" data-scroll-restoration-id="detail">
         <div className="grid grid-cols-12 gap-5 px-5 py-5">
           <div className="col-span-12 min-w-0 lg:col-span-8">
             <Tabs value={tab} onValueChange={(v) => setTab(v as TabValue)}>
@@ -272,6 +267,19 @@ function ServiceSessionDetailPage() {
                   provider={provider}
                   diagnosisLabel={diagnosisLabel}
                 />
+                <div className="mt-4">
+                  <DetailCard title="Chain of care" icon={Waypoints}>
+                    <SessionChainCard
+                      session={session}
+                      onSelectSession={(id) =>
+                        void navigate({
+                          to: "/service-sessions/$sessionId",
+                          params: { sessionId: id },
+                        })
+                      }
+                    />
+                  </DetailCard>
+                </div>
               </TabPanel>
 
               <TabPanel value="feedback">

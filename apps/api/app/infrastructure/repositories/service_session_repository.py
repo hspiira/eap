@@ -6,10 +6,11 @@ Uses TenantScopedRepositoryImpl base class to eliminate boilerplate.
 """
 
 from collections.abc import Sequence
-from datetime import datetime
+from datetime import date, datetime
 from typing import Any
 
-from sqlalchemy import and_, func, select
+from sqlalchemy import Date as SADate
+from sqlalchemy import and_, cast, func, select, text
 
 from app.domain.entities.service_session import ServiceSessionEntity
 from app.domain.enums import (
@@ -24,6 +25,7 @@ from app.domain.repositories.service_session_repository import (
     ProviderOrganisationSessionCount,
     ServiceSessionRepository,
 )
+from app.domain.services.session_scheduling import DEFAULT_SESSION_MINUTES
 from app.domain.value_objects.core import (
     ClientId,
     EligibleMemberId,
@@ -35,6 +37,7 @@ from app.domain.value_objects.core import (
 from app.infrastructure.mappers.service_session_mapper import ServiceSessionMapper
 from app.infrastructure.models.provider_affiliation_model import ProviderAffiliationModel
 from app.infrastructure.models.provider_organisation_model import ProviderOrganisationModel
+from app.infrastructure.models.service_model import ServiceModel
 from app.infrastructure.models.service_session_model import ServiceSessionModel
 from app.infrastructure.repositories.base import TenantScopedRepositoryImpl
 
@@ -236,6 +239,180 @@ class ServiceSessionRepositoryImpl(
             ServiceSessionModel.provider_id == provider_id.value,
             ServiceSessionModel.deleted_at.is_(None),
         ]
+
+    async def list_follow_ups(
+        self, tenant_id: TenantId, session_id: SessionId
+    ) -> Sequence[ServiceSessionEntity]:
+        models = await self.session.scalars(
+            select(ServiceSessionModel)
+            .where(
+                ServiceSessionModel.tenant_id == tenant_id.value,
+                ServiceSessionModel.deleted_at.is_(None),
+                ServiceSessionModel.follow_up_of_session_id == session_id.value,
+            )
+            .order_by(ServiceSessionModel.scheduled_at)
+        )
+        return [ServiceSessionMapper.to_entity(m) for m in models]
+
+    async def session_ordinals(
+        self, tenant_id: TenantId, session_ids: Sequence[str]
+    ) -> dict[str, int]:
+        """One window query for the whole page, not one per row.
+
+        Ranks every session of each member involved, then keeps only the rows
+        asked about. Cancelled sessions are left out of the count: a booking
+        nobody attended is not a session in a person's course of care.
+        """
+        if not session_ids:
+            return {}
+        members = select(ServiceSessionModel.member_id).where(
+            ServiceSessionModel.tenant_id == tenant_id.value,
+            ServiceSessionModel.id.in_(session_ids),
+            ServiceSessionModel.member_id.is_not(None),
+        )
+        counted = (
+            select(
+                ServiceSessionModel.id.label("id"),
+                func.row_number()
+                .over(
+                    partition_by=ServiceSessionModel.member_id,
+                    order_by=(ServiceSessionModel.scheduled_at, ServiceSessionModel.id),
+                )
+                .label("ordinal"),
+            )
+            .where(
+                ServiceSessionModel.tenant_id == tenant_id.value,
+                ServiceSessionModel.deleted_at.is_(None),
+                ServiceSessionModel.status != SessionStatus.CANCELLED.value,
+                ServiceSessionModel.member_id.in_(members),
+            )
+            .subquery()
+        )
+        rows = await self.session.execute(
+            select(counted.c.id, counted.c.ordinal).where(counted.c.id.in_(session_ids))
+        )
+        return {row.id: int(row.ordinal) for row in rows}
+
+    async def find_clashing_booking(
+        self,
+        tenant_id: TenantId,
+        *,
+        provider_id: ProviderId,
+        starts_at: datetime,
+        ends_at: datetime,
+        exclude_session_id: SessionId | None = None,
+    ) -> ServiceSessionEntity | None:
+        """The earliest live booking of this practitioner overlapping the span.
+
+        A booking carries no length of its own, so each one is measured by the
+        service it delivers, falling back to the nominal hour. The overlap is
+        half-open at both ends, so back-to-back bookings do not clash.
+        """
+        minutes = func.coalesce(ServiceModel.duration_minutes, DEFAULT_SESSION_MINUTES)
+        existing_end = ServiceSessionModel.scheduled_at + minutes * text("interval '1 minute'")
+        conditions: list[Any] = [
+            ServiceSessionModel.tenant_id == tenant_id.value,
+            ServiceSessionModel.deleted_at.is_(None),
+            ServiceSessionModel.provider_id == provider_id.value,
+            ServiceSessionModel.status.in_(
+                (SessionStatus.SCHEDULED.value, SessionStatus.RESCHEDULED.value)
+            ),
+            ServiceSessionModel.scheduled_at < ends_at,
+            existing_end > starts_at,
+        ]
+        if exclude_session_id is not None:
+            conditions.append(ServiceSessionModel.id != exclude_session_id.value)
+        model = await self.session.scalar(
+            select(ServiceSessionModel)
+            .join(ServiceModel, ServiceModel.id == ServiceSessionModel.service_id)
+            .where(*conditions)
+            .order_by(ServiceSessionModel.scheduled_at)
+            .limit(1)
+        )
+        return ServiceSessionMapper.to_entity(model) if model else None
+
+    def _awaiting_confirmation_filter(
+        self,
+        tenant_id: TenantId,
+        as_of: datetime,
+        provider_id: ProviderId | None,
+        client_id: ClientId | None,
+    ) -> list[Any]:
+        conditions: list[Any] = [
+            ServiceSessionModel.tenant_id == tenant_id.value,
+            ServiceSessionModel.deleted_at.is_(None),
+            ServiceSessionModel.status.in_(
+                (SessionStatus.SCHEDULED.value, SessionStatus.RESCHEDULED.value)
+            ),
+            ServiceSessionModel.scheduled_at < as_of,
+        ]
+        if provider_id is not None:
+            conditions.append(ServiceSessionModel.provider_id == provider_id.value)
+        if client_id is not None:
+            conditions.append(ServiceSessionModel.client_id == client_id.value)
+        return conditions
+
+    async def list_awaiting_confirmation(
+        self,
+        tenant_id: TenantId,
+        *,
+        as_of: datetime,
+        provider_id: ProviderId | None = None,
+        client_id: ClientId | None = None,
+        limit: int = 50,
+        offset: int = 0,
+    ) -> tuple[Sequence[ServiceSessionEntity], int]:
+        conditions = self._awaiting_confirmation_filter(tenant_id, as_of, provider_id, client_id)
+        total = await self.session.scalar(
+            select(func.count(ServiceSessionModel.id)).where(*conditions)
+        )
+        models = await self.session.scalars(
+            select(ServiceSessionModel)
+            .where(*conditions)
+            .order_by(ServiceSessionModel.scheduled_at)
+            .limit(limit)
+            .offset(offset)
+        )
+        return [ServiceSessionMapper.to_entity(m) for m in models], int(total or 0)
+
+    async def find_awaiting_confirmation(
+        self,
+        tenant_id: TenantId,
+        *,
+        session_date: date,
+        provider_id: ProviderId,
+        client_id: ClientId,
+        service_id: ServiceId,
+        member_id: EligibleMemberId | None,
+    ) -> ServiceSessionEntity | None:
+        """The oldest unresolved booking matching this line of a counsellor's log.
+
+        Compares the calendar day rather than the instant: the log carries a
+        date and the booking carries a time nobody promised to keep.
+        """
+        member_match = (
+            ServiceSessionModel.member_id == member_id.value
+            if member_id is not None
+            else ServiceSessionModel.member_id.is_(None)
+        )
+        model = await self.session.scalar(
+            select(ServiceSessionModel)
+            .where(
+                ServiceSessionModel.tenant_id == tenant_id.value,
+                ServiceSessionModel.deleted_at.is_(None),
+                ServiceSessionModel.status.in_(
+                    (SessionStatus.SCHEDULED.value, SessionStatus.RESCHEDULED.value)
+                ),
+                cast(ServiceSessionModel.scheduled_at, SADate) == session_date,
+                ServiceSessionModel.provider_id == provider_id.value,
+                ServiceSessionModel.client_id == client_id.value,
+                ServiceSessionModel.service_id == service_id.value,
+                member_match,
+            )
+            .order_by(ServiceSessionModel.scheduled_at)
+            .limit(1)
+        )
+        return ServiceSessionMapper.to_entity(model) if model else None
 
     async def provider_delivery_stats(
         self, tenant_id: TenantId, provider_id: ProviderId

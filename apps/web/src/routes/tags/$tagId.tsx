@@ -126,16 +126,11 @@ function TagEditPage() {
               <Button
                 type="submit"
                 disabled={formState.isSubmitting}
-                className="rounded-none bg-primary hover:bg-primary"
+                className=" bg-primary hover:bg-primary"
               >
                 {formState.isSubmitting ? "Saving…" : "Save"}
               </Button>
-              <Button
-                type="button"
-                variant="secondary"
-                className="rounded-none"
-                onClick={() => navigate({ to: "/tags" })}
-              >
+              <Button type="button" variant="secondary" onClick={() => navigate({ to: "/tags" })}>
                 Cancel
               </Button>
             </div>

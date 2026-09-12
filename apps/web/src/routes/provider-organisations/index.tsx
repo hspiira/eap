@@ -42,7 +42,7 @@ import { useListPage } from "@/hooks/useListPage"
 import { useTableSelection } from "@/hooks/useTableSelection"
 import { nameInitials } from "@/lib/display"
 import { normalizeErrorMessage } from "@/lib/errors"
-import { useEntityList } from "@/lib/queries"
+import { useEntityListPages } from "@/lib/queries"
 import { boolParam, enumOptions, enumParam, listSearchSchema } from "@/lib/search-params"
 import type { ProviderOrganisation } from "@/types/entities"
 import { OrganisationApprovalStatus, TenantRole } from "@/types/enums"
@@ -73,7 +73,7 @@ function ProviderOrganisationsListPage() {
   const isAdmin = useCurrentRole() === TenantRole.ADMIN
   const [editing, setEditing] = useState<ProviderOrganisation | null>(null)
 
-  const query = useEntityList<ProviderOrganisation, ProviderOrganisationListParams>({
+  const query = useEntityListPages<ProviderOrganisation, ProviderOrganisationListParams>({
     resource: "provider-organisations",
     params: {
       page: list.page,
@@ -99,11 +99,7 @@ function ProviderOrganisationsListPage() {
       title="Organisations"
       actions={
         canWrite ? (
-          <Button
-            size="sm"
-            className="h-7 gap-1.5 rounded-none px-2.5"
-            onClick={() => list.setAddOpen(true)}
-          >
+          <Button size="sm" className="h-7 gap-1.5 px-2.5" onClick={() => list.setAddOpen(true)}>
             <Plus className="size-3.5" />
             Add organisation
           </Button>
@@ -162,6 +158,9 @@ function ProviderOrganisationsListPage() {
       />
 
       <EntityListView
+        onLoadMore={query.loadMore}
+        hasMore={query.hasMore}
+        loadingMore={query.loadingMore}
         columns={COLUMNS}
         items={items}
         rowKey={(row) => row.id}
@@ -189,7 +188,7 @@ function ProviderOrganisationsListPage() {
             }
             action={
               canWrite && !hasFilters ? (
-                <Button size="sm" className="rounded-none" onClick={() => list.setAddOpen(true)}>
+                <Button size="sm" onClick={() => list.setAddOpen(true)}>
                   Add organisation
                 </Button>
               ) : null

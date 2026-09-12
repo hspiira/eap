@@ -26,7 +26,7 @@ export function TagsPageHeader({ breadcrumb, children }: TagsPageHeaderProps) {
             asChild
             size="sm"
             variant="default"
-            className="rounded-none h-8 gap-1.5 bg-primary hover:bg-primary text-white"
+            className=" h-8 gap-1.5 bg-primary hover:bg-primary text-white"
           >
             <Link to="/tags/new">
               <Plus className="h-4 w-4" />

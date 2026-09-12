@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router"
 import { ClipboardCheck } from "lucide-react"
 
-import { AppLayout } from "@/components/AppLayout"
+import { AuthedLayout } from "@/components/common/AuthedLayout"
 import { EmptyState } from "@/components/common/EmptyState"
 
 export const Route = createFileRoute("/audit")({
@@ -10,12 +10,12 @@ export const Route = createFileRoute("/audit")({
 
 function AuditRoute() {
   return (
-    <AppLayout>
+    <AuthedLayout>
       <EmptyState
         icon={ClipboardCheck}
         title="Audit logs coming soon"
         description="Full tamper-evident audit trail for all platform actions. This module is in active development."
       />
-    </AppLayout>
+    </AuthedLayout>
   )
 }

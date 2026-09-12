@@ -68,7 +68,7 @@ const TEMPLATES: ReportTemplate[] = [
 function ReportsLandingPage() {
   return (
     <PageShell icon={FileBarChart} breadcrumb="Reports">
-      <div className="min-h-0 flex-1 overflow-y-auto bg-bg">
+      <div className="min-h-0 flex-1 overflow-y-auto bg-bg" data-scroll-restoration-id="detail">
         <div className="mx-auto max-w-5xl space-y-5 px-5 py-5">
           <header>
             <h1 className="text-base font-semibold text-fg">Templates</h1>
@@ -135,7 +135,7 @@ function CardHeader({ template, icon: Icon }: { template: ReportTemplate; icon: 
     <div className="flex items-start gap-3">
       <span
         aria-hidden
-        className="grid size-8 shrink-0 place-items-center rounded-sm bg-primary/10 text-primary"
+        className="grid size-8 shrink-0 place-items-center rounded-sm bg-fg/6 text-fg-muted"
       >
         <Icon className="size-4" />
       </span>

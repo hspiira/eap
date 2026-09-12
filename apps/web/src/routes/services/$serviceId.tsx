@@ -1,12 +1,13 @@
 import { useCallback, useState } from "react"
 
 import { useQuery, useQueryClient } from "@tanstack/react-query"
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router"
-import { ArrowLeft, CalendarClock, ChevronRight, Plus, SquarePen, Wrench } from "lucide-react"
+import { createFileRoute, Link } from "@tanstack/react-router"
+import { CalendarClock, ChevronRight, Plus, SquarePen, Wrench } from "lucide-react"
 
 import { serviceAssignmentsApi } from "@/api/endpoints/service-assignments"
 import { serviceSessionsApi } from "@/api/endpoints/service-sessions"
 import { servicesApi } from "@/api/endpoints/services"
+import { BackButton } from "@/components/common/BackButton"
 import {
   DetailCard,
   DetailGrid,
@@ -33,6 +34,7 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { useToast } from "@/contexts/ToastContext"
+import { useBackTo } from "@/hooks/useBackTo"
 import { useTabSearchParam } from "@/hooks/useTabSearchParam"
 import { normalizeErrorMessage } from "@/lib/errors"
 import { formatDateTime } from "@/lib/format"
@@ -49,7 +51,7 @@ const TAB_VALUES: ReadonlyArray<TabValue> = ["overview", "contracts", "sessions"
 
 function ServiceDetailPage() {
   const { serviceId } = Route.useParams()
-  const navigate = useNavigate()
+  const back = useBackTo("/services")
   const queryClient = useQueryClient()
   const [actionLoading, setActionLoading] = useState(false)
   const toast = useToast()
@@ -98,7 +100,7 @@ function ServiceDetailPage() {
     icon: Wrench,
     breadcrumb: "Catalog · Services",
     entity: "service",
-    backTo: () => navigate({ to: "/services" }),
+    backTo: back,
     backLabel: "Back to services",
   })
   if (state || !service) return state
@@ -109,17 +111,7 @@ function ServiceDetailPage() {
       breadcrumb={`Catalog · Services · ${service.name}`}
       actions={
         <>
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            onClick={() => navigate({ to: "/services" })}
-            aria-label="Back to services"
-            title="Back to services"
-            className="size-7 p-0 text-fg/70"
-          >
-            <ArrowLeft className="size-3.5" />
-          </Button>
+          <BackButton to="/services" label="Back to services" />
           <Button
             size="sm"
             variant="outline"
@@ -143,7 +135,7 @@ function ServiceDetailPage() {
         }
       />
 
-      <div className="min-h-0 flex-1 overflow-y-auto bg-bg">
+      <div className="min-h-0 flex-1 overflow-y-auto bg-bg" data-scroll-restoration-id="detail">
         <div className="grid grid-cols-12 gap-5 px-5 py-5">
           <div className="col-span-12 min-w-0 lg:col-span-8">
             <Tabs value={tab} onValueChange={(v) => setTab(v as TabValue)}>
@@ -241,7 +233,7 @@ function Hero({ service }: { service: Service }) {
     <div className="flex shrink-0 items-center gap-3 border-b border-fg/10 bg-surface px-5 py-3">
       <span
         aria-hidden
-        className="grid size-9 shrink-0 place-items-center rounded-sm bg-primary/10 text-primary"
+        className="grid size-9 shrink-0 place-items-center rounded-sm bg-fg/6 text-fg-muted"
       >
         <Wrench className="size-4" />
       </span>

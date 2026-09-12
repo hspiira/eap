@@ -175,6 +175,10 @@
   --color-destructive: var(--destructive);
   --color-destructive-foreground: var(--destructive-foreground);
   --color-input: var(--input);
+  --color-action: var(--action);
+  --color-action-fg: var(--action-fg);
+  --color-highlight: var(--highlight);
+  --color-highlight-fg: var(--highlight-fg);
 
   --radius-md: 6px;
   --radius-sm: 4px;

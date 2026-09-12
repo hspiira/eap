@@ -60,7 +60,7 @@ export function MemberNextOfKinCard({ member }: { member: Member }) {
               type="button"
               variant="outline"
               size="sm"
-              className="h-7 rounded-none gap-1 px-2"
+              className="h-7 gap-1 px-2"
               onClick={() => openNextOfKinForm()}
             >
               <Plus className="size-3.5" />
@@ -74,11 +74,7 @@ export function MemberNextOfKinCard({ member }: { member: Member }) {
         ) : nextOfKinQuery.isError ? (
           <p role="alert" className="text-xs text-danger-fg">
             Could not load contacts.{" "}
-            <Button
-              variant="link"
-              className="rounded-none"
-              onClick={() => void nextOfKinQuery.refetch()}
-            >
+            <Button variant="link" onClick={() => void nextOfKinQuery.refetch()}>
               Retry
             </Button>
           </p>
@@ -109,7 +105,7 @@ export function MemberNextOfKinCard({ member }: { member: Member }) {
                       type="button"
                       variant="ghost"
                       size="sm"
-                      className="size-7 rounded-none p-0"
+                      className="size-7 p-0"
                       onClick={() => openNextOfKinForm(contact)}
                       aria-label={`Edit ${contact.name}`}
                     >
@@ -119,7 +115,7 @@ export function MemberNextOfKinCard({ member }: { member: Member }) {
                       type="button"
                       variant="ghost"
                       size="sm"
-                      className="size-7 rounded-none p-0 text-danger hover:text-danger"
+                      className="size-7 p-0 text-danger hover:text-danger"
                       onClick={() => void handleNextOfKinDelete(contact)}
                       aria-label={`Remove ${contact.name}`}
                     >
@@ -150,11 +146,7 @@ export function MemberBeneficiaries({ member }: { member: Member }) {
       ) : beneficiariesQuery.isError ? (
         <p role="alert" className="text-xs text-danger-fg">
           Could not load beneficiaries.{" "}
-          <Button
-            variant="link"
-            className="rounded-none"
-            onClick={() => void beneficiariesQuery.refetch()}
-          >
+          <Button variant="link" onClick={() => void beneficiariesQuery.refetch()}>
             Retry
           </Button>
         </p>

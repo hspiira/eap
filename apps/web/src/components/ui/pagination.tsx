@@ -7,6 +7,11 @@ export interface PaginationProps {
   page: number
   total: number
   limit: number
+  /**
+   * Rows actually on screen, which exceeds `limit` once scrolling has appended
+   * pages. Defaults to `limit`, the count when paging by click alone.
+   */
+  shownCount?: number
   onPageChange: (page: number) => void
   className?: string
 }
@@ -34,11 +39,18 @@ function getPageNumbers(current: number, totalPages: number): (number | "ellipsi
   return pages
 }
 
-export function Pagination({ page, total, limit, onPageChange, className }: PaginationProps) {
+export function Pagination({
+  page,
+  total,
+  limit,
+  shownCount,
+  onPageChange,
+  className,
+}: PaginationProps) {
   const totalPages = Math.max(1, Math.ceil(total / limit))
   const pages = getPageNumbers(page, totalPages)
   const from = total === 0 ? 0 : (page - 1) * limit + 1
-  const to = Math.min(page * limit, total)
+  const to = Math.min(from + (shownCount ?? limit) - 1, total)
 
   return (
     <div
@@ -49,7 +61,6 @@ export function Pagination({ page, total, limit, onPageChange, className }: Pagi
         <Button
           variant="secondary"
           size="sm"
-          className="rounded-none"
           onClick={() => onPageChange(page - 1)}
           disabled={page <= 1}
           aria-label="Previous page"
@@ -67,7 +78,7 @@ export function Pagination({ page, total, limit, onPageChange, className }: Pagi
                 key={p}
                 variant={p === page ? "default" : "secondary"}
                 size="sm"
-                className="min-w-8 rounded-none"
+                className="min-w-8"
                 onClick={() => onPageChange(p)}
                 aria-label={`Page ${p}`}
                 aria-current={p === page ? "page" : undefined}
@@ -80,7 +91,6 @@ export function Pagination({ page, total, limit, onPageChange, className }: Pagi
         <Button
           variant="secondary"
           size="sm"
-          className="rounded-none"
           onClick={() => onPageChange(page + 1)}
           disabled={page >= totalPages}
           aria-label="Next page"

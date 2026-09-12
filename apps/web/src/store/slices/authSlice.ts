@@ -47,6 +47,16 @@ export interface AuthActions {
 
 export type AuthStore = AuthState & AuthActions
 
+/**
+ * Whether storage still holds a session, asked fresh rather than read off this
+ * tab's state. A page restored from the back/forward cache brings back the
+ * state it was unloaded with, which can outlive the sign-out that followed it.
+ */
+export function hasPersistedSession(): boolean {
+  const persisted = authStorage.read()
+  return !!((useCookies() ? null : persisted.token) || persisted.user_id)
+}
+
 function readInitialState(): AuthState {
   const persisted = authStorage.read()
   const token = useCookies() ? null : persisted.token
@@ -58,7 +68,7 @@ function readInitialState(): AuthState {
     tokenExpiresAt: persisted.token_expires_at,
     user_id: persisted.user_id,
     email: persisted.email,
-    isAuthenticated: !!(token || persisted.user_id),
+    isAuthenticated: hasPersistedSession(),
     isLoading: true,
     error: null,
     sessionEpoch: 0,

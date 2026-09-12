@@ -35,6 +35,13 @@ class ServiceSessionCreate(BaseModel):
     member_id: str | None = Field(
         None, description="Required for an Individual session, forbidden for a CompanyWide one"
     )
+    follow_up_of_session_id: str | None = Field(
+        None,
+        description=(
+            "The session this one was booked off the back of, when a counsellor "
+            "said the person would be back. A scheduling fact, not a clinical one."
+        ),
+    )
     client_id: str | None = Field(
         None,
         description=(
@@ -62,9 +69,6 @@ class ServiceSessionCreate(BaseModel):
     diagnosis_type_id: str | None = Field(None, description="DiagnosisType reference ID")
     diagnosis_id: str | None = Field(None, description="Diagnosis reference ID")
     approved_by: str | None = Field(None, description="User ID of approver")
-    session_number: int | None = Field(
-        None, ge=1, description="Ordinal session number for this client"
-    )
     partner_name: OptionalSanitizedStr = Field(
         None, description="Partner name (couples/family sessions)"
     )
@@ -72,7 +76,6 @@ class ServiceSessionCreate(BaseModel):
         None, description="Partner's relationship to client"
     )
     headcount: int | None = Field(None, ge=2, description="Participant count (group sessions)")
-    client_type: ClientType | None = Field(None, description="New or repeat client")
     clinical_outcome: SessionClinicalStatus | None = Field(
         None, description="Clinical continuation outcome"
     )
@@ -191,6 +194,9 @@ class ServiceSessionResponse(BaseModel):
 
     id: str = Field(..., description="Session identifier")
     tenant_id: str = Field(..., description="Tenant identifier")
+    follow_up_of_session_id: str | None = Field(
+        None, description="The session this one was booked off the back of"
+    )
     service_id: str = Field(..., description="Service identifier")
     provider_id: str = Field(..., description="Provider (person) identifier")
     attendance: SessionAttendance = Field(..., description="Individual or CompanyWide")
@@ -247,6 +253,57 @@ class ServiceSessionResponse(BaseModel):
     )
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class PractitionerAvailability(BaseModel):
+    """Whether one practitioner is already spoken for at a given time."""
+
+    provider_id: str
+    available: bool = Field(
+        ..., description="False when a live booking of theirs overlaps the span"
+    )
+    clashing_session_id: str | None = Field(
+        None, description="The booking in the way, when there is one"
+    )
+    clashing_scheduled_at: datetime | None = Field(None, description="When that booking starts")
+
+
+class AvailabilityResponse(BaseModel):
+    """What a scheduler needs to pick someone who is free.
+
+    Reports only what it checked: whether each practitioner already has a
+    booking in this system overlapping the span. It is not a claim about their
+    own diary, which the platform cannot see for an externally affiliated
+    practitioner. See "Decision 6" in docs/design/REALTIME_SESSION_CAPTURE.md.
+    """
+
+    starts_at: datetime
+    ends_at: datetime
+    assumed_minutes: int = Field(
+        ...,
+        description=(
+            "The length the span was built from: the service's own duration "
+            "where it has one, otherwise the nominal hour. A booking records "
+            "no length of its own until it is completed."
+        ),
+    )
+    items: list[PractitionerAvailability]
+
+
+class SessionChainResponse(BaseModel):
+    """One session's place in the chain of care around it.
+
+    One hop each way. A chain is walked a step at a time because there is no
+    container holding the whole episode: a case would be that container, and a
+    session may not reach one.
+    """
+
+    previous: ServiceSessionResponse | None = Field(
+        None, description="The session this one was booked off the back of"
+    )
+    following: list[ServiceSessionResponse] = Field(
+        default_factory=list, description="Sessions booked off the back of this one"
+    )
 
 
 class ServiceSessionListResponse(BaseModel):

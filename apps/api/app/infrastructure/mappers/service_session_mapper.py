@@ -80,6 +80,9 @@ class ServiceSessionMapper:
             feedback=decrypt(model.feedback, tenant_id=model.tenant_id),
             cancellation_reason=model.cancellation_reason,
             incident_id=getattr(model, "incident_id", None),
+            follow_up_of_session_id=(
+                SessionId(model.follow_up_of_session_id) if model.follow_up_of_session_id else None
+            ),
             deleted_at=ensure_utc(model.deleted_at) if model.deleted_at else None,
             session_type=SessionType(model.session_type) if model.session_type else None,
             category=SessionCategory(model.category) if model.category else None,
@@ -131,6 +134,9 @@ class ServiceSessionMapper:
             feedback=encrypt(entity.feedback, tenant_id=entity.tenant_id.value),
             cancellation_reason=entity.cancellation_reason,
             incident_id=entity.incident_id,
+            follow_up_of_session_id=(
+                entity.follow_up_of_session_id.value if entity.follow_up_of_session_id else None
+            ),
             created_at=ensure_utc(entity.created_at),
             updated_at=ensure_utc(entity.updated_at),
             deleted_at=ensure_utc(entity.deleted_at) if entity.deleted_at else None,

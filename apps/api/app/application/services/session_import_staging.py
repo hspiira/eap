@@ -47,6 +47,7 @@ from app.domain.repositories.provider_network_repository import (
 )
 from app.domain.repositories.provider_repository import ProviderRepository
 from app.domain.repositories.service_repository import ServiceRepository
+from app.domain.repositories.service_session_repository import ServiceSessionRepository
 from app.domain.repositories.user_repository import UserRepository
 from app.domain.services.diagnosis_alias import normalise_diagnosis_value
 from app.domain.services.provider_alias_normalisation import (
@@ -225,6 +226,7 @@ class SessionImportStagingService:
         services: ServiceRepository,
         diagnoses: DiagnosisRepository,
         users: UserRepository,
+        sessions: ServiceSessionRepository | None = None,
     ):
         self._providers = providers
         self._affiliations = affiliations
@@ -234,6 +236,7 @@ class SessionImportStagingService:
         self._services = services
         self._diagnoses = diagnoses
         self._users = users
+        self._sessions = sessions
         self._client_cache: dict[str, ClientEntity | None] = {}
         self._client_code_cache: dict[str, ClientEntity | None] = {}
         self._member_cache: dict[tuple[str, str], EligibleMember | None] = {}
@@ -614,7 +617,7 @@ class SessionImportStagingService:
         Decision 2 forbids reading an absent organisation as direct delivery, so
         a row with no supplier evidence is staged as unknown rather than direct.
         """
-        conflict = await self._same_looking_session(tenant_id, row, resolution, subject)
+        conflict = await self._conflicting_session(tenant_id, row, resolution, subject)
         if conflict is not None:
             return self._held(row, ImportRowOutcome.CONFLICTING, (conflict,), replay_key)
         if row.organisation_affiliation_id is None:
@@ -749,6 +752,66 @@ class SessionImportStagingService:
         replay_key: str,
     ) -> StagedRow:
         return self._staged(row, outcome, DeliveryContext.UNKNOWN, None, None, reasons, replay_key)
+
+    async def _conflicting_session(
+        self,
+        tenant_id: TenantId,
+        row: SourceRow,
+        resolution: NameResolution,
+        subject: "_Subject",
+    ) -> str | None:
+        """Whether this line already has a session behind it, booked or imported.
+
+        The booking is checked first because it is the one a reviewer can act
+        on: confirming it is the point of the month-end cross-check, whereas a
+        repeated import row is a restaging accident.
+        """
+        booked = await self._already_booked_session(tenant_id, row, resolution, subject)
+        if booked is not None:
+            return booked
+        return await self._same_looking_session(tenant_id, row, resolution, subject)
+
+    async def _already_booked_session(
+        self,
+        tenant_id: TenantId,
+        row: SourceRow,
+        resolution: NameResolution,
+        subject: "_Subject",
+    ) -> str | None:
+        """Flags a row the system already expects as a booking.
+
+        A session arranged in the app and a counsellor's later report of it are
+        the same delivery. Nothing connected them: the import's idempotency key
+        is the counsellor's own `source_id`, which a booked session never has,
+        and `_same_looking_session` below only ever reads previous import rows.
+        Left alone, confirming the schedule and applying the log counted one
+        session twice.
+
+        Held for a person rather than completed here. Applying a batch writes
+        sessions; completing a booking is a different act with its own
+        transition and its own drawdown, and the match is a same-day guess on
+        a log that carries no time. See
+        docs/design/REALTIME_SESSION_CAPTURE.md.
+        """
+        if self._sessions is None or resolution.provider_id is None or row.session_date is None:
+            return None
+        if subject.client_id is None or subject.service_id is None:
+            return None
+        booked = await self._sessions.find_awaiting_confirmation(
+            tenant_id,
+            session_date=row.session_date,
+            provider_id=resolution.provider_id,
+            client_id=subject.client_id,
+            service_id=subject.service_id,
+            member_id=subject.member_id,
+        )
+        if booked is None:
+            return None
+        return (
+            f"Already booked in the system for this date, practitioner, client and service "
+            f"(session {booked.id.value}, still {booked.status.value.lower()}). Confirm that "
+            "booking instead of importing a second session for the same delivery."
+        )
 
     async def _same_looking_session(
         self,

@@ -30,8 +30,6 @@ from app.api.schemas.dashboard_schemas import (
     DashboardResponse,
     DataQuality,
     Granularity,
-    ImportBatchSummary,
-    ImportQueueEntry,
     RangeInfo,
     RangePreset,
     SeriesPoint,
@@ -69,13 +67,22 @@ MONTH_NAMES = (
     "Dec",
 )
 
-UNRESOLVED_OUTCOMES = (
+#: Every outcome that leaves a staged row unwritten and awaiting a person.
+#:
+#: Conflicting and Rejected belong here as much as the unresolved identities:
+#: a row with no date, or one naming an organisation the practitioner did not
+#: hold that day, is just as stuck. Leaving them out let a batch stuck
+#: entirely on those report nothing blocked. Failed is deliberately absent,
+#: being an apply-time write refusal rather than something staging held.
+HELD_OUTCOMES = (
     ImportRowOutcome.MISSING_PRACTITIONER,
     ImportRowOutcome.UNMAPPED_PRACTITIONER,
     ImportRowOutcome.AMBIGUOUS_PRACTITIONER,
     ImportRowOutcome.UNRESOLVED_CLIENT,
     ImportRowOutcome.UNRESOLVED_MEMBER,
     ImportRowOutcome.UNRESOLVED_SERVICE,
+    ImportRowOutcome.CONFLICTING,
+    ImportRowOutcome.REJECTED,
 )
 
 
@@ -332,34 +339,20 @@ async def _trending_services(runner, tenant_id: str, window: ResolvedRange) -> l
     return trends[:TRENDING_SERVICES_LIMIT]
 
 
-async def _import_state(
-    runner, tenant_id: str
-) -> tuple[ImportBatchSummary | None, list[ImportQueueEntry], int]:
+async def _import_backlog(runner, tenant_id: str) -> int:
+    """Rows in the latest staged batch that staging held, for any reason.
+
+    The per-outcome breakdown and the batch composition were dropped with the
+    import health card: a batch describes file imports only, so a session
+    entered on the form contributes nothing to it and the composition was
+    never the whole picture. The single backlog figure survives because the
+    KPI tile and the attention panel say what it unblocks.
+    """
     batch = await runner.latest_import_batch(tenant_id)
     if batch is None:
-        return None, [], 0
-
+        return 0
     by_outcome = await runner.import_row_outcomes(batch.id)
-    queues = sorted(
-        (
-            ImportQueueEntry(outcome=outcome.value, total=by_outcome[outcome])
-            for outcome in UNRESOLVED_OUTCOMES
-            if by_outcome.get(outcome)
-        ),
-        key=lambda entry: entry.total,
-        reverse=True,
-    )
-    blocked = sum(entry.total for entry in queues)
-    summary = ImportBatchSummary(
-        file_name=batch.file_name,
-        status=batch.status.value,
-        row_count=batch.row_count,
-        accepted=by_outcome.get(ImportRowOutcome.ACCEPTED, 0),
-        duplicate=by_outcome.get(ImportRowOutcome.DUPLICATE, 0),
-        blocked=blocked,
-        applied_at=batch.applied_at.isoformat() if batch.applied_at else None,
-    )
-    return summary, queues, blocked
+    return sum(by_outcome.get(outcome, 0) for outcome in HELD_OUTCOMES)
 
 
 async def _data_quality(
@@ -371,6 +364,7 @@ async def _data_quality(
         sessions_missing_rate=missing_rate,
         clients_without_roster=max(clients_total - clients_with_roster, 0),
         providers_pending=providers_pending,
+        sessions_awaiting_confirmation=await runner.sessions_awaiting_confirmation(tenant_id),
     )
 
 
@@ -401,7 +395,7 @@ async def get_dashboard(
         tenant_id, window.start, window.end, window.prior_start, window.prior_end
     )
     covered, with_roster, clients_total = await runner.coverage(tenant_id)
-    import_batch, import_queues, backlog = await _import_state(runner, tenant_id)
+    backlog = await _import_backlog(runner, tenant_id)
 
     return DashboardResponse(
         range=window.to_info(),
@@ -419,7 +413,5 @@ async def get_dashboard(
         sessions_by_category=await _category_split(runner, tenant_id, window),
         top_clients=await _top_clients(runner, tenant_id, window),
         trending_services=await _trending_services(runner, tenant_id, window),
-        import_queues=import_queues,
-        import_batch=import_batch,
         data_quality=await _data_quality(runner, tenant_id, clients_total, with_roster),
     )

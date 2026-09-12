@@ -8,7 +8,7 @@ Implementation lives in infrastructure layer.
 from abc import abstractmethod
 from collections.abc import Sequence
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import date, datetime
 
 from app.domain.entities.service_session import ServiceSessionEntity
 from app.domain.enums import (
@@ -20,6 +20,7 @@ from app.domain.enums import (
 )
 from app.domain.repositories.base_repository import BaseRepository
 from app.domain.value_objects.core import (
+    ClientId,
     EligibleMemberId,
     ProviderId,
     ServiceId,
@@ -172,6 +173,91 @@ class ServiceSessionRepository(BaseRepository[ServiceSessionEntity, SessionId]):
 
         Returns:
             Total count
+        """
+
+    @abstractmethod
+    async def list_follow_ups(
+        self, tenant_id: TenantId, session_id: SessionId
+    ) -> Sequence[ServiceSessionEntity]:
+        """The sessions booked off the back of this one, earliest first.
+
+        The stored link points backwards, so this is the only way to read the
+        chain forwards.
+        """
+
+    @abstractmethod
+    async def session_ordinals(
+        self, tenant_id: TenantId, session_ids: Sequence[str]
+    ) -> dict[str, int]:
+        """Each session's place in its member's history, counted by date.
+
+        Derived rather than stored so it cannot drift, and so a session entered
+        late for a date in the past takes its rightful place and pushes the
+        later ones along. Nothing is renumbered because nothing was numbered:
+        the ordinal is a view of the dates.
+
+        Company-wide sessions are absent. A talk belongs to a client and no
+        member, so there is no history to count it within.
+        """
+
+    @abstractmethod
+    async def find_clashing_booking(
+        self,
+        tenant_id: TenantId,
+        *,
+        provider_id: ProviderId,
+        starts_at: datetime,
+        ends_at: datetime,
+        exclude_session_id: SessionId | None = None,
+    ) -> ServiceSessionEntity | None:
+        """A live booking for this practitioner overlapping the given span.
+
+        Only Scheduled and Rescheduled hold a practitioner's time. A cancelled
+        booking released it, and a completed one is a record of the past, not a
+        claim on the future; refusing against those would make it impossible to
+        enter a session that has already happened.
+
+        `exclude_session_id` lets a reschedule ignore the booking it is moving,
+        which would otherwise always clash with itself.
+        """
+
+    @abstractmethod
+    async def list_awaiting_confirmation(
+        self,
+        tenant_id: TenantId,
+        *,
+        as_of: datetime,
+        provider_id: ProviderId | None = None,
+        client_id: ClientId | None = None,
+        limit: int = 50,
+        offset: int = 0,
+    ) -> tuple[Sequence[ServiceSessionEntity], int]:
+        """Bookings whose date has passed and which nobody has resolved.
+
+        The system never witnesses delivery, so a booking sits Scheduled until
+        a counsellor's month-end log confirms it. Past its date it is no longer
+        a plan, it is an open question: did it happen, and was it recorded?
+        Oldest first, because the oldest is the one most likely to be forgotten.
+        """
+
+    @abstractmethod
+    async def find_awaiting_confirmation(
+        self,
+        tenant_id: TenantId,
+        *,
+        session_date: date,
+        provider_id: ProviderId,
+        client_id: ClientId,
+        service_id: ServiceId,
+        member_id: EligibleMemberId | None,
+    ) -> ServiceSessionEntity | None:
+        """A session this tenant booked for that day and has not confirmed yet.
+
+        The counsellor's month-end log reports work the system may already be
+        expecting. Matched on the finest grain the log supports, which carries
+        a date and no time of day. Scheduled and Rescheduled only: a session
+        already Completed, Cancelled or marked a no-show has been resolved and
+        is not what an incoming line is reporting.
         """
 
     @abstractmethod

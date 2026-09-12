@@ -24,7 +24,7 @@ import { useListPage } from "@/hooks/useListPage"
 import { useTableSelection } from "@/hooks/useTableSelection"
 import { normalizeErrorMessage } from "@/lib/errors"
 import { formatDate } from "@/lib/format"
-import { useEntityList } from "@/lib/queries"
+import { useEntityListPages } from "@/lib/queries"
 import { enumOptions, enumParam, listSearchSchema } from "@/lib/search-params"
 import { cn } from "@/lib/utils"
 import type { Survey, SurveyStatusValue } from "@/types/entities"
@@ -70,7 +70,7 @@ function SurveysListPage() {
   const handleStatusChange = (next: StatusFilter) =>
     setFilter("status", next === "all" ? undefined : next)
 
-  const query = useEntityList<Survey, SurveyListParams>({
+  const query = useEntityListPages<Survey, SurveyListParams>({
     resource: "surveys",
     params: { page, limit, search: activeSearch, status: activeStatus, ...sortParams },
     listFn: surveysApi.list,
@@ -116,6 +116,9 @@ function SurveysListPage() {
       <SurveyFormSheet open={addOpen} onOpenChange={setAddOpen} />
 
       <EntityListView
+        onLoadMore={query.loadMore}
+        hasMore={query.hasMore}
+        loadingMore={query.loadingMore}
         columns={COLUMNS}
         items={items}
         rowKey={(row) => row.id}
@@ -206,7 +209,7 @@ function SurveyRow({
         >
           <span
             aria-hidden
-            className="grid size-6 shrink-0 place-items-center bg-primary/10 text-primary"
+            className="grid size-6 shrink-0 place-items-center bg-fg/6 text-fg-muted"
           >
             <ClipboardList className="size-3" />
           </span>

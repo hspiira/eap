@@ -4,7 +4,7 @@ import { createFileRoute } from "@tanstack/react-router"
 import { BarChart3, Download, Plus, RotateCw } from "lucide-react"
 
 import { industriesApi } from "@/api/endpoints/industries"
-import { AppLayout } from "@/components/AppLayout"
+import { AuthedLayout } from "@/components/common/AuthedLayout"
 import { EmptyState } from "@/components/common/EmptyState"
 import { FilterBar, FilterSearch } from "@/components/common/FilterBar"
 import { IconButton } from "@/components/common/IconButton"
@@ -28,7 +28,6 @@ import { useDebouncedValue } from "@/hooks/useDebouncedValue"
 import { normalizeErrorMessage } from "@/lib/errors"
 import { useEntityList } from "@/lib/queries"
 import { cn } from "@/lib/utils"
-import { useAuthStore } from "@/store/slices/authSlice"
 import type { Industry } from "@/types/entities"
 
 export const Route = createFileRoute("/industries")({
@@ -38,7 +37,6 @@ export const Route = createFileRoute("/industries")({
 const ROW_BORDER = "border-fg/8"
 
 function IndustriesPage() {
-  const { isAuthenticated, isLoading } = useAuthStore()
   const [page, setPage] = useState(1)
   const limit = 20
   const [searchInput, setSearchInput] = useState("")
@@ -160,13 +158,10 @@ function IndustriesPage() {
     setSelectedIndustry(updated)
   }, [])
 
-  if (isLoading) return <div className="p-8 text-fg">Loading…</div>
-  if (!isAuthenticated) return null
-
   const hasFilters = Boolean(activeSearch)
 
   return (
-    <AppLayout>
+    <AuthedLayout>
       <PageShell
         icon={BarChart3}
         breadcrumb="Organization & Clients · Industries"
@@ -293,7 +288,7 @@ function IndustriesPage() {
           </div>
         </div>
       </PageShell>
-    </AppLayout>
+    </AuthedLayout>
   )
 }
 
@@ -322,7 +317,7 @@ async function pageOf(id: string, sort: SortState, limit: number): Promise<numbe
 function DetailsPlaceholder() {
   return (
     <div className="flex flex-1 flex-col items-center justify-center gap-1 text-center">
-      <div className="mb-2 grid size-9 place-items-center bg-primary/10">
+      <div className="mb-2 grid size-9 place-items-center bg-fg/6">
         <BarChart3 className="size-4 text-primary" />
       </div>
       <h3 className="text-sm font-semibold text-fg">Pick an industry</h3>

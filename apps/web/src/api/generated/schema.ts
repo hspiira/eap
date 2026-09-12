@@ -5124,6 +5124,58 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/service-sessions/availability": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Which of these practitioners are free at a given time
+         * @description Whether each named practitioner already has a booking over this span.
+         *
+         *     Answers only what it can see. An externally affiliated practitioner keeps
+         *     their own diary and the platform has no sight of it, so a practitioner
+         *     reported free here may still be busy in life. The caller names who to
+         *     check rather than the server sweeping the whole panel, which keeps the
+         *     cost proportional to what a scheduler is actually looking at.
+         */
+        get: operations["check_practitioner_availability_service_sessions_availability_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/service-sessions/awaiting-confirmation": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Bookings past their date that nobody has confirmed yet
+         * @description What the system expected but has not been told the outcome of.
+         *
+         *     Delivery happens outside the system, so a booking stays Scheduled until a
+         *     counsellor's month-end log confirms it. Once its date has passed it stops
+         *     being a plan and becomes an open question, and until now nothing
+         *     distinguished the two: a booking for last Tuesday looked exactly like one
+         *     for next Tuesday. Oldest first. See docs/design/REALTIME_SESSION_CAPTURE.md.
+         */
+        get: operations["list_sessions_awaiting_confirmation_service_sessions_awaiting_confirmation_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/service-sessions/member/{member_id}": {
         parameters: {
             query?: never;
@@ -5242,6 +5294,31 @@ export interface paths {
          * @description Cancel a service session.
          */
         post: operations["cancel_service_session_service_sessions__session_id__cancel_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/service-sessions/{session_id}/chain": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * The sessions immediately before and after this one
+         * @description One hop each way along the chain of care.
+         *
+         *     The stored link points backwards, so the forward half has to be looked up.
+         *     One hop rather than the whole episode: there is no container holding a
+         *     course of care, because the thing that would hold it is a case and a
+         *     session may not reach one.
+         */
+        get: operations["get_session_chain_service_sessions__session_id__chain_get"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -7035,6 +7112,34 @@ export interface components {
             programme_id: string;
             /** Service Category */
             service_category: string;
+        };
+        /**
+         * AvailabilityResponse
+         * @description What a scheduler needs to pick someone who is free.
+         *
+         *     Reports only what it checked: whether each practitioner already has a
+         *     booking in this system overlapping the span. It is not a claim about their
+         *     own diary, which the platform cannot see for an externally affiliated
+         *     practitioner. See "Decision 6" in docs/design/REALTIME_SESSION_CAPTURE.md.
+         */
+        AvailabilityResponse: {
+            /**
+             * Assumed Minutes
+             * @description The length the span was built from: the service's own duration where it has one, otherwise the nominal hour. A booking records no length of its own until it is completed.
+             */
+            assumed_minutes: number;
+            /**
+             * Ends At
+             * Format: date-time
+             */
+            ends_at: string;
+            /** Items */
+            items: components["schemas"]["PractitionerAvailability"][];
+            /**
+             * Starts At
+             * Format: date-time
+             */
+            starts_at: string;
         };
         /**
          * BaseStatus
@@ -8980,7 +9085,7 @@ export interface components {
             covered_members: number;
             /**
              * Import Backlog
-             * @description Rows in the current import batch still blocked on an unresolved identity
+             * @description Rows in the current import batch that staging held, for any reason
              */
             import_backlog: number;
             /**
@@ -9000,10 +9105,6 @@ export interface components {
          */
         DashboardResponse: {
             data_quality: components["schemas"]["DataQuality"];
-            /** @description Absent when the tenant has never staged an import */
-            import_batch?: components["schemas"]["ImportBatchSummary"] | null;
-            /** Import Queues */
-            import_queues: components["schemas"]["ImportQueueEntry"][];
             kpis: components["schemas"]["DashboardKpis"];
             range: components["schemas"]["RangeInfo"];
             /**
@@ -9035,6 +9136,12 @@ export interface components {
              * @description Practitioners not yet activated
              */
             providers_pending: number;
+            /**
+             * Sessions Awaiting Confirmation
+             * @description Bookings whose date has passed that nobody has confirmed or closed. Delivery happens outside the system, so these stay open until a counsellor's log accounts for them.
+             * @default 0
+             */
+            sessions_awaiting_confirmation: number;
             /**
              * Sessions Missing Outcome
              * @description Completed sessions with no clinical outcome recorded
@@ -10154,39 +10261,6 @@ export interface components {
          * @enum {string}
          */
         ImportBatchStatus: "Staged" | "Applied" | "Abandoned";
-        /**
-         * ImportBatchSummary
-         * @description The batch the backlog figures describe, as a part-to-whole composition.
-         */
-        ImportBatchSummary: {
-            /** Accepted */
-            accepted: number;
-            /** Applied At */
-            applied_at?: string | null;
-            /**
-             * Blocked
-             * @description Rows held on an unresolved identity
-             */
-            blocked: number;
-            /** Duplicate */
-            duplicate: number;
-            /** File Name */
-            file_name: string;
-            /** Row Count */
-            row_count: number;
-            /** Status */
-            status: string;
-        };
-        /**
-         * ImportQueueEntry
-         * @description One unresolved outcome bucket in the current import batch.
-         */
-        ImportQueueEntry: {
-            /** Outcome */
-            outcome: string;
-            /** Total */
-            total: number;
-        };
         /**
          * ImportReasonCode
          * @description Machine-readable code for a staged row's outcome reason (P-10).
@@ -11674,6 +11748,29 @@ export interface components {
          */
         PaymentStatus: "Pending" | "Paid" | "Overdue" | "Cancelled" | "Refunded";
         /**
+         * PractitionerAvailability
+         * @description Whether one practitioner is already spoken for at a given time.
+         */
+        PractitionerAvailability: {
+            /**
+             * Available
+             * @description False when a live booking of theirs overlaps the span
+             */
+            available: boolean;
+            /**
+             * Clashing Scheduled At
+             * @description When that booking starts
+             */
+            clashing_scheduled_at?: string | null;
+            /**
+             * Clashing Session Id
+             * @description The booking in the way, when there is one
+             */
+            clashing_session_id?: string | null;
+            /** Provider Id */
+            provider_id: string;
+        };
+        /**
          * PractitionerImportApplyResponse
          * @description Outcome of applying a batch.
          *
@@ -12937,8 +13034,6 @@ export interface components {
              * @description Required for a CompanyWide session. For an Individual session it is taken from the member, so that the two cannot disagree
              */
             client_id?: string | null;
-            /** @description New or repeat client */
-            client_type?: components["schemas"]["ClientType"] | null;
             /** @description Clinical continuation outcome */
             clinical_outcome?: components["schemas"]["SessionClinicalStatus"] | null;
             /** @description Direct or Organisation. Unknown is rejected: it belongs to historical import */
@@ -12953,6 +13048,11 @@ export interface components {
              * @description DiagnosisType reference ID
              */
             diagnosis_type_id?: string | null;
+            /**
+             * Follow Up Of Session Id
+             * @description The session this one was booked off the back of, when a counsellor said the person would be back. A scheduling fact, not a clinical one.
+             */
+            follow_up_of_session_id?: string | null;
             /**
              * Headcount
              * @description Participant count (group sessions)
@@ -13009,11 +13109,6 @@ export interface components {
              * @description Service identifier
              */
             service_id: string;
-            /**
-             * Session Number
-             * @description Ordinal session number for this client
-             */
-            session_number?: number | null;
             /** @description Physical or online */
             session_type?: components["schemas"]["SessionType"] | null;
         };
@@ -13125,6 +13220,11 @@ export interface components {
              * @description Session feedback
              */
             feedback?: string | null;
+            /**
+             * Follow Up Of Session Id
+             * @description The session this one was booked off the back of
+             */
+            follow_up_of_session_id?: string | null;
             /**
              * Headcount
              * @description Participant count (group sessions)
@@ -13390,6 +13490,23 @@ export interface components {
          * @enum {string}
          */
         SessionCategory: "Individual" | "Group" | "Family" | "Couples";
+        /**
+         * SessionChainResponse
+         * @description One session's place in the chain of care around it.
+         *
+         *     One hop each way. A chain is walked a step at a time because there is no
+         *     container holding the whole episode: a case would be that container, and a
+         *     session may not reach one.
+         */
+        SessionChainResponse: {
+            /**
+             * Following
+             * @description Sessions booked off the back of this one
+             */
+            following?: components["schemas"]["ServiceSessionResponse"][];
+            /** @description The session this one was booked off the back of */
+            previous?: components["schemas"]["ServiceSessionResponse"] | null;
+        };
         /**
          * SessionClinicalStatus
          * @description Clinical continuation outcome recorded by the counsellor at session end.
@@ -25405,6 +25522,82 @@ export interface operations {
             };
         };
     };
+    check_practitioner_availability_service_sessions_availability_get: {
+        parameters: {
+            query: {
+                tenant_id: string;
+                /** @description Start of the proposed booking, ISO 8601 */
+                at: string;
+                /** @description Service being delivered; sets the assumed length */
+                service_id: string;
+                /** @description Practitioners to check, repeated */
+                provider_id: string[];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AvailabilityResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_sessions_awaiting_confirmation_service_sessions_awaiting_confirmation_get: {
+        parameters: {
+            query: {
+                tenant_id: string;
+                /** @description Narrow to one practitioner */
+                provider_id?: string | null;
+                /** @description Narrow to one client */
+                client_id?: string | null;
+                /** @description Page number */
+                page?: number;
+                /** @description Items per page */
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ServiceSessionListResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     get_sessions_by_member_service_sessions_member__member_id__get: {
         parameters: {
             query: {
@@ -25623,6 +25816,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ServiceSessionResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_session_chain_service_sessions__session_id__chain_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                session_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SessionChainResponse"];
                 };
             };
             /** @description Validation Error */

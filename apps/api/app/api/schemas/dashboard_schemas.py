@@ -68,7 +68,7 @@ class DashboardKpis(BaseModel):
     clients_total: int = Field(..., description="Clients on the tenant, any status")
     import_backlog: int = Field(
         ...,
-        description="Rows in the current import batch still blocked on an unresolved identity",
+        description="Rows in the current import batch that staging held, for any reason",
     )
 
 
@@ -115,25 +115,6 @@ class ServiceTrend(BaseModel):
     )
 
 
-class ImportQueueEntry(BaseModel):
-    """One unresolved outcome bucket in the current import batch."""
-
-    outcome: str
-    total: int
-
-
-class ImportBatchSummary(BaseModel):
-    """The batch the backlog figures describe, as a part-to-whole composition."""
-
-    file_name: str
-    status: str
-    row_count: int
-    accepted: int
-    duplicate: int
-    blocked: int = Field(..., description="Rows held on an unresolved identity")
-    applied_at: str | None = None
-
-
 class DataQuality(BaseModel):
     """Derived gaps that block reporting, each one an actionable queue."""
 
@@ -143,6 +124,14 @@ class DataQuality(BaseModel):
     sessions_missing_rate: int = Field(..., description="Completed sessions with no rate")
     clients_without_roster: int = Field(..., description="Clients with no eligible members on file")
     providers_pending: int = Field(..., description="Practitioners not yet activated")
+    sessions_awaiting_confirmation: int = Field(
+        0,
+        description=(
+            "Bookings whose date has passed that nobody has confirmed or closed. "
+            "Delivery happens outside the system, so these stay open until a "
+            "counsellor's log accounts for them."
+        ),
+    )
 
 
 class DashboardResponse(BaseModel):
@@ -162,8 +151,4 @@ class DashboardResponse(BaseModel):
     sessions_by_category: list[CategoryCount]
     top_clients: list[ClientSessions]
     trending_services: list[ServiceTrend]
-    import_queues: list[ImportQueueEntry]
-    import_batch: ImportBatchSummary | None = Field(
-        None, description="Absent when the tenant has never staged an import"
-    )
     data_quality: DataQuality

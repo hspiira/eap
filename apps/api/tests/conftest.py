@@ -1427,6 +1427,9 @@ async def session_test_client_person(
     return {
         "id": person_id,
         "tenant_id": session_test_tenant["id"],
+        # The employer the member belongs to. A company-wide session names the
+        # client directly, since it has no member to take one from.
+        "client_id": employer_id,
     }
 
 

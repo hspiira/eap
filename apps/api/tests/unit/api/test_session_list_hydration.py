@@ -68,6 +68,9 @@ async def api():
     page = [_session("s1", "mem-1"), _session("s2", None)]
     state.sessions.list_all.return_value = page
     state.sessions.count.return_value = 2
+    # The ordinal is derived per page in one query; an unset mock returns a
+    # coroutine the response model cannot read.
+    state.sessions.session_ordinals.return_value = {}
     state.sessions.get_by_member_id.return_value = page
     state.sessions.get_by_provider_id.return_value = page
     state.sessions.get_by_service_id.return_value = page

@@ -166,14 +166,14 @@ function IncidentCreatePage() {
             <Button
               type="submit"
               disabled={formState.isSubmitting}
-              className="rounded-none bg-primary text-white hover:bg-primary"
+              className=" bg-primary text-white hover:bg-primary"
             >
               {formState.isSubmitting ? "Logging…" : "Log incident"}
             </Button>
             <Button
               type="button"
               variant="secondary"
-              className="rounded-none border-fg/30 text-fg"
+              className=" border-fg/30 text-fg"
               onClick={() => navigate({ to: "/incidents" })}
             >
               Cancel

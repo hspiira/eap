@@ -53,6 +53,20 @@
   --brand-soft: #e8f0eb;
   --brand-fg: var(--neutral-0);
 
+  /* Action: the colour a button actually is. Near-black rather than the brand,
+     so a primary action reads as a control and the brand stays an identity
+     carried by links, active nav and focus. Borrowed from the dashboard work
+     that uses black for every control and keeps its one saturated colour for a
+     single highlight per screen. */
+  --action: #111111;
+  --action-fg: #ffffff;
+
+  /* Highlight: a fill only. At 1.16:1 on white it cannot be text, a border, an
+     icon or a chart stroke; it carries near-black text on a block, and nothing
+     else. One per screen. */
+  --highlight: #dffb52;
+  --highlight-fg: #111111;
+
   /* Semantic roles: four colours, each with surface + fg + emphasis. */
   --success: #1c7d5d;
   --success-soft: #eff5f3;

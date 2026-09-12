@@ -24,6 +24,8 @@ import { EmptyState } from "@/components/common/EmptyState"
 import { ErrorState } from "@/components/common/ErrorState"
 import { FilterBar, FilterChip, FilterSearch, FilterTrigger } from "@/components/common/FilterBar"
 import { IconButton } from "@/components/common/IconButton"
+import { InfiniteScrollSentinel } from "@/components/common/InfiniteScrollSentinel"
+import { PagedTableBody } from "@/components/common/PagedTableBody"
 import { PageShell } from "@/components/common/PageShell"
 import { TableSkeleton } from "@/components/common/PageSkeletons"
 import { SelectionBar } from "@/components/common/SelectionBar"
@@ -42,21 +44,15 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Pagination } from "@/components/ui/pagination"
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table"
+import { Table, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { useCanWrite } from "@/hooks/useCanWrite"
 import { useListPage } from "@/hooks/useListPage"
 import { useTableSelection } from "@/hooks/useTableSelection"
+import { useVisiblePage } from "@/hooks/useVisiblePage"
 import { memberLabel } from "@/lib/display"
 import { normalizeErrorMessage } from "@/lib/errors"
 import { formatDate } from "@/lib/format"
-import { useEntityList } from "@/lib/queries"
+import { useEntityListPages } from "@/lib/queries"
 import { queryKeys } from "@/lib/query-keys"
 import { enumOptions, enumParam, listSearchSchema } from "@/lib/search-params"
 import { cn } from "@/lib/utils"
@@ -94,10 +90,23 @@ const OUTCOME_OPTIONS = enumOptions(SessionClinicalStatus, "All outcomes")
 const RANGE_OPTIONS = [
   { value: "all", label: "All time" },
   { value: "today", label: "Today" },
+  { value: "this_week", label: "This week" },
+  { value: "this_month", label: "This month" },
   { value: "7d", label: "Next 7 days" },
   { value: "30d", label: "Next 30 days" },
   { value: "past", label: "Past sessions" },
 ] as const
+
+/**
+ * Ranges that look ahead. They sort soonest first, because a list of what is
+ * coming is read from the near end: furthest-away-first answers no question
+ * anyone asks of it.
+ *
+ * "This week" and "This month" are here even though they open in the past.
+ * They are calendar periods, and a period you are inside is mostly ahead of
+ * you; the ones already behind are what the confirmation queue is for.
+ */
+const FORWARD_RANGES = new Set<RangeFilter>(["today", "this_week", "this_month", "7d", "30d"])
 
 type StatusFilter = (typeof STATUS_OPTIONS)[number]["value"]
 type ModeFilter = (typeof MODE_OPTIONS)[number]["value"]
@@ -126,7 +135,12 @@ function ServiceSessionsListPage() {
   } = useListPage({
     searchParams,
     navigate,
-    initialSort: { field: "scheduled_at", desc: true },
+    // Only the default moves: a column the user clicked is held in the URL and
+    // still wins over this.
+    initialSort: {
+      field: "scheduled_at",
+      desc: !FORWARD_RANGES.has(searchParams.range ?? "all"),
+    },
   })
   const [importOpen, setImportOpen] = useState(false)
   const canWrite = useCanWrite()
@@ -148,6 +162,18 @@ function ServiceSessionsListPage() {
   const handleRangeChange = (next: RangeFilter) =>
     setFilter("range", next === "all" ? undefined : next)
 
+  /** Booked and still to come, which otherwise takes two dropdowns to ask for. */
+  const showUpcoming = () =>
+    void navigate({
+      search: (prev) => ({
+        ...prev,
+        status: SessionStatus.SCHEDULED,
+        range: "7d" as const,
+        page: undefined,
+      }),
+    })
+  const upcomingActive = activeStatus === SessionStatus.SCHEDULED && FORWARD_RANGES.has(activeRange)
+
   const { data: activeServiceForChip = null } = useQuery({
     queryKey: ["services", "detail", activeServiceId ?? ""],
     queryFn: () => servicesApi.getById(activeServiceId!),
@@ -162,7 +188,9 @@ function ServiceSessionsListPage() {
     staleTime: 10 * 60_000,
   })
 
-  const query = useEntityList<ServiceSession, ServiceSessionListParams>({
+  const [visiblePage, setVisiblePage] = useVisiblePage(page)
+
+  const query = useEntityListPages<ServiceSession, ServiceSessionListParams>({
     resource: "service-sessions",
     params: {
       page,
@@ -265,6 +293,19 @@ function ServiceSessionsListPage() {
           options={OUTCOME_OPTIONS}
           onChange={(v) => setFilter("clinical_outcome", v === "all" ? undefined : v)}
         />
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          aria-pressed={upcomingActive}
+          onClick={showUpcoming}
+          className={cn(
+            "h-7 px-2 text-xs font-medium",
+            upcomingActive ? "bg-primary/10 text-primary hover:bg-primary/10" : "text-fg-muted",
+          )}
+        >
+          Upcoming
+        </Button>
         <FilterTrigger
           icon={CalendarClock}
           label="All time"
@@ -364,7 +405,10 @@ function ServiceSessionsListPage() {
                 onDone={selection.clearSelection}
               />
             </SelectionBar>
-            <div className="relative min-h-0 flex-1 overflow-auto">
+            <div
+              className="relative min-h-0 flex-1 overflow-auto"
+              data-scroll-restoration-id="list"
+            >
               <Table className="w-full caption-bottom text-sm" scrollable={false}>
                 <TableHeader className={STICKY_TABLE_HEAD}>
                   <TableRow className={`hover:bg-transparent ${ROW_BORDER}`}>
@@ -415,21 +459,36 @@ function ServiceSessionsListPage() {
                     </TableHead>
                   </TableRow>
                 </TableHeader>
-                <TableBody>
-                  {items.map((row) => (
+                <PagedTableBody
+                  items={items}
+                  anchorPage={page}
+                  limit={limit}
+                  rowKey={(row) => row.id}
+                  renderRow={(row) => (
                     <SessionRow
-                      key={row.id}
                       row={row}
                       isSelected={selection.selectedIds.has(row.id)}
                       onToggle={() => selection.toggleSelect(row.id)}
                     />
-                  ))}
-                </TableBody>
+                  )}
+                  onVisiblePageChange={setVisiblePage}
+                />
               </Table>
+              <InfiniteScrollSentinel
+                onLoadMore={query.loadMore}
+                hasMore={query.hasMore}
+                loadingMore={query.loadingMore}
+              />
             </div>
             {total > 0 && (
               <div className="shrink-0 border-t border-fg/10 bg-surface px-3 py-2">
-                <Pagination page={page} total={total} limit={limit} onPageChange={setPage} />
+                <Pagination
+                  page={visiblePage}
+                  total={total}
+                  limit={limit}
+                  shownCount={items.length}
+                  onPageChange={setPage}
+                />
               </div>
             )}
           </>
@@ -478,7 +537,7 @@ function SessionRow({
         >
           <span
             aria-hidden
-            className="grid size-6 shrink-0 place-items-center bg-primary/10 text-primary"
+            className="grid size-6 shrink-0 place-items-center bg-fg/6 text-fg-muted"
           >
             {row.member_id ? <User className="size-3" /> : <Users className="size-3" />}
           </span>
@@ -581,6 +640,8 @@ function SessionRow({
 
 /**
  * Turns the range dropdown into absolute instants for the server to filter on.
+ * Exported for its own tests: the calendar boundaries are the whole point and
+ * are easier to pin directly than through a rendered page.
  * This used to filter the fetched page in memory, which contradicted the total
  * returned alongside it.
  *
@@ -589,18 +650,39 @@ function SessionRow({
  * thing that knows where it starts and ends. `now` is passed in so the mapping
  * stays a pure function.
  */
-function rangeBounds(
+/** Whole calendar days, from the first's midnight to the last's final instant. */
+function dayBounds(
+  from: Date,
+  to: Date,
+): Pick<ServiceSessionListParams, "scheduled_from" | "scheduled_to"> {
+  const start = new Date(from)
+  start.setHours(0, 0, 0, 0)
+  const end = new Date(to)
+  end.setHours(23, 59, 59, 999)
+  return { scheduled_from: start.toISOString(), scheduled_to: end.toISOString() }
+}
+
+export function rangeBounds(
   range: RangeFilter,
   now: Date,
 ): Pick<ServiceSessionListParams, "scheduled_from" | "scheduled_to"> {
   if (range === "all") return {}
   if (range === "past") return { scheduled_to: now.toISOString() }
   if (range === "today") {
-    const start = new Date(now)
-    start.setHours(0, 0, 0, 0)
-    const end = new Date(now)
-    end.setHours(23, 59, 59, 999)
-    return { scheduled_from: start.toISOString(), scheduled_to: end.toISOString() }
+    return dayBounds(now, now)
+  }
+  if (range === "this_week") {
+    // Monday-start, matching how the API buckets a week.
+    const monday = new Date(now)
+    monday.setDate(now.getDate() - ((now.getDay() + 6) % 7))
+    const sunday = new Date(monday)
+    sunday.setDate(monday.getDate() + 6)
+    return dayBounds(monday, sunday)
+  }
+  if (range === "this_month") {
+    const first = new Date(now.getFullYear(), now.getMonth(), 1)
+    const last = new Date(now.getFullYear(), now.getMonth() + 1, 0)
+    return dayBounds(first, last)
   }
   const days = range === "7d" ? 7 : 30
   return {

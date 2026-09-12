@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query"
-import { Link, useNavigate } from "@tanstack/react-router"
+import { Link } from "@tanstack/react-router"
 import {
   Check,
   ChevronDown,
@@ -24,11 +24,10 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { SidebarTrigger, useSidebar } from "@/components/ui/sidebar"
-import { useToast } from "@/contexts/ToastContext"
-import { authActions } from "@/lib/auth-store"
 import { accountDisplayName, toProperCase } from "@/lib/display"
 import { queryKeys } from "@/lib/query-keys"
 import { openGlobalSearch } from "@/lib/search-state"
+import { signOutAndRedirect } from "@/lib/sign-out"
 import { cn } from "@/lib/utils"
 import { useAuthStore } from "@/store/slices/authSlice"
 import { useTenantStore } from "@/store/slices/tenantSlice"
@@ -160,7 +159,7 @@ function AccountAvatar({ label, size }: { label: string; size: "sm" | "md" }) {
   return (
     <span
       className={cn(
-        "grid shrink-0 place-items-center rounded-sm bg-primary/10 font-semibold text-primary",
+        "grid shrink-0 place-items-center rounded-sm bg-fg/6 font-semibold text-fg-muted",
         size === "sm" ? "size-6 text-[10px]" : "size-8 text-sm",
       )}
       aria-hidden
@@ -173,16 +172,9 @@ function AccountAvatar({ label, size }: { label: string; size: "sm" | "md" }) {
 function UserMenu() {
   const identity = useAccountIdentity()
   const tenantName = useWorkspaceName()
-  const navigate = useNavigate()
-  const { showSuccess } = useToast()
 
-  const handleSignOut = async () => {
-    await authActions.logout()
-    showSuccess("Successfully signed out")
-    navigate({
-      to: "/auth/login",
-      search: { tenant_code: undefined, email: undefined, redirect: undefined },
-    })
+  const handleSignOut = () => {
+    void signOutAndRedirect()
   }
 
   return (

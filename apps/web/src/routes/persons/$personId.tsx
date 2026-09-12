@@ -1,13 +1,14 @@
 import { useCallback, useState } from "react"
 
 import { useQuery, useQueryClient } from "@tanstack/react-query"
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router"
-import { ArrowLeft, SquarePen, UserCog, Users } from "lucide-react"
+import { createFileRoute, Link } from "@tanstack/react-router"
+import { SquarePen, UserCog, Users } from "lucide-react"
 
 import { clientsApi } from "@/api/endpoints/clients"
 import { personsApi } from "@/api/endpoints/persons"
 import { serviceSessionsApi } from "@/api/endpoints/service-sessions"
 import { usersApi } from "@/api/endpoints/users"
+import { BackButton } from "@/components/common/BackButton"
 import {
   DetailCard,
   DetailGrid,
@@ -24,6 +25,7 @@ import { Tab, TabPanel, Tabs, TabsList } from "@/components/common/Tabs"
 import { PERSON_TYPE_LABELS, PersonFormSheet } from "@/components/PersonFormSheet"
 import { Button } from "@/components/ui/button"
 import { useToast } from "@/contexts/ToastContext"
+import { useBackTo } from "@/hooks/useBackTo"
 import { useTabSearchParam } from "@/hooks/useTabSearchParam"
 import { displayName, nameInitials, personInitials } from "@/lib/display"
 import { normalizeErrorMessage } from "@/lib/errors"
@@ -48,7 +50,7 @@ const TAB_VALUES: ReadonlyArray<TabValue> = [
 
 function PersonDetailPage() {
   const { personId } = Route.useParams()
-  const navigate = useNavigate()
+  const back = useBackTo("/persons")
   const queryClient = useQueryClient()
   const [actionLoading, setActionLoading] = useState(false)
   const toast = useToast()
@@ -116,7 +118,7 @@ function PersonDetailPage() {
     icon: Users,
     breadcrumb: "People · Persons",
     entity: "person",
-    backTo: () => navigate({ to: "/persons" }),
+    backTo: back,
     backLabel: "Back to persons",
   })
   if (state || !person) return state
@@ -131,17 +133,7 @@ function PersonDetailPage() {
       breadcrumb={`People · Persons · ${fullName}`}
       actions={
         <>
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            onClick={() => navigate({ to: "/persons" })}
-            aria-label="Back to persons"
-            title="Back to persons"
-            className="size-7 p-0 text-fg/70"
-          >
-            <ArrowLeft className="size-3.5" />
-          </Button>
+          <BackButton to="/persons" label="Back to persons" />
           <Button
             size="sm"
             variant="outline"
@@ -166,7 +158,7 @@ function PersonDetailPage() {
         }
       />
 
-      <div className="min-h-0 flex-1 overflow-y-auto bg-bg">
+      <div className="min-h-0 flex-1 overflow-y-auto bg-bg" data-scroll-restoration-id="detail">
         <div className="grid grid-cols-12 gap-5 px-5 py-5">
           <div className="col-span-12 min-w-0 lg:col-span-8">
             <Tabs value={tab} onValueChange={(v) => setTab(v as TabValue)}>
@@ -269,7 +261,7 @@ function PersonDetailPage() {
                       >
                         <span
                           aria-hidden
-                          className="grid size-7 shrink-0 place-items-center bg-primary/10 text-[10px] font-semibold text-primary"
+                          className="grid size-7 shrink-0 place-items-center bg-fg/6 text-[10px] font-semibold text-fg-muted"
                         >
                           {personInitials(primaryEmployee)}
                         </span>
@@ -373,7 +365,7 @@ function Hero({
     <div className="flex shrink-0 items-center gap-3 border-b border-fg/10 bg-surface px-5 py-3">
       <span
         aria-hidden
-        className="grid size-9 shrink-0 place-items-center rounded-sm bg-primary/10 text-xs font-semibold text-primary"
+        className="grid size-9 shrink-0 place-items-center rounded-sm bg-fg/6 text-xs font-semibold text-fg-muted"
       >
         {personInitials(person, user)}
       </span>
@@ -426,7 +418,7 @@ function DetailRail({ person, client, user, onAction, actionLoading }: DetailRai
           >
             <span
               aria-hidden
-              className="grid size-7 shrink-0 place-items-center bg-primary/10 text-[10px] font-semibold text-primary"
+              className="grid size-7 shrink-0 place-items-center bg-fg/6 text-[10px] font-semibold text-fg-muted"
             >
               {nameInitials(client.name)}
             </span>
@@ -447,7 +439,7 @@ function DetailRail({ person, client, user, onAction, actionLoading }: DetailRai
           >
             <span
               aria-hidden
-              className="grid size-7 shrink-0 place-items-center bg-primary/10 text-primary"
+              className="grid size-7 shrink-0 place-items-center bg-fg/6 text-fg-muted"
             >
               <UserCog className="size-3.5" />
             </span>

@@ -7,6 +7,8 @@ import { type TenantCreateResponse, tenantsApi } from "@/api/endpoints/tenants"
 import { AppLayout } from "@/components/AppLayout"
 import { EmptyState } from "@/components/common/EmptyState"
 import { FilterBar, FilterSearch, FilterTrigger } from "@/components/common/FilterBar"
+import { InfiniteScrollSentinel } from "@/components/common/InfiniteScrollSentinel"
+import { PagedTableBody } from "@/components/common/PagedTableBody"
 import { PageShell } from "@/components/common/PageShell"
 import { TableSkeleton } from "@/components/common/PageSkeletons"
 import { RequirePlatformAdmin } from "@/components/common/RequirePlatformAdmin"
@@ -22,18 +24,12 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { Pagination } from "@/components/ui/pagination"
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table"
+import { Table, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { NEWEST_FIRST, useListPage } from "@/hooks/useListPage"
+import { useVisiblePage } from "@/hooks/useVisiblePage"
 import { normalizeErrorMessage } from "@/lib/errors"
 import { formatDateTime } from "@/lib/format"
-import { useEntityList } from "@/lib/queries"
+import { useEntityListPages } from "@/lib/queries"
 import { enumParam, listSearchSchema } from "@/lib/search-params"
 import type { Tenant } from "@/types/entities"
 import { TenantStatus } from "@/types/enums"
@@ -89,11 +85,17 @@ function TenantsListBody() {
     status: activeStatus,
   }
 
-  const { data, isLoading, isError, error, refetch } = useEntityList({
-    resource: "tenants",
-    params,
-    listFn: (p) => tenantsApi.list(p),
-  })
+  const [visiblePage, setVisiblePage] = useVisiblePage(page)
+
+  const { data, isLoading, isError, error, refetch, hasMore, loadMore, loadingMore } =
+    useEntityListPages({
+      resource: "tenants",
+      params,
+      listFn: (p) => tenantsApi.list(p),
+      anchorPage: page,
+      // This endpoint pages by offset, so a page number has to be converted.
+      pageParams: (next) => ({ offset: (next - 1) * limit }),
+    })
 
   const rows = (data?.items ?? []) as Tenant[]
   const total = data?.total ?? 0
@@ -189,16 +191,30 @@ function TenantsListBody() {
                       <TableHead className="w-12" />
                     </TableRow>
                   </TableHeader>
-                  <TableBody>
-                    {rows.map((row) => (
-                      <TenantRow key={row.id} tenant={row} />
-                    ))}
-                  </TableBody>
+                  <PagedTableBody
+                    items={rows}
+                    anchorPage={page}
+                    limit={limit}
+                    rowKey={(row) => row.id}
+                    renderRow={(row) => <TenantRow tenant={row} />}
+                    onVisiblePageChange={setVisiblePage}
+                  />
                 </Table>
+                <InfiniteScrollSentinel
+                  onLoadMore={loadMore}
+                  hasMore={hasMore}
+                  loadingMore={loadingMore}
+                />
               </div>
 
               {totalPages > 1 ? (
-                <Pagination page={page} total={total} limit={limit} onPageChange={setPage} />
+                <Pagination
+                  page={visiblePage}
+                  total={total}
+                  limit={limit}
+                  shownCount={rows.length}
+                  onPageChange={setPage}
+                />
               ) : null}
             </>
           )}

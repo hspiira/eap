@@ -18,14 +18,19 @@ import { useEffect, useMemo, useState } from "react"
 
 import { useQuery } from "@tanstack/react-query"
 import { Link } from "@tanstack/react-router"
-import { Building, CalendarClock, CalendarRange, Lock, Users, Wrench } from "lucide-react"
+import { CalendarClock, CalendarRange, Lock, MessageSquare, Users } from "lucide-react"
 
 import { casesApi } from "@/api/endpoints/cases"
-import { DetailCard, RailSection, Stat } from "@/components/common/DetailPrimitives"
+import {
+  DetailCard,
+  DetailGrid,
+  DetailRow,
+  LinkRow,
+  RailSection,
+} from "@/components/common/DetailPrimitives"
 import { FormField } from "@/components/common/FormField"
 import { LifecycleActions } from "@/components/common/LifecycleActions"
 import { StatusBadge } from "@/components/common/StatusBadge"
-import { CATEGORY_LABELS } from "@/components/ServiceFormSheet"
 import {
   EligibilityFailureNotice,
   eligibilityReasons,
@@ -84,10 +89,10 @@ export function Hero({
   const title = companyWide && serviceName && subject ? `${serviceName} at ${subject}` : serviceName
 
   return (
-    <div className="flex shrink-0 flex-wrap items-center gap-x-3 gap-y-1 border-b border-fg/10 bg-surface px-5 py-3">
+    <div className="flex shrink-0 flex-wrap items-center gap-x-3 gap-y-1 border-b border-fg/10 bg-gradient-to-r from-primary/[0.06] via-surface to-surface px-5 py-3">
       <span
         aria-hidden
-        className="grid size-9 shrink-0 place-items-center rounded-sm bg-primary/10 text-primary"
+        className="grid size-9 shrink-0 place-items-center rounded-sm bg-fg/6 text-fg-muted"
       >
         {companyWide ? <Users className="size-4" /> : <CalendarClock className="size-4" />}
       </span>
@@ -142,98 +147,71 @@ export function Hero({
  */
 export function DetailRail({ session, service, member, onAction, actionLoading }: DetailRailProps) {
   const companyWide = session.attendance === SessionAttendance.COMPANY_WIDE
+  const glance = (value: string | null) =>
+    value ? <span className="font-semibold tabular-nums">{value}</span> : null
   return (
-    <div className="space-y-5">
+    <div className="border border-fg/10 bg-surface p-4">
       <RailSection title="At a glance">
-        <div className="grid grid-cols-2 gap-3">
-          <Stat label="Duration" value={session.duration != null ? `${session.duration}m` : "-"} />
-          <Stat
+        <DetailGrid>
+          <DetailRow
+            label="Duration"
+            value={glance(session.duration != null ? `${session.duration}m` : null)}
+          />
+          <DetailRow
             label={companyWide ? "Attended" : "Session no."}
-            value={
+            value={glance(
               companyWide
                 ? session.headcount != null
                   ? String(session.headcount)
-                  : "-"
+                  : null
                 : session.session_number != null
                   ? `#${session.session_number}`
-                  : "-"
-            }
+                  : null,
+            )}
           />
-          <Stat
+          <DetailRow
             label="Rate"
-            value={session.rate_ugx != null ? `UGX ${session.rate_ugx.toLocaleString()}` : "-"}
+            value={glance(
+              session.rate_ugx != null ? `UGX ${session.rate_ugx.toLocaleString()}` : null,
+            )}
           />
-          <Stat
+          <DetailRow
             label="Reschedules"
-            value={session.reschedule_count != null ? String(session.reschedule_count) : "0"}
+            value={glance(
+              session.reschedule_count != null ? String(session.reschedule_count) : "0",
+            )}
           />
-        </div>
+        </DetailGrid>
       </RailSection>
 
-      <RailSection title="Linked">
-        <div className="space-y-2">
+      <RailSection title="Linked" className="mt-4 border-t border-fg/10 pt-4">
+        <DetailGrid>
           {service ? (
-            <Link
+            <LinkRow
+              label="Service"
+              value={service.name}
               to="/services/$serviceId"
               params={{ serviceId: service.id }}
-              className="flex items-center gap-2.5 rounded-sm border border-fg/10 bg-surface px-3 py-2 transition-colors hover:border-fg/25"
-            >
-              <span
-                aria-hidden
-                className="grid size-7 shrink-0 place-items-center bg-primary/10 text-primary"
-              >
-                <Wrench className="size-3.5" />
-              </span>
-              <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-medium text-fg">{service.name}</p>
-                <p className="truncate text-[11px] text-fg-muted">
-                  {service.category ? CATEGORY_LABELS[service.category] : "-"}
-                </p>
-              </div>
-            </Link>
+            />
           ) : null}
-          <Link
+          <LinkRow
+            label="Client"
+            value={session.client_name ?? "Open client"}
             to="/clients/$clientId"
             params={{ clientId: session.client_id }}
-            className="flex items-center gap-2.5 rounded-sm border border-fg/10 bg-surface px-3 py-2 transition-colors hover:border-fg/25"
-          >
-            <span
-              aria-hidden
-              className="grid size-7 shrink-0 place-items-center bg-primary/10 text-primary"
-            >
-              <Building className="size-3.5" />
-            </span>
-            <div className="min-w-0 flex-1">
-              <p className="truncate text-sm font-medium text-fg">
-                {session.client_name ?? "Open client"}
-              </p>
-              <p className="truncate text-[11px] text-fg-muted">Client</p>
-            </div>
-          </Link>
+          />
           {member ? (
-            <Link
+            <LinkRow
+              label="Member"
+              value={memberLabel(member)}
               to="/members/$memberId"
               params={{ memberId: member.id }}
-              className="flex items-center gap-2.5 rounded-sm border border-fg/10 bg-surface px-3 py-2 transition-colors hover:border-fg/25"
-            >
-              <span
-                aria-hidden
-                className="grid size-7 shrink-0 place-items-center bg-primary/10 text-primary"
-              >
-                <Users className="size-3.5" />
-              </span>
-              <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-medium text-fg">{memberLabel(member)}</p>
-                <p className="truncate text-[11px] text-fg-muted">
-                  {getStatusLabel(member.relation)}
-                </p>
-              </div>
-            </Link>
+            />
           ) : null}
-        </div>
+        </DetailGrid>
       </RailSection>
 
-      <RailSection title="Lifecycle">
+      <RailSection title="Lifecycle" className="mt-4 border-t border-fg/10 pt-4">
         <LifecycleActions
           entityId={session.id}
           currentStatus={session.status}
@@ -270,7 +248,7 @@ export function FeedbackPanel({
   }
 
   return (
-    <DetailCard title="Feedback" phiLabel="PHI · access logged">
+    <DetailCard title="Feedback" icon={MessageSquare} phiLabel="PHI · access logged">
       <div className="space-y-4">
         <FormField label="Feedback" htmlFor="ss-feedback">
           <Textarea

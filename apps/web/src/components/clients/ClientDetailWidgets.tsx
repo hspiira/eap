@@ -84,7 +84,7 @@ export function Hero({ client, verified }: { client: Client; verified: boolean }
     <div className="flex shrink-0 items-center gap-3 border-b border-fg/10 bg-surface px-5 py-3">
       <span
         aria-hidden
-        className="grid size-9 shrink-0 place-items-center rounded-sm bg-primary/10 text-xs font-semibold text-primary"
+        className="grid size-9 shrink-0 place-items-center rounded-sm bg-fg/6 text-xs font-semibold text-fg-muted"
       >
         {nameInitials(client.name)}
       </span>
@@ -554,7 +554,7 @@ function LifecycleSection({
           <Button
             size="sm"
             variant="secondary"
-            className="shrink-0 gap-1.5 rounded-none"
+            className="shrink-0 gap-1.5"
             onClick={() => void onVerify()}
             disabled={actionLoading}
           >

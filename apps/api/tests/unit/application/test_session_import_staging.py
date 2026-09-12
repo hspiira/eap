@@ -33,6 +33,7 @@ from app.domain.value_objects.core import (
     EligibleMemberId,
     ProviderId,
     ServiceId,
+    SessionId,
     TenantId,
     UserId,
 )
@@ -57,6 +58,7 @@ def _service(
     member="default",
     affiliations_on_date=(),
     practitioners=None,
+    booked_session=None,
 ):
     """A staging service whose directory holds one practitioner by default.
 
@@ -92,9 +94,19 @@ def _service(
     diagnoses.alias_lookup.return_value = {}
     users = AsyncMock()
     users.list_all.return_value = []
+    sessions = AsyncMock()
+    sessions.find_awaiting_confirmation.return_value = booked_session
     return (
         SessionImportStagingService(
-            providers, affiliations, imports, clients, members, services, diagnoses, users
+            providers,
+            affiliations,
+            imports,
+            clients,
+            members,
+            services,
+            diagnoses,
+            users,
+            sessions,
         ),
         imports,
     )
@@ -732,3 +744,62 @@ class TestPreload:
         staged = await _stage(service, _row())
         assert staged.outcome is ImportRowOutcome.ACCEPTED
         imports.find_row_by_replay_key.assert_awaited_once()
+
+
+class TestAnAlreadyBookedSession:
+    """A session arranged in the app and a counsellor's later report of it.
+
+    The two paths never met: the import's idempotency key is the counsellor's
+    own source_id, which a booked session has not got, and the older
+    near-duplicate guard reads previous import rows only. Confirming the
+    booking and applying the log counted one delivery twice. See
+    docs/design/REALTIME_SESSION_CAPTURE.md.
+    """
+
+    def _booked(self, session_id="ses-1", status=SessionStatus.SCHEDULED):
+        return SimpleNamespace(id=SessionId(session_id), status=status)
+
+    async def test_a_row_matching_a_booking_is_held_for_review(self):
+        service, _ = _service(booked_session=self._booked())
+
+        staged = await _stage(service, _row())
+
+        assert staged.outcome is ImportRowOutcome.CONFLICTING
+        assert "Already booked" in staged.reasons[0]
+        assert "ses-1" in staged.reasons[0]
+
+    async def test_the_reason_says_to_confirm_the_booking_rather_than_import(self):
+        """The reviewer's action is to confirm what is already there."""
+        service, _ = _service(booked_session=self._booked())
+
+        staged = await _stage(service, _row())
+
+        assert "Confirm that booking instead of importing a second session" in staged.reasons[0]
+
+    async def test_no_booking_leaves_the_row_acceptable(self):
+        service, _ = _service(booked_session=None)
+
+        staged = await _stage(service, _row())
+
+        assert staged.outcome is ImportRowOutcome.ACCEPTED
+
+    async def test_a_rescheduled_booking_counts_too(self):
+        service, _ = _service(booked_session=self._booked(status=SessionStatus.RESCHEDULED))
+
+        staged = await _stage(service, _row())
+
+        assert staged.outcome is ImportRowOutcome.CONFLICTING
+        assert "rescheduled" in staged.reasons[0]
+
+    async def test_a_source_keyed_row_is_checked_as_well(self):
+        """Unlike the restage guard, which only runs for file-keyed batches.
+
+        A booking collision does not depend on how the batch is keyed: the
+        counsellor reported the same delivery either way.
+        """
+        service, _ = _service(booked_session=self._booked())
+
+        staged = await _stage(service, _row(source_record_key="SRC-9"))
+
+        assert staged.outcome is ImportRowOutcome.CONFLICTING
+        assert "Already booked" in staged.reasons[0]

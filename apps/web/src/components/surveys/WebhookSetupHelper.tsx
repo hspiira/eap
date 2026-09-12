@@ -114,7 +114,7 @@ function CopyRow({ label, value, mask }: { label: string; value: string; mask?: 
             type="button"
             variant="ghost"
             onClick={() => setRevealed((v) => !v)}
-            className="h-auto rounded-none border-l border-fg/15 px-3 text-[10px] font-semibold tracking-wide text-fg/70"
+            className="h-auto border-l border-fg/15 px-3 text-[10px] font-semibold tracking-wide text-fg/70"
           >
             {revealed ? "Hide" : "Show"}
           </Button>
@@ -123,7 +123,7 @@ function CopyRow({ label, value, mask }: { label: string; value: string; mask?: 
           type="button"
           variant="ghost"
           onClick={handleCopy}
-          className="size-9 rounded-none border-l border-fg/15 p-0 text-fg/70"
+          className="size-9 border-l border-fg/15 p-0 text-fg/70"
           aria-label={`Copy ${label}`}
         >
           {copied ? <Check className="size-4 text-primary" /> : <Copy className="size-4" />}

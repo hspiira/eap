@@ -891,6 +891,41 @@
         "title": "AuthorizeCaseRequest",
         "type": "object"
       },
+      "AvailabilityResponse": {
+        "description": "What a scheduler needs to pick someone who is free.\n\nReports only what it checked: whether each practitioner already has a\nbooking in this system overlapping the span. It is not a claim about their\nown diary, which the platform cannot see for an externally affiliated\npractitioner. See \"Decision 6\" in docs/design/REALTIME_SESSION_CAPTURE.md.",
+        "properties": {
+          "assumed_minutes": {
+            "description": "The length the span was built from: the service's own duration where it has one, otherwise the nominal hour. A booking records no length of its own until it is completed.",
+            "title": "Assumed Minutes",
+            "type": "integer"
+          },
+          "ends_at": {
+            "format": "date-time",
+            "title": "Ends At",
+            "type": "string"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/PractitionerAvailability"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "starts_at": {
+            "format": "date-time",
+            "title": "Starts At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "starts_at",
+          "ends_at",
+          "assumed_minutes",
+          "items"
+        ],
+        "title": "AvailabilityResponse",
+        "type": "object"
+      },
       "BaseStatus": {
         "enum": [
           "Active",
@@ -5113,7 +5148,7 @@
             "type": "integer"
           },
           "import_backlog": {
-            "description": "Rows in the current import batch still blocked on an unresolved identity",
+            "description": "Rows in the current import batch that staging held, for any reason",
             "title": "Import Backlog",
             "type": "integer"
           },
@@ -5145,24 +5180,6 @@
         "properties": {
           "data_quality": {
             "$ref": "#/components/schemas/DataQuality"
-          },
-          "import_batch": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/ImportBatchSummary"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "description": "Absent when the tenant has never staged an import"
-          },
-          "import_queues": {
-            "items": {
-              "$ref": "#/components/schemas/ImportQueueEntry"
-            },
-            "title": "Import Queues",
-            "type": "array"
           },
           "kpis": {
             "$ref": "#/components/schemas/DashboardKpis"
@@ -5214,7 +5231,6 @@
           "sessions_by_category",
           "top_clients",
           "trending_services",
-          "import_queues",
           "data_quality"
         ],
         "title": "DashboardResponse",
@@ -5231,6 +5247,12 @@
           "providers_pending": {
             "description": "Practitioners not yet activated",
             "title": "Providers Pending",
+            "type": "integer"
+          },
+          "sessions_awaiting_confirmation": {
+            "default": 0,
+            "description": "Bookings whose date has passed that nobody has confirmed or closed. Delivery happens outside the system, so these stay open until a counsellor's log accounts for them.",
+            "title": "Sessions Awaiting Confirmation",
             "type": "integer"
           },
           "sessions_missing_outcome": {
@@ -7760,76 +7782,6 @@
         ],
         "title": "ImportBatchStatus",
         "type": "string"
-      },
-      "ImportBatchSummary": {
-        "description": "The batch the backlog figures describe, as a part-to-whole composition.",
-        "properties": {
-          "accepted": {
-            "title": "Accepted",
-            "type": "integer"
-          },
-          "applied_at": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Applied At"
-          },
-          "blocked": {
-            "description": "Rows held on an unresolved identity",
-            "title": "Blocked",
-            "type": "integer"
-          },
-          "duplicate": {
-            "title": "Duplicate",
-            "type": "integer"
-          },
-          "file_name": {
-            "title": "File Name",
-            "type": "string"
-          },
-          "row_count": {
-            "title": "Row Count",
-            "type": "integer"
-          },
-          "status": {
-            "title": "Status",
-            "type": "string"
-          }
-        },
-        "required": [
-          "file_name",
-          "status",
-          "row_count",
-          "accepted",
-          "duplicate",
-          "blocked"
-        ],
-        "title": "ImportBatchSummary",
-        "type": "object"
-      },
-      "ImportQueueEntry": {
-        "description": "One unresolved outcome bucket in the current import batch.",
-        "properties": {
-          "outcome": {
-            "title": "Outcome",
-            "type": "string"
-          },
-          "total": {
-            "title": "Total",
-            "type": "integer"
-          }
-        },
-        "required": [
-          "outcome",
-          "total"
-        ],
-        "title": "ImportQueueEntry",
-        "type": "object"
       },
       "ImportReasonCode": {
         "description": "Machine-readable code for a staged row's outcome reason (P-10).\n\nA message alone is fine to display but not to build a review UI or any\nother consumer against: rewording it silently breaks a string match.\nEvery reason attached to a row carries one of these alongside its\nhuman-readable message.",
@@ -11386,6 +11338,51 @@
         "title": "PaymentStatus",
         "type": "string"
       },
+      "PractitionerAvailability": {
+        "description": "Whether one practitioner is already spoken for at a given time.",
+        "properties": {
+          "available": {
+            "description": "False when a live booking of theirs overlaps the span",
+            "title": "Available",
+            "type": "boolean"
+          },
+          "clashing_scheduled_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "When that booking starts",
+            "title": "Clashing Scheduled At"
+          },
+          "clashing_session_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The booking in the way, when there is one",
+            "title": "Clashing Session Id"
+          },
+          "provider_id": {
+            "title": "Provider Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "provider_id",
+          "available"
+        ],
+        "title": "PractitionerAvailability",
+        "type": "object"
+      },
       "PractitionerImportApplyResponse": {
         "description": "Outcome of applying a batch.\n\n`reused_organisations` counts distinct firms that already existed;\n`not_applicable` counts rows left untouched because a person has not\naccepted them.",
         "properties": {
@@ -14267,17 +14264,6 @@
             "description": "Required for a CompanyWide session. For an Individual session it is taken from the member, so that the two cannot disagree",
             "title": "Client Id"
           },
-          "client_type": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/ClientType"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "description": "New or repeat client"
-          },
           "clinical_outcome": {
             "anyOf": [
               {
@@ -14316,6 +14302,18 @@
             ],
             "description": "DiagnosisType reference ID",
             "title": "Diagnosis Type Id"
+          },
+          "follow_up_of_session_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The session this one was booked off the back of, when a counsellor said the person would be back. A scheduling fact, not a clinical one.",
+            "title": "Follow Up Of Session Id"
           },
           "headcount": {
             "anyOf": [
@@ -14430,19 +14428,6 @@
             "description": "Service identifier",
             "title": "Service Id",
             "type": "string"
-          },
-          "session_number": {
-            "anyOf": [
-              {
-                "minimum": 1.0,
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "description": "Ordinal session number for this client",
-            "title": "Session Number"
           },
           "session_type": {
             "anyOf": [
@@ -14680,6 +14665,18 @@
             ],
             "description": "Session feedback",
             "title": "Feedback"
+          },
+          "follow_up_of_session_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The session this one was booked off the back of",
+            "title": "Follow Up Of Session Id"
           },
           "headcount": {
             "anyOf": [
@@ -15252,6 +15249,32 @@
         ],
         "title": "SessionCategory",
         "type": "string"
+      },
+      "SessionChainResponse": {
+        "description": "One session's place in the chain of care around it.\n\nOne hop each way. A chain is walked a step at a time because there is no\ncontainer holding the whole episode: a case would be that container, and a\nsession may not reach one.",
+        "properties": {
+          "following": {
+            "description": "Sessions booked off the back of this one",
+            "items": {
+              "$ref": "#/components/schemas/ServiceSessionResponse"
+            },
+            "title": "Following",
+            "type": "array"
+          },
+          "previous": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ServiceSessionResponse"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The session this one was booked off the back of"
+          }
+        },
+        "title": "SessionChainResponse",
+        "type": "object"
       },
       "SessionClinicalStatus": {
         "description": "Clinical continuation outcome recorded by the counsellor at session end.\n\nDistinct from SessionStatus (scheduling lifecycle).\nTO_BE_CONTINUED:  client returns for follow-up (xlsx: T).\nREFERRED:         client referred elsewhere (xlsx: R).\nCOMPLETED:        case episode closed this session (xlsx: C).\nTERMINATED:       engagement ended without completing.",
@@ -37402,6 +37425,203 @@
         ]
       }
     },
+    "/service-sessions/availability": {
+      "get": {
+        "description": "Whether each named practitioner already has a booking over this span.\n\nAnswers only what it can see. An externally affiliated practitioner keeps\ntheir own diary and the platform has no sight of it, so a practitioner\nreported free here may still be busy in life. The caller names who to\ncheck rather than the server sweeping the whole panel, which keeps the\ncost proportional to what a scheduler is actually looking at.",
+        "operationId": "check_practitioner_availability_service_sessions_availability_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "tenant_id",
+            "required": true,
+            "schema": {
+              "title": "Tenant Id",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Start of the proposed booking, ISO 8601",
+            "in": "query",
+            "name": "at",
+            "required": true,
+            "schema": {
+              "description": "Start of the proposed booking, ISO 8601",
+              "format": "date-time",
+              "title": "At",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Service being delivered; sets the assumed length",
+            "in": "query",
+            "name": "service_id",
+            "required": true,
+            "schema": {
+              "description": "Service being delivered; sets the assumed length",
+              "title": "Service Id",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Practitioners to check, repeated",
+            "in": "query",
+            "name": "provider_id",
+            "required": true,
+            "schema": {
+              "description": "Practitioners to check, repeated",
+              "items": {
+                "type": "string"
+              },
+              "maxItems": 100,
+              "title": "Provider Id",
+              "type": "array"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AvailabilityResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Which of these practitioners are free at a given time",
+        "tags": [
+          "service-sessions"
+        ]
+      }
+    },
+    "/service-sessions/awaiting-confirmation": {
+      "get": {
+        "description": "What the system expected but has not been told the outcome of.\n\nDelivery happens outside the system, so a booking stays Scheduled until a\ncounsellor's month-end log confirms it. Once its date has passed it stops\nbeing a plan and becomes an open question, and until now nothing\ndistinguished the two: a booking for last Tuesday looked exactly like one\nfor next Tuesday. Oldest first. See docs/design/REALTIME_SESSION_CAPTURE.md.",
+        "operationId": "list_sessions_awaiting_confirmation_service_sessions_awaiting_confirmation_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "tenant_id",
+            "required": true,
+            "schema": {
+              "title": "Tenant Id",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Narrow to one practitioner",
+            "in": "query",
+            "name": "provider_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Narrow to one practitioner",
+              "title": "Provider Id"
+            }
+          },
+          {
+            "description": "Narrow to one client",
+            "in": "query",
+            "name": "client_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Narrow to one client",
+              "title": "Client Id"
+            }
+          },
+          {
+            "description": "Page number",
+            "in": "query",
+            "name": "page",
+            "required": false,
+            "schema": {
+              "default": 1,
+              "description": "Page number",
+              "minimum": 1,
+              "title": "Page",
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Items per page",
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 50,
+              "description": "Items per page",
+              "maximum": 200,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ServiceSessionListResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Bookings past their date that nobody has confirmed yet",
+        "tags": [
+          "service-sessions"
+        ]
+      }
+    },
     "/service-sessions/member/{member_id}": {
       "get": {
         "description": "Get all sessions for a member.",
@@ -37790,6 +38010,54 @@
           }
         ],
         "summary": "Cancel a service session",
+        "tags": [
+          "service-sessions"
+        ]
+      }
+    },
+    "/service-sessions/{session_id}/chain": {
+      "get": {
+        "description": "One hop each way along the chain of care.\n\nThe stored link points backwards, so the forward half has to be looked up.\nOne hop rather than the whole episode: there is no container holding a\ncourse of care, because the thing that would hold it is a case and a\nsession may not reach one.",
+        "operationId": "get_session_chain_service_sessions__session_id__chain_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "session_id",
+            "required": true,
+            "schema": {
+              "title": "Session Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessionChainResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "The sessions immediately before and after this one",
         "tags": [
           "service-sessions"
         ]

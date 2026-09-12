@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react"
 
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router"
+import { ArrowLeft } from "lucide-react"
 import { z } from "zod"
 
 import { authApi } from "@/api/endpoints/auth"
@@ -215,6 +216,12 @@ function LoginPage() {
             </Link>
           </p>
         )}
+        <p className="border-t border-fg/10 pt-3">
+          <Link to="/" className="inline-flex items-center gap-1.5 hover:text-fg">
+            <ArrowLeft className="size-3.5" aria-hidden />
+            Back to the overview
+          </Link>
+        </p>
       </div>
     </div>
   )

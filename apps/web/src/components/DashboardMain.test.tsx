@@ -54,6 +54,8 @@ describe("DashboardMain", () => {
   })
 
   it("no longer carries the import health card", async () => {
+    // A staged batch describes file imports only: a session entered on the
+    // form records no outcome, so the composition was never the whole picture.
     renderWithProviders(<DashboardMain />)
 
     await screen.findByText("Stanbic Bank")

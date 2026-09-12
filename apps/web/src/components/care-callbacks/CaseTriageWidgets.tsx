@@ -32,7 +32,7 @@ export function Hero({
     <div className="flex shrink-0 items-center gap-3 border-b border-fg/10 bg-surface px-5 py-3">
       <span
         aria-hidden
-        className="grid size-9 shrink-0 place-items-center rounded-sm bg-primary/10 text-primary"
+        className="grid size-9 shrink-0 place-items-center rounded-sm bg-fg/6 text-fg-muted"
       >
         <Phone className="size-4" />
       </span>
@@ -158,7 +158,7 @@ export function DetailRail({
         >
           <span
             aria-hidden
-            className="grid size-7 shrink-0 place-items-center bg-primary/10 text-primary"
+            className="grid size-7 shrink-0 place-items-center bg-fg/6 text-fg-muted"
           >
             <Phone className="size-3.5" />
           </span>
@@ -177,7 +177,7 @@ export function DetailRail({
         >
           <span
             aria-hidden
-            className="grid size-7 shrink-0 place-items-center bg-primary/10 text-[10px] font-semibold text-primary"
+            className="grid size-7 shrink-0 place-items-center bg-fg/6 text-[10px] font-semibold text-fg-muted"
           >
             {outreach.member_id.slice(0, 2).toUpperCase()}
           </span>

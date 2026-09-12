@@ -1,7 +1,7 @@
 import { useState } from "react"
 
 import { useQueryClient } from "@tanstack/react-query"
-import { createFileRoute, useNavigate } from "@tanstack/react-router"
+import { createFileRoute } from "@tanstack/react-router"
 import { SquarePen, Stethoscope } from "lucide-react"
 
 import { providersApi } from "@/api/endpoints/providers"
@@ -26,6 +26,7 @@ import { ProviderLifecyclePanel } from "@/components/providers/ProviderLifecycle
 import { ProviderReadinessRail } from "@/components/providers/ProviderReadinessRail"
 import { ProviderSpecialtiesPanel } from "@/components/providers/ProviderSpecialtiesPanel"
 import { Button } from "@/components/ui/button"
+import { useBackTo } from "@/hooks/useBackTo"
 import { useCanWrite } from "@/hooks/useCanWrite"
 import { useTabSearchParam } from "@/hooks/useTabSearchParam"
 import { formatDate } from "@/lib/format"
@@ -43,7 +44,6 @@ type TabValue = (typeof TAB_VALUES)[number]
 
 function ProviderDetailPage() {
   const { providerId } = Route.useParams()
-  const navigate = useNavigate()
   const queryClient = useQueryClient()
   const canWrite = useCanWrite()
   const [tab, setTab] = useTabSearchParam<TabValue>(TAB_VALUES, "overview")
@@ -55,7 +55,7 @@ function ProviderDetailPage() {
     detailFn: providersApi.getById,
   })
 
-  const back = () => void navigate({ to: "/providers" })
+  const back = useBackTo("/providers")
   const state = renderDetailState(query, {
     icon: Stethoscope,
     breadcrumb: "Practitioners",
@@ -84,7 +84,7 @@ function ProviderDetailPage() {
             type="button"
             variant="outline"
             size="sm"
-            className="h-7 gap-1.5 rounded-none px-2"
+            className="h-7 gap-1.5 px-2"
             onClick={() => setEditOpen(true)}
           >
             <SquarePen className="size-3.5" />
@@ -105,7 +105,10 @@ function ProviderDetailPage() {
 
       <ProviderFormSheet open={editOpen} onOpenChange={setEditOpen} provider={provider} />
 
-      <div className="flex min-h-0 flex-1 overflow-y-auto bg-bg">
+      <div
+        className="flex min-h-0 flex-1 overflow-y-auto bg-bg"
+        data-scroll-restoration-id="detail"
+      >
         <div className="grid w-full grid-cols-12 gap-5 px-5 py-5">
           <div className="col-span-12 min-w-0 lg:col-span-8">
             <Tabs value={tab} onValueChange={(value) => setTab(value as TabValue)}>

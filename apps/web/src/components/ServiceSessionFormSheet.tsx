@@ -23,6 +23,7 @@ import {
   EligibilityFailureNotice,
   eligibilityReasons,
 } from "@/components/sessions/EligibilityFailureNotice"
+import { PractitionerAvailabilityNotice } from "@/components/sessions/PractitionerAvailabilityNotice"
 import { StoredAttribution } from "@/components/sessions/SessionAttribution"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Input } from "@/components/ui/input"
@@ -41,7 +42,6 @@ import { cn } from "@/lib/utils"
 import type { ErrorDetail } from "@/types/api"
 import type { Member, Service, ServiceSession } from "@/types/entities"
 import {
-  ClientType,
   SessionAttendance,
   SessionCategory,
   SessionDeliveryContext,
@@ -71,13 +71,11 @@ const schema = z
     notes: z.string().optional(),
     category: z.nativeEnum(SessionCategory).optional(),
     session_type: z.nativeEnum(SessionType).optional(),
-    client_type: z.nativeEnum(ClientType).optional(),
     headcount: z.string().optional(),
     issue_topic: z.string().optional(),
     partner_name: z.string().optional(),
     partner_relationship: z.string().optional(),
     rate_ugx: z.string().optional(),
-    session_number: z.string().optional(),
     diagnosis_id: z.string().nullable().optional(),
     diagnosis_type_id: z.string().nullable().optional(),
     is_backfill: z.boolean().optional(),
@@ -147,13 +145,11 @@ const EMPTY: Values = {
   notes: "",
   category: undefined,
   session_type: undefined,
-  client_type: undefined,
   headcount: "",
   issue_topic: "",
   partner_name: "",
   partner_relationship: "",
   rate_ugx: "",
-  session_number: "",
   diagnosis_id: null,
   diagnosis_type_id: null,
   is_backfill: false,
@@ -237,13 +233,11 @@ export function ServiceSessionFormSheet({
           location: values.location?.trim() || null,
           category: values.category ?? undefined,
           session_type: values.session_type ?? undefined,
-          client_type: values.client_type ?? undefined,
           headcount: num(values.headcount),
           issue_topic: values.issue_topic?.trim() || undefined,
           partner_name: values.partner_name?.trim() || undefined,
           partner_relationship: values.partner_relationship?.trim() || undefined,
           rate_ugx: num(values.rate_ugx),
-          session_number: num(values.session_number),
           diagnosis_id: values.diagnosis_id ?? undefined,
           diagnosis_type_id: values.diagnosis_type_id ?? undefined,
           __isBackfill: isBackfill,
@@ -267,7 +261,6 @@ export function ServiceSessionFormSheet({
             delivery_context: _dc,
             provider_affiliation_id: _af,
             scheduled_at: _at,
-            session_number: _sn,
             ...updatable
           } = body
           return serviceSessionsApi.update(entity.id, { ...updatable, notes: __notes })
@@ -305,6 +298,7 @@ export function ServiceSessionFormSheet({
   const watchedProvider = watch("service_provider_id")
   const watchedBackfill = !isEdit && Boolean(watch("is_backfill"))
   const watchedCategory = watch("category")
+  const watchedScheduledAt = watch("scheduled_at")
   const isGroup = watchedCategory === SessionCategory.GROUP
   // A company-wide session is counted, not named, so its headcount is asked for
   // whatever category it carries.
@@ -439,20 +433,6 @@ export function ServiceSessionFormSheet({
         )}
         <Input type="hidden" {...register("member_id")} />
         <Input type="hidden" {...register("client_id")} />
-        <FormField label="Client type" error={errors.client_type?.message}>
-          <Controller
-            control={control}
-            name="client_type"
-            render={({ field }) => (
-              <EnumSelect
-                placeholder="New or repeat"
-                value={field.value}
-                onChange={field.onChange}
-                options={Object.values(ClientType)}
-              />
-            )}
-          />
-        </FormField>
         {isPartnered ? (
           <div className="grid grid-cols-2 gap-3">
             <FormField
@@ -486,6 +466,11 @@ export function ServiceSessionFormSheet({
               setValue("provider_affiliation_id", "", { shouldDirty: true })
             }}
           />
+          <PractitionerAvailabilityNotice
+            providerId={watchedProvider ?? ""}
+            serviceId={lockedServiceId ?? watchedService ?? ""}
+            scheduledAt={watchedScheduledAt ?? ""}
+          />
         </FormField>
         <Input type="hidden" {...register("service_provider_id")} />
         {isEdit ? (
@@ -515,14 +500,6 @@ export function ServiceSessionFormSheet({
         <div className="grid grid-cols-2 gap-3">
           <FormField label="Rate (UGX)" error={errors.rate_ugx?.message} htmlFor="ss-rate">
             <Input id="ss-rate" type="number" min={0} {...register("rate_ugx")} />
-          </FormField>
-          <FormField
-            label="Session number"
-            description="Position in the member's episode."
-            error={errors.session_number?.message}
-            htmlFor="ss-session-no"
-          >
-            <Input id="ss-session-no" type="number" min={1} {...register("session_number")} />
           </FormField>
         </div>
       </FormSection>
@@ -664,13 +641,11 @@ function toFormValues(s: ServiceSession): Values {
     notes: s.notes ?? "",
     category: s.category ?? undefined,
     session_type: s.session_type ?? undefined,
-    client_type: s.client_type ?? undefined,
     headcount: s.headcount != null ? String(s.headcount) : "",
     issue_topic: s.issue_topic ?? "",
     partner_name: s.partner_name ?? "",
     partner_relationship: s.partner_relationship ?? "",
     rate_ugx: s.rate_ugx != null ? String(s.rate_ugx) : "",
-    session_number: s.session_number != null ? String(s.session_number) : "",
     diagnosis_id: s.diagnosis_id ?? null,
     diagnosis_type_id: s.diagnosis_type_id ?? null,
     is_backfill: false,
@@ -719,7 +694,7 @@ function LockedServiceSummary({
     <div className="flex items-center gap-2.5 rounded-sm border border-fg/15 bg-surface px-3 py-2">
       <span
         aria-hidden
-        className="grid size-7 shrink-0 place-items-center bg-primary/10 text-[10px] font-semibold text-primary"
+        className="grid size-7 shrink-0 place-items-center bg-fg/6 text-[10px] font-semibold text-fg-muted"
       >
         SV
       </span>
@@ -750,7 +725,7 @@ function LockedMemberSummary({ memberId, member }: { memberId: string; member: M
     <div className="flex items-center gap-2.5 rounded-sm border border-fg/15 bg-surface px-3 py-2">
       <span
         aria-hidden
-        className="grid size-7 shrink-0 place-items-center bg-primary/10 text-[10px] font-semibold text-primary"
+        className="grid size-7 shrink-0 place-items-center bg-fg/6 text-[10px] font-semibold text-fg-muted"
       >
         {resolved ? nameInitials(memberLabel(resolved)) : "··"}
       </span>

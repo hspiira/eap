@@ -1,6 +1,7 @@
 import * as React from "react"
 
-import { Lock } from "lucide-react"
+import { Link } from "@tanstack/react-router"
+import { ChevronRight, Lock } from "lucide-react"
 
 import { cn } from "@/lib/utils"
 
@@ -8,11 +9,14 @@ import { cn } from "@/lib/utils"
 
 export function DetailCard({
   title,
+  icon: Icon,
   phiLabel,
   action,
   children,
 }: {
   title: string
+  /** Small anchor icon rendered before the title. */
+  icon?: React.ComponentType<{ className?: string }>
   /** Marks the card as showing protected health information. */
   phiLabel?: string
   /** Optional control rendered at the top-right of the header (e.g. an Edit button). */
@@ -21,20 +25,18 @@ export function DetailCard({
 }) {
   return (
     <section className="rounded-none border border-fg/10 bg-surface p-4">
-      {phiLabel ? (
-        <div className="mb-3 flex items-center gap-2">
-          <h3 className="text-xs font-semibold tracking-wide text-fg-muted">{title}</h3>
+      <div className="mb-3 flex items-center gap-2 border-b border-fg/10 pb-2">
+        {Icon ? <Icon className="size-3.5 shrink-0 text-primary/70" aria-hidden /> : null}
+        <h3 className="text-xs font-semibold tracking-wide text-fg-muted">{title}</h3>
+        {phiLabel ? (
           <span className="ml-auto inline-flex items-center gap-1 text-[10px] text-fg-subtle">
             <Lock className="size-2.5" aria-hidden />
             {phiLabel}
           </span>
-        </div>
-      ) : (
-        <div className="mb-3 flex items-center gap-2">
-          <h3 className="text-xs font-semibold tracking-wide text-fg-muted">{title}</h3>
-          {action ? <span className="ml-auto">{action}</span> : null}
-        </div>
-      )}
+        ) : action ? (
+          <span className="ml-auto">{action}</span>
+        ) : null}
+      </div>
       {children}
     </section>
   )
@@ -57,8 +59,9 @@ export function RailSection({
   )
 }
 
+/** A list of one-line rows, separated by hairlines. Accepts DetailRow and LinkRow. */
 export function DetailGrid({ children }: { children: React.ReactNode }) {
-  return <dl className="grid grid-cols-2 gap-x-3 gap-y-2.5">{children}</dl>
+  return <div className="divide-y divide-fg/5">{children}</div>
 }
 
 export function DetailRow({
@@ -68,18 +71,53 @@ export function DetailRow({
 }: {
   label: string
   value: React.ReactNode
+  /** Lets a prose value wrap instead of truncating. */
   fullWidth?: boolean
 }) {
   return (
-    <div className={cn(fullWidth && "col-span-2")}>
-      <dt className="text-[11px] font-medium tracking-wide text-fg-muted">{label}</dt>
-      <dd
-        className={cn("mt-0.5 text-sm text-fg", fullWidth ? "whitespace-pre-wrap" : "truncate")}
+    <div className="flex items-baseline gap-1.5 py-1.5 first:pt-0 last:pb-0">
+      <span className="shrink-0 text-xs text-fg-muted">{label}:</span>
+      <span
+        className={cn("min-w-0 text-sm text-fg", fullWidth ? "whitespace-pre-wrap" : "truncate")}
         title={!fullWidth && typeof value === "string" ? value : undefined}
       >
         {value || <span className="text-fg-subtle">-</span>}
-      </dd>
+      </span>
     </div>
+  )
+}
+
+/** A one-line "label: value" row that navigates, with a chevron to say so. */
+export function LinkRow({
+  label,
+  value,
+  meta,
+  to,
+  params,
+}: {
+  label: string
+  value: React.ReactNode
+  /** Short trailing context, e.g. a category or relation. */
+  meta?: string | null
+  to: string
+  params?: Record<string, string>
+}) {
+  return (
+    <Link
+      to={to as never}
+      params={params as never}
+      className="group flex items-center gap-1.5 py-1.5 first:pt-0 last:pb-0"
+    >
+      <span className="shrink-0 text-xs text-fg-muted">{label}:</span>
+      <span className="min-w-0 truncate text-sm font-medium text-primary group-hover:text-primary">
+        {value}
+      </span>
+      {meta ? <span className="shrink-0 text-xs text-fg-muted">· {meta}</span> : null}
+      <ChevronRight
+        aria-hidden
+        className="size-3.5 shrink-0 text-primary/60 transition-transform group-hover:translate-x-0.5 group-hover:text-primary"
+      />
+    </Link>
   )
 }
 

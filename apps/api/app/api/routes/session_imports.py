@@ -20,6 +20,7 @@ from app.api.dependencies import (
     get_diagnosis_repository,
     get_eligible_member_repository,
     get_service_repository,
+    get_service_session_repository,
     get_user_repository,
 )
 from app.api.dependencies.pagination import PageParams, pagination
@@ -64,6 +65,7 @@ from app.domain.repositories.provider_network_repository import (
 )
 from app.domain.repositories.provider_repository import ProviderRepository
 from app.domain.repositories.service_repository import ServiceRepository
+from app.domain.repositories.service_session_repository import ServiceSessionRepository
 from app.domain.repositories.user_repository import UserRepository
 from app.domain.value_objects.core import TenantId, UserId
 from app.domain.value_objects.provider_network import (
@@ -181,6 +183,7 @@ async def stage_import(
     services: ServiceRepository = Depends(get_service_repository),
     diagnoses: DiagnosisRepository = Depends(get_diagnosis_repository),
     users: UserRepository = Depends(get_user_repository),
+    sessions: ServiceSessionRepository = Depends(get_service_session_repository),
     db: AsyncSession = Depends(get_db),
 ):
     """Stage rows for review. Writes no sessions and has no billing side effects.
@@ -260,6 +263,7 @@ async def stage_import(
         services,
         diagnoses,
         users,
+        sessions,
     )
     with measure_queries() as measured:
         await _stage_rows(

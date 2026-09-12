@@ -57,10 +57,7 @@ export function ContractServicesCard({ contract }: { contract: Contract }) {
   return (
     <div className="flex min-h-0 flex-col overflow-hidden border border-fg/10 bg-surface">
       <header className="flex items-start gap-2.5 border-b border-fg/10 px-3 py-2.5">
-        <span
-          aria-hidden
-          className="grid size-7 shrink-0 place-items-center bg-primary/10 text-primary"
-        >
+        <span aria-hidden className="grid size-7 shrink-0 place-items-center bg-fg/6 text-fg-muted">
           <FileCheck className="size-3.5" />
         </span>
         <div className="min-w-0 flex-1">

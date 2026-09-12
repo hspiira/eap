@@ -46,6 +46,7 @@ describe("buildAttentionItems", () => {
     expect(items.map((i) => i.key)).toEqual([
       "practitioners",
       "rosters",
+      "unconfirmed",
       "rates",
       "outcomes",
       "riser",
@@ -55,6 +56,16 @@ describe("buildAttentionItems", () => {
     expect(items[items.length - 1].severity).toBe("signal")
   })
 
+  it("raises unconfirmed bookings as blocking, naming why they matter", () => {
+    // A booking past its date with no outcome is an open question, not a plan.
+    const items = buildAttentionItems(makeDashboard())
+    const unconfirmed = items.find((i) => i.key === "unconfirmed")
+
+    expect(unconfirmed?.severity).toBe("high")
+    expect(unconfirmed?.headline).toBe("Confirm 24 past bookings")
+    expect(unconfirmed?.consequence).toBe("their date has passed and no outcome is recorded")
+  })
+
   it("says nothing when every queue is clear and nothing has moved", () => {
     const data = makeDashboard({
       data_quality: {
@@ -62,6 +73,7 @@ describe("buildAttentionItems", () => {
         sessions_missing_rate: 0,
         clients_without_roster: 0,
         providers_pending: 0,
+        sessions_awaiting_confirmation: 0,
       },
       top_clients: [],
       trending_services: [],

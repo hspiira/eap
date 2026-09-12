@@ -10,6 +10,8 @@ import { EmptyState } from "@/components/common/EmptyState"
 import { ErrorState } from "@/components/common/ErrorState"
 import { FilterBar, FilterChip, FilterSearch, FilterTrigger } from "@/components/common/FilterBar"
 import { IconButton } from "@/components/common/IconButton"
+import { InfiniteScrollSentinel } from "@/components/common/InfiniteScrollSentinel"
+import { PagedTableBody } from "@/components/common/PagedTableBody"
 import { PageShell } from "@/components/common/PageShell"
 import { TableSkeleton } from "@/components/common/PageSkeletons"
 import { SortHeader } from "@/components/common/SortHeader"
@@ -25,21 +27,15 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Pagination } from "@/components/ui/pagination"
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table"
+import { Table, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { useCanWrite } from "@/hooks/useCanWrite"
 import { NEWEST_FIRST, useListPage } from "@/hooks/useListPage"
+import { useVisiblePage } from "@/hooks/useVisiblePage"
 import { termLabel, termTone } from "@/lib/contract-term"
 import { contractValue } from "@/lib/display"
 import { normalizeErrorMessage } from "@/lib/errors"
 import { formatDay } from "@/lib/format"
-import { useEntityList } from "@/lib/queries"
+import { useEntityListPages } from "@/lib/queries"
 import { enumParam, listSearchSchema } from "@/lib/search-params"
 import { cn } from "@/lib/utils"
 import type { Client, Contract } from "@/types/entities"
@@ -136,7 +132,9 @@ function ContractsListPage() {
     return m
   }, [clientsData])
 
-  const query = useEntityList<Contract, ContractListParams>({
+  const [visiblePage, setVisiblePage] = useVisiblePage(page)
+
+  const query = useEntityListPages<Contract, ContractListParams>({
     resource: "contracts",
     params: {
       page,
@@ -239,7 +237,10 @@ function ContractsListPage() {
           />
         ) : (
           <>
-            <div className="relative min-h-0 flex-1 overflow-auto">
+            <div
+              className="relative min-h-0 flex-1 overflow-auto"
+              data-scroll-restoration-id="list"
+            >
               <Table className="w-full caption-bottom text-sm" scrollable={false}>
                 <TableHeader className={STICKY_TABLE_HEAD}>
                   <TableRow className={`hover:bg-transparent ${ROW_BORDER}`}>
@@ -272,16 +273,30 @@ function ContractsListPage() {
                     </TableHead>
                   </TableRow>
                 </TableHeader>
-                <TableBody>
-                  {items.map((row) => (
-                    <ContractRow key={row.id} row={row} clientsById={clientsById} />
-                  ))}
-                </TableBody>
+                <PagedTableBody
+                  items={items}
+                  anchorPage={page}
+                  limit={limit}
+                  rowKey={(row) => row.id}
+                  renderRow={(row) => <ContractRow row={row} clientsById={clientsById} />}
+                  onVisiblePageChange={setVisiblePage}
+                />
               </Table>
+              <InfiniteScrollSentinel
+                onLoadMore={query.loadMore}
+                hasMore={query.hasMore}
+                loadingMore={query.loadingMore}
+              />
             </div>
             {total > 0 && (
               <div className="shrink-0 border-t border-fg/10 bg-surface px-3 py-2">
-                <Pagination page={page} total={total} limit={limit} onPageChange={setPage} />
+                <Pagination
+                  page={visiblePage}
+                  total={total}
+                  limit={limit}
+                  shownCount={items.length}
+                  onPageChange={setPage}
+                />
               </div>
             )}
           </>
@@ -304,7 +319,7 @@ function ContractRow({ row, clientsById }: { row: Contract; clientsById: Map<str
         >
           <span
             aria-hidden
-            className="grid size-6 shrink-0 place-items-center bg-primary/10 text-primary"
+            className="grid size-6 shrink-0 place-items-center bg-fg/6 text-fg-muted"
           >
             <FileSignature className="size-3" />
           </span>

@@ -156,7 +156,7 @@ export function PickerRow({
     <>
       <span
         aria-hidden
-        className={`grid ${size === "md" ? "size-7" : "size-6"} shrink-0 place-items-center bg-primary/10 text-[10px] font-semibold text-primary`}
+        className={`grid ${size === "md" ? "size-7" : "size-6"} shrink-0 place-items-center bg-fg/6 text-[10px] font-semibold text-fg-muted`}
       >
         {initials}
       </span>

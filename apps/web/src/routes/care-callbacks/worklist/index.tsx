@@ -211,7 +211,7 @@ function WorklistPage() {
             }
           />
         ) : (
-          <div className="relative min-h-0 flex-1 overflow-auto">
+          <div className="relative min-h-0 flex-1 overflow-auto" data-scroll-restoration-id="list">
             <Table className="w-full caption-bottom text-sm" scrollable={false}>
               <TableHeader className={STICKY_TABLE_HEAD}>
                 <TableRow className={`hover:bg-transparent ${ROW_BORDER}`}>
@@ -269,7 +269,7 @@ function CaseRow({ row, campaignName }: { row: OutreachRecord; campaignName: str
         >
           <span
             aria-hidden
-            className="grid size-6 shrink-0 place-items-center bg-primary/10 text-[10px] font-semibold text-primary"
+            className="grid size-6 shrink-0 place-items-center bg-fg/6 text-[10px] font-semibold text-fg-muted"
           >
             <Headphones className="size-3" />
           </span>

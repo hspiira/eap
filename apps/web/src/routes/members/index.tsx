@@ -53,7 +53,7 @@ import { useCanWrite, useCurrentRole } from "@/hooks/useCanWrite"
 import { NEWEST_FIRST, useListPage } from "@/hooks/useListPage"
 import { useTableSelection } from "@/hooks/useTableSelection"
 import { normalizeErrorMessage } from "@/lib/errors"
-import { useEntityList } from "@/lib/queries"
+import { useEntityListPages } from "@/lib/queries"
 import { enumParam, listSearchSchema } from "@/lib/search-params"
 import type { Member, MemberStats } from "@/types/entities"
 import { EligibilityStatus, MemberRelation } from "@/types/enums"
@@ -124,7 +124,7 @@ function MembersListPage() {
   const [importOpen, setImportOpen] = useState(false)
   const [duplicatesOpen, setDuplicatesOpen] = useState(false)
   const role = useCurrentRole()
-  const query = useEntityList({
+  const query = useEntityListPages({
     resource: "members",
     params: {
       page: list.page,
@@ -244,11 +244,7 @@ function MembersListPage() {
             />
           ) : null}
           {canWrite ? (
-            <Button
-              size="sm"
-              className="h-7 gap-1.5 rounded-none px-2.5"
-              onClick={() => list.setAddOpen(true)}
-            >
+            <Button size="sm" className="h-7 gap-1.5 px-2.5" onClick={() => list.setAddOpen(true)}>
               <Plus className="size-3.5" />
               Add member
             </Button>
@@ -355,6 +351,9 @@ function MembersListPage() {
       />
 
       <EntityListView
+        onLoadMore={query.loadMore}
+        hasMore={query.hasMore}
+        loadingMore={query.loadingMore}
         columns={COLUMNS}
         items={items}
         rowKey={(row) => row.id}
@@ -380,7 +379,7 @@ function MembersListPage() {
             }
             action={
               canWrite && !hasFilters ? (
-                <Button size="sm" className="rounded-none" onClick={() => list.setAddOpen(true)}>
+                <Button size="sm" onClick={() => list.setAddOpen(true)}>
                   Add member
                 </Button>
               ) : null
@@ -578,7 +577,7 @@ function MemberRow({
         >
           <span
             aria-hidden
-            className="grid size-6 shrink-0 place-items-center bg-primary/10 text-primary"
+            className="grid size-6 shrink-0 place-items-center bg-fg/6 text-fg-muted"
           >
             <User className="size-3.5" />
           </span>

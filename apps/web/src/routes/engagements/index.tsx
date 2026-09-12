@@ -28,7 +28,7 @@ import { useCanWrite } from "@/hooks/useCanWrite"
 import { useListPage } from "@/hooks/useListPage"
 import { normalizeErrorMessage } from "@/lib/errors"
 import { formatDate } from "@/lib/format"
-import { useEntityList } from "@/lib/queries"
+import { useEntityListPages } from "@/lib/queries"
 import { enumOptions, enumParam, listSearchSchema } from "@/lib/search-params"
 import { cn } from "@/lib/utils"
 import type { Engagement, EngagementStatusValue } from "@/types/entities"
@@ -75,7 +75,7 @@ function EngagementsListPage() {
   const handleStatusChange = (next: StatusFilter) =>
     setFilter("status", next === "all" ? undefined : next)
 
-  const query = useEntityList<Engagement, EngagementListParams>({
+  const query = useEntityListPages<Engagement, EngagementListParams>({
     resource: "engagements",
     params: { page, limit, search: activeSearch, status: activeStatus, ...sortParams },
     listFn: engagementsApi.list,
@@ -126,6 +126,9 @@ function EngagementsListPage() {
       <EngagementFormSheet open={addOpen} onOpenChange={setAddOpen} />
 
       <EntityListView
+        onLoadMore={query.loadMore}
+        hasMore={query.hasMore}
+        loadingMore={query.loadingMore}
         columns={COLUMNS}
         items={items}
         rowKey={(row) => row.id}
@@ -176,7 +179,7 @@ function EngagementRow({ row }: { row: Engagement }) {
         >
           <span
             aria-hidden
-            className="grid size-6 shrink-0 place-items-center bg-primary/10 text-primary"
+            className="grid size-6 shrink-0 place-items-center bg-fg/6 text-fg-muted"
           >
             <Briefcase className="size-3" />
           </span>

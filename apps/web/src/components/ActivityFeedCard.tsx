@@ -85,7 +85,7 @@ export function ActivityFeedCard({ activities, limit = 6 }: ActivityFeedCardProp
               role="tab"
               aria-selected={active}
               className={cn(
-                "h-auto rounded-none border-b-2 px-3 py-2 text-sm font-medium hover:bg-transparent",
+                "h-auto border-b-2 px-3 py-2 text-sm font-medium hover:bg-transparent",
                 active
                   ? "border-primary text-fg"
                   : "border-transparent text-fg-muted hover:text-fg",

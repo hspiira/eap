@@ -1,13 +1,14 @@
 import { useCallback, useMemo, useState } from "react"
 
 import { useQuery, useQueryClient } from "@tanstack/react-query"
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router"
-import { ArrowLeft, ChevronRight, FileCheck, FileSignature, Plus, SquarePen } from "lucide-react"
+import { createFileRoute, Link } from "@tanstack/react-router"
+import { ChevronRight, FileCheck, FileSignature, Plus, SquarePen } from "lucide-react"
 
 import { clientsApi } from "@/api/endpoints/clients"
 import { contractsApi } from "@/api/endpoints/contracts"
 import { serviceAssignmentsApi } from "@/api/endpoints/service-assignments"
 import { servicesApi } from "@/api/endpoints/services"
+import { BackButton } from "@/components/common/BackButton"
 import {
   DetailCard,
   DetailGrid,
@@ -37,6 +38,7 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { useToast } from "@/contexts/ToastContext"
+import { useBackTo } from "@/hooks/useBackTo"
 import { useTabSearchParam } from "@/hooks/useTabSearchParam"
 import { nameInitials } from "@/lib/display"
 import { normalizeErrorMessage } from "@/lib/errors"
@@ -63,7 +65,7 @@ const TAB_VALUES: ReadonlyArray<TabValue> = [
 
 function ContractDetailPage() {
   const { contractId } = Route.useParams()
-  const navigate = useNavigate()
+  const back = useBackTo("/contracts")
   const queryClient = useQueryClient()
   const [actionLoading, setActionLoading] = useState(false)
   const toast = useToast()
@@ -121,7 +123,7 @@ function ContractDetailPage() {
     icon: FileSignature,
     breadcrumb: "Commercial · Contracts",
     entity: "contract",
-    backTo: () => navigate({ to: "/contracts" }),
+    backTo: back,
     backLabel: "Back to contracts",
   })
   if (state || !contract) return state
@@ -134,17 +136,7 @@ function ContractDetailPage() {
       breadcrumb={`Commercial · Contracts · ${title}`}
       actions={
         <>
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            onClick={() => navigate({ to: "/contracts" })}
-            aria-label="Back to contracts"
-            title="Back to contracts"
-            className="size-7 p-0 text-fg/70"
-          >
-            <ArrowLeft className="size-3.5" />
-          </Button>
+          <BackButton to="/contracts" label="Back to contracts" />
           <Button
             size="sm"
             variant="outline"
@@ -180,7 +172,7 @@ function ContractDetailPage() {
         }}
       />
 
-      <div className="min-h-0 flex-1 overflow-y-auto bg-bg">
+      <div className="min-h-0 flex-1 overflow-y-auto bg-bg" data-scroll-restoration-id="detail">
         <div className="grid grid-cols-12 gap-5 px-5 py-5">
           <div className="col-span-12 min-w-0 lg:col-span-8">
             <Tabs value={tab} onValueChange={(v) => setTab(v as TabValue)}>
@@ -271,7 +263,7 @@ function Hero({ contract, client }: { contract: Contract; client: Client | null 
     <div className="flex shrink-0 items-center gap-3 border-b border-fg/10 bg-surface px-5 py-3">
       <span
         aria-hidden
-        className="grid size-9 shrink-0 place-items-center rounded-sm bg-primary/10 text-primary"
+        className="grid size-9 shrink-0 place-items-center rounded-sm bg-fg/6 text-fg-muted"
       >
         <FileSignature className="size-4" />
       </span>
@@ -325,7 +317,7 @@ function DetailRail({ contract, client, onAction, actionLoading }: DetailRailPro
           >
             <span
               aria-hidden
-              className="grid size-7 shrink-0 place-items-center bg-primary/10 text-[10px] font-semibold text-primary"
+              className="grid size-7 shrink-0 place-items-center bg-fg/6 text-[10px] font-semibold text-fg-muted"
             >
               {nameInitials(client.name)}
             </span>

@@ -66,24 +66,12 @@ export function makeDashboard(overrides: Partial<DashboardResponse> = {}): Dashb
         change_pct: null,
       },
     ],
-    import_queues: [
-      { outcome: "UnresolvedMember", total: 6444 },
-      { outcome: "MissingPractitioner", total: 637 },
-    ],
-    import_batch: {
-      file_name: "sessions.csv",
-      status: "Applied",
-      row_count: 7471,
-      accepted: 283,
-      duplicate: 85,
-      blocked: 7103,
-      applied_at: "2026-09-07T20:34:38Z",
-    },
     data_quality: {
       sessions_missing_outcome: 186,
       sessions_missing_rate: 161,
       clients_without_roster: 38,
       providers_pending: 112,
+      sessions_awaiting_confirmation: 24,
     },
     ...overrides,
   }

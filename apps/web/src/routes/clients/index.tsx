@@ -71,7 +71,7 @@ import { useTableSelection } from "@/hooks/useTableSelection"
 import { nameInitials } from "@/lib/display"
 import { normalizeErrorMessage } from "@/lib/errors"
 import { formatDateTime, formatDay } from "@/lib/format"
-import { useEntityList } from "@/lib/queries"
+import { useEntityListPages } from "@/lib/queries"
 import { boolParam, enumParam, listSearchSchema } from "@/lib/search-params"
 import { useAuthStore } from "@/store/slices/authSlice"
 import type { Client } from "@/types/entities"
@@ -280,7 +280,7 @@ function ClientsListPage() {
   const handleArchivedChange = (next: ArchivedFilter) =>
     setFilter("archived", next === "with-archived" ? "1" : undefined)
 
-  const query = useEntityList({
+  const query = useEntityListPages({
     resource: "clients",
     params: {
       page,
@@ -502,6 +502,9 @@ function ClientsListPage() {
       />
 
       <EntityListView
+        onLoadMore={query.loadMore}
+        hasMore={query.hasMore}
+        loadingMore={query.loadingMore}
         columns={COLUMNS}
         items={items}
         rowKey={(row) => row.id}

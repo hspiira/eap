@@ -25,6 +25,7 @@ from app.infrastructure.models.session_import_model import (
     SessionImportBatchModel,
     SessionImportRowModel,
 )
+from app.shared.utils.datetime import utc_now
 
 if TYPE_CHECKING:
     from app.api.schemas.dashboard_schemas import Granularity
@@ -88,6 +89,24 @@ class DashboardQueryRunner:
             )
         )
         return current, prior, clients_served
+
+    async def sessions_awaiting_confirmation(self, tenant_id: str) -> int:
+        """Bookings past their date that nobody has resolved.
+
+        Not a data-quality gap in the usual sense: nothing was recorded wrongly.
+        It counts deliveries the system expected and has not been told the
+        outcome of, which is the queue the month-end cross-check works through.
+        """
+        return await self._count(
+            select(func.count(ServiceSessionModel.id)).where(
+                ServiceSessionModel.tenant_id == tenant_id,
+                ServiceSessionModel.deleted_at.is_(None),
+                ServiceSessionModel.status.in_(
+                    (SessionStatus.SCHEDULED.value, SessionStatus.RESCHEDULED.value)
+                ),
+                ServiceSessionModel.scheduled_at < utc_now(),
+            )
+        )
 
     async def earliest_session(self, tenant_id: str) -> datetime | None:
         """When this tenant first delivered anything. None when it never has.

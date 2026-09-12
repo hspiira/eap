@@ -101,7 +101,13 @@ async def api():
     state.organisations.get_organisation.return_value = SimpleNamespace(
         is_active=True, approval_status=_APPROVED
     )
-    state.services.get_by_id.return_value = SimpleNamespace(tenant_id=TenantId("t1"))
+    state.services.get_by_id.return_value = SimpleNamespace(
+        tenant_id=TenantId("t1"), duration_minutes=60
+    )
+    # No clash unless a case says otherwise; an unconfigured AsyncMock returns
+    # a truthy mock, which the booking gate would read as a double-booking.
+    state.sessions.find_clashing_booking.return_value = None
+    state.sessions.session_ordinals.return_value = {}
     state.clients = AsyncMock()
     state.clients.get_by_id.return_value = SimpleNamespace(
         id=ClientId("c1"), tenant_id=TenantId("t1")
@@ -269,7 +275,7 @@ async def completable(api):
         tenant_id=TenantId("t1"), client_id=ClientId("c1")
     )
     api.services.get_by_id.return_value = SimpleNamespace(
-        tenant_id=TenantId("t1"), category="ShortTermCounselling"
+        tenant_id=TenantId("t1"), category="ShortTermCounselling", duration_minutes=60
     )
     return api
 
