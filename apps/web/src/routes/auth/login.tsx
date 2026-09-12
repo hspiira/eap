@@ -11,7 +11,7 @@ import { Input } from "@/components/ui/input"
 import { useApiForm } from "@/hooks/useApiForm"
 import { useRedirectIfAuthenticated } from "@/hooks/useRedirectIfAuthenticated"
 import { authActions } from "@/lib/auth-store"
-import { getLockoutSecondsRemaining, isAccountLocked } from "@/lib/errors"
+import { getLockoutSecondsRemaining, isAccountLocked, loginErrorMessage } from "@/lib/errors"
 import { redirectTarget, safeRedirectPath } from "@/lib/redirect"
 
 export const Route = createFileRoute("/auth/login")({
@@ -70,6 +70,7 @@ function LoginPage() {
       password: "",
     },
     errorToast: false,
+    errorMessage: loginErrorMessage,
     onSubmit: async (values) => {
       if (isLocked) return
       authActions.clearError()

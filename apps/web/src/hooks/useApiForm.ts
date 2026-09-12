@@ -27,6 +27,8 @@ export interface UseApiFormOptions<TValues extends FieldValues> {
   onSubmit: (values: TValues) => Promise<void> | void
   successToast?: string
   errorToast?: boolean
+  /** Overrides `defaultErrorMessage` for a context-specific message; return undefined to fall through. */
+  errorMessage?: (err: unknown) => string | undefined
   formOptions?: Omit<UseFormProps<TValues>, "resolver" | "defaultValues">
 }
 
@@ -64,7 +66,7 @@ export function useApiForm<TValues extends FieldValues>(
       // silent, so anything unattached still surfaces as a form-level error.
       if (attached.length === Object.keys(fieldErrors).length && attached.length > 0) return
 
-      const message = defaultErrorMessage(err)
+      const message = opts.errorMessage?.(err) ?? defaultErrorMessage(err)
       form.setError("root.serverError" as Path<TValues>, { type: "server", message })
       if (opts.errorToast !== false) showError(message)
     }

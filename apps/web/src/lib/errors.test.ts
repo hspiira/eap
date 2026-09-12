@@ -13,6 +13,7 @@ import {
   isServerError,
   isTimeoutError,
   isValidationError,
+  loginErrorMessage,
 } from "@/lib/errors"
 import { ApiError } from "@/types/api"
 
@@ -139,5 +140,23 @@ describe("defaultErrorMessage", () => {
   it("uses provided fallback for unknown shapes", () => {
     expect(defaultErrorMessage("weird", "fallback")).toBe("fallback")
     expect(defaultErrorMessage(undefined, "fallback")).toBe("fallback")
+  })
+})
+
+describe("loginErrorMessage", () => {
+  it("does not claim a session expired for a failed login attempt", () => {
+    expect(loginErrorMessage(err(401))).not.toMatch(/session/i)
+  })
+  it("gives identical copy for unknown tenant, unknown user and wrong password", () => {
+    const unknownTenant = loginErrorMessage(err(401))
+    const unknownUser = loginErrorMessage(err(401))
+    const wrongPassword = loginErrorMessage(err(401))
+    expect(unknownTenant).toBe(unknownUser)
+    expect(unknownUser).toBe(wrongPassword)
+  })
+  it("falls through to the default handler for non-401 errors", () => {
+    expect(loginErrorMessage(err(500))).toBeUndefined()
+    // Lockout is returned as 423, not 401, so it is unaffected by this override.
+    expect(loginErrorMessage(err(423, "ACCOUNT_LOCKED"))).toBeUndefined()
   })
 })
