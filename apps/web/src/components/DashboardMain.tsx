@@ -80,15 +80,16 @@ export function DashboardMain() {
               }
             />
           </div>
-          <div className="grid content-start gap-4 lg:col-span-4">
+          <div className="lg:col-span-4">
             <AttentionCard items={attention} loading={loading} />
-            <UpcomingBookingsCard
-              upcoming={data?.upcoming ?? null}
-              insight={data ? upcomingInsight(data.upcoming) : null}
-              loading={loading}
-            />
           </div>
         </div>
+
+        <UpcomingBookingsCard
+          upcoming={data?.upcoming ?? null}
+          insight={data ? upcomingInsight(data.upcoming) : null}
+          loading={loading}
+        />
 
         <div className="grid gap-4 lg:grid-cols-12">
           <div className={data?.outcome_mix ? "lg:col-span-5" : "lg:col-span-7"}>
