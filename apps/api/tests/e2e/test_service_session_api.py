@@ -1203,3 +1203,137 @@ class TestCompanyWideSessions:
 
         ids = [item["id"] for item in response.json()["items"]]
         assert talk.json()["id"] in ids
+
+
+class TestFollowUpSessions:
+    """A session booked off the back of a previous one.
+
+    The link is session to session on purpose: both ends are employer-side, so
+    it carries the scheduling fact without bridging to the pseudonymous
+    clinical subject. See decision 7 in docs/design/REALTIME_SESSION_CAPTURE.md.
+    """
+
+    async def _book(self, client, tenant_id, service, provider, member, *, at, follows=None):
+        body = {
+            "service_id": service["id"],
+            "provider_id": provider["id"],
+            "member_id": member["id"],
+            "scheduled_at": at.isoformat(),
+            "delivery_context": "Direct",
+        }
+        if follows:
+            body["follow_up_of_session_id"] = follows
+        return await client.post(f"/service-sessions/?tenant_id={tenant_id}", json=body)
+
+    async def test_a_follow_up_names_the_session_it_came_from(
+        self,
+        client: AsyncClient,
+        session_test_tenant: dict,
+        session_test_service: dict,
+        session_test_provider: dict,
+        session_test_client_person: dict,
+    ):
+        tenant_id = session_test_tenant["id"]
+        first = await self._book(
+            client,
+            tenant_id,
+            session_test_service,
+            session_test_provider,
+            session_test_client_person,
+            at=datetime.now(UTC) + timedelta(days=40),
+        )
+        assert first.status_code == 201, first.text
+
+        second = await self._book(
+            client,
+            tenant_id,
+            session_test_service,
+            session_test_provider,
+            session_test_client_person,
+            at=datetime.now(UTC) + timedelta(days=47),
+            follows=first.json()["id"],
+        )
+
+        assert second.status_code == 201, second.text
+        assert second.json()["follow_up_of_session_id"] == first.json()["id"]
+
+    async def test_an_ordinary_booking_names_nothing(
+        self,
+        client: AsyncClient,
+        session_test_tenant: dict,
+        session_test_service: dict,
+        session_test_provider: dict,
+        session_test_client_person: dict,
+    ):
+        response = await self._book(
+            client,
+            session_test_tenant["id"],
+            session_test_service,
+            session_test_provider,
+            session_test_client_person,
+            at=datetime.now(UTC) + timedelta(days=41),
+        )
+
+        assert response.status_code == 201, response.text
+        assert response.json()["follow_up_of_session_id"] is None
+
+    async def test_the_link_survives_a_reread(
+        self,
+        client: AsyncClient,
+        session_test_tenant: dict,
+        session_test_service: dict,
+        session_test_provider: dict,
+        session_test_client_person: dict,
+    ):
+        """Persisted, not just echoed back from the request."""
+        tenant_id = session_test_tenant["id"]
+        first = await self._book(
+            client,
+            tenant_id,
+            session_test_service,
+            session_test_provider,
+            session_test_client_person,
+            at=datetime.now(UTC) + timedelta(days=42),
+        )
+        second = await self._book(
+            client,
+            tenant_id,
+            session_test_service,
+            session_test_provider,
+            session_test_client_person,
+            at=datetime.now(UTC) + timedelta(days=49),
+            follows=first.json()["id"],
+        )
+        assert second.status_code == 201, second.text
+
+        reread = await client.get(f"/service-sessions/{second.json()['id']}")
+
+        assert reread.status_code == 200, reread.text
+        assert reread.json()["follow_up_of_session_id"] == first.json()["id"]
+
+    async def test_a_continuing_outcome_and_a_follow_up_are_different_things(
+        self,
+        client: AsyncClient,
+        session_test_tenant: dict,
+        session_test_service: dict,
+        session_test_provider: dict,
+        session_test_client_person: dict,
+    ):
+        """The outcome says the person is coming back; the link says which
+        booking answered that. One does not imply the other, and a session can
+        carry either alone."""
+        response = await client.post(
+            f"/service-sessions/?tenant_id={session_test_tenant['id']}",
+            json={
+                "service_id": session_test_service["id"],
+                "provider_id": session_test_provider["id"],
+                "member_id": session_test_client_person["id"],
+                "scheduled_at": (datetime.now(UTC) + timedelta(days=43)).isoformat(),
+                "delivery_context": "Direct",
+                "clinical_outcome": "ToBeContinued",
+            },
+        )
+
+        assert response.status_code == 201, response.text
+        assert response.json()["clinical_outcome"] == "ToBeContinued"
+        assert response.json()["follow_up_of_session_id"] is None

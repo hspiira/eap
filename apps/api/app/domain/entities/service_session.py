@@ -70,6 +70,7 @@ class ServiceSessionEntity:
     feedback: str | None = None
     cancellation_reason: str | None = None
     incident_id: str | None = None
+    follow_up_of_session_id: SessionId | None = None
     deleted_at: datetime | None = None
 
     # Care Activity Log fields

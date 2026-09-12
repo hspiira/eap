@@ -182,6 +182,15 @@ class ServiceSessionModel(CuidMixin, TenantMixin, Base, TimestampMixin, SoftDele
     # Phase 4 #D-Import: idempotency key for re-runnable historical loads.
     # Unique per tenant; absent for organic in-app sessions.
     import_source_id: Mapped[str | None] = mapped_column(String(255), nullable=True, index=True)
+    #: The session this one was booked off the back of. A self-reference rather
+    #: than a link to a case: both ends are employer-side, so it carries the
+    #: scheduling fact without bridging to the pseudonymous clinical subject.
+    follow_up_of_session_id: Mapped[str | None] = mapped_column(
+        String(25),
+        ForeignKey("service_sessions.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
 
     # Care Activity Log fields
     session_type: Mapped[SessionType | None] = mapped_column(

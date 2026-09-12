@@ -35,6 +35,13 @@ class ServiceSessionCreate(BaseModel):
     member_id: str | None = Field(
         None, description="Required for an Individual session, forbidden for a CompanyWide one"
     )
+    follow_up_of_session_id: str | None = Field(
+        None,
+        description=(
+            "The session this one was booked off the back of, when a counsellor "
+            "said the person would be back. A scheduling fact, not a clinical one."
+        ),
+    )
     client_id: str | None = Field(
         None,
         description=(
@@ -191,6 +198,9 @@ class ServiceSessionResponse(BaseModel):
 
     id: str = Field(..., description="Session identifier")
     tenant_id: str = Field(..., description="Tenant identifier")
+    follow_up_of_session_id: str | None = Field(
+        None, description="The session this one was booked off the back of"
+    )
     service_id: str = Field(..., description="Service identifier")
     provider_id: str = Field(..., description="Provider (person) identifier")
     attendance: SessionAttendance = Field(..., description="Individual or CompanyWide")

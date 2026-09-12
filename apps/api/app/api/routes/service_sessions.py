@@ -164,6 +164,9 @@ def to_service_session_response(
         diagnosis_id=session.diagnosis_id,
         approved_by=session.approved_by,
         session_number=session.session_number,
+        follow_up_of_session_id=(
+            session.follow_up_of_session_id.value if session.follow_up_of_session_id else None
+        ),
         partner_name=session.partner_name,
         partner_relationship=session.partner_relationship,
         headcount=session.headcount,
@@ -447,6 +450,9 @@ async def create_service_session(
         diagnosis_id=data.diagnosis_id,
         approved_by=data.approved_by,
         session_number=data.session_number,
+        follow_up_of_session_id=(
+            SessionId(data.follow_up_of_session_id) if data.follow_up_of_session_id else None
+        ),
         partner_name=data.partner_name,
         partner_relationship=data.partner_relationship,
         headcount=data.headcount,

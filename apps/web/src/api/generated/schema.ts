@@ -13026,6 +13026,11 @@ export interface components {
              */
             diagnosis_type_id?: string | null;
             /**
+             * Follow Up Of Session Id
+             * @description The session this one was booked off the back of, when a counsellor said the person would be back. A scheduling fact, not a clinical one.
+             */
+            follow_up_of_session_id?: string | null;
+            /**
              * Headcount
              * @description Participant count (group sessions)
              */
@@ -13197,6 +13202,11 @@ export interface components {
              * @description Session feedback
              */
             feedback?: string | null;
+            /**
+             * Follow Up Of Session Id
+             * @description The session this one was booked off the back of
+             */
+            follow_up_of_session_id?: string | null;
             /**
              * Headcount
              * @description Participant count (group sessions)

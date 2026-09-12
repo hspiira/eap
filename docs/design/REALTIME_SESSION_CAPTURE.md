@@ -252,24 +252,30 @@ Consequences:
   not record which session prompted which, and inventing a chain from date
   order would be a guess presented as a fact.
 
-### Decision 8: the continuation outcome is renamed FollowUpNeeded
+### Decision 8, reversed: the continuation outcome stays ToBeContinued
 
 `ToBeContinued` is the source spreadsheet's "T" code
-(`app/domain/enums/session.py:56`). It describes the case rather than the
+(`app/domain/enums/session.py:56`), and it describes the case rather than the
 session: the session itself finished perfectly well, and what continues is the
-person's care.
+person's care. On that reading it was renamed `FollowUpNeeded`, to name the
+action rather than the state.
 
-Renamed to `FollowUpNeeded`, shown as "Follow-up needed". It names the action
-it implies, which turns the outcome into a queue a scheduler works through
-rather than a state someone has to interpret. Chosen by the owner over
-`Ongoing` and `CaseOpen`.
+The owner reversed it: it is the word the team already uses. That outranks the
+argument above, and the data agrees with them. 124 of the 369 sessions on the
+dev database already carry `ToBeContinued`, so the rename was a data migration
+imposed on a vocabulary nobody had asked to change, to buy a precision the
+people reading it did not need.
 
-The value is persisted as a string on every existing session, so this is a data
-migration and not only a code change. The import's normalisation map keeps
-accepting the old spellings, including the bare "T" and "ongoing": a source
-extract will carry the old vocabulary for as long as the counsellors' template
-does, and rejecting it would be a rename breaking an import that never had a
-say in it.
+Recorded rather than deleted because the reasoning was sound and the decision
+still went the other way. Reopen it only with the team, not from the code.
+
+Consequence: `SessionClinicalStatus` is untouched, and the migration that
+carries decision 7 adds the follow-up column alone.
+
+Worth keeping separate in anyone's head: the outcome and the link are different
+facts. `ToBeContinued` says the counsellor expects the person back;
+`follow_up_of_session_id` says which booking answered that. A session can carry
+either without the other, and a test pins that.
 
 ## Open questions, not decided here
 
@@ -322,7 +328,8 @@ this month") what the team really goes on? Not evaluated here.
 4. The request entity, per decisions 1 and 2.
 5. Reconciliation as a batch, per decisions 3, 4 and 5.
 6. A member-facing request surface.
-7. Follow-up links and the outcome rename, per decisions 7 and 8. **Starting now.**
+7. Follow-up links, per decision 7. **Done.** The outcome rename in
+   decision 8 was reversed by the owner and is not built.
 
 ## Standing of this document
 
