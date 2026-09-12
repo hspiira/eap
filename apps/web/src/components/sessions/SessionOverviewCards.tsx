@@ -205,6 +205,25 @@ function ClinicalCard({
 }
 
 function NotesCard({ session }: { session: ServiceSession }) {
+  const { hasScope, isLoading } = useHasClinicalScope()
+
+  if (isLoading) {
+    return (
+      <DetailCard title="Notes" icon={NotebookPen}>
+        <p className="text-xs text-fg-muted">Checking access…</p>
+      </DetailCard>
+    )
+  }
+  if (!hasScope) {
+    return (
+      <DetailCard title="Notes" icon={NotebookPen}>
+        <p className="flex items-center gap-1.5 text-xs text-fg-muted">
+          <Lock className="size-3 shrink-0" aria-hidden />
+          Notes need the clinical access scope.
+        </p>
+      </DetailCard>
+    )
+  }
   return (
     <DetailCard title="Notes" icon={NotebookPen} phiLabel="Encrypted at rest">
       {session.notes ? (

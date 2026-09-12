@@ -68,6 +68,8 @@ from app.core.security import TokenData, get_current_user
 from app.domain.entities.eligible_member import EligibleMember
 from app.domain.entities.service_session import ServiceSessionEntity
 from app.domain.enums import (
+    AccessScope,
+    AuditActionType,
     ClientType,
     SessionAttendance,
     SessionCategory,
@@ -114,8 +116,10 @@ from app.domain.value_objects.core import (
     SessionId,
     TenantId,
 )
+from app.domain.value_objects.ids import UserId
 from app.domain.value_objects.provider_network import ProviderAffiliationId
 from app.shared.decorators import readonly, transactional
+from app.shared.utils.audit_integration import request_context
 from app.shared.utils.datetime import ensure_utc, utc_now
 from app.shared.utils.generators import generate_cuid
 from app.shared.utils.route_audit_helper import audit_change
@@ -141,29 +145,56 @@ def derived_client_type(ordinal: int | None, stored: ClientType | None) -> Clien
     return ClientType.NEW if ordinal == 1 else ClientType.REPEAT
 
 
+#: Fields requiring AccessScope.CLINICAL on every read path (product owner,
+#: 2026-09-12; restates PAGES_REDESIGN.md:397 Q2).
+CLINICAL_FIELDS = frozenset(
+    {
+        "notes",
+        "feedback",
+        "issue_topic",
+        "diagnosis_type_id",
+        "diagnosis_id",
+        "partner_name",
+        "partner_relationship",
+        "clinical_outcome",
+    }
+)
+
+
+def has_clinical_scope(current_user: TokenData) -> bool:
+    return AccessScope.CLINICAL.value in current_user.access_scopes
+
+
 def to_service_session_response(
     session: ServiceSessionEntity,
     provider_organisation_id: str | None = None,
     names: SessionNames | None = None,
     ordinal: int | None = None,
+    *,
+    current_user: TokenData,
 ) -> ServiceSessionResponse:
-    """Map ServiceSessionEntity to API response using public properties."""
-    names = names or SessionNames()
-    return ServiceSessionResponse(
+    """Map ServiceSessionEntity to API response using public properties.
+
+    Nulls out clinical fields for a caller without the clinical scope, same
+    as dashboard.py's outcome mix (dashboard.py:396-407).
+    """
+    response = ServiceSessionResponse(
         id=session.id.value,
         tenant_id=session.tenant_id.value,
         service_id=session.service_id.value,
         provider_id=session.provider_id.value,
         client_id=session.client_id.value,
         contract_id=session.contract_id.value if session.contract_id else None,
-        client_name=names.clients.get(session.client_id.value),
+        client_name=(names or SessionNames()).clients.get(session.client_id.value),
         attendance=session.attendance,
         member_id=session.member_id.value if session.member_id else None,
         member_display_label=(
-            names.members.get(session.member_id.value) if session.member_id else None
+            (names or SessionNames()).members.get(session.member_id.value)
+            if session.member_id
+            else None
         ),
-        provider_display_name=names.providers.get(session.provider_id.value),
-        service_name=names.services.get(session.service_id.value),
+        provider_display_name=(names or SessionNames()).providers.get(session.provider_id.value),
+        service_name=(names or SessionNames()).services.get(session.service_id.value),
         scheduled_at=session.scheduled_at,
         delivery_context=session.delivery_context,
         provider_affiliation_id=session.provider_affiliation_id,
@@ -193,6 +224,40 @@ def to_service_session_response(
         headcount=session.headcount,
         client_type=derived_client_type(ordinal, session.client_type),
         clinical_outcome=session.clinical_outcome,
+    )
+    if not has_clinical_scope(current_user):
+        response = response.model_copy(update=dict.fromkeys(CLINICAL_FIELDS))
+    return response
+
+
+async def _audit_clinical_read(
+    audit_handler,
+    current_user: TokenData,
+    request: Request | None,
+    *,
+    action: AuditActionType,
+    resource_id: str | None,
+    session_ids: Sequence[str],
+) -> None:
+    """Record that clinical session content was released to this caller.
+
+    Skipped when nothing clinical was returned. Ids only, never a clinical
+    value. Raises on enqueue failure; these routes are `@transactional()` so
+    that fails the response instead of releasing content unlogged.
+    """
+    if not session_ids:
+        return
+    ip_address, user_agent = request_context(request)
+    await audit_handler.record_action(
+        tenant_id=TenantId(current_user.tenant_id),
+        action_type=action,
+        resource_type="ServiceSession",
+        resource_id=resource_id,
+        event_type="ServiceSessionClinicalRead",
+        user_id=UserId(current_user.user_id),
+        ip_address=ip_address,
+        user_agent=user_agent,
+        event_data={"session_ids": list(session_ids), "count": len(session_ids)},
     )
 
 
@@ -358,9 +423,11 @@ async def _one(
     reader: SessionAttributionReader,
     names: SessionNameReader,
     session_repo: ServiceSessionRepository | None = None,
+    *,
+    current_user: TokenData,
 ) -> ServiceSessionResponse:
     """One session, with the organisation and display names resolved for it."""
-    return (await _many([session], reader, names, session_repo))[0]
+    return (await _many([session], reader, names, session_repo, current_user=current_user))[0]
 
 
 async def _many(
@@ -368,6 +435,8 @@ async def _many(
     reader: SessionAttributionReader,
     names: SessionNameReader,
     session_repo: ServiceSessionRepository | None = None,
+    *,
+    current_user: TokenData,
 ) -> list[ServiceSessionResponse]:
     """Sessions with attribution and names resolved in bulk rather than per row.
 
@@ -399,6 +468,7 @@ async def _many(
             organisations.get(session.provider_affiliation_id or ""),
             resolved,
             ordinals.get(session.id.value),
+            current_user=current_user,
         )
         for session in sessions
     ]
@@ -521,7 +591,9 @@ async def create_service_session(
         clinical_outcome=data.clinical_outcome,
     )
     await audit_change(session, audit_handler, current_user, request, tenant_id=tenant_id)
-    return await _one(session, attribution_reader, name_reader, session_repo)
+    return await _one(
+        session, attribution_reader, name_reader, session_repo, current_user=current_user
+    )
 
 
 @router.post(
@@ -565,7 +637,9 @@ async def complete_service_session(
         member_repo=member_repo,
     )
     return ServiceSessionCompleteResponse(
-        session=await _one(session, attribution_reader, name_reader, session_repo),
+        session=await _one(
+            session, attribution_reader, name_reader, session_repo, current_user=current_user
+        ),
         drawdown=drawdown,
     )
 
@@ -638,7 +712,9 @@ async def cancel_service_session(
         tenant_id=current_user.tenant_id,
     )
     await audit_change(session, audit_handler, current_user, request)
-    return await _one(session, attribution_reader, name_reader, session_repo)
+    return await _one(
+        session, attribution_reader, name_reader, session_repo, current_user=current_user
+    )
 
 
 @router.post(
@@ -699,7 +775,9 @@ async def reschedule_service_session(
         tenant_id=current_user.tenant_id,
     )
     await audit_change(session, audit_handler, current_user, request)
-    return await _one(session, attribution_reader, name_reader, session_repo)
+    return await _one(
+        session, attribution_reader, name_reader, session_repo, current_user=current_user
+    )
 
 
 @router.post(
@@ -724,7 +802,9 @@ async def mark_no_show_service_session(
         session.id, ServiceSessionTransition.MARK_NO_SHOW, tenant_id=current_user.tenant_id
     )
     await audit_change(session, audit_handler, current_user, request)
-    return await _one(session, attribution_reader, name_reader, session_repo)
+    return await _one(
+        session, attribution_reader, name_reader, session_repo, current_user=current_user
+    )
 
 
 @router.patch(
@@ -765,7 +845,9 @@ async def update_service_session(
         clinical_outcome=data.clinical_outcome,
     )
     await audit_change(session, audit_handler, current_user, request, old_entity=before)
-    return await _one(session, attribution_reader, name_reader, session_repo)
+    return await _one(
+        session, attribution_reader, name_reader, session_repo, current_user=current_user
+    )
 
 
 @router.patch(
@@ -794,7 +876,9 @@ async def update_service_session_feedback(
         tenant_id=current_user.tenant_id,
     )
     await audit_change(session, audit_handler, current_user, request)
-    return await _one(session, attribution_reader, name_reader, session_repo)
+    return await _one(
+        session, attribution_reader, name_reader, session_repo, current_user=current_user
+    )
 
 
 @router.post(
@@ -819,7 +903,9 @@ async def archive_service_session(
         session.id, ServiceSessionTransition.ARCHIVE, tenant_id=current_user.tenant_id
     )
     await audit_change(session, audit_handler, current_user, request)
-    return await _one(session, attribution_reader, name_reader, session_repo)
+    return await _one(
+        session, attribution_reader, name_reader, session_repo, current_user=current_user
+    )
 
 
 @router.post(
@@ -844,7 +930,9 @@ async def restore_service_session(
         session.id, ServiceSessionTransition.RESTORE, tenant_id=current_user.tenant_id
     )
     await audit_change(session, audit_handler, current_user, request)
-    return await _one(session, attribution_reader, name_reader, session_repo)
+    return await _one(
+        session, attribution_reader, name_reader, session_repo, current_user=current_user
+    )
 
 
 # ==================== QUERIES (Direct Repository) ====================
@@ -873,8 +961,9 @@ SESSION_SORT_COLUMNS = frozenset(
     response_model=ServiceSessionListResponse,
     summary="List service sessions with filtering and pagination",
 )
-@readonly()
+@transactional()
 async def list_service_sessions(
+    request: Request,
     tenant_id: str = Query(..., description=_TENANT_ID_DESC),
     current_user: TokenData = Depends(require_same_tenant),
     client_id: str | None = Query(None, description="Filter by client identifier"),
@@ -885,7 +974,7 @@ async def list_service_sessions(
     session_type: SessionType | None = Query(None, description="Filter by physical or online"),
     category: SessionCategory | None = Query(None, description="Filter by session category"),
     clinical_outcome: SessionClinicalStatus | None = Query(
-        None, description="Filter by clinical outcome"
+        None, description="Filter by clinical outcome. Requires the clinical access scope."
     ),
     scheduled_from: datetime | None = Query(
         None, description="Only sessions scheduled at or after this instant (ISO 8601)"
@@ -899,12 +988,19 @@ async def list_service_sessions(
     session_repo: ServiceSessionRepository = Depends(get_service_session_repository),
     attribution_reader: SessionAttributionReader = Depends(get_session_attribution_reader),
     name_reader: SessionNameReader = Depends(get_session_name_reader),
+    audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
 ):
     """List service sessions with filtering, searching, and pagination."""
     if sort_by not in SESSION_SORT_COLUMNS:
         raise ValidationException(
             f"sort_by must be one of: {', '.join(sorted(SESSION_SORT_COLUMNS))}"
+        )
+    if (clinical_outcome is not None or sort_by == "clinical_outcome") and not has_clinical_scope(
+        current_user
+    ):
+        raise ValidationException(
+            "clinical_outcome requires the clinical access scope, as a filter or a sort column"
         )
 
     sessions = await session_repo.list_all(
@@ -939,8 +1035,18 @@ async def list_service_sessions(
         scheduled_to=scheduled_to,
     )
 
+    await _audit_clinical_read(
+        audit_handler,
+        current_user,
+        request,
+        action=AuditActionType.LIST,
+        resource_id=None,
+        session_ids=[s.id.value for s in sessions] if has_clinical_scope(current_user) else [],
+    )
     return ServiceSessionListResponse(
-        items=await _many(sessions, attribution_reader, name_reader, session_repo),
+        items=await _many(
+            sessions, attribution_reader, name_reader, session_repo, current_user=current_user
+        ),
         total=total,
         page=pg.page,
         limit=pg.limit,
@@ -1006,8 +1112,9 @@ async def check_practitioner_availability(
     response_model=ServiceSessionListResponse,
     summary="Bookings past their date that nobody has confirmed yet",
 )
-@readonly()
+@transactional()
 async def list_sessions_awaiting_confirmation(
+    request: Request,
     tenant_id: str = Query(..., description=_TENANT_ID_DESC),
     provider_id: str | None = Query(None, description="Narrow to one practitioner"),
     client_id: str | None = Query(None, description="Narrow to one client"),
@@ -1016,6 +1123,8 @@ async def list_sessions_awaiting_confirmation(
     session_repo: ServiceSessionRepository = Depends(get_service_session_repository),
     attribution_reader: SessionAttributionReader = Depends(get_session_attribution_reader),
     name_reader: SessionNameReader = Depends(get_session_name_reader),
+    audit_handler=Depends(get_audit_event_handler),
+    db: AsyncSession = Depends(get_db),
 ):
     """What the system expected but has not been told the outcome of.
 
@@ -1033,8 +1142,18 @@ async def list_sessions_awaiting_confirmation(
         limit=pg.limit,
         offset=pg.offset,
     )
+    await _audit_clinical_read(
+        audit_handler,
+        current_user,
+        request,
+        action=AuditActionType.LIST,
+        resource_id=None,
+        session_ids=[s.id.value for s in sessions] if has_clinical_scope(current_user) else [],
+    )
     return ServiceSessionListResponse(
-        items=await _many(sessions, attribution_reader, name_reader, session_repo),
+        items=await _many(
+            sessions, attribution_reader, name_reader, session_repo, current_user=current_user
+        ),
         total=total,
         page=pg.page,
         limit=pg.limit,
@@ -1047,12 +1166,16 @@ async def list_sessions_awaiting_confirmation(
     response_model=SessionChainResponse,
     summary="The sessions immediately before and after this one",
 )
-@readonly()
+@transactional()
 async def get_session_chain(
+    request: Request,
     session: ServiceSessionEntity = Depends(get_service_session_for_current_tenant),
+    current_user: TokenData = Depends(get_current_user),
     session_repo: ServiceSessionRepository = Depends(get_service_session_repository),
     attribution_reader: SessionAttributionReader = Depends(get_session_attribution_reader),
     name_reader: SessionNameReader = Depends(get_session_name_reader),
+    audit_handler=Depends(get_audit_event_handler),
+    db: AsyncSession = Depends(get_db),
 ):
     """One hop each way along the chain of care.
 
@@ -1067,13 +1190,32 @@ async def get_session_chain(
         else None
     )
     following = await session_repo.list_follow_ups(session.tenant_id, session.id)
+    chain_ids = ([previous_entity.id.value] if previous_entity else []) + [
+        s.id.value for s in following
+    ]
+    await _audit_clinical_read(
+        audit_handler,
+        current_user,
+        request,
+        action=AuditActionType.VIEW,
+        resource_id=session.id.value,
+        session_ids=chain_ids if has_clinical_scope(current_user) else [],
+    )
     return SessionChainResponse(
         previous=(
-            await _one(previous_entity, attribution_reader, name_reader, session_repo)
+            await _one(
+                previous_entity,
+                attribution_reader,
+                name_reader,
+                session_repo,
+                current_user=current_user,
+            )
             if previous_entity is not None
             else None
         ),
-        following=await _many(following, attribution_reader, name_reader, session_repo),
+        following=await _many(
+            following, attribution_reader, name_reader, session_repo, current_user=current_user
+        ),
     )
 
 
@@ -1082,16 +1224,29 @@ async def get_session_chain(
     response_model=ServiceSessionResponse,
     summary="Get service session by ID",
 )
-@readonly()
+@transactional()
 async def get_service_session(
+    request: Request,
     session: ServiceSessionEntity = Depends(get_service_session_for_current_tenant),
+    current_user: TokenData = Depends(get_current_user),
     attribution_reader: SessionAttributionReader = Depends(get_session_attribution_reader),
     name_reader: SessionNameReader = Depends(get_session_name_reader),
     session_repo: ServiceSessionRepository = Depends(get_service_session_repository),
+    audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
 ):
     """Get service session by ID."""
-    return await _one(session, attribution_reader, name_reader, session_repo)
+    await _audit_clinical_read(
+        audit_handler,
+        current_user,
+        request,
+        action=AuditActionType.VIEW,
+        resource_id=session.id.value,
+        session_ids=[session.id.value] if has_clinical_scope(current_user) else [],
+    )
+    return await _one(
+        session, attribution_reader, name_reader, session_repo, current_user=current_user
+    )
 
 
 @router.get(
@@ -1099,21 +1254,33 @@ async def get_service_session(
     response_model=list[ServiceSessionResponse],
     summary="Get all sessions for a member",
 )
-@readonly()
+@transactional()
 async def get_sessions_by_member(
+    request: Request,
     member_id: str,
     tenant_id: str = Query(..., description=_TENANT_ID_DESC),
     current_user: TokenData = Depends(require_same_tenant),
     session_repo: ServiceSessionRepository = Depends(get_service_session_repository),
     attribution_reader: SessionAttributionReader = Depends(get_session_attribution_reader),
     name_reader: SessionNameReader = Depends(get_session_name_reader),
+    audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
 ):
     """Get all sessions for a member."""
     sessions = await GetServiceSessionUseCase(session_repo).execute_by_member(
         TenantId(tenant_id), EligibleMemberId(member_id)
     )
-    return await _many(sessions, attribution_reader, name_reader, session_repo)
+    await _audit_clinical_read(
+        audit_handler,
+        current_user,
+        request,
+        action=AuditActionType.LIST,
+        resource_id=member_id,
+        session_ids=[s.id.value for s in sessions] if has_clinical_scope(current_user) else [],
+    )
+    return await _many(
+        sessions, attribution_reader, name_reader, session_repo, current_user=current_user
+    )
 
 
 @router.get(
@@ -1121,21 +1288,33 @@ async def get_sessions_by_member(
     response_model=list[ServiceSessionResponse],
     summary="Get all sessions for a provider",
 )
-@readonly()
+@transactional()
 async def get_sessions_by_provider(
+    request: Request,
     provider_id: str,
     tenant_id: str = Query(..., description=_TENANT_ID_DESC),
     current_user: TokenData = Depends(require_same_tenant),
     session_repo: ServiceSessionRepository = Depends(get_service_session_repository),
     attribution_reader: SessionAttributionReader = Depends(get_session_attribution_reader),
     name_reader: SessionNameReader = Depends(get_session_name_reader),
+    audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
 ):
     """Get all sessions for a provider."""
     sessions = await GetServiceSessionUseCase(session_repo).execute_by_provider(
         TenantId(tenant_id), ProviderId(provider_id)
     )
-    return await _many(sessions, attribution_reader, name_reader, session_repo)
+    await _audit_clinical_read(
+        audit_handler,
+        current_user,
+        request,
+        action=AuditActionType.LIST,
+        resource_id=provider_id,
+        session_ids=[s.id.value for s in sessions] if has_clinical_scope(current_user) else [],
+    )
+    return await _many(
+        sessions, attribution_reader, name_reader, session_repo, current_user=current_user
+    )
 
 
 @router.get(
@@ -1143,18 +1322,30 @@ async def get_sessions_by_provider(
     response_model=list[ServiceSessionResponse],
     summary="Get all sessions for a service",
 )
-@readonly()
+@transactional()
 async def get_sessions_by_service(
+    request: Request,
     service_id: str,
     tenant_id: str = Query(..., description=_TENANT_ID_DESC),
     current_user: TokenData = Depends(require_same_tenant),
     session_repo: ServiceSessionRepository = Depends(get_service_session_repository),
     attribution_reader: SessionAttributionReader = Depends(get_session_attribution_reader),
     name_reader: SessionNameReader = Depends(get_session_name_reader),
+    audit_handler=Depends(get_audit_event_handler),
     db: AsyncSession = Depends(get_db),
 ):
     """Get all sessions for a service."""
     sessions = await GetServiceSessionUseCase(session_repo).execute_by_service(
         TenantId(tenant_id), ServiceId(service_id)
     )
-    return await _many(sessions, attribution_reader, name_reader, session_repo)
+    await _audit_clinical_read(
+        audit_handler,
+        current_user,
+        request,
+        action=AuditActionType.LIST,
+        resource_id=service_id,
+        session_ids=[s.id.value for s in sessions] if has_clinical_scope(current_user) else [],
+    )
+    return await _many(
+        sessions, attribution_reader, name_reader, session_repo, current_user=current_user
+    )

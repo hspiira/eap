@@ -1544,7 +1544,7 @@ async def list_member_sessions(
     )
     total = await session_repo.count(tenant_id=member.tenant_id, member_id=member.id)
     return ServiceSessionListResponse(
-        items=[to_service_session_response(item) for item in items],
+        items=[to_service_session_response(item, current_user=current_user) for item in items],
         total=total,
         page=pg.page,
         limit=pg.limit,

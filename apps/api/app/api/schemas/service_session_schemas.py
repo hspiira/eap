@@ -232,8 +232,12 @@ class ServiceSessionResponse(BaseModel):
     completed_at: datetime | None = Field(None, description="Completion date and time")
     duration: int | None = Field(None, description="Session duration in minutes")
     location: str | None = Field(None, description=_LOCATION_DESC)
-    notes: str | None = Field(None, description="Session notes")
-    feedback: str | None = Field(None, description="Session feedback")
+    notes: str | None = Field(
+        None, description="Session notes. Null if absent or if the caller lacks clinical scope."
+    )
+    feedback: str | None = Field(
+        None, description="Session feedback. Null if absent or if the caller lacks clinical scope."
+    )
     cancellation_reason: str | None = Field(None, description="Cancellation reason")
     is_active: bool = Field(..., description="Whether session is active")
 
@@ -241,17 +245,27 @@ class ServiceSessionResponse(BaseModel):
     session_type: SessionType | None = Field(None, description=_SESSION_TYPE_DESC)
     category: SessionCategory | None = Field(None, description=_CATEGORY_DESC)
     rate_ugx: int | None = Field(None, description=_RATE_UGX_DESC)
-    issue_topic: str | None = Field(None, description="Presenting issue for this session")
-    diagnosis_type_id: str | None = Field(None, description="DiagnosisType reference ID")
-    diagnosis_id: str | None = Field(None, description="Diagnosis reference ID")
+    issue_topic: str | None = Field(
+        None, description="Presenting issue. Null if absent or if the caller lacks clinical scope."
+    )
+    diagnosis_type_id: str | None = Field(
+        None, description="DiagnosisType reference ID. Null if absent or lacking clinical scope."
+    )
+    diagnosis_id: str | None = Field(
+        None, description="Diagnosis reference ID. Null if absent or lacking clinical scope."
+    )
     approved_by: str | None = Field(None, description=_APPROVED_BY_DESC)
     session_number: int | None = Field(None, description="Ordinal session number for this client")
-    partner_name: str | None = Field(None, description="Partner name (couples/family sessions)")
-    partner_relationship: str | None = Field(None, description="Partner's relationship to client")
+    partner_name: str | None = Field(
+        None, description="Partner name. Null if absent or if the caller lacks clinical scope."
+    )
+    partner_relationship: str | None = Field(
+        None, description="Partner's relationship. Null if absent or lacking clinical scope."
+    )
     headcount: int | None = Field(None, description=_HEADCOUNT_DESC)
     client_type: ClientType | None = Field(None, description="New or repeat client")
     clinical_outcome: SessionClinicalStatus | None = Field(
-        None, description="Clinical continuation outcome"
+        None, description="Clinical continuation outcome. Null if absent or lacking clinical scope."
     )
 
     model_config = ConfigDict(from_attributes=True)

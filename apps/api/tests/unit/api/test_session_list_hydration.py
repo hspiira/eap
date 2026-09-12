@@ -27,7 +27,7 @@ from app.core.database import get_db
 from app.core.exception_handlers import register_exception_handlers
 from app.core.security import TokenData, get_current_user
 from app.domain.entities.service_session import ServiceSessionEntity
-from app.domain.enums import SessionAttendance, SessionStatus
+from app.domain.enums import AccessScope, SessionAttendance, SessionStatus
 from app.domain.repositories.session_name_reader import SessionNames
 from app.domain.value_objects.core import (
     ClientId,
@@ -224,6 +224,12 @@ class TestSortAllowlist:
         assert response.status_code == 200, response.text
         assert api.sessions.list_all.await_args.kwargs["sort_by"] == column
 
+    async def test_sorting_by_clinical_outcome_needs_clinical_scope(self, api):
+        response = await api.http.get("/service-sessions/?tenant_id=t1&sort_by=clinical_outcome")
+
+        assert response.status_code == 422, response.text
+        api.sessions.list_all.assert_not_awaited()
+
 
 class TestOperatorFilters:
     """C4: the dimensions an operator slices by reach the repository."""
@@ -233,7 +239,6 @@ class TestOperatorFilters:
         [
             ("session_type", "Physical", "session_type"),
             ("category", "Group", "category"),
-            ("clinical_outcome", "Terminated", "clinical_outcome"),
             ("provider_id", "prv-1", "provider_id"),
         ],
     )
@@ -246,6 +251,24 @@ class TestOperatorFilters:
         assert listed is not None and counted is not None
         assert str(getattr(listed, "value", listed)) == value
         assert str(getattr(counted, "value", counted)) == value
+
+    async def test_clinical_outcome_filter_needs_clinical_scope(self, api):
+        response = await api.http.get("/service-sessions/?tenant_id=t1&clinical_outcome=Terminated")
+
+        assert response.status_code == 422, response.text
+        api.sessions.list_all.assert_not_awaited()
+
+    async def test_clinical_outcome_filter_reaches_the_repository_with_scope(self, api):
+        api.app.dependency_overrides[get_current_user] = lambda: TokenData(
+            user_id="u1", tenant_id="t1", role="Admin", access_scopes=[AccessScope.CLINICAL.value]
+        )
+        response = await api.http.get("/service-sessions/?tenant_id=t1&clinical_outcome=Terminated")
+
+        assert response.status_code == 200, response.text
+        listed = api.sessions.list_all.await_args.kwargs["clinical_outcome"]
+        counted = api.sessions.count.await_args.kwargs["clinical_outcome"]
+        assert str(getattr(listed, "value", listed)) == "Terminated"
+        assert str(getattr(counted, "value", counted)) == "Terminated"
 
     async def test_an_invalid_filter_value_is_rejected(self, api):
         response = await api.http.get("/service-sessions/?tenant_id=t1&category=Webinar")

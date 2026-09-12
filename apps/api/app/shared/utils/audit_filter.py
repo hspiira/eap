@@ -45,9 +45,9 @@ class AuditFilterService:
         AuditActionType.IMPORT,
     }
 
-    # Security-sensitive resource types: never skip/sample (login, password change,
-    # user/tenant suspend/terminate, confidential document access).
-    SECURITY_SENSITIVE_RESOURCES = {"User", "Tenant", "Document"}
+    # Security-sensitive resource types: never skip/sample. ServiceSession's
+    # VIEW/LIST events are the clinical-read audit and must never be sampled out.
+    SECURITY_SENSITIVE_RESOURCES = {"User", "Tenant", "Document", "ServiceSession"}
 
     @classmethod
     def should_log_action(

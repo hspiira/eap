@@ -7602,6 +7602,118 @@
         "title": "EntityChangeResponse",
         "type": "object"
       },
+      "ErrorDetail": {
+        "description": "Individual error detail.",
+        "properties": {
+          "code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Machine-readable error code",
+            "title": "Code"
+          },
+          "field": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Field that caused the error",
+            "title": "Field"
+          },
+          "message": {
+            "description": "Human-readable error message",
+            "title": "Message",
+            "type": "string"
+          }
+        },
+        "required": [
+          "message"
+        ],
+        "title": "ErrorDetail",
+        "type": "object"
+      },
+      "ErrorResponse": {
+        "description": "Standardized API error response.\n\nAll API errors should use this format for consistency.",
+        "example": {
+          "details": [
+            {
+              "code": "INVALID_FORMAT",
+              "field": "email",
+              "message": "Invalid email format"
+            }
+          ],
+          "error": "VALIDATION_ERROR",
+          "message": "Invalid input data",
+          "path": "/users/",
+          "request_id": "req-abc123",
+          "timestamp": "2024-01-15T10:30:00Z"
+        },
+        "properties": {
+          "details": {
+            "description": "Additional error details",
+            "items": {
+              "$ref": "#/components/schemas/ErrorDetail"
+            },
+            "title": "Details",
+            "type": "array"
+          },
+          "error": {
+            "description": "Error type/code",
+            "title": "Error",
+            "type": "string"
+          },
+          "message": {
+            "description": "Human-readable error message",
+            "title": "Message",
+            "type": "string"
+          },
+          "path": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Request path that caused the error",
+            "title": "Path"
+          },
+          "request_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Request tracking ID",
+            "title": "Request Id"
+          },
+          "timestamp": {
+            "description": "When the error occurred",
+            "format": "date-time",
+            "title": "Timestamp",
+            "type": "string"
+          }
+        },
+        "required": [
+          "error",
+          "message"
+        ],
+        "title": "ErrorResponse",
+        "type": "object"
+      },
       "FieldChangeSchema": {
         "description": "Field change schema.",
         "properties": {
@@ -14681,7 +14793,7 @@
                 "type": "null"
               }
             ],
-            "description": "Clinical continuation outcome"
+            "description": "Clinical continuation outcome. Null if absent or lacking clinical scope."
           },
           "completed_at": {
             "anyOf": [
@@ -14721,7 +14833,7 @@
                 "type": "null"
               }
             ],
-            "description": "Diagnosis reference ID",
+            "description": "Diagnosis reference ID. Null if absent or lacking clinical scope.",
             "title": "Diagnosis Id"
           },
           "diagnosis_type_id": {
@@ -14733,7 +14845,7 @@
                 "type": "null"
               }
             ],
-            "description": "DiagnosisType reference ID",
+            "description": "DiagnosisType reference ID. Null if absent or lacking clinical scope.",
             "title": "Diagnosis Type Id"
           },
           "duration": {
@@ -14757,7 +14869,7 @@
                 "type": "null"
               }
             ],
-            "description": "Session feedback",
+            "description": "Session feedback. Null if absent or if the caller lacks clinical scope.",
             "title": "Feedback"
           },
           "follow_up_of_session_id": {
@@ -14803,7 +14915,7 @@
                 "type": "null"
               }
             ],
-            "description": "Presenting issue for this session",
+            "description": "Presenting issue. Null if absent or if the caller lacks clinical scope.",
             "title": "Issue Topic"
           },
           "location": {
@@ -14851,7 +14963,7 @@
                 "type": "null"
               }
             ],
-            "description": "Session notes",
+            "description": "Session notes. Null if absent or if the caller lacks clinical scope.",
             "title": "Notes"
           },
           "partner_name": {
@@ -14863,7 +14975,7 @@
                 "type": "null"
               }
             ],
-            "description": "Partner name (couples/family sessions)",
+            "description": "Partner name. Null if absent or if the caller lacks clinical scope.",
             "title": "Partner Name"
           },
           "partner_relationship": {
@@ -14875,7 +14987,7 @@
                 "type": "null"
               }
             ],
-            "description": "Partner's relationship to client",
+            "description": "Partner's relationship. Null if absent or lacking clinical scope.",
             "title": "Partner Relationship"
           },
           "provider_affiliation_id": {
@@ -31203,15 +31315,35 @@
             },
             "description": "Successful Response"
           },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Client not found in this tenant"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Member code already exists for this client"
+          },
           "422": {
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
+                  "$ref": "#/components/schemas/ErrorResponse"
                 }
               }
             },
-            "description": "Validation Error"
+            "description": "Member code was set on create, or the primary employee is invalid"
           }
         },
         "security": [
@@ -31391,15 +31523,35 @@
             },
             "description": "Successful Response"
           },
+          "413": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Roster CSV is larger than 10 MB"
+          },
+          "415": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Only CSV files are supported"
+          },
           "422": {
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
+                  "$ref": "#/components/schemas/ErrorResponse"
                 }
               }
             },
-            "description": "Validation Error"
+            "description": "Roster CSV could not be parsed"
           }
         },
         "security": [
@@ -31892,6 +32044,16 @@
             },
             "description": "Successful Response"
           },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Member not found"
+          },
           "422": {
             "content": {
               "application/json": {
@@ -31947,15 +32109,35 @@
             },
             "description": "Successful Response"
           },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Member not found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Member code already exists, or beneficiaries block the change"
+          },
           "422": {
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
+                  "$ref": "#/components/schemas/ErrorResponse"
                 }
               }
             },
-            "description": "Validation Error"
+            "description": "Update would leave the member invalid, or names itself as primary"
           }
         },
         "security": [
@@ -31993,6 +32175,16 @@
               }
             },
             "description": "Successful Response"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Member not found"
           },
           "422": {
             "content": {
@@ -32049,6 +32241,26 @@
             },
             "description": "Successful Response"
           },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Member or user account not found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "User account is linked to another member"
+          },
           "422": {
             "content": {
               "application/json": {
@@ -32099,6 +32311,16 @@
               }
             },
             "description": "Successful Response"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Member not found"
           },
           "422": {
             "content": {
@@ -32157,15 +32379,35 @@
             },
             "description": "Successful Response"
           },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Target or source member not found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Members belong to different clients"
+          },
           "422": {
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
+                  "$ref": "#/components/schemas/ErrorResponse"
                 }
               }
             },
-            "description": "Validation Error"
+            "description": "Source and target members must differ"
           }
         },
         "security": [
@@ -32207,6 +32449,16 @@
               }
             },
             "description": "Successful Response"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Member not found"
           },
           "422": {
             "content": {
@@ -32263,6 +32515,16 @@
             },
             "description": "Successful Response"
           },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Member or next-of-kin relationship not found"
+          },
           "422": {
             "content": {
               "application/json": {
@@ -32311,6 +32573,16 @@
         "responses": {
           "204": {
             "description": "Successful Response"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Member or next-of-kin contact not found"
           },
           "422": {
             "content": {
@@ -32376,6 +32648,16 @@
             },
             "description": "Successful Response"
           },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Member, contact or next-of-kin relationship not found"
+          },
           "422": {
             "content": {
               "application/json": {
@@ -32422,6 +32704,16 @@
               }
             },
             "description": "Successful Response"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Member not found"
           },
           "422": {
             "content": {
@@ -32497,6 +32789,16 @@
             },
             "description": "Successful Response"
           },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Member not found"
+          },
           "422": {
             "content": {
               "application/json": {
@@ -32544,6 +32846,16 @@
             },
             "description": "Successful Response"
           },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Member not found"
+          },
           "422": {
             "content": {
               "application/json": {
@@ -32590,6 +32902,16 @@
               }
             },
             "description": "Successful Response"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Member not found"
           },
           "422": {
             "content": {
@@ -37372,7 +37694,7 @@
             }
           },
           {
-            "description": "Filter by clinical outcome",
+            "description": "Filter by clinical outcome. Requires the clinical access scope.",
             "in": "query",
             "name": "clinical_outcome",
             "required": false,
@@ -37385,7 +37707,7 @@
                   "type": "null"
                 }
               ],
-              "description": "Filter by clinical outcome",
+              "description": "Filter by clinical outcome. Requires the clinical access scope.",
               "title": "Clinical Outcome"
             }
           },

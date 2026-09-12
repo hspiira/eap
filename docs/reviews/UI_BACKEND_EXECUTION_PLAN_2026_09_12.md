@@ -231,13 +231,23 @@ product work as a dependency of the nine corrective findings.
 ## Current evidence ledger
 
 - Planning: source review read; selected current source and Q2 checked at `92ef7194`.
-- R1 field policy: confirmed by the product owner, 2026-09-12 (see
-  `docs/design/PAGES_REDESIGN.md:397` for the prior Q2 answer this restates).
-  Clinical set: `notes`, `feedback`, `issue_topic`, `partner_name`,
-  `partner_relationship`, `diagnosis_type_id`, `diagnosis_id`,
-  `clinical_outcome`. Grant path unchanged (platform admin grants
-  `AccessScope.CLINICAL`). Operational identity fields (member/client/
-  provider names, scheduling, service) stay ungated. Not yet implemented.
+- R1: field policy confirmed by the product owner, 2026-09-12 (see
+  `docs/design/PAGES_REDESIGN.md:397` for the prior Q2 answer this restates),
+  and implemented. Clinical set: `notes`, `feedback`, `issue_topic`,
+  `partner_name`, `partner_relationship`, `diagnosis_type_id`,
+  `diagnosis_id`, `clinical_outcome`, nulled without `AccessScope.CLINICAL`
+  across all 7 read paths plus mutation responses; `clinical_outcome` as a
+  list filter/sort now needs the scope (422 otherwise). Read-audit event
+  added (VIEW/LIST, ids and count only) on `@transactional()` routes so a
+  failed enqueue fails the response; `ServiceSession` added to
+  `SECURITY_SENSITIVE_RESOURCES` so it is never sampled out. Frontend
+  `NotesCard` gated to match `ClinicalCard`; outcome filter/sort hidden
+  without scope. Full details, an unreconciled `members.py` block-vs-redact
+  inconsistency found on the way, and the deliberately out-of-scope write
+  side: `docs/handoffs/SESSIONS_IMPLEMENTATION.md`. Verified: 9 new e2e scope
+  cases, full `tests/unit` (2336) and `tests/e2e` pass, `pnpm contracts`
+  regenerated, frontend `pnpm test` (854) and typecheck pass. Not verified:
+  production deployment.
 - R8a: implemented and committed (`04123e4a`). Landing assurance copy scoped
   to encryption, lifecycle logging and archival; audit-console and universal
   claims removed. `pnpm --filter @evexia/web typecheck` clean.

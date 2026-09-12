@@ -10182,6 +10182,80 @@ export interface components {
             id: string;
         };
         /**
+         * ErrorDetail
+         * @description Individual error detail.
+         */
+        ErrorDetail: {
+            /**
+             * Code
+             * @description Machine-readable error code
+             */
+            code?: string | null;
+            /**
+             * Field
+             * @description Field that caused the error
+             */
+            field?: string | null;
+            /**
+             * Message
+             * @description Human-readable error message
+             */
+            message: string;
+        };
+        /**
+         * ErrorResponse
+         * @description Standardized API error response.
+         *
+         *     All API errors should use this format for consistency.
+         * @example {
+         *       "details": [
+         *         {
+         *           "code": "INVALID_FORMAT",
+         *           "field": "email",
+         *           "message": "Invalid email format"
+         *         }
+         *       ],
+         *       "error": "VALIDATION_ERROR",
+         *       "message": "Invalid input data",
+         *       "path": "/users/",
+         *       "request_id": "req-abc123",
+         *       "timestamp": "2024-01-15T10:30:00Z"
+         *     }
+         */
+        ErrorResponse: {
+            /**
+             * Details
+             * @description Additional error details
+             */
+            details?: components["schemas"]["ErrorDetail"][];
+            /**
+             * Error
+             * @description Error type/code
+             */
+            error: string;
+            /**
+             * Message
+             * @description Human-readable error message
+             */
+            message: string;
+            /**
+             * Path
+             * @description Request path that caused the error
+             */
+            path?: string | null;
+            /**
+             * Request Id
+             * @description Request tracking ID
+             */
+            request_id?: string | null;
+            /**
+             * Timestamp
+             * Format: date-time
+             * @description When the error occurred
+             */
+            timestamp?: string;
+        };
+        /**
          * FieldChangeSchema
          * @description Field change schema.
          */
@@ -13243,7 +13317,7 @@ export interface components {
             client_name?: string | null;
             /** @description New or repeat client */
             client_type?: components["schemas"]["ClientType"] | null;
-            /** @description Clinical continuation outcome */
+            /** @description Clinical continuation outcome. Null if absent or lacking clinical scope. */
             clinical_outcome?: components["schemas"]["SessionClinicalStatus"] | null;
             /**
              * Completed At
@@ -13259,12 +13333,12 @@ export interface components {
             delivery_context: components["schemas"]["SessionDeliveryContext"];
             /**
              * Diagnosis Id
-             * @description Diagnosis reference ID
+             * @description Diagnosis reference ID. Null if absent or lacking clinical scope.
              */
             diagnosis_id?: string | null;
             /**
              * Diagnosis Type Id
-             * @description DiagnosisType reference ID
+             * @description DiagnosisType reference ID. Null if absent or lacking clinical scope.
              */
             diagnosis_type_id?: string | null;
             /**
@@ -13274,7 +13348,7 @@ export interface components {
             duration?: number | null;
             /**
              * Feedback
-             * @description Session feedback
+             * @description Session feedback. Null if absent or if the caller lacks clinical scope.
              */
             feedback?: string | null;
             /**
@@ -13299,7 +13373,7 @@ export interface components {
             is_active: boolean;
             /**
              * Issue Topic
-             * @description Presenting issue for this session
+             * @description Presenting issue. Null if absent or if the caller lacks clinical scope.
              */
             issue_topic?: string | null;
             /**
@@ -13319,17 +13393,17 @@ export interface components {
             member_id?: string | null;
             /**
              * Notes
-             * @description Session notes
+             * @description Session notes. Null if absent or if the caller lacks clinical scope.
              */
             notes?: string | null;
             /**
              * Partner Name
-             * @description Partner name (couples/family sessions)
+             * @description Partner name. Null if absent or if the caller lacks clinical scope.
              */
             partner_name?: string | null;
             /**
              * Partner Relationship
-             * @description Partner's relationship to client
+             * @description Partner's relationship. Null if absent or lacking clinical scope.
              */
             partner_relationship?: string | null;
             /**
@@ -22166,13 +22240,31 @@ export interface operations {
                     "application/json": components["schemas"]["MemberResponse"];
                 };
             };
-            /** @description Validation Error */
+            /** @description Client not found in this tenant */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Member code already exists for this client */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Member code was set on create, or the primary employee is invalid */
             422: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
         };
@@ -22252,13 +22344,31 @@ export interface operations {
                     "application/json": components["schemas"]["MemberImportBatchResponse"];
                 };
             };
-            /** @description Validation Error */
+            /** @description Roster CSV is larger than 10 MB */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Only CSV files are supported */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Roster CSV could not be parsed */
             422: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
         };
@@ -22511,6 +22621,15 @@ export interface operations {
                     "application/json": components["schemas"]["MemberResponse"];
                 };
             };
+            /** @description Member not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
             /** @description Validation Error */
             422: {
                 headers: {
@@ -22546,13 +22665,31 @@ export interface operations {
                     "application/json": components["schemas"]["MemberResponse"];
                 };
             };
-            /** @description Validation Error */
+            /** @description Member not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Member code already exists, or beneficiaries block the change */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Update would leave the member invalid, or names itself as primary */
             422: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
         };
@@ -22579,6 +22716,24 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["MemberResponse"];
+                };
+            };
+            /** @description Member or user account not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description User account is linked to another member */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
             /** @description Validation Error */
@@ -22612,6 +22767,15 @@ export interface operations {
                     "application/json": components["schemas"]["MemberResponse"];
                 };
             };
+            /** @description Member not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
             /** @description Validation Error */
             422: {
                 headers: {
@@ -22641,6 +22805,15 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["MemberResponse"][];
+                };
+            };
+            /** @description Member not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
             /** @description Validation Error */
@@ -22678,13 +22851,31 @@ export interface operations {
                     "application/json": components["schemas"]["MemberMergeResponse"];
                 };
             };
-            /** @description Validation Error */
+            /** @description Target or source member not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Members belong to different clients */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Source and target members must differ */
             422: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
         };
@@ -22707,6 +22898,15 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["MemberNextOfKinResponse"][];
+                };
+            };
+            /** @description Member not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
             /** @description Validation Error */
@@ -22744,6 +22944,15 @@ export interface operations {
                     "application/json": components["schemas"]["MemberNextOfKinResponse"];
                 };
             };
+            /** @description Member or next-of-kin relationship not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
             /** @description Validation Error */
             422: {
                 headers: {
@@ -22773,6 +22982,15 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Member or next-of-kin contact not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
             };
             /** @description Validation Error */
             422: {
@@ -22810,6 +23028,15 @@ export interface operations {
                     "application/json": components["schemas"]["MemberNextOfKinResponse"];
                 };
             };
+            /** @description Member, contact or next-of-kin relationship not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
             /** @description Validation Error */
             422: {
                 headers: {
@@ -22839,6 +23066,15 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["MemberResponse"];
+                };
+            };
+            /** @description Member not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
             /** @description Validation Error */
@@ -22877,6 +23113,15 @@ export interface operations {
                     "application/json": components["schemas"]["ServiceSessionListResponse"];
                 };
             };
+            /** @description Member not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
             /** @description Validation Error */
             422: {
                 headers: {
@@ -22908,6 +23153,15 @@ export interface operations {
                     "application/json": components["schemas"]["MemberResponse"];
                 };
             };
+            /** @description Member not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
             /** @description Validation Error */
             422: {
                 headers: {
@@ -22937,6 +23191,15 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["MemberResponse"];
+                };
+            };
+            /** @description Member not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
             /** @description Validation Error */
@@ -25539,7 +25802,7 @@ export interface operations {
                 session_type?: components["schemas"]["SessionType"] | null;
                 /** @description Filter by session category */
                 category?: components["schemas"]["SessionCategory"] | null;
-                /** @description Filter by clinical outcome */
+                /** @description Filter by clinical outcome. Requires the clinical access scope. */
                 clinical_outcome?: components["schemas"]["SessionClinicalStatus"] | null;
                 /** @description Only sessions scheduled at or after this instant (ISO 8601) */
                 scheduled_from?: string | null;

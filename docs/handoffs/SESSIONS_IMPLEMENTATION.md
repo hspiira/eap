@@ -417,3 +417,71 @@ D: not code
 
 Blocked and needing a person, not an agent: the clinical vocabulary in B2, and
 every item in Phase D.
+
+## R1: clinical-scope gating on session reads (2026-09-12)
+
+Closes the finding in `docs/reviews/UI_BACKEND_REVIEW_2026_09_12.md` (R1):
+`to_service_session_response` returned `notes`, `feedback`, `issue_topic`,
+`diagnosis_type_id`, `diagnosis_id`, `partner_name`, `partner_relationship` and
+`clinical_outcome` to any same-tenant caller, with no clinical-scope check.
+Full plan and evidence: `docs/reviews/UI_BACKEND_EXECUTION_PLAN_2026_09_12.md`.
+
+**Policy** (product owner, 2026-09-12, restating Q2 in
+`docs/design/PAGES_REDESIGN.md:397`): the eight fields above are null for a
+caller without `AccessScope.CLINICAL`, on every read path. Operational fields
+(status, scheduled_at, display names, cancellation_reason, approved_by) are
+unaffected. The existing grant path is unchanged: a platform admin still
+grants `CLINICAL` per user. Identifiable operational fields (who had a
+session, when, with whom) stay visible without the scope, matching current UI
+behaviour.
+
+**Mechanism**: `to_service_session_response`/`_one`/`_many` in
+`service_sessions.py` take `current_user` and null the clinical fields when
+`has_clinical_scope()` is false, the same pattern `dashboard.py`'s
+`_outcome_mix` already uses. Applied to all 7 read paths (list, detail, chain,
+awaiting-confirmation, by-member/provider/service) and to mutation responses,
+since they share the same serializer. `clinical_outcome` as a list filter or
+sort column now needs the scope too (422 otherwise).
+
+**Read audit**: a caller with clinical scope who receives at least one
+session enqueues one `AuditActionType.VIEW`/`LIST` event per request
+(`ServiceSession`/`ServiceSessionClinicalRead`), carrying session ids and a
+count, never clinical values. Added to `SECURITY_SENSITIVE_RESOURCES` in
+`audit_filter.py` so it is never dropped by `AUDIT_SAMPLE_RATE` sampling.
+These 7 routes moved from `@readonly()` to `@transactional()` so the enqueue
+actually commits; a failed enqueue now fails the response instead of
+releasing content unlogged.
+
+**Frontend**: `SessionOverviewCards.tsx`'s `NotesCard` now gates on
+`useHasClinicalScope()`, matching `ClinicalCard`'s existing gate (`NotesCard`
+had none before this). The sessions list page hides the outcome filter and
+disables the outcome column's sort toggle without the scope, rather than
+offering controls the API now rejects.
+
+**Not done here, in scope for whoever owns write permissions next**: writes
+to the clinical fields are not scope-gated, only reads and mutation-response
+echoes. A non-clinical caller can still submit `notes`/`clinical_outcome` on
+create/update; whether that itself should require clinical scope is a
+separate, unasked question.
+
+**Also found, not changed**: `members.py:1440` (`GET
+/members/{id}/sessions`, a different route serving the same
+`ServiceSessionListResponse`) already required `require_clinical_scope` and
+fully blocks a non-clinical caller (403), rather than redacting. That
+predates this pass and was left as is; the two routes now use different
+mechanisms (block vs redact) for the same schema, which is worth reconciling
+but is a separate decision.
+
+**Not added**: `tests/e2e/test_clinical_scope_wall.py` is the existing
+real-login (real JWT mint, not a mocked token) wall suite for `/cases` and
+the dashboard outcome mix; a service-sessions case belongs there too but was
+not added here, since the mock-token coverage below already exercises the
+same redaction logic across all 7 paths.
+
+**Verified**: `tests/e2e/test_service_session_api.py::TestClinicalScopeGating`
+(9 cases: redacted without scope, visible with scope, wrong tenant still
+404s, across all 7 read paths); `tests/unit/api/test_session_list_hydration.py`
+(filter/sort rejection and admission); full `tests/unit` (2336 passed) and
+`tests/e2e` suites pass; `pnpm contracts` regenerated cleanly; frontend
+`pnpm test` (854 passed) and `pnpm typecheck` pass. Not run: a production
+deployment check.

@@ -45,7 +45,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { Pagination } from "@/components/ui/pagination"
 import { Table, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { useCanWrite } from "@/hooks/useCanWrite"
+import { useCanWrite, useHasClinicalScope } from "@/hooks/useCanWrite"
 import { useListPage } from "@/hooks/useListPage"
 import { useTableSelection } from "@/hooks/useTableSelection"
 import { useVisiblePage } from "@/hooks/useVisiblePage"
@@ -144,6 +144,7 @@ function ServiceSessionsListPage() {
   })
   const [importOpen, setImportOpen] = useState(false)
   const canWrite = useCanWrite()
+  const { hasScope: hasClinicalScope } = useHasClinicalScope()
   const activeStatus = searchParams.status
   const activeServiceId = searchParams.service_id
   const activeMemberId = searchParams.member_id
@@ -287,12 +288,14 @@ function ServiceSessionsListPage() {
           options={CATEGORY_OPTIONS}
           onChange={(v) => setFilter("category", v === "all" ? undefined : v)}
         />
-        <FilterTrigger
-          label="All outcomes"
-          value={(searchParams.clinical_outcome ?? "all") as OutcomeFilter}
-          options={OUTCOME_OPTIONS}
-          onChange={(v) => setFilter("clinical_outcome", v === "all" ? undefined : v)}
-        />
+        {hasClinicalScope ? (
+          <FilterTrigger
+            label="All outcomes"
+            value={(searchParams.clinical_outcome ?? "all") as OutcomeFilter}
+            options={OUTCOME_OPTIONS}
+            onChange={(v) => setFilter("clinical_outcome", v === "all" ? undefined : v)}
+          />
+        ) : null}
         <Button
           type="button"
           variant="ghost"
@@ -450,9 +453,13 @@ function ServiceSessionsListPage() {
                       </SortHeader>
                     </TableHead>
                     <TableHead>
-                      <SortHeader field="clinical_outcome" sort={sort} onToggle={toggleSort}>
-                        Outcome
-                      </SortHeader>
+                      {hasClinicalScope ? (
+                        <SortHeader field="clinical_outcome" sort={sort} onToggle={toggleSort}>
+                          Outcome
+                        </SortHeader>
+                      ) : (
+                        "Outcome"
+                      )}
                     </TableHead>
                     <TableHead className="w-16 text-right text-fg/65">
                       <span className="sr-only">Actions</span>

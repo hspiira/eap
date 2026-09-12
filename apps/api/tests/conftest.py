@@ -40,7 +40,7 @@ from app.core.security import TokenData, get_current_user
 from app.domain.entities.audit import AuditLog
 from app.domain.entities.document import DocumentEntity
 from app.domain.entities.user import UserEntity
-from app.domain.enums import TenantRole, UserStatus
+from app.domain.enums import AccessScope, TenantRole, UserStatus
 from app.domain.repositories.audit_repository import AuditRepository
 from app.domain.repositories.document_repository import DocumentRepository
 from app.domain.repositories.user_repository import UserRepository
@@ -376,6 +376,27 @@ async def client(db_session: AsyncSession) -> AsyncGenerator[AsyncClient, None]:
         yield ac
 
     app.dependency_overrides.clear()
+
+
+@pytest_asyncio.fixture(scope="function")
+async def client_with_clinical_scope(
+    client: AsyncClient, db_session: AsyncSession
+) -> AsyncGenerator[AsyncClient, None]:
+    """`client`, but the token carries AccessScope.CLINICAL."""
+
+    async def override_get_current_user(request: Request) -> TokenData:
+        tenant_id = request.path_params.get("tenant_id") or request.query_params.get("tenant_id")
+        if not tenant_id:
+            tenant_id = await _only_tenant_id(db_session)
+        return TokenData(
+            user_id="test-user-id",
+            tenant_id=tenant_id,
+            email="test@example.com",
+            access_scopes=[AccessScope.CLINICAL.value],
+        )
+
+    app.dependency_overrides[get_current_user] = override_get_current_user
+    yield client
 
 
 # =============================================================================
