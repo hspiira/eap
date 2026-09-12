@@ -267,12 +267,11 @@ async def test_dashboard_aggregates_one_tenant(client: AsyncClient, db_session: 
     # No prior sessions means no percentage can be stated, not a 100% rise.
     assert services["Counselling"] == (1, 0, None)
 
-    queues = [(q["outcome"], q["total"]) for q in body["import_queues"]]
-    assert queues == [("UnresolvedMember", 2), ("MissingPractitioner", 1)]
-    batch = body["import_batch"]
-    assert batch["file_name"] == "sessions.csv"
-    assert batch["status"] == "Applied"
-    assert (batch["accepted"], batch["duplicate"], batch["blocked"]) == (1, 1, 3)
+    # The batch composition and its per-outcome queues are not reported: a
+    # staged batch describes file imports only, so a session entered on the
+    # form contributes nothing to it. The backlog total above is what remains.
+    assert "import_queues" not in body
+    assert "import_batch" not in body
 
     quality = body["data_quality"]
     assert quality["sessions_missing_outcome"] == 1
@@ -333,8 +332,6 @@ async def test_dashboard_empty_tenant(client: AsyncClient, db_session: AsyncSess
     body = response.json()
     assert body["kpis"]["clients_total"] == 0
     assert body["kpis"]["import_backlog"] == 0
-    assert body["import_batch"] is None
-    assert body["import_queues"] == []
     assert body["trending_services"] == []
     assert all(p["total"] == 0 for p in body["sessions_series"])
 
