@@ -5124,6 +5124,32 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/service-sessions/availability": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Which of these practitioners are free at a given time
+         * @description Whether each named practitioner already has a booking over this span.
+         *
+         *     Answers only what it can see. An externally affiliated practitioner keeps
+         *     their own diary and the platform has no sight of it, so a practitioner
+         *     reported free here may still be busy in life. The caller names who to
+         *     check rather than the server sweeping the whole panel, which keeps the
+         *     cost proportional to what a scheduler is actually looking at.
+         */
+        get: operations["check_practitioner_availability_service_sessions_availability_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/service-sessions/awaiting-confirmation": {
         parameters: {
             query?: never;
@@ -7061,6 +7087,34 @@ export interface components {
             programme_id: string;
             /** Service Category */
             service_category: string;
+        };
+        /**
+         * AvailabilityResponse
+         * @description What a scheduler needs to pick someone who is free.
+         *
+         *     Reports only what it checked: whether each practitioner already has a
+         *     booking in this system overlapping the span. It is not a claim about their
+         *     own diary, which the platform cannot see for an externally affiliated
+         *     practitioner. See "Decision 6" in docs/design/REALTIME_SESSION_CAPTURE.md.
+         */
+        AvailabilityResponse: {
+            /**
+             * Assumed Minutes
+             * @description The length the span was built from: the service's own duration where it has one, otherwise the nominal hour. A booking records no length of its own until it is completed.
+             */
+            assumed_minutes: number;
+            /**
+             * Ends At
+             * Format: date-time
+             */
+            ends_at: string;
+            /** Items */
+            items: components["schemas"]["PractitionerAvailability"][];
+            /**
+             * Starts At
+             * Format: date-time
+             */
+            starts_at: string;
         };
         /**
          * BaseStatus
@@ -9026,10 +9080,6 @@ export interface components {
          */
         DashboardResponse: {
             data_quality: components["schemas"]["DataQuality"];
-            /** @description Absent when the tenant has never staged an import */
-            import_batch?: components["schemas"]["ImportBatchSummary"] | null;
-            /** Import Queues */
-            import_queues: components["schemas"]["ImportQueueEntry"][];
             kpis: components["schemas"]["DashboardKpis"];
             range: components["schemas"]["RangeInfo"];
             /**
@@ -10186,50 +10236,6 @@ export interface components {
          * @enum {string}
          */
         ImportBatchStatus: "Staged" | "Applied" | "Abandoned";
-        /**
-         * ImportBatchSummary
-         * @description The batch the backlog figures describe, as a part-to-whole composition.
-         *
-         *     The four parts account for every row: `accepted + duplicate + blocked +
-         *     failed == row_count`. `blocked` covers every reason staging held a row,
-         *     not only an unresolved identity, so a batch stuck entirely on conflicting
-         *     or undated rows cannot report nothing blocked.
-         */
-        ImportBatchSummary: {
-            /** Accepted */
-            accepted: number;
-            /** Applied At */
-            applied_at?: string | null;
-            /**
-             * Blocked
-             * @description Rows staging held, for any reason
-             */
-            blocked: number;
-            /** Duplicate */
-            duplicate: number;
-            /**
-             * Failed
-             * @description Accepted rows the write path refused at apply time
-             * @default 0
-             */
-            failed: number;
-            /** File Name */
-            file_name: string;
-            /** Row Count */
-            row_count: number;
-            /** Status */
-            status: string;
-        };
-        /**
-         * ImportQueueEntry
-         * @description One held-outcome bucket in the current import batch.
-         */
-        ImportQueueEntry: {
-            /** Outcome */
-            outcome: string;
-            /** Total */
-            total: number;
-        };
         /**
          * ImportReasonCode
          * @description Machine-readable code for a staged row's outcome reason (P-10).
@@ -11716,6 +11722,29 @@ export interface components {
          * @enum {string}
          */
         PaymentStatus: "Pending" | "Paid" | "Overdue" | "Cancelled" | "Refunded";
+        /**
+         * PractitionerAvailability
+         * @description Whether one practitioner is already spoken for at a given time.
+         */
+        PractitionerAvailability: {
+            /**
+             * Available
+             * @description False when a live booking of theirs overlaps the span
+             */
+            available: boolean;
+            /**
+             * Clashing Scheduled At
+             * @description When that booking starts
+             */
+            clashing_scheduled_at?: string | null;
+            /**
+             * Clashing Session Id
+             * @description The booking in the way, when there is one
+             */
+            clashing_session_id?: string | null;
+            /** Provider Id */
+            provider_id: string;
+        };
         /**
          * PractitionerImportApplyResponse
          * @description Outcome of applying a batch.
@@ -25435,6 +25464,43 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ServiceSessionResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    check_practitioner_availability_service_sessions_availability_get: {
+        parameters: {
+            query: {
+                tenant_id: string;
+                /** @description Start of the proposed booking, ISO 8601 */
+                at: string;
+                /** @description Service being delivered; sets the assumed length */
+                service_id: string;
+                /** @description Practitioners to check, repeated */
+                provider_id: string[];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AvailabilityResponse"];
                 };
             };
             /** @description Validation Error */

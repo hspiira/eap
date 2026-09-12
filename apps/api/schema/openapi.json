@@ -891,6 +891,41 @@
         "title": "AuthorizeCaseRequest",
         "type": "object"
       },
+      "AvailabilityResponse": {
+        "description": "What a scheduler needs to pick someone who is free.\n\nReports only what it checked: whether each practitioner already has a\nbooking in this system overlapping the span. It is not a claim about their\nown diary, which the platform cannot see for an externally affiliated\npractitioner. See \"Decision 6\" in docs/design/REALTIME_SESSION_CAPTURE.md.",
+        "properties": {
+          "assumed_minutes": {
+            "description": "The length the span was built from: the service's own duration where it has one, otherwise the nominal hour. A booking records no length of its own until it is completed.",
+            "title": "Assumed Minutes",
+            "type": "integer"
+          },
+          "ends_at": {
+            "format": "date-time",
+            "title": "Ends At",
+            "type": "string"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/PractitionerAvailability"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "starts_at": {
+            "format": "date-time",
+            "title": "Starts At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "starts_at",
+          "ends_at",
+          "assumed_minutes",
+          "items"
+        ],
+        "title": "AvailabilityResponse",
+        "type": "object"
+      },
       "BaseStatus": {
         "enum": [
           "Active",
@@ -5146,24 +5181,6 @@
           "data_quality": {
             "$ref": "#/components/schemas/DataQuality"
           },
-          "import_batch": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/ImportBatchSummary"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "description": "Absent when the tenant has never staged an import"
-          },
-          "import_queues": {
-            "items": {
-              "$ref": "#/components/schemas/ImportQueueEntry"
-            },
-            "title": "Import Queues",
-            "type": "array"
-          },
           "kpis": {
             "$ref": "#/components/schemas/DashboardKpis"
           },
@@ -5214,7 +5231,6 @@
           "sessions_by_category",
           "top_clients",
           "trending_services",
-          "import_queues",
           "data_quality"
         ],
         "title": "DashboardResponse",
@@ -7766,82 +7782,6 @@
         ],
         "title": "ImportBatchStatus",
         "type": "string"
-      },
-      "ImportBatchSummary": {
-        "description": "The batch the backlog figures describe, as a part-to-whole composition.\n\nThe four parts account for every row: `accepted + duplicate + blocked +\nfailed == row_count`. `blocked` covers every reason staging held a row,\nnot only an unresolved identity, so a batch stuck entirely on conflicting\nor undated rows cannot report nothing blocked.",
-        "properties": {
-          "accepted": {
-            "title": "Accepted",
-            "type": "integer"
-          },
-          "applied_at": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Applied At"
-          },
-          "blocked": {
-            "description": "Rows staging held, for any reason",
-            "title": "Blocked",
-            "type": "integer"
-          },
-          "duplicate": {
-            "title": "Duplicate",
-            "type": "integer"
-          },
-          "failed": {
-            "default": 0,
-            "description": "Accepted rows the write path refused at apply time",
-            "title": "Failed",
-            "type": "integer"
-          },
-          "file_name": {
-            "title": "File Name",
-            "type": "string"
-          },
-          "row_count": {
-            "title": "Row Count",
-            "type": "integer"
-          },
-          "status": {
-            "title": "Status",
-            "type": "string"
-          }
-        },
-        "required": [
-          "file_name",
-          "status",
-          "row_count",
-          "accepted",
-          "duplicate",
-          "blocked"
-        ],
-        "title": "ImportBatchSummary",
-        "type": "object"
-      },
-      "ImportQueueEntry": {
-        "description": "One held-outcome bucket in the current import batch.",
-        "properties": {
-          "outcome": {
-            "title": "Outcome",
-            "type": "string"
-          },
-          "total": {
-            "title": "Total",
-            "type": "integer"
-          }
-        },
-        "required": [
-          "outcome",
-          "total"
-        ],
-        "title": "ImportQueueEntry",
-        "type": "object"
       },
       "ImportReasonCode": {
         "description": "Machine-readable code for a staged row's outcome reason (P-10).\n\nA message alone is fine to display but not to build a review UI or any\nother consumer against: rewording it silently breaks a string match.\nEvery reason attached to a row carries one of these alongside its\nhuman-readable message.",
@@ -11397,6 +11337,51 @@
         ],
         "title": "PaymentStatus",
         "type": "string"
+      },
+      "PractitionerAvailability": {
+        "description": "Whether one practitioner is already spoken for at a given time.",
+        "properties": {
+          "available": {
+            "description": "False when a live booking of theirs overlaps the span",
+            "title": "Available",
+            "type": "boolean"
+          },
+          "clashing_scheduled_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "When that booking starts",
+            "title": "Clashing Scheduled At"
+          },
+          "clashing_session_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The booking in the way, when there is one",
+            "title": "Clashing Session Id"
+          },
+          "provider_id": {
+            "title": "Provider Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "provider_id",
+          "available"
+        ],
+        "title": "PractitionerAvailability",
+        "type": "object"
       },
       "PractitionerImportApplyResponse": {
         "description": "Outcome of applying a batch.\n\n`reused_organisations` counts distinct firms that already existed;\n`not_applicable` counts rows left untouched because a person has not\naccepted them.",
@@ -37409,6 +37394,92 @@
           }
         ],
         "summary": "Create a new service session",
+        "tags": [
+          "service-sessions"
+        ]
+      }
+    },
+    "/service-sessions/availability": {
+      "get": {
+        "description": "Whether each named practitioner already has a booking over this span.\n\nAnswers only what it can see. An externally affiliated practitioner keeps\ntheir own diary and the platform has no sight of it, so a practitioner\nreported free here may still be busy in life. The caller names who to\ncheck rather than the server sweeping the whole panel, which keeps the\ncost proportional to what a scheduler is actually looking at.",
+        "operationId": "check_practitioner_availability_service_sessions_availability_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "tenant_id",
+            "required": true,
+            "schema": {
+              "title": "Tenant Id",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Start of the proposed booking, ISO 8601",
+            "in": "query",
+            "name": "at",
+            "required": true,
+            "schema": {
+              "description": "Start of the proposed booking, ISO 8601",
+              "format": "date-time",
+              "title": "At",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Service being delivered; sets the assumed length",
+            "in": "query",
+            "name": "service_id",
+            "required": true,
+            "schema": {
+              "description": "Service being delivered; sets the assumed length",
+              "title": "Service Id",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Practitioners to check, repeated",
+            "in": "query",
+            "name": "provider_id",
+            "required": true,
+            "schema": {
+              "description": "Practitioners to check, repeated",
+              "items": {
+                "type": "string"
+              },
+              "maxItems": 100,
+              "title": "Provider Id",
+              "type": "array"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AvailabilityResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Which of these practitioners are free at a given time",
         "tags": [
           "service-sessions"
         ]

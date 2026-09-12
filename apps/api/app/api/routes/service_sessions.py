@@ -32,6 +32,8 @@ from app.api.dependencies.provider_network import (
     get_provider_organisation_repository,
 )
 from app.api.schemas.service_session_schemas import (
+    AvailabilityResponse,
+    PractitionerAvailability,
     ServiceSessionCancelRequest,
     ServiceSessionCompleteRequest,
     ServiceSessionCompleteResponse,
@@ -73,7 +75,7 @@ from app.domain.enums import (
     SessionType,
 )
 from app.domain.enums.provider_network import OrganisationApprovalStatus
-from app.domain.exceptions import NotFoundError, ValidationException
+from app.domain.exceptions import DomainError, NotFoundError, ValidationException
 from app.domain.repositories.case_repository import CaseRepository
 from app.domain.repositories.client_repository import ClientRepository
 from app.domain.repositories.contract_repository import ContractRepository
@@ -100,6 +102,7 @@ from app.domain.services.provider_eligibility import (
     missing_affiliation_reasons,
     require_eligible,
 )
+from app.domain.services.session_scheduling import booking_end, booking_minutes
 from app.domain.value_objects.core import (
     CaseId,
     ClientId,
@@ -215,6 +218,53 @@ async def _require_bookable(
         )
     )
     require_eligible(decision, provider_id.value)
+
+
+#: A scheduler looks at a page of practitioners, not the whole panel, and each
+#: one costs its own query. Bounded so a caller cannot turn one request into a
+#: sweep of every practitioner on file.
+MAX_AVAILABILITY_CHECKS = 100
+
+
+async def _require_free(
+    session_repo: ServiceSessionRepository,
+    tenant_id: TenantId,
+    provider_id: ProviderId,
+    scheduled_at: datetime,
+    *,
+    duration_minutes: int | None,
+    exclude_session_id: SessionId | None = None,
+) -> None:
+    """Refuse a booking that would put a practitioner in two places at once.
+
+    Kept apart from `_require_bookable` deliberately. That gate answers whether
+    this practitioner may take work at all; this answers whether they are
+    already spoken for. Reporting them as one would tell a scheduler a
+    suspended practitioner and a double-booked one are the same problem.
+
+    Only the interactive paths are gated. The historical import writes through
+    its own path and must stay able to record what already happened, clash or
+    not: the past is not negotiable.
+    """
+    clash = await session_repo.find_clashing_booking(
+        tenant_id,
+        provider_id=provider_id,
+        starts_at=scheduled_at,
+        ends_at=booking_end(scheduled_at, duration_minutes),
+        exclude_session_id=exclude_session_id,
+    )
+    if clash is None:
+        return
+    raise DomainError(
+        f"This practitioner already has a booking at {clash.scheduled_at.isoformat()}",
+        error_code="PRACTITIONER_DOUBLE_BOOKED",
+        http_status=409,
+        details={
+            "provider_id": provider_id.value,
+            "session_id": clash.id.value,
+            "scheduled_at": clash.scheduled_at.isoformat(),
+        },
+    )
 
 
 async def _delivery_reasons(
@@ -370,6 +420,13 @@ async def create_service_session(
         raise NotFoundError(
             "Service not found", resource_type="Service", resource_id=data.service_id
         )
+    await _require_free(
+        session_repo,
+        TenantId(tenant_id),
+        ProviderId(data.provider_id),
+        scheduled_at,
+        duration_minutes=service.duration_minutes,
+    )
     session = await CreateServiceSessionUseCase(session_repo, contract_repo).execute(
         session_id=SessionId(generate_cuid()),
         tenant_id=TenantId(tenant_id),
@@ -530,6 +587,7 @@ async def reschedule_service_session(
     session: ServiceSessionEntity = Depends(get_service_session_for_current_tenant),
     session_repo: ServiceSessionRepository = Depends(get_service_session_repository),
     provider_repo: ProviderRepository = Depends(get_provider_repository),
+    service_repo: ServiceRepository = Depends(get_service_repository),
     affiliation_repo: ProviderAffiliationRepository = Depends(get_provider_affiliation_repository),
     organisation_repo: ProviderOrganisationRepository = Depends(
         get_provider_organisation_repository
@@ -555,6 +613,15 @@ async def reschedule_service_session(
         affiliation_id=session.provider_affiliation_id,
         affiliation_repo=affiliation_repo,
         organisation_repo=organisation_repo,
+    )
+    rescheduled_service = await service_repo.get_by_id(session.service_id)
+    await _require_free(
+        session_repo,
+        session.tenant_id,
+        session.provider_id,
+        new_scheduled_at,
+        duration_minutes=rescheduled_service.duration_minutes if rescheduled_service else None,
+        exclude_session_id=session.id,
     )
     use_case = TransitionUseCase(session_repo, "Session")
     session = await use_case.execute(
@@ -811,6 +878,59 @@ async def list_service_sessions(
         page=pg.page,
         limit=pg.limit,
         has_more=(pg.offset + pg.limit) < total,
+    )
+
+
+@router.get(
+    "/availability",
+    response_model=AvailabilityResponse,
+    summary="Which of these practitioners are free at a given time",
+)
+@readonly()
+async def check_practitioner_availability(
+    tenant_id: str = Query(..., description="Tenant identifier"),
+    at: datetime = Query(..., description="Start of the proposed booking, ISO 8601"),
+    service_id: str = Query(..., description="Service being delivered; sets the assumed length"),
+    provider_id: list[str] = Query(
+        ..., description="Practitioners to check, repeated", max_length=MAX_AVAILABILITY_CHECKS
+    ),
+    current_user: TokenData = Depends(require_same_tenant),
+    session_repo: ServiceSessionRepository = Depends(get_service_session_repository),
+    service_repo: ServiceRepository = Depends(get_service_repository),
+):
+    """Whether each named practitioner already has a booking over this span.
+
+    Answers only what it can see. An externally affiliated practitioner keeps
+    their own diary and the platform has no sight of it, so a practitioner
+    reported free here may still be busy in life. The caller names who to
+    check rather than the server sweeping the whole panel, which keeps the
+    cost proportional to what a scheduler is actually looking at.
+    """
+    starts_at = ensure_utc(at)
+    service = await service_repo.get_by_id(ServiceId(service_id))
+    if service is None or service.tenant_id.value != tenant_id:
+        raise NotFoundError("Service not found", resource_type="Service", resource_id=service_id)
+    minutes = booking_minutes(service.duration_minutes)
+    ends_at = booking_end(starts_at, service.duration_minutes)
+
+    items = []
+    for candidate in dict.fromkeys(provider_id):
+        clash = await session_repo.find_clashing_booking(
+            TenantId(tenant_id),
+            provider_id=ProviderId(candidate),
+            starts_at=starts_at,
+            ends_at=ends_at,
+        )
+        items.append(
+            PractitionerAvailability(
+                provider_id=candidate,
+                available=clash is None,
+                clashing_session_id=clash.id.value if clash else None,
+                clashing_scheduled_at=clash.scheduled_at if clash else None,
+            )
+        )
+    return AvailabilityResponse(
+        starts_at=starts_at, ends_at=ends_at, assumed_minutes=minutes, items=items
     )
 
 

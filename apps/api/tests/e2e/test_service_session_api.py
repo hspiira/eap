@@ -785,3 +785,280 @@ class TestAwaitingConfirmation:
 
         dates = [item["scheduled_at"] for item in response.json()["items"]]
         assert dates == sorted(dates)
+
+
+# =============================================================================
+# DOUBLE BOOKING AND AVAILABILITY
+# =============================================================================
+
+
+class TestDoubleBooking:
+    """A practitioner cannot be in two places at once.
+
+    A booking carries no length of its own until it is completed, so the span
+    it occupies comes from the service. See "Decision 6" in
+    docs/design/REALTIME_SESSION_CAPTURE.md.
+    """
+
+    async def _book(self, client, tenant_id, service, provider, member, *, at):
+        return await client.post(
+            f"/service-sessions/?tenant_id={tenant_id}",
+            json={
+                "service_id": service["id"],
+                "provider_id": provider["id"],
+                "member_id": member["id"],
+                "scheduled_at": at.isoformat(),
+                "delivery_context": "Direct",
+            },
+        )
+
+    async def test_a_second_booking_at_the_same_time_is_refused(
+        self,
+        client: AsyncClient,
+        session_test_tenant: dict,
+        session_test_service: dict,
+        session_test_provider: dict,
+        session_test_client_person: dict,
+    ):
+        tenant_id = session_test_tenant["id"]
+        at = datetime.now(UTC) + timedelta(days=4)
+        first = await self._book(
+            client,
+            tenant_id,
+            session_test_service,
+            session_test_provider,
+            session_test_client_person,
+            at=at,
+        )
+        assert first.status_code == 201, first.text
+
+        second = await self._book(
+            client,
+            tenant_id,
+            session_test_service,
+            session_test_provider,
+            session_test_client_person,
+            at=at,
+        )
+
+        assert second.status_code == 409, second.text
+        assert second.json()["error"] == "PRACTITIONER_DOUBLE_BOOKED"
+
+    async def test_a_booking_that_starts_as_the_last_one_ends_is_allowed(
+        self,
+        client: AsyncClient,
+        session_test_tenant: dict,
+        session_test_service: dict,
+        session_test_provider: dict,
+        session_test_client_person: dict,
+    ):
+        """Back-to-back is a normal working day, not a clash."""
+        tenant_id = session_test_tenant["id"]
+        at = datetime.now(UTC) + timedelta(days=5)
+        first = await self._book(
+            client,
+            tenant_id,
+            session_test_service,
+            session_test_provider,
+            session_test_client_person,
+            at=at,
+        )
+        assert first.status_code == 201, first.text
+
+        later = await self._book(
+            client,
+            tenant_id,
+            session_test_service,
+            session_test_provider,
+            session_test_client_person,
+            at=at + timedelta(minutes=60),
+        )
+
+        assert later.status_code == 201, later.text
+
+    async def test_a_cancelled_booking_frees_the_slot(
+        self,
+        client: AsyncClient,
+        session_test_tenant: dict,
+        session_test_service: dict,
+        session_test_provider: dict,
+        session_test_client_person: dict,
+    ):
+        tenant_id = session_test_tenant["id"]
+        at = datetime.now(UTC) + timedelta(days=6)
+        first = await self._book(
+            client,
+            tenant_id,
+            session_test_service,
+            session_test_provider,
+            session_test_client_person,
+            at=at,
+        )
+        cancelled = await client.post(
+            f"/service-sessions/{first.json()['id']}/cancel",
+            json={"reason": "Member withdrew"},
+        )
+        assert cancelled.status_code == 200, cancelled.text
+
+        again = await self._book(
+            client,
+            tenant_id,
+            session_test_service,
+            session_test_provider,
+            session_test_client_person,
+            at=at,
+        )
+
+        assert again.status_code == 201, again.text
+
+    async def test_rescheduling_onto_a_taken_slot_is_refused(
+        self,
+        client: AsyncClient,
+        session_test_tenant: dict,
+        session_test_service: dict,
+        session_test_provider: dict,
+        session_test_client_person: dict,
+    ):
+        tenant_id = session_test_tenant["id"]
+        first_at = datetime.now(UTC) + timedelta(days=7)
+        taken = await self._book(
+            client,
+            tenant_id,
+            session_test_service,
+            session_test_provider,
+            session_test_client_person,
+            at=first_at,
+        )
+        assert taken.status_code == 201, taken.text
+        mover = await self._book(
+            client,
+            tenant_id,
+            session_test_service,
+            session_test_provider,
+            session_test_client_person,
+            at=first_at + timedelta(days=1),
+        )
+        assert mover.status_code == 201, mover.text
+
+        response = await client.post(
+            f"/service-sessions/{mover.json()['id']}/reschedule",
+            json={"new_scheduled_at": first_at.isoformat(), "reason": "Member asked"},
+        )
+
+        assert response.status_code == 409, response.text
+
+    async def test_rescheduling_a_booking_does_not_clash_with_itself(
+        self,
+        client: AsyncClient,
+        session_test_tenant: dict,
+        session_test_service: dict,
+        session_test_provider: dict,
+        session_test_client_person: dict,
+    ):
+        """The booking being moved is excluded, or no session could ever move."""
+        tenant_id = session_test_tenant["id"]
+        at = datetime.now(UTC) + timedelta(days=8)
+        booked = await self._book(
+            client,
+            tenant_id,
+            session_test_service,
+            session_test_provider,
+            session_test_client_person,
+            at=at,
+        )
+        assert booked.status_code == 201, booked.text
+
+        response = await client.post(
+            f"/service-sessions/{booked.json()['id']}/reschedule",
+            json={
+                "new_scheduled_at": (at + timedelta(minutes=30)).isoformat(),
+                "reason": "Shifted half an hour",
+            },
+        )
+
+        assert response.status_code == 200, response.text
+
+
+class TestAvailability:
+    async def test_reports_a_free_practitioner_and_says_what_it_assumed(
+        self,
+        client: AsyncClient,
+        session_test_tenant: dict,
+        session_test_service: dict,
+        session_test_provider: dict,
+    ):
+        tenant_id = session_test_tenant["id"]
+        at = datetime.now(UTC) + timedelta(days=20)
+
+        response = await client.get(
+            "/service-sessions/availability",
+            params={
+                "tenant_id": tenant_id,
+                "at": at.isoformat(),
+                "service_id": session_test_service["id"],
+                "provider_id": [session_test_provider["id"]],
+            },
+        )
+
+        assert response.status_code == 200, response.text
+        body = response.json()
+        assert body["items"][0]["available"] is True
+        assert body["items"][0]["clashing_session_id"] is None
+        # It must say what length it measured, since a booking carries none.
+        assert body["assumed_minutes"] > 0
+
+    async def test_reports_a_busy_practitioner_and_names_the_booking(
+        self,
+        client: AsyncClient,
+        session_test_tenant: dict,
+        session_test_service: dict,
+        session_test_provider: dict,
+        session_test_client_person: dict,
+    ):
+        tenant_id = session_test_tenant["id"]
+        at = datetime.now(UTC) + timedelta(days=21)
+        booked = await client.post(
+            f"/service-sessions/?tenant_id={tenant_id}",
+            json={
+                "service_id": session_test_service["id"],
+                "provider_id": session_test_provider["id"],
+                "member_id": session_test_client_person["id"],
+                "scheduled_at": at.isoformat(),
+                "delivery_context": "Direct",
+            },
+        )
+        assert booked.status_code == 201, booked.text
+
+        response = await client.get(
+            "/service-sessions/availability",
+            params={
+                "tenant_id": tenant_id,
+                "at": at.isoformat(),
+                "service_id": session_test_service["id"],
+                "provider_id": [session_test_provider["id"]],
+            },
+        )
+
+        assert response.status_code == 200, response.text
+        item = response.json()["items"][0]
+        assert item["available"] is False
+        assert item["clashing_session_id"] == booked.json()["id"]
+
+    async def test_an_unknown_service_is_refused_rather_than_assumed(
+        self,
+        client: AsyncClient,
+        session_test_tenant: dict,
+        session_test_provider: dict,
+    ):
+        """The service sets the span, so guessing one would report a made-up answer."""
+        response = await client.get(
+            "/service-sessions/availability",
+            params={
+                "tenant_id": session_test_tenant["id"],
+                "at": (datetime.now(UTC) + timedelta(days=22)).isoformat(),
+                "service_id": "does-not-exist",
+                "provider_id": [session_test_provider["id"]],
+            },
+        )
+
+        assert response.status_code == 404, response.text

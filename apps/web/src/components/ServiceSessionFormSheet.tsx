@@ -23,6 +23,7 @@ import {
   EligibilityFailureNotice,
   eligibilityReasons,
 } from "@/components/sessions/EligibilityFailureNotice"
+import { PractitionerAvailabilityNotice } from "@/components/sessions/PractitionerAvailabilityNotice"
 import { StoredAttribution } from "@/components/sessions/SessionAttribution"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Input } from "@/components/ui/input"
@@ -305,6 +306,7 @@ export function ServiceSessionFormSheet({
   const watchedProvider = watch("service_provider_id")
   const watchedBackfill = !isEdit && Boolean(watch("is_backfill"))
   const watchedCategory = watch("category")
+  const watchedScheduledAt = watch("scheduled_at")
   const isGroup = watchedCategory === SessionCategory.GROUP
   // A company-wide session is counted, not named, so its headcount is asked for
   // whatever category it carries.
@@ -485,6 +487,11 @@ export function ServiceSessionFormSheet({
               setValue("service_provider_id", id, { shouldValidate: true, shouldDirty: true })
               setValue("provider_affiliation_id", "", { shouldDirty: true })
             }}
+          />
+          <PractitionerAvailabilityNotice
+            providerId={watchedProvider ?? ""}
+            serviceId={lockedServiceId ?? watchedService ?? ""}
+            scheduledAt={watchedScheduledAt ?? ""}
           />
         </FormField>
         <Input type="hidden" {...register("service_provider_id")} />

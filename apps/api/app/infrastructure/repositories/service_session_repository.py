@@ -10,7 +10,7 @@ from datetime import date, datetime
 from typing import Any
 
 from sqlalchemy import Date as SADate
-from sqlalchemy import and_, cast, func, select
+from sqlalchemy import and_, cast, func, select, text
 
 from app.domain.entities.service_session import ServiceSessionEntity
 from app.domain.enums import (
@@ -25,6 +25,7 @@ from app.domain.repositories.service_session_repository import (
     ProviderOrganisationSessionCount,
     ServiceSessionRepository,
 )
+from app.domain.services.session_scheduling import DEFAULT_SESSION_MINUTES
 from app.domain.value_objects.core import (
     ClientId,
     EligibleMemberId,
@@ -36,6 +37,7 @@ from app.domain.value_objects.core import (
 from app.infrastructure.mappers.service_session_mapper import ServiceSessionMapper
 from app.infrastructure.models.provider_affiliation_model import ProviderAffiliationModel
 from app.infrastructure.models.provider_organisation_model import ProviderOrganisationModel
+from app.infrastructure.models.service_model import ServiceModel
 from app.infrastructure.models.service_session_model import ServiceSessionModel
 from app.infrastructure.repositories.base import TenantScopedRepositoryImpl
 
@@ -237,6 +239,44 @@ class ServiceSessionRepositoryImpl(
             ServiceSessionModel.provider_id == provider_id.value,
             ServiceSessionModel.deleted_at.is_(None),
         ]
+
+    async def find_clashing_booking(
+        self,
+        tenant_id: TenantId,
+        *,
+        provider_id: ProviderId,
+        starts_at: datetime,
+        ends_at: datetime,
+        exclude_session_id: SessionId | None = None,
+    ) -> ServiceSessionEntity | None:
+        """The earliest live booking of this practitioner overlapping the span.
+
+        A booking carries no length of its own, so each one is measured by the
+        service it delivers, falling back to the nominal hour. The overlap is
+        half-open at both ends, so back-to-back bookings do not clash.
+        """
+        minutes = func.coalesce(ServiceModel.duration_minutes, DEFAULT_SESSION_MINUTES)
+        existing_end = ServiceSessionModel.scheduled_at + minutes * text("interval '1 minute'")
+        conditions: list[Any] = [
+            ServiceSessionModel.tenant_id == tenant_id.value,
+            ServiceSessionModel.deleted_at.is_(None),
+            ServiceSessionModel.provider_id == provider_id.value,
+            ServiceSessionModel.status.in_(
+                (SessionStatus.SCHEDULED.value, SessionStatus.RESCHEDULED.value)
+            ),
+            ServiceSessionModel.scheduled_at < ends_at,
+            existing_end > starts_at,
+        ]
+        if exclude_session_id is not None:
+            conditions.append(ServiceSessionModel.id != exclude_session_id.value)
+        model = await self.session.scalar(
+            select(ServiceSessionModel)
+            .join(ServiceModel, ServiceModel.id == ServiceSessionModel.service_id)
+            .where(*conditions)
+            .order_by(ServiceSessionModel.scheduled_at)
+            .limit(1)
+        )
+        return ServiceSessionMapper.to_entity(model) if model else None
 
     def _awaiting_confirmation_filter(
         self,

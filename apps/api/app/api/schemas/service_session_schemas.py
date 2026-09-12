@@ -249,6 +249,41 @@ class ServiceSessionResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
+class PractitionerAvailability(BaseModel):
+    """Whether one practitioner is already spoken for at a given time."""
+
+    provider_id: str
+    available: bool = Field(
+        ..., description="False when a live booking of theirs overlaps the span"
+    )
+    clashing_session_id: str | None = Field(
+        None, description="The booking in the way, when there is one"
+    )
+    clashing_scheduled_at: datetime | None = Field(None, description="When that booking starts")
+
+
+class AvailabilityResponse(BaseModel):
+    """What a scheduler needs to pick someone who is free.
+
+    Reports only what it checked: whether each practitioner already has a
+    booking in this system overlapping the span. It is not a claim about their
+    own diary, which the platform cannot see for an externally affiliated
+    practitioner. See "Decision 6" in docs/design/REALTIME_SESSION_CAPTURE.md.
+    """
+
+    starts_at: datetime
+    ends_at: datetime
+    assumed_minutes: int = Field(
+        ...,
+        description=(
+            "The length the span was built from: the service's own duration "
+            "where it has one, otherwise the nominal hour. A booking records "
+            "no length of its own until it is completed."
+        ),
+    )
+    items: list[PractitionerAvailability]
+
+
 class ServiceSessionListResponse(BaseModel):
     """Response schema for service session list."""
 

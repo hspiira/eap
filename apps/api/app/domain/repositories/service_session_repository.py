@@ -176,6 +176,27 @@ class ServiceSessionRepository(BaseRepository[ServiceSessionEntity, SessionId]):
         """
 
     @abstractmethod
+    async def find_clashing_booking(
+        self,
+        tenant_id: TenantId,
+        *,
+        provider_id: ProviderId,
+        starts_at: datetime,
+        ends_at: datetime,
+        exclude_session_id: SessionId | None = None,
+    ) -> ServiceSessionEntity | None:
+        """A live booking for this practitioner overlapping the given span.
+
+        Only Scheduled and Rescheduled hold a practitioner's time. A cancelled
+        booking released it, and a completed one is a record of the past, not a
+        claim on the future; refusing against those would make it impossible to
+        enter a session that has already happened.
+
+        `exclude_session_id` lets a reschedule ignore the booking it is moving,
+        which would otherwise always clash with itself.
+        """
+
+    @abstractmethod
     async def list_awaiting_confirmation(
         self,
         tenant_id: TenantId,
