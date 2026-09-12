@@ -290,6 +290,23 @@ product work as a dependency of the nine corrective findings.
   escaping, cross-tenant isolation, pagination+sorting composition) against
   local Postgres. `ProviderModel.display_name` is unindexed; flagged, not
   measured or sized.
+- R8b: implemented. Console built against the existing read-only audit API;
+  no route, schema, or contract change. Fixed a drifted frontend contract
+  (`AuditListParams` used `date_from`/`date_to`, the API takes
+  `start_date`/`end_date`; a bogus `AuditLogChange` type existed with no
+  backend counterpart) and replaced the placeholder route with filters,
+  pagination, actor-email resolution, and a field-level change detail sheet.
+  Occurrence time is the only timestamp shown; no processing time is
+  synthesized. Redacted values render as `"[redacted]"` verbatim. Policy
+  fact recorded, not fixed: audit routes gate on tenant membership only, no
+  role/scope check, a product/DPO decision. Full detail, the test-harness
+  gap in `get_audit_log_for_current_tenant`'s shared override, and a
+  native-`<table>` lint fix: `docs/reviews/AUDIT_COVERAGE.md`'s R8b section.
+  Verified: 19 new/hardened backend e2e tests (filter narrowing, redaction
+  through HTTP, cross-tenant isolation) plus full `tests/unit tests/e2e`
+  (2850 passed, 26 skipped); 8 new frontend tests plus full `pnpm test`
+  (867 passed, 104 files); typecheck and eslint clean; manual Playwright
+  browser verification. Not verified: production.
 - Tested: see each package above; no `pnpm verify` / full build run yet this
   pass.
 - Deployed: none.

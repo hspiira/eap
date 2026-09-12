@@ -443,3 +443,76 @@ fixture refuses any `DATABASE_URL` host outside `localhost`/`127.0.0.1`/
 otherwise, with no warning. Whether to add that guard, and where the line
 between "local" and "acceptable non-local dev/staging target" should sit, is
 a decision for whoever owns deployment configuration, not one made here.
+
+## R8b: the audit console, 2026-09-12/13
+
+Built against the existing read API (`app/api/routes/audit.py`); no route,
+schema, or authorization change. `pnpm contracts` was not re-run because
+nothing OpenAPI-visible changed.
+
+**Policy fact, not fixed here:** `/audit/logs`, `/audit/logs/{id}`,
+`/audit/logs/{id}/changes`, and `/audit/entity/{type}/{id}/changes` gate on
+tenant membership only; there is no role or scope check beyond that. The
+console therefore inherits the same reach. Whether audit visibility should
+be restricted further than same-tenant is a product/DPO decision, not made
+here, and is recorded here rather than silently assumed.
+
+**`apps/web/src/api/endpoints/audit.ts`** had drifted from the backend
+contract: `AuditListParams` used `date_from`/`date_to`, the backend takes
+`start_date`/`end_date`; a bogus `AuditLogChange` interface existed with no
+backend counterpart. Both fixed; `getChanges` now returns `EntityChange[]`
+matching `GET /audit/logs/{id}/changes`'s actual response shape.
+
+**`apps/web/src/routes/audit.tsx`** replaced the "coming soon" placeholder
+with a filtered, paginated table (actor, action, resource, description,
+occurrence time) and a detail sheet showing each change's field-level
+before/after. Actor ids resolve to email via `usersApi.getById`, one query
+per unique id on the page. Occurrence time is the only timestamp the API
+returns; the code does not synthesize a separate processing time. A
+redacted value (`"[redacted]"`) renders as-is, not re-interpreted or hidden
+further, so a scoped-out clinical edit is visibly present but not readable.
+
+**Backend test hardening** (`apps/api/tests/e2e/test_audit_api.py`): the
+existing filter tests asserted only `200 OK`, which passes even if a filter
+is silently ignored. Added tests that create a CREATE and an UPDATE audit
+entry for the same resource and assert each filter returns only its own
+action and count; a date-range test with a far-future/far-past boundary
+that must exclude a known event; a redaction test that creates a real
+clinical-session note edit, drains the outbox, and asserts
+`GET .../changes` returns `"[redacted]"` for that field with the real note
+text absent from the whole response body; a cross-tenant test proving a
+second tenant's `/audit/logs` query for another tenant's resource id returns
+zero. All required an explicit `_drain()` call (mirroring
+`test_audit_chain.py`'s pattern) since outbox delivery is not automatic
+inside e2e tests. 19/19 tests in the file pass.
+
+**Known test-harness gap, not closed:** `GET /audit/logs/{id}` and
+`GET /audit/logs/{id}/changes` depend on `get_audit_log_for_current_tenant`,
+which the shared `client` fixture overrides with a version that skips the
+tenant check (`tests/conftest.py`'s `override_get_audit_log`). No HTTP test
+in this file can prove cross-tenant isolation for those two routes
+specifically; only the list endpoint's isolation is proven by HTTP test.
+Fixing the shared fixture affects every other test file using it and was
+judged out of scope for this pass.
+
+**Frontend test** (`apps/web/src/routes/audit.test.tsx`, 8 cases): list
+rendering with actor resolution, empty state (filtered vs unfiltered
+wording), error state with a working retry, pagination reflecting a total
+above one page, opening the detail sheet and asserting the exact rendered
+field names and redacted/plain values, the no-changes-recorded message, and
+a filter committing through the router's `navigate` search-merge function.
+
+**Verified:** backend `uv run pytest tests/e2e/test_audit_api.py` (19
+passed) and the full `tests/unit tests/e2e` suite (2850 passed, 26 skipped)
+against local `evexia_db`; frontend `pnpm test` (867 passed, 104 files);
+`pnpm typecheck` and `eslint` clean; manual browser verification via
+Playwright against a live local session (list, filter, pagination,
+detail-sheet with real field-change diffs) before the native-`<table>`
+lint fix below, and the automated test's exact-content assertions cover
+the same markup after it. Not verified: production.
+
+**Discovery found and fixed on the way:** `ChangeDetails`' before/after
+table used bare `<table>`/`<thead>`/`<tbody>`/`<tr>`/`<th>`/`<td>` instead
+of the shadcn `Table` primitives already imported and used earlier in the
+same file, tripping the repo's `no-restricted-syntax` ESLint rule. Replaced
+with `Table`/`TableHeader`/`TableBody`/`TableRow`/`TableCell`/`TableHead`.

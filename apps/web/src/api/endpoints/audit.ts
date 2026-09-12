@@ -9,15 +9,12 @@ import type { AuditLog, EntityChange, ListParams, PaginatedResponse } from "../t
 export type AuditListParams = ListParams & {
   action_type?: string
   resource_type?: string
+  resource_id?: string
   user_id?: string
-  date_from?: string
-  date_to?: string
-}
-
-export interface AuditLogChange {
-  field?: string
-  old_value?: unknown
-  new_value?: unknown
+  /** ISO date string; matches the BE's `start_date` query param. */
+  start_date?: string
+  /** ISO date string; matches the BE's `end_date` query param. */
+  end_date?: string
 }
 
 export const auditApi = {
@@ -29,20 +26,9 @@ export const auditApi = {
     return apiClient.get<PaginatedResponse<AuditLog>>("/audit/logs", params)
   },
 
-  async getChanges(logId: string): Promise<AuditLogChange[] | Record<string, unknown>> {
-    const res = await apiClient.get<
-      AuditLogChange[] | { changes: AuditLogChange[] } | Record<string, unknown>
-    >(`/audit/logs/${logId}/changes`)
-    if (Array.isArray(res)) return res
-    if (
-      res &&
-      typeof res === "object" &&
-      "changes" in res &&
-      Array.isArray((res as { changes: AuditLogChange[] }).changes)
-    ) {
-      return (res as { changes: AuditLogChange[] }).changes
-    }
-    return (res as Record<string, unknown>) ?? {}
+  /** The field-level changes this one audit log recorded, if any. A bare array, not a page. */
+  async getChanges(logId: string): Promise<EntityChange[]> {
+    return apiClient.get<EntityChange[]>(`/audit/logs/${logId}/changes`)
   },
 
   /**
