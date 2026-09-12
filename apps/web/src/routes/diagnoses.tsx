@@ -170,6 +170,7 @@ function DiagnosesPage() {
         actions={
           canManage ? (
             <Button
+              variant="primary"
               size="sm"
               className="h-7 gap-1.5 px-2.5"
               onClick={() => setSheet({ target: { kind: "type" }, editing: null })}

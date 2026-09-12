@@ -43,6 +43,16 @@
 
   /* Brand: brighter green works against dark surfaces. */
   --brand: #34d399;
+
+  /* Inverted: a light control on a dark page reads the same way a black one
+     does on a light page. */
+  --action: #ededed;
+  --action-fg: #0a0a0a;
+
+  /* Dropped from the light acid, which sits at 17:1 on this background and
+     blows out. This lands near 12:1 and still carries near-black text. */
+  --highlight: #bfd644;
+  --highlight-fg: #0a0a0a;
   --brand-hover: #6ee7b7;
   --brand-soft: rgb(52 211 153 / 0.12);
   --brand-fg: #052e16;

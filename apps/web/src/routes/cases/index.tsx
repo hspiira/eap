@@ -102,7 +102,12 @@ function CasesListPage() {
       icon={HeartPulse}
       breadcrumb="Clinical · Cases"
       actions={
-        <Button size="sm" className="h-7 gap-1.5 px-2.5" onClick={() => setAddOpen(true)}>
+        <Button
+          variant="primary"
+          size="sm"
+          className="h-7 gap-1.5 px-2.5"
+          onClick={() => setAddOpen(true)}
+        >
           <Plus className="size-3.5" />
           Open case
         </Button>

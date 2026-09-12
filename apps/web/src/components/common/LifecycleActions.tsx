@@ -125,7 +125,7 @@ export function LifecycleActions({
               key={action}
               variant="secondary"
               size="sm"
-              className="shrink-0 gap-1.5 rounded-none"
+              className="shrink-0 gap-1.5"
               onClick={() => handleClick(action)}
               disabled={loading}
             >

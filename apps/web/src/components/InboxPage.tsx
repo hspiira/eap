@@ -452,7 +452,7 @@ export function InboxPage() {
             size="sm"
             onClick={() => setView(id)}
             className={cn(
-              "h-auto rounded-none border-b-2 px-0 pb-3 -mb-px text-sm font-medium hover:bg-transparent",
+              "h-auto border-b-2 px-0 pb-3 -mb-px text-sm font-medium hover:bg-transparent",
               view === id
                 ? "border-blue-500 text-blue-500"
                 : "border-transparent text-gray-500 hover:text-gray-700",
@@ -482,7 +482,7 @@ export function InboxPage() {
                 size="sm"
                 onClick={() => setMainTab(tab.id)}
                 className={cn(
-                  "h-auto rounded-none border-b-2 px-1 py-2 -mb-0.5 text-sm font-medium hover:bg-transparent",
+                  "h-auto border-b-2 px-1 py-2 -mb-0.5 text-sm font-medium hover:bg-transparent",
                   mainTab === tab.id
                     ? "border-blue-500 text-blue-500"
                     : "border-transparent text-gray-500 hover:text-gray-700",

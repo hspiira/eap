@@ -50,11 +50,7 @@ function MemberDetailPage() {
       <EmptyState
         title="Member not found"
         description="This member may have been removed or belongs to another tenant."
-        action={
-          <Button className="rounded-none" onClick={back}>
-            Back to members
-          </Button>
-        }
+        action={<Button onClick={back}>Back to members</Button>}
       />
     )
   }
@@ -105,7 +101,7 @@ function MemberDetail({ member }: { member: Member }) {
             type="button"
             variant="ghost"
             size="sm"
-            className="size-7 rounded-none p-0"
+            className="size-7 p-0"
             onClick={back}
             aria-label="Back to members"
           >
@@ -116,7 +112,7 @@ function MemberDetail({ member }: { member: Member }) {
               type="button"
               variant="outline"
               size="sm"
-              className="h-7 rounded-none gap-1.5 px-2.5"
+              className="h-7 gap-1.5 px-2.5"
               onClick={() => setEditing(true)}
             >
               <SquarePen className="size-3.5" />

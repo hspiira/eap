@@ -554,7 +554,7 @@ function LifecycleSection({
           <Button
             size="sm"
             variant="secondary"
-            className="shrink-0 gap-1.5 rounded-none"
+            className="shrink-0 gap-1.5"
             onClick={() => void onVerify()}
             disabled={actionLoading}
           >

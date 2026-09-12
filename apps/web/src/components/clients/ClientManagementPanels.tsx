@@ -483,12 +483,7 @@ function ClientQueryPanel<T>({
       ) : query.isError ? (
         <div role="alert" className="border border-danger-fg/20 p-4 text-sm">
           <p>{normalizeErrorMessage(query.error, "Could not load records")}</p>
-          <Button
-            variant="outline"
-            size="sm"
-            className="mt-3 rounded-none"
-            onClick={() => void query.refetch()}
-          >
+          <Button variant="outline" size="sm" className="mt-3" onClick={() => void query.refetch()}>
             Retry
           </Button>
         </div>

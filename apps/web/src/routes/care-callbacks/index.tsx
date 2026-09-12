@@ -124,7 +124,12 @@ function CampaignsListPage() {
             My worklist
           </Button>
           {canWrite && (
-            <Button size="sm" className="h-7 gap-1.5 px-2.5" onClick={() => setAddOpen(true)}>
+            <Button
+              variant="primary"
+              size="sm"
+              className="h-7 gap-1.5 px-2.5"
+              onClick={() => setAddOpen(true)}
+            >
               <Plus className="size-3.5" />
               New campaign
             </Button>
@@ -183,7 +188,12 @@ function CampaignsListPage() {
             }
             action={
               hasFilters || !canWrite ? null : (
-                <Button size="sm" className="gap-1.5" onClick={() => setAddOpen(true)}>
+                <Button
+                  variant="primary"
+                  size="sm"
+                  className="gap-1.5"
+                  onClick={() => setAddOpen(true)}
+                >
                   <Plus className="size-4" />
                   New campaign
                 </Button>

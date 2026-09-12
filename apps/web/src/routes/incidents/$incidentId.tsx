@@ -88,7 +88,7 @@ function IncidentDetailPage() {
             type="button"
             variant="secondary"
             size="sm"
-            className="rounded-none border-fg/30 text-fg"
+            className=" border-fg/30 text-fg"
             onClick={handlePrint}
           >
             <Printer className="mr-2 h-4 w-4" />
@@ -159,7 +159,7 @@ function IncidentDetailPage() {
             <Button
               type="submit"
               disabled={noteMutation.isPending || note.trim().length === 0}
-              className="rounded-none bg-primary text-white hover:bg-primary"
+              className=" bg-primary text-white hover:bg-primary"
             >
               {noteMutation.isPending ? "Saving…" : "Add note"}
             </Button>

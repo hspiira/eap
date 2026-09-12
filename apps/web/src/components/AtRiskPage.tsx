@@ -153,7 +153,7 @@ function FilterBar() {
             variant="ghost"
             size="icon"
             onClick={() => setActiveFilter(null)}
-            className="size-5 rounded-none p-0 text-fg hover:bg-fg/10"
+            className="size-5 p-0 text-fg hover:bg-fg/10"
             aria-label="Remove filter"
           >
             ×
@@ -251,7 +251,7 @@ export function AtRiskPage() {
             type="button"
             variant="ghost"
             size="icon"
-            className="size-8 rounded-none text-fg hover:bg-surface"
+            className="size-8 text-fg hover:bg-surface"
             aria-label="Back"
           >
             <ChevronLeft className="h-4 w-4" />
@@ -260,7 +260,7 @@ export function AtRiskPage() {
             type="button"
             variant="ghost"
             size="icon"
-            className="size-8 rounded-none text-fg hover:bg-surface"
+            className="size-8 text-fg hover:bg-surface"
             aria-label="Forward"
           >
             <ChevronRight className="h-4 w-4" />
@@ -273,7 +273,7 @@ export function AtRiskPage() {
                 type="button"
                 variant="ghost"
                 size="icon"
-                className="size-8 rounded-none text-fg hover:bg-surface"
+                className="size-8 text-fg hover:bg-surface"
                 aria-label="More options"
               >
                 <MoreHorizontal className="h-4 w-4" />

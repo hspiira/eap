@@ -335,7 +335,7 @@ function ValueAddInputs({
             variant="outline"
             size="sm"
             onClick={addService}
-            className="rounded-none border-fg/30 bg-white text-sm text-fg hover:bg-surface/50"
+            className=" border-fg/30 bg-white text-sm text-fg hover:bg-surface/50"
           >
             Add
           </Button>

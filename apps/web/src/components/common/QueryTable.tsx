@@ -258,7 +258,7 @@ export function QueryTable({ title = "Query Table", className }: QueryTableProps
           <div className="flex gap-2">
             <Button
               type="button"
-              className="rounded-none bg-primary text-white hover:bg-primary"
+              className=" bg-primary text-white hover:bg-primary"
               onClick={() => setPage(1)}
             >
               <Search className="h-4 w-4 mr-1.5" />
@@ -267,7 +267,7 @@ export function QueryTable({ title = "Query Table", className }: QueryTableProps
             <Button
               type="button"
               variant="secondary"
-              className="rounded-none border-fg/30 text-fg bg-white hover:bg-surface"
+              className=" border-fg/30 text-fg bg-white hover:bg-surface"
               onClick={handleReset}
             >
               <RotateCw className="h-4 w-4 mr-1.5" />
@@ -279,13 +279,13 @@ export function QueryTable({ title = "Query Table", className }: QueryTableProps
 
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex items-center gap-2">
-          <Button className="rounded-none bg-primary text-white hover:bg-primary">
+          <Button className=" bg-primary text-white hover:bg-primary">
             <Plus className="h-4 w-4 mr-1.5" />
             New
           </Button>
           <Button
             variant="secondary"
-            className="rounded-none border-fg/30 text-fg bg-surface hover:bg-surface-hover"
+            className=" border-fg/30 text-fg bg-surface hover:bg-surface-hover"
           >
             <FileUp className="h-4 w-4 mr-1.5" />
             Batch import
@@ -293,7 +293,7 @@ export function QueryTable({ title = "Query Table", className }: QueryTableProps
         </div>
         <Button
           variant="secondary"
-          className="rounded-none border-fg/30 text-fg bg-surface hover:bg-surface-hover"
+          className=" border-fg/30 text-fg bg-surface hover:bg-surface-hover"
         >
           <Download className="h-4 w-4 mr-1.5" />
           Download

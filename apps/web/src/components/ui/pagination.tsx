@@ -49,7 +49,6 @@ export function Pagination({ page, total, limit, onPageChange, className }: Pagi
         <Button
           variant="secondary"
           size="sm"
-          className="rounded-none"
           onClick={() => onPageChange(page - 1)}
           disabled={page <= 1}
           aria-label="Previous page"
@@ -67,7 +66,7 @@ export function Pagination({ page, total, limit, onPageChange, className }: Pagi
                 key={p}
                 variant={p === page ? "default" : "secondary"}
                 size="sm"
-                className="min-w-8 rounded-none"
+                className="min-w-8"
                 onClick={() => onPageChange(p)}
                 aria-label={`Page ${p}`}
                 aria-current={p === page ? "page" : undefined}
@@ -80,7 +79,6 @@ export function Pagination({ page, total, limit, onPageChange, className }: Pagi
         <Button
           variant="secondary"
           size="sm"
-          className="rounded-none"
           onClick={() => onPageChange(page + 1)}
           disabled={page >= totalPages}
           aria-label="Next page"

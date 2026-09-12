@@ -274,13 +274,18 @@ function ButtonsSpecimen() {
     <GallerySection
       id="buttons"
       title="Buttons"
-      description="Current shadcn Button: forked, missing outline/destructive variants. Reset planned in this phase."
+      description="Pill buttons, matching the landing page. Default is near-black and carries every ordinary action. Primary is the brand and is allowed at most once per page, for the action the page exists to offer. Highlight is rarer still: a fill only, never text or a stroke."
     >
       <GallerySpecimen label="Variants">
         <div className="flex flex-wrap items-center gap-3">
-          <Button variant="default">Primary</Button>
+          <Button variant="default">Default</Button>
+          <Button variant="primary">Primary</Button>
+          <Button variant="highlight">Highlight</Button>
           <Button variant="secondary">Secondary</Button>
+          <Button variant="outline">Outline</Button>
+          <Button variant="destructive">Destructive</Button>
           <Button variant="ghost">Ghost</Button>
+          <Button variant="link">Link</Button>
           <Button disabled>Disabled</Button>
         </div>
       </GallerySpecimen>

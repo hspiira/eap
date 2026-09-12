@@ -168,7 +168,12 @@ function ContractsListPage() {
           <IconButton label="Export" icon={Download} />
           <span className="mx-1 h-4 w-px bg-fg/15" aria-hidden />
           {canWrite && (
-            <Button size="sm" className="h-7 gap-1.5 px-2.5" onClick={() => setAddOpen(true)}>
+            <Button
+              variant="primary"
+              size="sm"
+              className="h-7 gap-1.5 px-2.5"
+              onClick={() => setAddOpen(true)}
+            >
               <Plus className="size-3.5" />
               Add contract
             </Button>
@@ -230,7 +235,12 @@ function ContractsListPage() {
             }
             action={
               hasFilters || !canWrite ? null : (
-                <Button size="sm" className="gap-1.5" onClick={() => setAddOpen(true)}>
+                <Button
+                  variant="primary"
+                  size="sm"
+                  className="gap-1.5"
+                  onClick={() => setAddOpen(true)}
+                >
                   <Plus className="size-4" />
                   Add contract
                 </Button>

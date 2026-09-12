@@ -84,7 +84,7 @@ function ProviderDetailPage() {
             type="button"
             variant="outline"
             size="sm"
-            className="h-7 gap-1.5 rounded-none px-2"
+            className="h-7 gap-1.5 px-2"
             onClick={() => setEditOpen(true)}
           >
             <SquarePen className="size-3.5" />

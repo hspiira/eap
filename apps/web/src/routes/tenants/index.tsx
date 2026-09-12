@@ -120,7 +120,7 @@ function TenantsListBody() {
         icon={ShieldCheck}
         breadcrumb="Tenants"
         actions={
-          <Button type="button" size="sm" onClick={() => setAddOpen(true)}>
+          <Button variant="primary" type="button" size="sm" onClick={() => setAddOpen(true)}>
             <Plus className="size-3.5" /> New tenant
           </Button>
         }
@@ -168,7 +168,7 @@ function TenantsListBody() {
                   : "Create the first tenant to onboard an employer."
               }
               action={
-                <Button onClick={() => setAddOpen(true)}>
+                <Button variant="primary" onClick={() => setAddOpen(true)}>
                   <Plus className="size-3.5" /> New tenant
                 </Button>
               }

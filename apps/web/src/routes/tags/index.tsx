@@ -90,7 +90,12 @@ function TagsListPage() {
         <>
           <IconButton label="Export" icon={Download} />
           <span className="mx-1 h-4 w-px bg-fg/15" aria-hidden />
-          <Button size="sm" className="h-7 gap-1.5 px-2.5" onClick={() => setCreatingTag(true)}>
+          <Button
+            variant="primary"
+            size="sm"
+            className="h-7 gap-1.5 px-2.5"
+            onClick={() => setCreatingTag(true)}
+          >
             <Plus className="size-3.5" />
             New tag
           </Button>
@@ -118,7 +123,12 @@ function TagsListPage() {
             }
             action={
               activeSearch ? null : (
-                <Button size="sm" className="gap-1.5" onClick={() => setCreatingTag(true)}>
+                <Button
+                  variant="primary"
+                  size="sm"
+                  className="gap-1.5"
+                  onClick={() => setCreatingTag(true)}
+                >
                   <Plus className="size-4" />
                   New tag
                 </Button>
