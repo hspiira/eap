@@ -213,7 +213,16 @@ this month") what the team really goes on? Not evaluated here.
    the counsellor's log arrives. One query over filters that already exist
    (`service_sessions.py:750-760`). This is the reconciliation screen's
    ancestor, so the work is not thrown away. **Starting now.**
-3. Availability and conflict checking at booking time, per decision 6.
+3. ~~Availability and conflict checking at booking time, per decision 6.~~
+   **Done** (`93f91a77`). A booking carries no length until it is completed,
+   so the span comes from the service's `duration_minutes` with a nominal hour
+   as fallback; that assumption lives in `app/domain/services/session_scheduling.py`
+   and the API reports which length it used. Create and reschedule refuse a
+   clash with 409 `PRACTITIONER_DOUBLE_BOOKED`; `GET
+   /service-sessions/availability` answers for the practitioners the caller
+   names. Not done: free/busy inside the practitioner search dropdown, which
+   needs `EntityPicker` to carry per-row state. The notice under the field
+   covers the case that matters, which is the practitioner already chosen.
 4. The request entity, per decisions 1 and 2.
 5. Reconciliation as a batch, per decisions 3, 4 and 5.
 6. A member-facing request surface.
