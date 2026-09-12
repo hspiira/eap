@@ -7,7 +7,7 @@
  * empty filler, and the card then shows no caption at all.
  */
 
-import type { DashboardResponse, OutcomeCount, UpcomingBookings } from "@/api/generated"
+import type { DashboardResponse, OutcomeCount } from "@/api/generated"
 import { getStatusLabel } from "@/utils/statusColors"
 
 const CONCENTRATION_MENTION = 25
@@ -67,17 +67,6 @@ export function outcomeInsight(mix: ReadonlyArray<OutcomeCount>): string | null 
       ? `; ${unrecorded.toLocaleString()} session${unrecorded === 1 ? " is" : "s are"} still unrecorded`
       : ""
   return `${lead}${gap}.`
-}
-
-/** The week ahead, with its busiest day when there is one. */
-export function upcomingInsight(upcoming: UpcomingBookings): string | null {
-  if (upcoming.total === 0) return null
-  const busiest = upcoming.days.reduce((a, b) => (b.total > a.total ? b : a))
-  const spread =
-    upcoming.days.filter((d) => d.total > 0).length > 1
-      ? `, busiest ${busiest.label} with ${busiest.total}`
-      : ` on ${busiest.label}`
-  return `${upcoming.total.toLocaleString()} booking${upcoming.total === 1 ? "" : "s"} in the next 7 days${spread}.`
 }
 
 /**

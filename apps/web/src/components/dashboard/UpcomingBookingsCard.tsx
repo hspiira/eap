@@ -1,5 +1,9 @@
 /**
- * The booking pipeline for the week ahead: one thin column per day.
+ * The booking pipeline for the week ahead, as a plain list of days.
+ *
+ * A list rather than a chart: a handful of bookings across seven days is a
+ * work list, not a trend, and rows read at a glance where thin bars only
+ * decorate. Days with nothing booked stay out of the list.
  *
  * Deliberately not part of the sessions series. Delivery and demand are
  * different facts, and folding bookings into the delivered chart was the
@@ -9,31 +13,20 @@
 
 import { Link } from "@tanstack/react-router"
 import { ArrowUpRight, CalendarPlus } from "lucide-react"
-import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts"
 
 import type { UpcomingBookings } from "@/api/generated"
 import { Card, CardContent } from "@/components/ui/card"
-import {
-  type ChartConfig,
-  ChartContainer,
-  ChartTooltip,
-  ChartTooltipContent,
-} from "@/components/ui/chart"
 import { Skeleton } from "@/components/ui/skeleton"
 
-import { CardBar, CardEmptyState, CardInsight, CardStat } from "./CardBar"
-
-const CHART_CONFIG = {
-  total: { label: "Bookings", color: "var(--color-chart-1)" },
-} satisfies ChartConfig
+import { CardBar, CardEmptyState, CardStat } from "./CardBar"
 
 interface UpcomingBookingsCardProps {
   upcoming: UpcomingBookings | null
-  insight?: string | null
   loading?: boolean
 }
 
-export function UpcomingBookingsCard({ upcoming, insight, loading }: UpcomingBookingsCardProps) {
+export function UpcomingBookingsCard({ upcoming, loading }: UpcomingBookingsCardProps) {
+  const booked = upcoming?.days.filter((day) => day.total > 0) ?? []
   return (
     <Card className="flex flex-col rounded-md">
       <CardBar
@@ -52,31 +45,28 @@ export function UpcomingBookingsCard({ upcoming, insight, loading }: UpcomingBoo
       </CardBar>
       <CardContent className="flex-1 p-3">
         {loading || !upcoming ? (
-          <Skeleton className="h-28 w-full" />
-        ) : upcoming.total === 0 ? (
+          <Skeleton className="h-16 w-full" />
+        ) : booked.length === 0 ? (
           <CardEmptyState
             icon={CalendarPlus}
             title="Nothing booked yet"
-            description="Bookings for the coming week will chart here as they land."
+            description="Bookings for the coming week will list here as they land."
           />
         ) : (
-          <ChartContainer config={CHART_CONFIG} className="h-28 w-full">
-            <BarChart data={[...upcoming.days]} margin={{ top: 4, right: 4, bottom: 0, left: 4 }}>
-              <CartesianGrid vertical={false} strokeOpacity={0.35} />
-              <XAxis dataKey="label" tickLine={false} axisLine={false} fontSize={10} />
-              <YAxis hide allowDecimals={false} />
-              <ChartTooltip content={<ChartTooltipContent />} />
-              <Bar
-                dataKey="total"
-                fill="var(--color-total)"
-                radius={[4, 4, 0, 0]}
-                maxBarSize={22}
-              />
-            </BarChart>
-          </ChartContainer>
+          <ul className="divide-y divide-fg/5">
+            {booked.map((day) => (
+              <li
+                key={day.bucket}
+                className="flex items-baseline gap-1.5 py-1.5 first:pt-0 last:pb-0"
+              >
+                <span className="w-16 shrink-0 text-xs text-fg-muted">{day.label}</span>
+                <span className="text-sm font-medium tabular-nums text-fg">{day.total}</span>
+                <span className="text-xs text-fg-muted">booking{day.total === 1 ? "" : "s"}</span>
+              </li>
+            ))}
+          </ul>
         )}
       </CardContent>
-      {loading || !upcoming || upcoming.total === 0 ? null : <CardInsight text={insight ?? null} />}
     </Card>
   )
 }

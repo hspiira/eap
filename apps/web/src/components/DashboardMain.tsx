@@ -43,7 +43,6 @@ import {
 import {
   outcomeInsight,
   sessionsInsight,
-  upcomingInsight,
   utilizationPerThousand,
   valueHint,
 } from "@/lib/dashboard-insights"
@@ -85,11 +84,7 @@ export function DashboardMain() {
           </div>
         </div>
 
-        <UpcomingBookingsCard
-          upcoming={data?.upcoming ?? null}
-          insight={data ? upcomingInsight(data.upcoming) : null}
-          loading={loading}
-        />
+        <UpcomingBookingsCard upcoming={data?.upcoming ?? null} loading={loading} />
 
         <div className="grid gap-4 lg:grid-cols-12">
           <div className={data?.outcome_mix ? "lg:col-span-5" : "lg:col-span-7"}>

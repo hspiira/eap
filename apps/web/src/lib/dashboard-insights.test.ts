@@ -12,7 +12,6 @@ import type { DashboardResponse } from "@/api/generated"
 import {
   outcomeInsight,
   sessionsInsight,
-  upcomingInsight,
   utilizationPerThousand,
   valueHint,
 } from "@/lib/dashboard-insights"
@@ -94,27 +93,6 @@ describe("outcomeInsight", () => {
 
   it("is null with no sessions at all", () => {
     expect(outcomeInsight([])).toBeNull()
-  })
-})
-
-describe("upcomingInsight", () => {
-  const day = (label: string, total: number) => ({ bucket: label, label, total })
-
-  it("names the busiest day when bookings spread over several", () => {
-    const text = upcomingInsight({
-      total: 7,
-      days: [day("Mon 01", 2), day("Tue 02", 5), day("Wed 03", 0)],
-    })
-    expect(text).toBe("7 bookings in the next 7 days, busiest Tue 02 with 5.")
-  })
-
-  it("collapses to the single day when there is only one", () => {
-    const text = upcomingInsight({ total: 3, days: [day("Mon 01", 3), day("Tue 02", 0)] })
-    expect(text).toBe("3 bookings in the next 7 days on Mon 01.")
-  })
-
-  it("is null for an empty week", () => {
-    expect(upcomingInsight({ total: 0, days: [day("Mon 01", 0)] })).toBeNull()
   })
 })
 

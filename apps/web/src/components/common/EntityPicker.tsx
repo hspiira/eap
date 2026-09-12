@@ -395,21 +395,8 @@ export function ProviderPicker({
       placeholder="Search practitioners…"
       emptyPrompt="Start typing to search practitioners."
       emptyNoMatch="No practitioners match."
-      renderSelected={(p) => (
-        <PickerRow
-          initials="PR"
-          primary={p.display_name}
-          secondary={`${p.provider_profile.tier} · ${p.provider_profile.region}`}
-          size="md"
-        />
-      )}
-      renderRow={(p) => (
-        <PickerRow
-          initials="PR"
-          primary={p.display_name}
-          secondary={`${p.provider_profile.tier} · ${p.provider_profile.region}`}
-        />
-      )}
+      renderSelected={(p) => <PickerRow initials="PR" primary={p.display_name} size="md" />}
+      renderRow={(p) => <PickerRow initials="PR" primary={p.display_name} />}
     />
   )
 }
