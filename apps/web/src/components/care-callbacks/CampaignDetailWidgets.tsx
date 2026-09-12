@@ -107,7 +107,7 @@ export function CasesPanel({ cases, loading }: { cases: OutreachRecord[]; loadin
                 <Link
                   to="/care-callbacks/worklist/$caseId"
                   params={{ caseId: c.id }}
-                  className="text-xs text-fg group-hover:underline font-mono"
+                  className="text-xs text-fg group-hover:text-primary font-mono"
                 >
                   {c.member_id}
                 </Link>

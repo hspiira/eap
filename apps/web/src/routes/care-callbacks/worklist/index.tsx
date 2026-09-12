@@ -273,7 +273,7 @@ function CaseRow({ row, campaignName }: { row: OutreachRecord; campaignName: str
           >
             <Headphones className="size-3" />
           </span>
-          <span className="text-sm font-medium text-fg group-hover:underline font-mono">
+          <span className="text-sm font-medium text-fg group-hover:text-primary font-mono">
             {row.member_id}
           </span>
         </Link>

@@ -181,7 +181,7 @@ function EngagementRow({ row }: { row: Engagement }) {
             <Briefcase className="size-3" />
           </span>
           <span className="min-w-0">
-            <span className="block truncate text-sm font-medium text-fg group-hover:underline">
+            <span className="block truncate text-sm font-medium text-fg group-hover:text-primary">
               {row.name}
             </span>
             {row.description ? (

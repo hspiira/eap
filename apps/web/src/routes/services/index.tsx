@@ -265,7 +265,7 @@ function ServiceRow({ row }: { row: Service }) {
           >
             <Wrench className="size-3" />
           </span>
-          <span className="block max-w-[40ch] truncate text-sm font-medium text-fg group-hover:underline">
+          <span className="block max-w-[40ch] truncate text-sm font-medium text-fg group-hover:text-primary">
             {row.name}
           </span>
         </Link>

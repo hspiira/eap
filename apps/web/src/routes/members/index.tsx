@@ -578,7 +578,7 @@ function MemberRow({
           >
             <User className="size-3.5" />
           </span>
-          <span className="truncate text-sm font-medium text-fg group-hover:underline">
+          <span className="truncate text-sm font-medium text-fg group-hover:text-primary">
             {label}
           </span>
         </Link>

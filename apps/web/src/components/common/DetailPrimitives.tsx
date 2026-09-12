@@ -109,13 +109,13 @@ export function LinkRow({
       className="group flex items-center gap-1.5 py-1.5 first:pt-0 last:pb-0"
     >
       <span className="shrink-0 text-xs text-fg-muted">{label}:</span>
-      <span className="min-w-0 truncate text-sm font-medium text-primary group-hover:underline">
+      <span className="min-w-0 truncate text-sm font-medium text-primary group-hover:text-primary">
         {value}
       </span>
       {meta ? <span className="shrink-0 text-xs text-fg-muted">· {meta}</span> : null}
       <ChevronRight
         aria-hidden
-        className="size-3.5 shrink-0 text-primary/60 transition-transform group-hover:translate-x-0.5 group-hover:underline"
+        className="size-3.5 shrink-0 text-primary/60 transition-transform group-hover:translate-x-0.5 group-hover:text-primary"
       />
     </Link>
   )

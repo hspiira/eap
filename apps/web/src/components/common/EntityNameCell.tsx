@@ -26,7 +26,9 @@ export function EntityNameCell({ initials, icon, name, className }: EntityNameCe
       >
         {icon ?? initials}
       </span>
-      <span className={cn("truncate text-sm font-medium text-fg group-hover:underline", className)}>
+      <span
+        className={cn("truncate text-sm font-medium text-fg group-hover:text-primary", className)}
+      >
         {name}
       </span>
     </>

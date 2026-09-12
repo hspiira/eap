@@ -367,7 +367,7 @@ function UserRow({
           >
             <UserCog className="size-3" />
           </span>
-          <span className="text-sm font-medium text-fg group-hover:underline">{row.email}</span>
+          <span className="text-sm font-medium text-fg group-hover:text-primary">{row.email}</span>
         </Link>
       </TableCell>
       <TableCell className="text-center">

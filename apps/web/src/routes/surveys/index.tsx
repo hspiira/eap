@@ -211,7 +211,7 @@ function SurveyRow({
             <ClipboardList className="size-3" />
           </span>
           <span className="min-w-0">
-            <span className="block truncate text-sm font-medium text-fg group-hover:underline">
+            <span className="block truncate text-sm font-medium text-fg group-hover:text-primary">
               {row.name}
             </span>
             <span className="block truncate text-xs text-fg-muted">{row.external_form_id}</span>

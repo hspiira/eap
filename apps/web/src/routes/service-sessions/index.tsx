@@ -485,7 +485,7 @@ function SessionRow({
           >
             {row.member_id ? <User className="size-3" /> : <Users className="size-3" />}
           </span>
-          <span className="truncate text-sm font-medium text-fg group-hover:underline">
+          <span className="truncate text-sm font-medium text-fg group-hover:text-primary">
             {attendeeLabel}
           </span>
         </Link>

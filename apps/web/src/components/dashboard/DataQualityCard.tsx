@@ -114,7 +114,7 @@ function QualityLink({ row }: { row: QualityRow }) {
       <span className="min-w-0 flex-1 text-sm text-fg">{row.label}</span>
       <span className="text-sm font-medium tabular-nums text-fg">{row.count.toLocaleString()}</span>
       <ArrowUpRight
-        className="size-3.5 shrink-0 text-fg-subtle transition-colors group-hover:underline"
+        className="size-3.5 shrink-0 text-fg-subtle transition-colors group-hover:text-primary"
         aria-hidden
       />
     </Link>

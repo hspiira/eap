@@ -453,7 +453,7 @@ function ServicesPanel({
                   <Link
                     to="/service-assignments/$assignmentId"
                     params={{ assignmentId: a.id }}
-                    className="text-sm text-fg group-hover:underline"
+                    className="text-sm text-fg group-hover:text-primary"
                   >
                     {serviceNames.get(a.service_id) ??
                       (servicesQuery.isPending ? "Loading…" : "Unknown service")}

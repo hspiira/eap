@@ -251,7 +251,7 @@ function AssignmentRow({ row }: { row: ServiceAssignment }) {
           >
             CT
           </span>
-          <span className="text-sm text-fg group-hover:underline font-mono">
+          <span className="text-sm text-fg group-hover:text-primary font-mono">
             {row.contract_id.slice(0, 8)}
           </span>
         </Link>

@@ -185,7 +185,7 @@ function TagRow({ row, onEdit }: { row: ClientTag; onEdit: () => void }) {
             className="block size-2.5 shrink-0 border border-fg/20"
             style={swatch ? { backgroundColor: swatch } : undefined}
           />
-          <span className="text-sm font-medium text-fg group-hover:underline">{row.name}</span>
+          <span className="text-sm font-medium text-fg group-hover:text-primary">{row.name}</span>
         </Button>
       </TableCell>
       <TableCell>

@@ -288,7 +288,7 @@ function ContractsPanel({
                 <Link
                   to="/contracts/$contractId"
                   params={{ contractId: a.contract_id }}
-                  className="text-sm text-fg group-hover:underline font-mono"
+                  className="text-sm text-fg group-hover:text-primary font-mono"
                 >
                   {a.contract_id.slice(0, 8)}
                 </Link>

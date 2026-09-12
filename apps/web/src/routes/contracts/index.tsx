@@ -311,7 +311,7 @@ function ContractRow({ row, clientsById }: { row: Contract; clientsById: Map<str
           >
             <FileSignature className="size-3" />
           </span>
-          <span className="truncate text-sm font-medium text-fg group-hover:underline">
+          <span className="truncate text-sm font-medium text-fg group-hover:text-primary">
             {clientName}
           </span>
         </Link>
