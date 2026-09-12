@@ -107,7 +107,7 @@ export function DutyLog() {
           {CHIPS.map((chip, index) => (
             <div
               key={chip.at}
-              className="lp-rise absolute top-4 hidden -translate-x-1/2 flex-col items-center sm:flex"
+              className="lp-rise absolute top-4 hidden -translate-x-1/2 flex-col items-center lg:flex"
               style={
                 {
                   left: asPercent(chip.at),
