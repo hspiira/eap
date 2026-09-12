@@ -8,9 +8,17 @@ interface CategoryDonutCardProps {
   categories: ReadonlyArray<CategoryCount>
   insight?: string | null
   loading?: boolean
+  error?: boolean
+  onRetry?: () => void
 }
 
-export function CategoryDonutCard({ categories, insight, loading }: CategoryDonutCardProps) {
+export function CategoryDonutCard({
+  categories,
+  insight,
+  loading,
+  error,
+  onRetry,
+}: CategoryDonutCardProps) {
   return (
     <DonutBreakdownCard
       title="By category"
@@ -20,6 +28,8 @@ export function CategoryDonutCard({ categories, insight, loading }: CategoryDonu
       emptyDescription="A breakdown will appear here once sessions are logged in this window."
       insight={insight}
       loading={loading}
+      error={error}
+      onRetry={onRetry}
     />
   )
 }

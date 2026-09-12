@@ -10,24 +10,34 @@ import type { ClientSessions } from "@/api/generated"
 import { Card, CardContent } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
 
-import { CardBar, CardEmptyState, CardStat } from "./CardBar"
+import { CardBar, CardEmptyState, CardErrorState, CardStat } from "./CardBar"
 
 interface TopClientsCardProps {
   clients: ReadonlyArray<ClientSessions>
   loading?: boolean
+  error?: boolean
+  onRetry?: () => void
 }
 
-export function TopClientsCard({ clients, loading }: TopClientsCardProps) {
+export function TopClientsCard({ clients, loading, error, onRetry }: TopClientsCardProps) {
   const max = Math.max(...clients.map((c) => c.total), 1)
   const total = clients.reduce((sum, c) => sum + c.total, 0)
   return (
     <Card className="flex h-full flex-col rounded-md">
       <CardBar title="Top clients">
-        {clients.length > 0 ? <CardStat value={total.toLocaleString()} label="sessions" /> : null}
+        {!error && clients.length > 0 ? (
+          <CardStat value={total.toLocaleString()} label="sessions" />
+        ) : null}
       </CardBar>
       <CardContent className="flex-1 p-3">
         {loading ? (
           <Skeleton className="h-32 w-full" />
+        ) : error ? (
+          <CardErrorState
+            title="Top clients unavailable"
+            description="Client rankings could not be loaded."
+            onRetry={onRetry}
+          />
         ) : clients.length === 0 ? (
           <CardEmptyState
             icon={Building2}

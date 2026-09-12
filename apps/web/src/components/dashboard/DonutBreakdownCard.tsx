@@ -16,7 +16,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { type ChartConfig, ChartContainer, ChartTooltip } from "@/components/ui/chart"
 import { Skeleton } from "@/components/ui/skeleton"
 
-import { CardBar, CardEmptyState, CardInsight } from "./CardBar"
+import { CardBar, CardEmptyState, CardErrorState, CardInsight } from "./CardBar"
 
 const SLOTS = [
   "var(--color-chart-1)",
@@ -42,6 +42,8 @@ interface DonutBreakdownCardProps {
   emptyDescription: string
   insight?: string | null
   loading?: boolean
+  error?: boolean
+  onRetry?: () => void
 }
 
 /** Slot colours skip slices with a pinned colour, so identities stay stable. */
@@ -61,6 +63,8 @@ export function DonutBreakdownCard({
   emptyDescription,
   insight,
   loading,
+  error,
+  onRetry,
 }: DonutBreakdownCardProps) {
   const [active, setActive] = useState<number | null>(null)
   const colored = withColors(slices)
@@ -75,6 +79,12 @@ export function DonutBreakdownCard({
       <CardContent className="grid flex-1 content-center gap-3 p-3 sm:grid-cols-[9rem_1fr] sm:items-center">
         {loading ? (
           <Skeleton className="h-36 w-full sm:col-span-2" />
+        ) : error ? (
+          <CardErrorState
+            title={`${title} unavailable`}
+            onRetry={onRetry}
+            className="sm:col-span-2"
+          />
         ) : total === 0 ? (
           <CardEmptyState
             icon={PieChartIcon}
@@ -96,7 +106,7 @@ export function DonutBreakdownCard({
           </>
         )}
       </CardContent>
-      {loading || total === 0 ? null : <CardInsight text={insight ?? null} />}
+      {loading || error || total === 0 ? null : <CardInsight text={insight ?? null} />}
     </Card>
   )
 }

@@ -25,7 +25,7 @@ import { entityListKey } from "@/lib/queries"
 import type { ServiceSession } from "@/types/entities"
 import { SessionStatus } from "@/types/enums"
 
-import { CardBar, CardEmptyState, CardStat } from "./CardBar"
+import { CardBar, CardEmptyState, CardErrorState, CardStat } from "./CardBar"
 
 const SHOWN = 6
 const WINDOW_DAYS = 7
@@ -80,9 +80,17 @@ interface UpcomingBookingsCardProps {
   /** The aggregate's count, which stays authoritative for the header figure. */
   upcoming: UpcomingBookings | null
   loading?: boolean
+  /** Whether the aggregate itself failed; distinct from a still-loading aggregate. */
+  error?: boolean
+  onRetry?: () => void
 }
 
-export function UpcomingBookingsCard({ upcoming, loading }: UpcomingBookingsCardProps) {
+export function UpcomingBookingsCard({
+  upcoming,
+  loading,
+  error,
+  onRetry,
+}: UpcomingBookingsCardProps) {
   const total = upcoming?.total ?? 0
   const rows = useWeekAhead(total > 0)
   const sessions = rows.data ?? []
@@ -105,13 +113,27 @@ export function UpcomingBookingsCard({ upcoming, loading }: UpcomingBookingsCard
         {upcoming ? <CardStat value={total.toLocaleString()} label="booked" /> : null}
       </CardBar>
       <CardContent className="flex-1 p-3">
-        {loading || !upcoming || (total > 0 && rows.isPending) ? (
+        {loading ? (
           <Skeleton className="h-16 w-full" />
+        ) : error || !upcoming ? (
+          <CardErrorState
+            title="Upcoming sessions unavailable"
+            description="The count of booked sessions could not be loaded."
+            onRetry={onRetry}
+          />
         ) : total === 0 ? (
           <CardEmptyState
             icon={CalendarPlus}
             title="Nothing booked yet"
             description="Bookings for the coming week will list here as they land."
+          />
+        ) : rows.isPending ? (
+          <Skeleton className="h-16 w-full" />
+        ) : rows.isError ? (
+          <CardErrorState
+            title="This week's bookings unavailable"
+            description="The count above is still current; the row list could not be loaded."
+            onRetry={() => rows.refetch()}
           />
         ) : (
           <>

@@ -45,8 +45,9 @@ describe("DashboardMain", () => {
     expect(rows[0]).toHaveTextContent("Activate 112 pending practitioners")
     expect(rows[0]).toHaveTextContent("they cannot take new bookings")
     expect(rows[1]).toHaveTextContent("Import member rosters for 38 clients")
-    // The action names the consequence, not just the count.
-    expect(rows[1]).toHaveTextContent("unblocks 7,103 import rows")
+    // The consequence names what the missing roster itself breaks, not a
+    // causal claim about the tenant's whole import backlog.
+    expect(rows[1]).toHaveTextContent("new sessions for these clients can't be matched to members")
   })
 
   it("renders the analytics cards from the aggregate", async () => {
@@ -129,7 +130,41 @@ describe("DashboardMain", () => {
     expect(screen.queryByRole("heading", { name: "Import health" })).not.toBeInTheDocument()
     // The backlog itself still has a home: the KPI tile and the attention panel.
     expect(screen.getByText("Import backlog")).toBeInTheDocument()
-    expect(screen.getByText(/unblocks 7,103 import rows/)).toBeInTheDocument()
+    expect(
+      screen.getByText(/new sessions for these clients can't be matched to members/),
+    ).toBeInTheDocument()
+  })
+
+  it("shows unavailable states, not an all-clear, when the aggregate fails", async () => {
+    vi.mocked(dashboardApi.get).mockRejectedValueOnce(new Error("boom"))
+    renderWithProviders(<DashboardMain />)
+
+    expect(await screen.findByText("Needs attention unavailable")).toBeInTheDocument()
+    expect(screen.queryByText("Nothing is blocked.")).not.toBeInTheDocument()
+
+    expect(screen.getByText("Top clients unavailable")).toBeInTheDocument()
+    expect(screen.queryByText("No sessions yet")).not.toBeInTheDocument()
+
+    expect(screen.getByText("Upcoming sessions unavailable")).toBeInTheDocument()
+    expect(screen.queryByText("Nothing booked yet")).not.toBeInTheDocument()
+  })
+
+  it("keeps the upcoming count and shows a separate error when only the week-ahead query fails", async () => {
+    vi.mocked(dashboardApi.get).mockResolvedValueOnce(
+      makeDashboard({
+        upcoming: {
+          total: 2,
+          days: [{ bucket: "2026-09-14", label: "Mon 14", total: 2 }],
+        },
+      }),
+    )
+    vi.mocked(serviceSessionsApi.list).mockRejectedValueOnce(new Error("boom"))
+    renderWithProviders(<DashboardMain />)
+
+    await screen.findByText("Stanbic Bank")
+    expect(await screen.findByText("This week's bookings unavailable")).toBeInTheDocument()
+    // The aggregate's own count is unaffected by the row query failing.
+    expect(screen.getByText("booked")).toBeInTheDocument()
   })
 
   it("re-scopes the figures when the window changes", async () => {

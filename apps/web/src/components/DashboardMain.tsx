@@ -54,6 +54,9 @@ export function DashboardMain() {
   const loading = dashboard.isLoading
   const error = dashboard.isError
   const refreshing = dashboard.isFetching && !dashboard.isLoading
+  const retry = () => {
+    void dashboard.refetch()
+  }
 
   const attention = useMemo(() => (data ? buildAttentionItems(data) : []), [data])
   const stats = useStatSpecs(data, { loading, error, range })
@@ -80,15 +83,25 @@ export function DashboardMain() {
             />
           </div>
           <div className="lg:col-span-4">
-            <AttentionCard items={attention} loading={loading} />
+            <AttentionCard items={attention} loading={loading} error={error} onRetry={retry} />
           </div>
         </div>
 
-        <UpcomingBookingsCard upcoming={data?.upcoming ?? null} loading={loading} />
+        <UpcomingBookingsCard
+          upcoming={data?.upcoming ?? null}
+          loading={loading}
+          error={error}
+          onRetry={retry}
+        />
 
         <div className="grid gap-4 lg:grid-cols-12">
           <div className={data?.outcome_mix ? "lg:col-span-5" : "lg:col-span-7"}>
-            <TopClientsCard clients={data?.top_clients ?? []} loading={loading} />
+            <TopClientsCard
+              clients={data?.top_clients ?? []}
+              loading={loading}
+              error={error}
+              onRetry={retry}
+            />
           </div>
           {data?.outcome_mix ? (
             <div className="lg:col-span-4">
@@ -100,7 +113,12 @@ export function DashboardMain() {
             </div>
           ) : null}
           <div className={data?.outcome_mix ? "lg:col-span-3" : "lg:col-span-5"}>
-            <CategoryDonutCard categories={data?.sessions_by_category ?? []} loading={loading} />
+            <CategoryDonutCard
+              categories={data?.sessions_by_category ?? []}
+              loading={loading}
+              error={error}
+              onRetry={retry}
+            />
           </div>
         </div>
 

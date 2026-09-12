@@ -22,7 +22,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
 import { cn } from "@/lib/utils"
 
-import { CardBar, CardStat } from "./CardBar"
+import { CardBar, CardErrorState, CardStat } from "./CardBar"
 
 type Severity = "high" | "medium" | "low" | "signal"
 
@@ -67,7 +67,6 @@ const CRISIS_PRIORITY_BOOST = 100_000
  */
 export function buildAttentionItems(data: DashboardResponse): AttentionItem[] {
   const quality = data.data_quality
-  const backlog = data.kpis.import_backlog
   const risk = data.risk
   const items: (AttentionItem & { size: number })[] = []
 
@@ -110,7 +109,7 @@ export function buildAttentionItems(data: DashboardResponse): AttentionItem[] {
       severity: "high",
       size: quality.clients_without_roster,
       headline: `Import member rosters for ${quality.clients_without_roster} clients`,
-      consequence: backlog > 0 ? `unblocks ${backlog.toLocaleString()} import rows` : "",
+      consequence: "new sessions for these clients can't be matched to members",
       action: "Members",
       to: "/members",
     })
@@ -184,7 +183,7 @@ function buildSignals(data: DashboardResponse): AttentionItem[] {
         key: "concentration",
         severity: "signal",
         headline: `${leader.client_name} is ${share}% of delivery`,
-        consequence: "revenue concentrated in one client",
+        consequence: "session volume concentrated in one client",
         action: "Clients",
         to: "/clients",
       })
@@ -199,7 +198,7 @@ function buildSignals(data: DashboardResponse): AttentionItem[] {
     signals.push({
       key: "riser",
       severity: "signal",
-      headline: `${riser.service_name} demand up ${Math.round(riser.change_pct ?? 0)}%`,
+      headline: `${riser.service_name} recorded sessions up ${Math.round(riser.change_pct ?? 0)}%`,
       consequence: "check practitioner capacity",
       action: "Services",
       to: "/services",
@@ -210,8 +209,8 @@ function buildSignals(data: DashboardResponse): AttentionItem[] {
     signals.push({
       key: "faller",
       severity: "signal",
-      headline: `${faller.service_name} demand down ${Math.abs(Math.round(faller.change_pct ?? 0))}%`,
-      consequence: "demand shifting to other services",
+      headline: `${faller.service_name} recorded sessions down ${Math.abs(Math.round(faller.change_pct ?? 0))}%`,
+      consequence: "fewer recorded sessions than the prior window",
       action: "Services",
       to: "/services",
     })
@@ -229,15 +228,19 @@ function maxBy<T>(items: ReadonlyArray<T>, score: (item: T) => number): T | unde
 export function AttentionCard({
   items,
   loading,
+  error,
+  onRetry,
 }: {
   items: ReadonlyArray<AttentionItem>
   loading?: boolean
+  error?: boolean
+  onRetry?: () => void
 }) {
   const high = items.filter((item) => item.severity === "high").length
   return (
     <Card className="flex h-full flex-col rounded-md">
       <CardBar title="Needs attention">
-        {!loading && high > 0 ? <CardStat value={`${high}`} label="blocking" /> : null}
+        {!loading && !error && high > 0 ? <CardStat value={`${high}`} label="blocking" /> : null}
       </CardBar>
       <CardContent className="max-h-[220px] flex-1 overflow-y-auto p-0">
         {loading ? (
@@ -245,6 +248,8 @@ export function AttentionCard({
             <Skeleton className="h-9 w-full" />
             <Skeleton className="h-9 w-full" />
           </div>
+        ) : error ? (
+          <CardErrorState title="Needs attention unavailable" onRetry={onRetry} className="m-3" />
         ) : items.length === 0 ? (
           <div className="flex items-center gap-2 p-4">
             <CheckCircle2 className="size-4 shrink-0 text-success-fg" aria-hidden />
