@@ -89,8 +89,6 @@ export type SeriesPoint = Schemas["SeriesPoint"]
 export type ServiceTrend = Schemas["ServiceTrend"]
 export type CategoryCount = Schemas["CategoryCount"]
 export type ClientSessions = Schemas["ClientSessions"]
-export type ImportQueueEntry = Schemas["ImportQueueEntry"]
-export type ImportBatchSummary = Schemas["ImportBatchSummary"]
 export type DataQuality = Schemas["DataQuality"]
 
 // ----- Global search ---------------------------------------------------------

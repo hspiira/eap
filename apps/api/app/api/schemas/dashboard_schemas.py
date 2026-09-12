@@ -115,32 +115,6 @@ class ServiceTrend(BaseModel):
     )
 
 
-class ImportQueueEntry(BaseModel):
-    """One held-outcome bucket in the current import batch."""
-
-    outcome: str
-    total: int
-
-
-class ImportBatchSummary(BaseModel):
-    """The batch the backlog figures describe, as a part-to-whole composition.
-
-    The four parts account for every row: `accepted + duplicate + blocked +
-    failed == row_count`. `blocked` covers every reason staging held a row,
-    not only an unresolved identity, so a batch stuck entirely on conflicting
-    or undated rows cannot report nothing blocked.
-    """
-
-    file_name: str
-    status: str
-    row_count: int
-    accepted: int
-    duplicate: int
-    blocked: int = Field(..., description="Rows staging held, for any reason")
-    failed: int = Field(0, description="Accepted rows the write path refused at apply time")
-    applied_at: str | None = None
-
-
 class DataQuality(BaseModel):
     """Derived gaps that block reporting, each one an actionable queue."""
 
@@ -177,8 +151,4 @@ class DashboardResponse(BaseModel):
     sessions_by_category: list[CategoryCount]
     top_clients: list[ClientSessions]
     trending_services: list[ServiceTrend]
-    import_queues: list[ImportQueueEntry]
-    import_batch: ImportBatchSummary | None = Field(
-        None, description="Absent when the tenant has never staged an import"
-    )
     data_quality: DataQuality
