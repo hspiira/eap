@@ -122,6 +122,8 @@ from app.shared.utils.route_audit_helper import audit_change
 
 router = APIRouter(prefix="/service-sessions", tags=["service-sessions"])
 
+_TENANT_ID_DESC = "Tenant identifier"
+
 
 def derived_client_type(ordinal: int | None, stored: ClientType | None) -> ClientType | None:
     """New on a member's first session, Repeat on every one after it.
@@ -445,7 +447,7 @@ async def _resolve_attendance(
 async def create_service_session(
     data: ServiceSessionCreate,
     request: Request,
-    tenant_id: str = Query(..., description="Tenant identifier"),
+    tenant_id: str = Query(..., description=_TENANT_ID_DESC),
     current_user: TokenData = Depends(require_same_tenant),
     session_repo: ServiceSessionRepository = Depends(get_service_session_repository),
     member_repo: EligibleMemberRepository = Depends(get_eligible_member_repository),
@@ -873,7 +875,7 @@ SESSION_SORT_COLUMNS = frozenset(
 )
 @readonly()
 async def list_service_sessions(
-    tenant_id: str = Query(..., description="Tenant identifier"),
+    tenant_id: str = Query(..., description=_TENANT_ID_DESC),
     current_user: TokenData = Depends(require_same_tenant),
     client_id: str | None = Query(None, description="Filter by client identifier"),
     member_id: str | None = Query(None, description="Filter by member identifier"),
@@ -953,7 +955,7 @@ async def list_service_sessions(
 )
 @readonly()
 async def check_practitioner_availability(
-    tenant_id: str = Query(..., description="Tenant identifier"),
+    tenant_id: str = Query(..., description=_TENANT_ID_DESC),
     at: datetime = Query(..., description="Start of the proposed booking, ISO 8601"),
     service_id: str = Query(..., description="Service being delivered; sets the assumed length"),
     provider_id: list[str] = Query(
@@ -1006,7 +1008,7 @@ async def check_practitioner_availability(
 )
 @readonly()
 async def list_sessions_awaiting_confirmation(
-    tenant_id: str = Query(..., description="Tenant identifier"),
+    tenant_id: str = Query(..., description=_TENANT_ID_DESC),
     provider_id: str | None = Query(None, description="Narrow to one practitioner"),
     client_id: str | None = Query(None, description="Narrow to one client"),
     pg: PageParams = Depends(pagination(default_limit=50, max_limit=200)),
@@ -1100,7 +1102,7 @@ async def get_service_session(
 @readonly()
 async def get_sessions_by_member(
     member_id: str,
-    tenant_id: str = Query(..., description="Tenant identifier"),
+    tenant_id: str = Query(..., description=_TENANT_ID_DESC),
     current_user: TokenData = Depends(require_same_tenant),
     session_repo: ServiceSessionRepository = Depends(get_service_session_repository),
     attribution_reader: SessionAttributionReader = Depends(get_session_attribution_reader),
@@ -1122,7 +1124,7 @@ async def get_sessions_by_member(
 @readonly()
 async def get_sessions_by_provider(
     provider_id: str,
-    tenant_id: str = Query(..., description="Tenant identifier"),
+    tenant_id: str = Query(..., description=_TENANT_ID_DESC),
     current_user: TokenData = Depends(require_same_tenant),
     session_repo: ServiceSessionRepository = Depends(get_service_session_repository),
     attribution_reader: SessionAttributionReader = Depends(get_session_attribution_reader),
@@ -1144,7 +1146,7 @@ async def get_sessions_by_provider(
 @readonly()
 async def get_sessions_by_service(
     service_id: str,
-    tenant_id: str = Query(..., description="Tenant identifier"),
+    tenant_id: str = Query(..., description=_TENANT_ID_DESC),
     current_user: TokenData = Depends(require_same_tenant),
     session_repo: ServiceSessionRepository = Depends(get_service_session_repository),
     attribution_reader: SessionAttributionReader = Depends(get_session_attribution_reader),
