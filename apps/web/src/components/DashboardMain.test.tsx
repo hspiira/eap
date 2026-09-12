@@ -16,6 +16,12 @@ vi.mock("@/api/endpoints/dashboard", () => ({
   dashboardApi: { get: vi.fn(async () => makeDashboard()) },
 }))
 
+vi.mock("@/api/endpoints/service-sessions", () => ({
+  serviceSessionsApi: {
+    list: vi.fn(async () => ({ items: [], total: 0, page: 1, limit: 20, has_more: false })),
+  },
+}))
+
 vi.mock("@tanstack/react-router", () => ({
   Link: ({ children, to }: { children?: React.ReactNode; to?: string }) => (
     <a href={to ?? "#"}>{children}</a>
@@ -25,6 +31,7 @@ vi.mock("@tanstack/react-router", () => ({
 
 const { DashboardMain } = await import("@/components/DashboardMain")
 const { dashboardApi } = await import("@/api/endpoints/dashboard")
+const { serviceSessionsApi } = await import("@/api/endpoints/service-sessions")
 
 describe("DashboardMain", () => {
   it("leads with the decision panel, ranked by what is blocking", async () => {
@@ -49,7 +56,7 @@ describe("DashboardMain", () => {
     expect(screen.getByRole("heading", { name: "Sessions delivered" })).toBeInTheDocument()
     expect(screen.getByRole("heading", { name: "Top clients" })).toBeInTheDocument()
     expect(screen.getByRole("heading", { name: "By category" })).toBeInTheDocument()
-    expect(screen.getByRole("heading", { name: "Next 7 days" })).toBeInTheDocument()
+    expect(screen.getByRole("heading", { name: "Upcoming sessions" })).toBeInTheDocument()
 
     // The trending card gave way to the outcome mix; its ranking restated the
     // area chart, and its percentages were noise against tiny denominators.
@@ -71,6 +78,47 @@ describe("DashboardMain", () => {
 
     expect(await screen.findByRole("heading", { name: "Clinical outcomes" })).toBeInTheDocument()
     expect(screen.getByText("Not recorded")).toBeInTheDocument()
+  })
+
+  it("lists the week's sessions themselves, not day counts", async () => {
+    vi.mocked(dashboardApi.get).mockResolvedValueOnce(
+      makeDashboard({
+        upcoming: {
+          total: 2,
+          days: [{ bucket: "2026-09-14", label: "Mon 14", total: 2 }],
+        },
+      }),
+    )
+    vi.mocked(serviceSessionsApi.list).mockResolvedValueOnce({
+      items: [
+        {
+          id: "ss-up-1",
+          scheduled_at: "2026-09-14T09:00:00Z",
+          status: "Scheduled",
+          service_name: "Individual Counselling",
+          client_name: "Minet Uganda",
+          member_display_label: "Afimani Joseph",
+          provider_display_name: "Moses Mpanga",
+        },
+        {
+          id: "ss-up-2",
+          scheduled_at: "2026-09-14T11:00:00Z",
+          status: "Cancelled",
+          service_name: "Cancelled thing",
+        },
+      ],
+      total: 2,
+      page: 1,
+      limit: 20,
+      has_more: false,
+    } as never)
+    renderWithProviders(<DashboardMain />)
+
+    expect(await screen.findByText("Individual Counselling")).toBeInTheDocument()
+    expect(screen.getByText("Minet Uganda / Afimani Joseph")).toBeInTheDocument()
+    expect(screen.getByText("Moses Mpanga")).toBeInTheDocument()
+    // A cancelled future session is not a booking to prepare for.
+    expect(screen.queryByText("Cancelled thing")).not.toBeInTheDocument()
   })
 
   it("no longer carries the import health card", async () => {
