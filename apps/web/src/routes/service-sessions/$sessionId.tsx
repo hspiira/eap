@@ -2,7 +2,7 @@ import { useCallback, useState } from "react"
 
 import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { createFileRoute, useNavigate } from "@tanstack/react-router"
-import { ArrowLeft, CalendarClock, SquarePen } from "lucide-react"
+import { ArrowLeft, CalendarClock, SquarePen, Waypoints } from "lucide-react"
 
 import { diagnosesApi } from "@/api/endpoints/diagnoses"
 import { membersApi } from "@/api/endpoints/members"
@@ -275,7 +275,7 @@ function ServiceSessionDetailPage() {
                   diagnosisLabel={diagnosisLabel}
                 />
                 <div className="mt-4">
-                  <DetailCard title="Chain of care">
+                  <DetailCard title="Chain of care" icon={Waypoints}>
                     <SessionChainCard
                       session={session}
                       onSelectSession={(id) =>

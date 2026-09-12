@@ -9,11 +9,14 @@ import { cn } from "@/lib/utils"
 
 export function DetailCard({
   title,
+  icon: Icon,
   phiLabel,
   action,
   children,
 }: {
   title: string
+  /** Small anchor icon rendered before the title. */
+  icon?: React.ComponentType<{ className?: string }>
   /** Marks the card as showing protected health information. */
   phiLabel?: string
   /** Optional control rendered at the top-right of the header (e.g. an Edit button). */
@@ -23,6 +26,7 @@ export function DetailCard({
   return (
     <section className="rounded-none border border-fg/10 bg-surface p-4">
       <div className="mb-3 flex items-center gap-2 border-b border-fg/10 pb-2">
+        {Icon ? <Icon className="size-3.5 shrink-0 text-primary/70" aria-hidden /> : null}
         <h3 className="text-xs font-semibold tracking-wide text-fg-muted">{title}</h3>
         {phiLabel ? (
           <span className="ml-auto inline-flex items-center gap-1 text-[10px] text-fg-subtle">
@@ -105,13 +109,13 @@ export function LinkRow({
       className="group flex items-center gap-1.5 py-1.5 first:pt-0 last:pb-0"
     >
       <span className="shrink-0 text-xs text-fg-muted">{label}:</span>
-      <span className="min-w-0 truncate text-sm font-medium text-fg group-hover:text-primary">
+      <span className="min-w-0 truncate text-sm font-medium text-primary group-hover:underline">
         {value}
       </span>
       {meta ? <span className="shrink-0 text-xs text-fg-muted">· {meta}</span> : null}
       <ChevronRight
         aria-hidden
-        className="size-3.5 shrink-0 text-fg-subtle transition-transform group-hover:translate-x-0.5 group-hover:text-primary"
+        className="size-3.5 shrink-0 text-primary/60 transition-transform group-hover:translate-x-0.5 group-hover:text-primary"
       />
     </Link>
   )
