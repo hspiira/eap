@@ -18,10 +18,19 @@ const NAV = [
 ]
 
 const ASSURANCES: ReadonlyArray<{ term: string; detail: string }> = [
-  { term: "Role-scoped access", detail: "Clinical notes stay with the clinicians who own them." },
-  { term: "Immutable audit trail", detail: "Every read, edit, and escalation, with who and when." },
+  {
+    term: "Encrypted clinical fields",
+    detail: "Notes, feedback, and case detail are encrypted at rest.",
+  },
+  {
+    term: "Recorded lifecycle changes",
+    detail: "Session and case edits are logged with who and when.",
+  },
   { term: "Single sign-on", detail: "Corporate identity, enforced at the door." },
-  { term: "No silent deletions", detail: "Records are closed and archived, never quietly erased." },
+  {
+    term: "Sessions and cases are archived",
+    detail: "Closed and archived rather than deleted, with limited exceptions.",
+  },
 ]
 
 const STEPS: ReadonlyArray<{ step: string; title: string; detail: string }> = [
@@ -66,8 +75,7 @@ const CAPABILITIES: ReadonlyArray<{ title: string; detail: string; span?: boolea
   },
   {
     title: "Cases and incidents",
-    detail:
-      "Route cases through review, keep notes with the people entitled to read them, and escalate critical incidents on the clock.",
+    detail: "Route cases through review, and escalate critical incidents on the clock.",
   },
   {
     title: "Sessions and providers",
@@ -77,7 +85,7 @@ const CAPABILITIES: ReadonlyArray<{ title: string; detail: string; span?: boolea
   {
     title: "Insight and audit",
     detail:
-      "KPIs, surveys, and engagement reports that read from the same records as the audit trail. No exports, no reconciliation.",
+      "KPIs, surveys, and engagement reports read from the same operational records your team enters. No exports, no reconciliation.",
     span: true,
   },
 ]
@@ -155,7 +163,8 @@ function Hero() {
           style={{ "--lp-delay": "0.1s" } as React.CSSProperties}
         >
           Neither does the console that runs it. Evexía holds an entire assistance programme:
-          intake, triage, sessions, incidents, contracts, and the audit trail behind every decision.
+          intake, triage, sessions, incidents, contracts, and the record of what changed along the
+          way.
         </p>
 
         <div
@@ -194,7 +203,7 @@ function Hero() {
 const PROOF: ReadonlyArray<{ value: string; label: string }> = [
   { value: "24/7", label: "Intake, every hour of the day" },
   { value: "One record", label: "From first contact to closure" },
-  { value: "Every action", label: "Written to the audit trail" },
+  { value: "Encrypted", label: "Clinical fields, held at rest" },
 ]
 
 function ProofBar() {
@@ -287,8 +296,8 @@ function Assurance() {
           </h2>
           <p className="mt-6 max-w-[42ch] text-[15px] leading-relaxed text-(--lp-panel-muted)">
             An assistance programme only works while people trust it with what they would tell no
-            one else. Access is scoped to the people doing the work, and every movement of a record
-            is logged.
+            one else. Clinical content is encrypted at rest, and lifecycle changes to sessions and
+            cases are logged.
           </p>
         </div>
 
