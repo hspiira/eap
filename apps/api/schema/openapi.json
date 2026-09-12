@@ -5142,6 +5142,11 @@
             "title": "Clients With Roster",
             "type": "integer"
           },
+          "contracts_ending_soon": {
+            "description": "Active contracts whose end date falls within the next 60 days",
+            "title": "Contracts Ending Soon",
+            "type": "integer"
+          },
           "covered_members": {
             "description": "Eligible members with Active status",
             "title": "Covered Members",
@@ -5161,6 +5166,16 @@
             "description": "Completed sessions in the comparison window, for the delta",
             "title": "Sessions Prior",
             "type": "integer"
+          },
+          "sessions_unpriced": {
+            "description": "Completed sessions inside the range with no rate recorded",
+            "title": "Sessions Unpriced",
+            "type": "integer"
+          },
+          "value_delivered_ugx": {
+            "description": "Sum of session rates over completed sessions inside the range. Only sessions that carry a rate contribute; sessions_unpriced says how many did not.",
+            "title": "Value Delivered Ugx",
+            "type": "integer"
           }
         },
         "required": [
@@ -5170,7 +5185,10 @@
           "covered_members",
           "clients_with_roster",
           "clients_total",
-          "import_backlog"
+          "import_backlog",
+          "value_delivered_ugx",
+          "sessions_unpriced",
+          "contracts_ending_soon"
         ],
         "title": "DashboardKpis",
         "type": "object"
@@ -5184,8 +5202,26 @@
           "kpis": {
             "$ref": "#/components/schemas/DashboardKpis"
           },
+          "outcome_mix": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/OutcomeCount"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Completed sessions grouped by clinical outcome, inside the range. Null for a caller without the clinical access scope; aggregate or not, outcomes are part of the clinical record and the wall fails closed.",
+            "title": "Outcome Mix"
+          },
           "range": {
             "$ref": "#/components/schemas/RangeInfo"
+          },
+          "risk": {
+            "$ref": "#/components/schemas/RiskCounts"
           },
           "session_years": {
             "description": "Years that actually have a completed session, newest first. What the year picker offers, so it never lists a year with nothing behind it. Empty for a tenant that has delivered nothing.",
@@ -5222,6 +5258,9 @@
             },
             "title": "Trending Services",
             "type": "array"
+          },
+          "upcoming": {
+            "$ref": "#/components/schemas/UpcomingBookings"
           }
         },
         "required": [
@@ -5231,7 +5270,9 @@
           "sessions_by_category",
           "top_clients",
           "trending_services",
-          "data_quality"
+          "data_quality",
+          "upcoming",
+          "risk"
         ],
         "title": "DashboardResponse",
         "type": "object"
@@ -11090,6 +11131,32 @@
         "title": "OrganisationApprovalStatus",
         "type": "string"
       },
+      "OutcomeCount": {
+        "description": "Completed sessions per clinical outcome inside the range.\n\n`outcome` is None for sessions whose outcome was never recorded; the\nclient renders that as its own \"Not recorded\" band rather than folding it\ninto a real outcome.",
+        "properties": {
+          "outcome": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Outcome"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "outcome",
+          "total"
+        ],
+        "title": "OutcomeCount",
+        "type": "object"
+      },
       "OutreachAssignRequest": {
         "properties": {
           "counsellor_id": {
@@ -13514,6 +13581,33 @@
           "rationale"
         ],
         "title": "RetentionPolicyResponse",
+        "type": "object"
+      },
+      "RiskCounts": {
+        "description": "Open safety work. Stock figures; a crisis does not follow a range.",
+        "properties": {
+          "cases_open": {
+            "description": "Clinical cases currently open",
+            "title": "Cases Open",
+            "type": "integer"
+          },
+          "crisis_flags_open": {
+            "description": "Outreach records flagged crisis whose outreach is still open",
+            "title": "Crisis Flags Open",
+            "type": "integer"
+          },
+          "incidents_open": {
+            "description": "Critical incidents not yet closed",
+            "title": "Incidents Open",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "crisis_flags_open",
+          "incidents_open",
+          "cases_open"
+        ],
+        "title": "RiskCounts",
         "type": "object"
       },
       "SearchCategoryResult": {
@@ -17054,6 +17148,55 @@
         ],
         "title": "UgandaRegion",
         "type": "string"
+      },
+      "UpcomingBookings": {
+        "description": "The booking pipeline for the week ahead.\n\nThis reopens the earlier decision that scheduled bookings stay off the\ndashboard: they are still not delivery and never enter the sessions\nseries, but they get their own card under their own name, which is what\nthat decision asked of them.",
+        "properties": {
+          "days": {
+            "items": {
+              "$ref": "#/components/schemas/UpcomingDay"
+            },
+            "title": "Days",
+            "type": "array"
+          },
+          "total": {
+            "description": "Open bookings in the next seven days",
+            "title": "Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "total",
+          "days"
+        ],
+        "title": "UpcomingBookings",
+        "type": "object"
+      },
+      "UpcomingDay": {
+        "description": "Bookings scheduled on one of the next seven days.",
+        "properties": {
+          "bucket": {
+            "description": "Day, YYYY-MM-DD",
+            "title": "Bucket",
+            "type": "string"
+          },
+          "label": {
+            "description": "Display label for the day",
+            "title": "Label",
+            "type": "string"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "bucket",
+          "label",
+          "total"
+        ],
+        "title": "UpcomingDay",
+        "type": "object"
       },
       "UpdateClinicalNoteBodyRequest": {
         "properties": {
