@@ -307,6 +307,7 @@ async def _stage_rows(
                 source_record_key=staged.source_record_key,
                 raw_practitioner_name=staged.raw_practitioner_name,
                 session_date=staged.session_date,
+                session_time=staged.session_time,
                 staged_replay_key=staged.replay_key,
                 outcome=staged.outcome,
                 delivery_context=staged.delivery_context,

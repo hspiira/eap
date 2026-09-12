@@ -302,6 +302,7 @@ class TestTemplate:
         sheet = workbook["Sessions"]
         assert [cell.value for cell in sheet[1]] == [
             "Date",
+            "Time",
             "Company (CLEAN)",
             "Client Code",
             "Client-ID#",

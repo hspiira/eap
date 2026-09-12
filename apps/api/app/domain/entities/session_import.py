@@ -5,7 +5,7 @@ the source says and what reconciliation decided; nothing here writes a session.
 """
 
 from dataclasses import dataclass, field
-from datetime import date, datetime
+from datetime import date, datetime, time
 
 from app.domain.enums import (
     ClientType,
@@ -143,6 +143,7 @@ class SessionImportRowEntity:
     session_date: date | None
     outcome: ImportRowOutcome
     created_at: datetime
+    session_time: time | None = None
     delivery_context: DeliveryContext = DeliveryContext.UNKNOWN
     provider_id: ProviderId | None = None
     provider_affiliation_id: ProviderAffiliationId | None = None

@@ -38,6 +38,33 @@ class TestColumns:
             parse_source_rows(b"COUNSELOR\nAlice\n", None)
 
 
+class TestTime:
+    """The optional time column: a refinement of the date, never a gate."""
+
+    def test_a_time_column_is_read_beside_the_date(self):
+        header = "DATE,TIME,COUNSELOR (CLEAN)\n"
+        rows = parse_source_rows((header + "2025-04-02,14:30,Alice\n").encode(), None)
+        assert rows[0].session_time is not None
+        assert rows[0].session_time.hour == 14
+        assert rows[0].session_time.minute == 30
+
+    def test_a_twelve_hour_time_parses(self):
+        header = "DATE,SESSION TIME,COUNSELOR (CLEAN)\n"
+        rows = parse_source_rows((header + "2025-04-02,2:30 pm,Alice\n").encode(), None)
+        assert rows[0].session_time is not None
+        assert (rows[0].session_time.hour, rows[0].session_time.minute) == (14, 30)
+
+    def test_no_time_column_leaves_the_time_absent(self):
+        rows = parse_source_rows(_csv("2025-04-02,A,A,L1"), None)
+        assert rows[0].session_time is None
+
+    def test_an_unparseable_time_becomes_none_and_holds_nothing(self):
+        header = "DATE,TIME,COUNSELOR (CLEAN)\n"
+        rows = parse_source_rows((header + "2025-04-02,mid-afternoon,Alice\n").encode(), None)
+        assert rows[0].session_time is None
+        assert rows[0].session_date is not None
+
+
 class TestValues:
     def test_a_blank_name_becomes_none_not_an_empty_string(self):
         """The staging service treats None as missing; '' would look like a name."""

@@ -20,7 +20,7 @@ import hashlib
 from collections import defaultdict
 from collections.abc import Sequence
 from dataclasses import dataclass, replace
-from datetime import date, datetime
+from datetime import date, datetime, time
 from enum import Enum
 
 from app.domain.entities.client import ClientEntity
@@ -129,6 +129,7 @@ class SourceRow:
     row_number: int
     raw_practitioner_name: str | None
     session_date: date | None
+    session_time: time | None = None
     source_record_key: str | None = None
     organisation_affiliation_id: str | None = None
     member_id: str | None = None
@@ -216,6 +217,7 @@ class StagedRow:
     source_record_key: str | None
     raw_practitioner_name: str | None
     session_date: date | None
+    session_time: time | None = None
     client_id: str | None = None
     attendance: SessionAttendance | None = None
     normalised: Normalised = Normalised()
@@ -897,6 +899,7 @@ class SessionImportStagingService:
             source_record_key=row.source_record_key,
             raw_practitioner_name=row.raw_practitioner_name,
             session_date=row.session_date,
+            session_time=row.session_time,
         )
 
 
