@@ -776,6 +776,24 @@ class TestAnAlreadyBookedSession:
 
         assert "Confirm that booking instead of importing a second session" in staged.reasons[0]
 
+    async def test_the_repository_is_asked_in_value_objects(self):
+        """The sessions repository reads `.value` off every id it is given.
+
+        The service used to pass _Subject's raw strings straight through, and
+        the AsyncMock in these tests swallowed them; the first fully resolved
+        row in a real deployment then died on `.value`. Pin the types, since
+        the mock never will.
+        """
+        service, _ = _service(booked_session=self._booked())
+
+        await _stage(service, _row())
+
+        call = service._sessions.find_awaiting_confirmation.await_args
+        assert isinstance(call.kwargs["client_id"], ClientId)
+        assert isinstance(call.kwargs["service_id"], ServiceId)
+        member_id = call.kwargs["member_id"]
+        assert member_id is None or isinstance(member_id, EligibleMemberId)
+
     async def test_no_booking_leaves_the_row_acceptable(self):
         service, _ = _service(booked_session=None)
 
