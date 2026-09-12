@@ -115,8 +115,7 @@ describe("DashboardMain", () => {
     renderWithProviders(<DashboardMain />)
 
     expect(await screen.findByText("Individual Counselling")).toBeInTheDocument()
-    expect(screen.getByText("Minet Uganda / Afimani Joseph")).toBeInTheDocument()
-    expect(screen.getByText("Moses Mpanga")).toBeInTheDocument()
+    expect(screen.getByText("Minet Uganda / Afimani Joseph · Moses Mpanga")).toBeInTheDocument()
     // A cancelled future session is not a booking to prepare for.
     expect(screen.queryByText("Cancelled thing")).not.toBeInTheDocument()
   })

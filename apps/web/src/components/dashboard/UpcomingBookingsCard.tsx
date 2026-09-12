@@ -47,9 +47,10 @@ function formatSlot(iso: string): string {
   return `${day}, ${time}`
 }
 
-/** The client, with the member when one is named: "Minet Uganda / A. Joseph". */
-function subject(session: ServiceSession): string {
-  return [session.client_name, session.member_display_label].filter(Boolean).join(" / ")
+/** Client with the member when named, then the counsellor, one muted run. */
+function participants(session: ServiceSession): string {
+  const who = [session.client_name, session.member_display_label].filter(Boolean).join(" / ")
+  return [who, session.provider_display_name].filter(Boolean).join(" · ")
 }
 
 function useWeekAhead(enabled: boolean) {
@@ -125,14 +126,11 @@ export function UpcomingBookingsCard({ upcoming, loading }: UpcomingBookingsCard
                     <span className="w-24 shrink-0 text-xs tabular-nums text-fg-muted">
                       {formatSlot(session.scheduled_at)}
                     </span>
-                    <span className="min-w-0 flex-1 truncate text-sm font-medium text-fg group-hover:text-primary">
-                      {subject(session) || "Session"}
+                    <span className="min-w-0 truncate text-sm font-medium text-fg group-hover:text-primary">
+                      {session.service_name ?? "Session"}
                     </span>
-                    <span className="min-w-0 flex-1 truncate text-xs text-fg-muted">
-                      {session.service_name ?? ""}
-                    </span>
-                    <span className="min-w-0 max-w-40 truncate text-xs text-fg-muted">
-                      {session.provider_display_name ?? ""}
+                    <span className="min-w-0 truncate text-xs text-fg-muted">
+                      {participants(session)}
                     </span>
                     <ChevronRight
                       aria-hidden
