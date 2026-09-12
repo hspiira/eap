@@ -214,6 +214,63 @@ behaviour keeps that safe rather than silent, but it will fire more often on
 talks than on one-to-ones. Headcount may be the discriminator worth adding when
 phase 5 is built.
 
+## Decision 7: a follow-up links to the session it came from
+
+A counsellor ends a session saying the person will be back. Nothing in the
+system carried that forward: **no session links to any other session**, and
+`session_number` is an ordinal copied from the source spreadsheet, never
+computed and never enforced. `Engagement` is a Cluster B consultancy project,
+not a clinical episode, so it is the wrong container.
+
+The obvious container, a case, is deliberately out of reach. Completing a
+session with a `case_id` consumes the authorisation and then discards the link;
+`_draw_down` never persists it. That is recorded policy, not an oversight
+(`docs/migrations/SERVICES_MIGRATION.md:289`): "There is no bridge, and
+building one would defeat the pseudonymity the case aggregate exists to
+protect." A session carries an employer-side `member_id` and a case is keyed on
+a pseudonymous subject; storing one on the other builds precisely that bridge.
+
+Decision: `follow_up_of_session_id`, a nullable self-reference on
+`service_sessions`.
+
+It works **because** both ends are employer-side. Linking a session to a
+session creates no bridge to the clinical subject, so a scheduler with no
+clinical scope can book and see the chain, while the case stays where it is.
+The link is a scheduling fact, not a clinical one: it says this booking was
+made off the back of that one, which is exactly what a team member does when a
+counsellor says the person is coming back.
+
+Consequences:
+
+- Any session may name the one it follows. A chain is walked one hop at a time
+  rather than through a container, which is the cost of not having a case to
+  hang it on.
+- The link is set when the follow-up is **booked**, not when the previous
+  session is completed. The two are separate acts and the second can happen
+  weeks later.
+- An imported session will not have one. A spreadsheet of month-end work does
+  not record which session prompted which, and inventing a chain from date
+  order would be a guess presented as a fact.
+
+### Decision 8: the continuation outcome is renamed FollowUpNeeded
+
+`ToBeContinued` is the source spreadsheet's "T" code
+(`app/domain/enums/session.py:56`). It describes the case rather than the
+session: the session itself finished perfectly well, and what continues is the
+person's care.
+
+Renamed to `FollowUpNeeded`, shown as "Follow-up needed". It names the action
+it implies, which turns the outcome into a queue a scheduler works through
+rather than a state someone has to interpret. Chosen by the owner over
+`Ongoing` and `CaseOpen`.
+
+The value is persisted as a string on every existing session, so this is a data
+migration and not only a code change. The import's normalisation map keeps
+accepting the old spellings, including the bare "T" and "ongoing": a source
+extract will carry the old vocabulary for as long as the counsellors' template
+does, and rejecting it would be a rename breaking an import that never had a
+say in it.
+
 ## Open questions, not decided here
 
 These change the design and need the owner, or real data, to settle.
@@ -265,6 +322,7 @@ this month") what the team really goes on? Not evaluated here.
 4. The request entity, per decisions 1 and 2.
 5. Reconciliation as a batch, per decisions 3, 4 and 5.
 6. A member-facing request surface.
+7. Follow-up links and the outcome rename, per decisions 7 and 8. **Starting now.**
 
 ## Standing of this document
 
