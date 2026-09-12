@@ -1062,3 +1062,144 @@ class TestAvailability:
         )
 
         assert response.status_code == 404, response.text
+
+
+class TestCompanyWideSessions:
+    """A health talk is delivered to a client, not to a member.
+
+    The clash and availability checks are attendance-blind on purpose: a
+    practitioner giving a talk cannot also be in a one-to-one at that hour, and
+    the reverse. See docs/design/REALTIME_SESSION_CAPTURE.md.
+    """
+
+    async def _talk(self, client, tenant_id, service, provider, client_person, *, at):
+        return await client.post(
+            f"/service-sessions/?tenant_id={tenant_id}",
+            json={
+                "service_id": service["id"],
+                "provider_id": provider["id"],
+                "attendance": "CompanyWide",
+                "client_id": client_person["client_id"],
+                # A talk is measured by the room, not by a member.
+                "headcount": 40,
+                "scheduled_at": at.isoformat(),
+                "delivery_context": "Direct",
+            },
+        )
+
+    async def test_a_talk_books_against_the_client_with_no_member(
+        self,
+        client: AsyncClient,
+        session_test_tenant: dict,
+        session_test_service: dict,
+        session_test_provider: dict,
+        session_test_client_person: dict,
+    ):
+        at = datetime.now(UTC) + timedelta(days=30)
+        response = await self._talk(
+            client,
+            session_test_tenant["id"],
+            session_test_service,
+            session_test_provider,
+            session_test_client_person,
+            at=at,
+        )
+
+        assert response.status_code == 201, response.text
+        assert response.json()["attendance"] == "CompanyWide"
+        assert response.json()["member_id"] is None
+
+    async def test_a_talk_blocks_a_one_to_one_at_the_same_hour(
+        self,
+        client: AsyncClient,
+        session_test_tenant: dict,
+        session_test_service: dict,
+        session_test_provider: dict,
+        session_test_client_person: dict,
+    ):
+        """The practitioner is the scarce thing, not the audience."""
+        tenant_id = session_test_tenant["id"]
+        at = datetime.now(UTC) + timedelta(days=31)
+        talk = await self._talk(
+            client,
+            tenant_id,
+            session_test_service,
+            session_test_provider,
+            session_test_client_person,
+            at=at,
+        )
+        assert talk.status_code == 201, talk.text
+
+        individual = await client.post(
+            f"/service-sessions/?tenant_id={tenant_id}",
+            json={
+                "service_id": session_test_service["id"],
+                "provider_id": session_test_provider["id"],
+                "member_id": session_test_client_person["id"],
+                "scheduled_at": at.isoformat(),
+                "delivery_context": "Direct",
+            },
+        )
+
+        assert individual.status_code == 409, individual.text
+        assert individual.json()["error"] == "PRACTITIONER_DOUBLE_BOOKED"
+
+    async def test_availability_reports_a_practitioner_giving_a_talk_as_busy(
+        self,
+        client: AsyncClient,
+        session_test_tenant: dict,
+        session_test_service: dict,
+        session_test_provider: dict,
+        session_test_client_person: dict,
+    ):
+        tenant_id = session_test_tenant["id"]
+        at = datetime.now(UTC) + timedelta(days=32)
+        talk = await self._talk(
+            client,
+            tenant_id,
+            session_test_service,
+            session_test_provider,
+            session_test_client_person,
+            at=at,
+        )
+        assert talk.status_code == 201, talk.text
+
+        response = await client.get(
+            "/service-sessions/availability",
+            params={
+                "tenant_id": tenant_id,
+                "at": at.isoformat(),
+                "service_id": session_test_service["id"],
+                "provider_id": [session_test_provider["id"]],
+            },
+        )
+
+        assert response.status_code == 200, response.text
+        assert response.json()["items"][0]["available"] is False
+
+    async def test_an_overdue_talk_joins_the_confirmation_queue(
+        self,
+        client: AsyncClient,
+        session_test_tenant: dict,
+        session_test_service: dict,
+        session_test_provider: dict,
+        session_test_client_person: dict,
+    ):
+        """A talk is delivery too, and needs confirming like any other booking."""
+        tenant_id = session_test_tenant["id"]
+        talk = await self._talk(
+            client,
+            tenant_id,
+            session_test_service,
+            session_test_provider,
+            session_test_client_person,
+            at=datetime.now(UTC) - timedelta(days=3),
+        )
+        assert talk.status_code == 201, talk.text
+
+        response = await client.get(
+            f"/service-sessions/awaiting-confirmation?tenant_id={tenant_id}"
+        )
+
+        ids = [item["id"] for item in response.json()["items"]]
+        assert talk.json()["id"] in ids

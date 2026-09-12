@@ -175,6 +175,45 @@ knowable for external, organisation-affiliated practitioners.
 Only the first is adopted. The control must say what it checked, because
 presenting an unverifiable claim as availability is worse than offering none.
 
+## Company-wide sessions, and where this design does not yet reach
+
+A health talk is delivered to a client, not to a member, and the model already
+holds that properly: `SessionAttendance.COMPANY_WIDE`, enforced as an aggregate
+invariant rather than only at the route
+(`ServiceSessionEntity._require_attendance_matches_member`), with a headcount
+required because the room is the only measure of its reach. The web form
+carries the same rules.
+
+Phases 1 to 3 handle talks, and this is tested rather than assumed
+(`TestCompanyWideSessions`):
+
+- The clash and availability checks are **attendance-blind**, which is right:
+  the practitioner is the scarce thing, not the audience. A talk blocks a
+  one-to-one at the same hour and the reverse.
+- An overdue talk joins the awaiting-confirmation queue like any other booking.
+- The staging matcher discriminates correctly, because a talk carries
+  `member_id IS NULL` and an individual session does not.
+
+Two places where this design does **not** yet reach, both found by asking the
+question rather than by a failing test:
+
+**Decision 1 does not cover a talk.** It keys the request on `member_id`, and a
+talk has no member: it is arranged with the client, usually with HR, and no
+individual requested it. Phase 4 cannot be built as written. Either the request
+carries an attendance of its own and a nullable member, mirroring the session,
+or client-level engagements are a separate thing from member requests. Not
+decided here; it needs the owner, because it is a question about how the
+business books talks rather than about the schema.
+
+**The reconciliation match grain degrades for talks.** Decision 5 matches on
+date, practitioner, client, service and member. Strip the member and two talks
+for the same client, on the same day, by the same practitioner are
+indistinguishable to the matcher, which is a realistic shape for a workplace
+programme running a morning and an afternoon session. The held-for-a-person
+behaviour keeps that safe rather than silent, but it will fire more often on
+talks than on one-to-ones. Headcount may be the discriminator worth adding when
+phase 5 is built.
+
 ## Open questions, not decided here
 
 These change the design and need the owner, or real data, to settle.
