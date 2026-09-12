@@ -345,14 +345,16 @@ being empty for this backlog, so it makes no practical difference here.
 - `apps/web/src/routes/audit.tsx` is a placeholder. The read API exists
   (`/audit/logs`, `/logs/{id}/changes`, `/entity/{type}/{id}/changes`) and
   nothing in the UI calls it.
-- The worker is a separate process nobody runs in dev. Local `evexia_db` had
-  accumulated 3,668 undelivered events and 0 audit rows by 2026-09-10, when
-  the backlog was drained for the first time: all 3,668 delivered, no
-  failures, 3,668 audit rows. Nothing reaches `audit_logs` in any environment
-  where `scripts/outbox_worker.py` is not running, so confirming it is
-  deployed and supervised in production matters more than any coverage number
-  in this document. Four days of undetected silence in dev is what a missing
-  liveness check looks like.
+- ~~The worker is a separate process nobody runs in dev.~~ Partly closed
+  2026-09-12: `pnpm dev` now also starts `scripts/outbox_worker.py`
+  (`package.json`'s `dev` script, `dev:outbox-worker`), so the default local
+  flow can no longer silently accumulate a backlog the way the 2026-09-10
+  incident did. Still confirm the worker is deployed and supervised in
+  production; that matters more than any coverage number in this document.
+  Local `evexia_db` had accumulated 3,668 undelivered events and 0 audit rows
+  by 2026-09-10, when the backlog was drained for the first time: all 3,668
+  delivered, no failures, 3,668 audit rows. Four days of undetected silence in
+  dev is what a missing liveness check looks like.
 - ~~Nothing alerts on outbox depth or worker liveness.~~ Closed 2026-09-10:
   `GET /health/outbox` reports depth, failed count and lag, and returns 503
   once the oldest undelivered event is older than `OUTBOX_MAX_LAG_SECONDS`
@@ -372,3 +374,145 @@ being empty for this backlog, so it makes no practical difference here.
   empty `field_changes` array, because they were enqueued before the diff
   extraction described above was fixed. The trail says what happened to what,
   and not what changed, for everything before 2026-09-08.
+
+## R2 investigation, 2026-09-12: the 2026-09-12 review's backlog is not reproducible on local `evexia_db`
+
+Environment for everything below: macOS, local PostgreSQL 16 (`evexia_db`),
+API run directly with `uv run uvicorn app.main:app` (not docker-compose),
+worker run both ad hoc and via the `com.evexia.outbox-worker` launchd
+LaunchAgent described below. Not production; nothing here was run against a
+remote database.
+
+**Before any of this ran, the repo-root `.env`'s `DATABASE_URL` was pointing
+at a live Neon Postgres instance**, not local Postgres, with today's date as
+the file's last-modified time. `apps/api/.env` carries no override, so that
+Neon URL is what `pnpm dev`, `pnpm bootstrap`, and any unguarded local test
+run would actually have connected to. Flagged to the user before touching
+anything; on their instruction, `.env` was pointed back at local Postgres
+(`postgresql+asyncpg://postgres:postgres@localhost:5432/evexia_db`, the value
+already commented out in the file) for this investigation and is left that
+way. **Whether the 2026-09-12 review's session had that same Neon URL active
+when it queried `/health/outbox` was not established one way or the other; no
+connection to Neon was made to check, and none should be made without
+explicit authorization.** This is the most likely explanation for what
+follows, not a confirmed one.
+
+**A `com.evexia.outbox-worker` launchd LaunchAgent has been running
+continuously against local Postgres since 2026-09-10** (`~/Library/
+LaunchAgents/com.evexia.outbox-worker.plist`, `KeepAlive=true`,
+`RunAtLoad=true`, working directory `apps/api`, invoking `scripts/
+outbox_worker.py` directly, on this one developer's machine only — it is not
+part of the repo). Its start date lines up exactly with "Correcting the
+3,668 rows the first drain wrote" above: it appears to be the fix that
+followed that incident, not something set up for this pass. Two more
+unsupervised instances of the same script, started at unknown prior times,
+were also found running (PPID 1, i.e. already orphaned from whatever shell
+started them) and were stopped as part of this investigation, since running
+several workers against one queue is safe but wasteful (`OutboxDispatcher`'s
+own docstring). One supervised instance remains.
+
+**On local `evexia_db`, `/health/outbox` reported `depth=0` before this
+investigation touched anything**, not behind. A synthetic event enqueued
+directly (occurred_at backdated two hours, tied to the seeded `dev` tenant)
+was delivered to `audit_logs` within 1.4 seconds by the already-running
+LaunchAgent-supervised worker, with `occurred_at` preserved exactly
+(`2026-09-12 18:49:33.965709+03` end to end, confirmed against the row).
+Killing that worker's process twice in succession (to check restart
+behaviour) had it back within about a second each time, both times under a
+new PID, confirming the LaunchAgent restarts it rather than something
+coincidental. `tests/integration/test_outbox_delivery.py` (7 cases) and
+`tests/integration/test_audit_chain.py` + `test_audit_chain_gaps.py`
+(13 cases) all pass fresh against this database, covering delivery,
+non-redelivery, backoff on a poisoned row, and lag measured from the event's
+own time rather than the row's insert time — the same claims the 2026-09-12
+review's acceptance gate asks for, run today rather than cited from history.
+
+**What this does and does not establish.** It establishes that local
+`evexia_db`'s worker path is healthy today, was healthy across the
+2026-09-10 incident's fix, and stayed healthy through an interrupt/restart
+test just now. It does not establish what database the 2026-09-12 review's
+`depth=3582, lag_seconds=368352` reading came from, or whether that database
+currently has a worker attached to it at all. That is the open question, not
+"is the worker code correct."
+
+**Recommendation, not implemented here:** the local dev-Postgres-only guard
+already used in test fixtures (`test_outbox_delivery.py`'s `outbox_db`
+fixture refuses any `DATABASE_URL` host outside `localhost`/`127.0.0.1`/
+`::1`) has no equivalent in the running application. Nothing stops
+`ENVIRONMENT=development` from pointing at a remote database, production or
+otherwise, with no warning. Whether to add that guard, and where the line
+between "local" and "acceptable non-local dev/staging target" should sit, is
+a decision for whoever owns deployment configuration, not one made here.
+
+## R8b: the audit console, 2026-09-12/13
+
+Built against the existing read API (`app/api/routes/audit.py`); no route,
+schema, or authorization change. `pnpm contracts` was not re-run because
+nothing OpenAPI-visible changed.
+
+**Policy fact, not fixed here:** `/audit/logs`, `/audit/logs/{id}`,
+`/audit/logs/{id}/changes`, and `/audit/entity/{type}/{id}/changes` gate on
+tenant membership only; there is no role or scope check beyond that. The
+console therefore inherits the same reach. Whether audit visibility should
+be restricted further than same-tenant is a product/DPO decision, not made
+here, and is recorded here rather than silently assumed.
+
+**`apps/web/src/api/endpoints/audit.ts`** had drifted from the backend
+contract: `AuditListParams` used `date_from`/`date_to`, the backend takes
+`start_date`/`end_date`; a bogus `AuditLogChange` interface existed with no
+backend counterpart. Both fixed; `getChanges` now returns `EntityChange[]`
+matching `GET /audit/logs/{id}/changes`'s actual response shape.
+
+**`apps/web/src/routes/audit.tsx`** replaced the "coming soon" placeholder
+with a filtered, paginated table (actor, action, resource, description,
+occurrence time) and a detail sheet showing each change's field-level
+before/after. Actor ids resolve to email via `usersApi.getById`, one query
+per unique id on the page. Occurrence time is the only timestamp the API
+returns; the code does not synthesize a separate processing time. A
+redacted value (`"[redacted]"`) renders as-is, not re-interpreted or hidden
+further, so a scoped-out clinical edit is visibly present but not readable.
+
+**Backend test hardening** (`apps/api/tests/e2e/test_audit_api.py`): the
+existing filter tests asserted only `200 OK`, which passes even if a filter
+is silently ignored. Added tests that create a CREATE and an UPDATE audit
+entry for the same resource and assert each filter returns only its own
+action and count; a date-range test with a far-future/far-past boundary
+that must exclude a known event; a redaction test that creates a real
+clinical-session note edit, drains the outbox, and asserts
+`GET .../changes` returns `"[redacted]"` for that field with the real note
+text absent from the whole response body; a cross-tenant test proving a
+second tenant's `/audit/logs` query for another tenant's resource id returns
+zero. All required an explicit `_drain()` call (mirroring
+`test_audit_chain.py`'s pattern) since outbox delivery is not automatic
+inside e2e tests. 19/19 tests in the file pass.
+
+**Known test-harness gap, not closed:** `GET /audit/logs/{id}` and
+`GET /audit/logs/{id}/changes` depend on `get_audit_log_for_current_tenant`,
+which the shared `client` fixture overrides with a version that skips the
+tenant check (`tests/conftest.py`'s `override_get_audit_log`). No HTTP test
+in this file can prove cross-tenant isolation for those two routes
+specifically; only the list endpoint's isolation is proven by HTTP test.
+Fixing the shared fixture affects every other test file using it and was
+judged out of scope for this pass.
+
+**Frontend test** (`apps/web/src/routes/audit.test.tsx`, 8 cases): list
+rendering with actor resolution, empty state (filtered vs unfiltered
+wording), error state with a working retry, pagination reflecting a total
+above one page, opening the detail sheet and asserting the exact rendered
+field names and redacted/plain values, the no-changes-recorded message, and
+a filter committing through the router's `navigate` search-merge function.
+
+**Verified:** backend `uv run pytest tests/e2e/test_audit_api.py` (19
+passed) and the full `tests/unit tests/e2e` suite (2850 passed, 26 skipped)
+against local `evexia_db`; frontend `pnpm test` (867 passed, 104 files);
+`pnpm typecheck` and `eslint` clean; manual browser verification via
+Playwright against a live local session (list, filter, pagination,
+detail-sheet with real field-change diffs) before the native-`<table>`
+lint fix below, and the automated test's exact-content assertions cover
+the same markup after it. Not verified: production.
+
+**Discovery found and fixed on the way:** `ChangeDetails`' before/after
+table used bare `<table>`/`<thead>`/`<tbody>`/`<tr>`/`<th>`/`<td>` instead
+of the shadcn `Table` primitives already imported and used earlier in the
+same file, tripping the repo's `no-restricted-syntax` ESLint rule. Replaced
+with `Table`/`TableHeader`/`TableBody`/`TableRow`/`TableCell`/`TableHead`.

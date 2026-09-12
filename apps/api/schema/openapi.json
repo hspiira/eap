@@ -5142,6 +5142,11 @@
             "title": "Clients With Roster",
             "type": "integer"
           },
+          "contracts_ending_soon": {
+            "description": "Active contracts whose end date falls within the next 60 days",
+            "title": "Contracts Ending Soon",
+            "type": "integer"
+          },
           "covered_members": {
             "description": "Eligible members with Active status",
             "title": "Covered Members",
@@ -5161,6 +5166,16 @@
             "description": "Completed sessions in the comparison window, for the delta",
             "title": "Sessions Prior",
             "type": "integer"
+          },
+          "sessions_unpriced": {
+            "description": "Completed sessions inside the range with no rate recorded",
+            "title": "Sessions Unpriced",
+            "type": "integer"
+          },
+          "value_delivered_ugx": {
+            "description": "Sum of session rates over completed sessions inside the range. Only sessions that carry a rate contribute; sessions_unpriced says how many did not.",
+            "title": "Value Delivered Ugx",
+            "type": "integer"
           }
         },
         "required": [
@@ -5170,7 +5185,10 @@
           "covered_members",
           "clients_with_roster",
           "clients_total",
-          "import_backlog"
+          "import_backlog",
+          "value_delivered_ugx",
+          "sessions_unpriced",
+          "contracts_ending_soon"
         ],
         "title": "DashboardKpis",
         "type": "object"
@@ -5184,8 +5202,26 @@
           "kpis": {
             "$ref": "#/components/schemas/DashboardKpis"
           },
+          "outcome_mix": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/OutcomeCount"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Completed sessions grouped by clinical outcome, inside the range. Null for a caller without the clinical access scope; aggregate or not, outcomes are part of the clinical record and the wall fails closed.",
+            "title": "Outcome Mix"
+          },
           "range": {
             "$ref": "#/components/schemas/RangeInfo"
+          },
+          "risk": {
+            "$ref": "#/components/schemas/RiskCounts"
           },
           "session_years": {
             "description": "Years that actually have a completed session, newest first. What the year picker offers, so it never lists a year with nothing behind it. Empty for a tenant that has delivered nothing.",
@@ -5222,6 +5258,9 @@
             },
             "title": "Trending Services",
             "type": "array"
+          },
+          "upcoming": {
+            "$ref": "#/components/schemas/UpcomingBookings"
           }
         },
         "required": [
@@ -5231,7 +5270,9 @@
           "sessions_by_category",
           "top_clients",
           "trending_services",
-          "data_quality"
+          "data_quality",
+          "upcoming",
+          "risk"
         ],
         "title": "DashboardResponse",
         "type": "object"
@@ -7559,6 +7600,118 @@
           "field_changes"
         ],
         "title": "EntityChangeResponse",
+        "type": "object"
+      },
+      "ErrorDetail": {
+        "description": "Individual error detail.",
+        "properties": {
+          "code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Machine-readable error code",
+            "title": "Code"
+          },
+          "field": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Field that caused the error",
+            "title": "Field"
+          },
+          "message": {
+            "description": "Human-readable error message",
+            "title": "Message",
+            "type": "string"
+          }
+        },
+        "required": [
+          "message"
+        ],
+        "title": "ErrorDetail",
+        "type": "object"
+      },
+      "ErrorResponse": {
+        "description": "Standardized API error response.\n\nAll API errors should use this format for consistency.",
+        "example": {
+          "details": [
+            {
+              "code": "INVALID_FORMAT",
+              "field": "email",
+              "message": "Invalid email format"
+            }
+          ],
+          "error": "VALIDATION_ERROR",
+          "message": "Invalid input data",
+          "path": "/users/",
+          "request_id": "req-abc123",
+          "timestamp": "2024-01-15T10:30:00Z"
+        },
+        "properties": {
+          "details": {
+            "description": "Additional error details",
+            "items": {
+              "$ref": "#/components/schemas/ErrorDetail"
+            },
+            "title": "Details",
+            "type": "array"
+          },
+          "error": {
+            "description": "Error type/code",
+            "title": "Error",
+            "type": "string"
+          },
+          "message": {
+            "description": "Human-readable error message",
+            "title": "Message",
+            "type": "string"
+          },
+          "path": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Request path that caused the error",
+            "title": "Path"
+          },
+          "request_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Request tracking ID",
+            "title": "Request Id"
+          },
+          "timestamp": {
+            "description": "When the error occurred",
+            "format": "date-time",
+            "title": "Timestamp",
+            "type": "string"
+          }
+        },
+        "required": [
+          "error",
+          "message"
+        ],
+        "title": "ErrorResponse",
         "type": "object"
       },
       "FieldChangeSchema": {
@@ -11090,6 +11243,32 @@
         "title": "OrganisationApprovalStatus",
         "type": "string"
       },
+      "OutcomeCount": {
+        "description": "Completed sessions per clinical outcome inside the range.\n\n`outcome` is None for sessions whose outcome was never recorded; the\nclient renders that as its own \"Not recorded\" band rather than folding it\ninto a real outcome.",
+        "properties": {
+          "outcome": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Outcome"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "outcome",
+          "total"
+        ],
+        "title": "OutcomeCount",
+        "type": "object"
+      },
       "OutreachAssignRequest": {
         "properties": {
           "counsellor_id": {
@@ -13516,6 +13695,33 @@
         "title": "RetentionPolicyResponse",
         "type": "object"
       },
+      "RiskCounts": {
+        "description": "Open safety work. Stock figures; a crisis does not follow a range.",
+        "properties": {
+          "cases_open": {
+            "description": "Clinical cases currently open",
+            "title": "Cases Open",
+            "type": "integer"
+          },
+          "crisis_flags_open": {
+            "description": "Outreach records flagged crisis whose outreach is still open",
+            "title": "Crisis Flags Open",
+            "type": "integer"
+          },
+          "incidents_open": {
+            "description": "Critical incidents not yet closed",
+            "title": "Incidents Open",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "crisis_flags_open",
+          "incidents_open",
+          "cases_open"
+        ],
+        "title": "RiskCounts",
+        "type": "object"
+      },
       "SearchCategoryResult": {
         "description": "One category's bounded page, with its own truncation and failure state.",
         "properties": {
@@ -14587,7 +14793,7 @@
                 "type": "null"
               }
             ],
-            "description": "Clinical continuation outcome"
+            "description": "Clinical continuation outcome. Null if absent or lacking clinical scope."
           },
           "completed_at": {
             "anyOf": [
@@ -14627,7 +14833,7 @@
                 "type": "null"
               }
             ],
-            "description": "Diagnosis reference ID",
+            "description": "Diagnosis reference ID. Null if absent or lacking clinical scope.",
             "title": "Diagnosis Id"
           },
           "diagnosis_type_id": {
@@ -14639,7 +14845,7 @@
                 "type": "null"
               }
             ],
-            "description": "DiagnosisType reference ID",
+            "description": "DiagnosisType reference ID. Null if absent or lacking clinical scope.",
             "title": "Diagnosis Type Id"
           },
           "duration": {
@@ -14663,7 +14869,7 @@
                 "type": "null"
               }
             ],
-            "description": "Session feedback",
+            "description": "Session feedback. Null if absent or if the caller lacks clinical scope.",
             "title": "Feedback"
           },
           "follow_up_of_session_id": {
@@ -14709,7 +14915,7 @@
                 "type": "null"
               }
             ],
-            "description": "Presenting issue for this session",
+            "description": "Presenting issue. Null if absent or if the caller lacks clinical scope.",
             "title": "Issue Topic"
           },
           "location": {
@@ -14757,7 +14963,7 @@
                 "type": "null"
               }
             ],
-            "description": "Session notes",
+            "description": "Session notes. Null if absent or if the caller lacks clinical scope.",
             "title": "Notes"
           },
           "partner_name": {
@@ -14769,7 +14975,7 @@
                 "type": "null"
               }
             ],
-            "description": "Partner name (couples/family sessions)",
+            "description": "Partner name. Null if absent or if the caller lacks clinical scope.",
             "title": "Partner Name"
           },
           "partner_relationship": {
@@ -14781,7 +14987,7 @@
                 "type": "null"
               }
             ],
-            "description": "Partner's relationship to client",
+            "description": "Partner's relationship. Null if absent or lacking clinical scope.",
             "title": "Partner Relationship"
           },
           "provider_affiliation_id": {
@@ -17054,6 +17260,55 @@
         ],
         "title": "UgandaRegion",
         "type": "string"
+      },
+      "UpcomingBookings": {
+        "description": "The booking pipeline for the week ahead.\n\nThis reopens the earlier decision that scheduled bookings stay off the\ndashboard: they are still not delivery and never enter the sessions\nseries, but they get their own card under their own name, which is what\nthat decision asked of them.",
+        "properties": {
+          "days": {
+            "items": {
+              "$ref": "#/components/schemas/UpcomingDay"
+            },
+            "title": "Days",
+            "type": "array"
+          },
+          "total": {
+            "description": "Open bookings in the next seven days",
+            "title": "Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "total",
+          "days"
+        ],
+        "title": "UpcomingBookings",
+        "type": "object"
+      },
+      "UpcomingDay": {
+        "description": "Bookings scheduled on one of the next seven days.",
+        "properties": {
+          "bucket": {
+            "description": "Day, YYYY-MM-DD",
+            "title": "Bucket",
+            "type": "string"
+          },
+          "label": {
+            "description": "Display label for the day",
+            "title": "Label",
+            "type": "string"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "bucket",
+          "label",
+          "total"
+        ],
+        "title": "UpcomingDay",
+        "type": "object"
       },
       "UpdateClinicalNoteBodyRequest": {
         "properties": {
@@ -31060,15 +31315,35 @@
             },
             "description": "Successful Response"
           },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Client not found in this tenant"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Member code already exists for this client"
+          },
           "422": {
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
+                  "$ref": "#/components/schemas/ErrorResponse"
                 }
               }
             },
-            "description": "Validation Error"
+            "description": "Member code was set on create, or the primary employee is invalid"
           }
         },
         "security": [
@@ -31248,15 +31523,35 @@
             },
             "description": "Successful Response"
           },
+          "413": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Roster CSV is larger than 10 MB"
+          },
+          "415": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Only CSV files are supported"
+          },
           "422": {
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
+                  "$ref": "#/components/schemas/ErrorResponse"
                 }
               }
             },
-            "description": "Validation Error"
+            "description": "Roster CSV could not be parsed"
           }
         },
         "security": [
@@ -31749,6 +32044,16 @@
             },
             "description": "Successful Response"
           },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Member not found"
+          },
           "422": {
             "content": {
               "application/json": {
@@ -31804,15 +32109,35 @@
             },
             "description": "Successful Response"
           },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Member not found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Member code already exists, or beneficiaries block the change"
+          },
           "422": {
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
+                  "$ref": "#/components/schemas/ErrorResponse"
                 }
               }
             },
-            "description": "Validation Error"
+            "description": "Update would leave the member invalid, or names itself as primary"
           }
         },
         "security": [
@@ -31850,6 +32175,16 @@
               }
             },
             "description": "Successful Response"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Member not found"
           },
           "422": {
             "content": {
@@ -31906,6 +32241,26 @@
             },
             "description": "Successful Response"
           },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Member or user account not found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "User account is linked to another member"
+          },
           "422": {
             "content": {
               "application/json": {
@@ -31956,6 +32311,16 @@
               }
             },
             "description": "Successful Response"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Member not found"
           },
           "422": {
             "content": {
@@ -32014,15 +32379,35 @@
             },
             "description": "Successful Response"
           },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Target or source member not found"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Members belong to different clients"
+          },
           "422": {
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
+                  "$ref": "#/components/schemas/ErrorResponse"
                 }
               }
             },
-            "description": "Validation Error"
+            "description": "Source and target members must differ"
           }
         },
         "security": [
@@ -32064,6 +32449,16 @@
               }
             },
             "description": "Successful Response"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Member not found"
           },
           "422": {
             "content": {
@@ -32120,6 +32515,16 @@
             },
             "description": "Successful Response"
           },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Member or next-of-kin relationship not found"
+          },
           "422": {
             "content": {
               "application/json": {
@@ -32168,6 +32573,16 @@
         "responses": {
           "204": {
             "description": "Successful Response"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Member or next-of-kin contact not found"
           },
           "422": {
             "content": {
@@ -32233,6 +32648,16 @@
             },
             "description": "Successful Response"
           },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Member, contact or next-of-kin relationship not found"
+          },
           "422": {
             "content": {
               "application/json": {
@@ -32279,6 +32704,16 @@
               }
             },
             "description": "Successful Response"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Member not found"
           },
           "422": {
             "content": {
@@ -32354,6 +32789,16 @@
             },
             "description": "Successful Response"
           },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Member not found"
+          },
           "422": {
             "content": {
               "application/json": {
@@ -32401,6 +32846,16 @@
             },
             "description": "Successful Response"
           },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Member not found"
+          },
           "422": {
             "content": {
               "application/json": {
@@ -32447,6 +32902,16 @@
               }
             },
             "description": "Successful Response"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Member not found"
           },
           "422": {
             "content": {
@@ -37175,21 +37640,18 @@
             }
           },
           {
-            "description": "Filter by session status",
+            "description": "Filter by session status; repeat for several",
             "in": "query",
             "name": "status",
             "required": false,
             "schema": {
-              "anyOf": [
-                {
-                  "$ref": "#/components/schemas/SessionStatus"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "description": "Filter by session status",
-              "title": "Status"
+              "default": [],
+              "description": "Filter by session status; repeat for several",
+              "items": {
+                "$ref": "#/components/schemas/SessionStatus"
+              },
+              "title": "Status",
+              "type": "array"
             }
           },
           {
@@ -37229,7 +37691,7 @@
             }
           },
           {
-            "description": "Filter by clinical outcome",
+            "description": "Filter by clinical outcome. Requires the clinical access scope.",
             "in": "query",
             "name": "clinical_outcome",
             "required": false,
@@ -37242,7 +37704,7 @@
                   "type": "null"
                 }
               ],
-              "description": "Filter by clinical outcome",
+              "description": "Filter by clinical outcome. Requires the clinical access scope.",
               "title": "Clinical Outcome"
             }
           },
@@ -37282,6 +37744,25 @@
               ],
               "description": "Only sessions scheduled at or before this instant (ISO 8601)",
               "title": "Scheduled To"
+            }
+          },
+          {
+            "description": "Matches service, client or practitioner display name. Never clinical fields.",
+            "in": "query",
+            "name": "search",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 200,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Matches service, client or practitioner display name. Never clinical fields.",
+              "title": "Search"
             }
           },
           {

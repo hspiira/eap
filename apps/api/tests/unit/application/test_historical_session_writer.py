@@ -5,7 +5,7 @@ resolved and still refuses rather than guesses when an Accepted row is missing
 what the write path requires.
 """
 
-from datetime import UTC, date, datetime
+from datetime import UTC, date, datetime, time
 from unittest.mock import AsyncMock
 
 import pytest
@@ -75,6 +75,25 @@ class TestConversion:
         assert record.clinical_outcome is SessionClinicalStatus.TO_BE_CONTINUED
         assert record.rate_ugx == 100000
         assert record.source_batch_id == "batch-1"
+
+    async def test_a_row_with_a_time_is_scheduled_at_that_time(self):
+        """The log's own clock survives the import instead of the midday stand-in."""
+        adapter, use_case = _adapter()
+
+        await adapter.record(_row(session_time=time(14, 30)), TENANT)
+
+        record = use_case.execute.await_args.args[0]
+        assert (record.delivered_at.hour, record.delivered_at.minute) == (14, 30)
+        assert record.delivered_at.date() == date(2025, 4, 2)
+
+    async def test_a_row_without_a_time_stays_at_midday(self):
+        """Midday in the boundary timezone, so a date-only row cannot slip a day."""
+        adapter, use_case = _adapter()
+
+        await adapter.record(_row(), TENANT)
+
+        record = use_case.execute.await_args.args[0]
+        assert (record.delivered_at.hour, record.delivered_at.minute) == (12, 0)
 
     async def test_a_company_wide_row_converts_with_no_member(self):
         adapter, use_case = _adapter()

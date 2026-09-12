@@ -23,8 +23,12 @@ from app.domain.enums import (
     SessionStatus,
     SessionType,
 )
+from app.domain.enums.contract import ContractStatus, PaymentFrequency, PaymentStatus
+from app.domain.enums.crisis import CriticalIncidentSeverity, CriticalIncidentStatus
 from app.domain.enums.provider_network import ImportBatchStatus, ImportRowOutcome
 from app.infrastructure.models.client_model import ClientModel
+from app.infrastructure.models.contract_model import ContractModel
+from app.infrastructure.models.critical_incident_model import CriticalIncidentModel
 from app.infrastructure.models.eligible_member_model import EligibleMemberModel
 from app.infrastructure.models.provider_model import ProviderModel
 from app.infrastructure.models.service_model import ServiceModel
@@ -458,3 +462,108 @@ async def test_dashboard_all_time_is_not_capped_at_three_years(
 
     assert response.status_code == 200, response.text
     assert response.json()["range"]["start"].startswith("2016-01-05")
+
+
+@pytest.mark.asyncio
+async def test_dashboard_value_upcoming_risk_and_contracts(
+    client: AsyncClient, db_session: AsyncSession
+):
+    """The blocks added for the operator's morning read.
+
+    Delivered value sums only the priced sessions and says how many were not
+    priced. Upcoming counts open future bookings into a seven-day, zero-filled
+    strip. Contracts ending inside the horizon are counted; one safely past it
+    is not. The risk block counts an open incident and ignores a closed one.
+    """
+    await _seed(db_session)
+    today = utc_now().date()
+    db_session.add_all(
+        [
+            _session(
+                TENANT, "cl-dash-a", "prov-dash-1", days_ago=-2, status=SessionStatus.SCHEDULED
+            ),
+            _session(
+                TENANT, "cl-dash-a", "prov-dash-1", days_ago=-2, status=SessionStatus.RESCHEDULED
+            ),
+            _session(
+                TENANT, "cl-dash-a", "prov-dash-1", days_ago=-30, status=SessionStatus.SCHEDULED
+            ),
+            ContractModel(
+                id="ct-dash-soon",
+                tenant_id=TENANT,
+                client_id="cl-dash-a",
+                start_date=today - timedelta(days=300),
+                end_date=today + timedelta(days=30),
+                billing_rate={},
+                payment_frequency=PaymentFrequency.MONTHLY,
+                payment_status=PaymentStatus.PAID,
+                status=ContractStatus.ACTIVE,
+            ),
+            ContractModel(
+                id="ct-dash-late",
+                tenant_id=TENANT,
+                client_id="cl-dash-a",
+                start_date=today - timedelta(days=1),
+                end_date=today + timedelta(days=200),
+                billing_rate={},
+                payment_frequency=PaymentFrequency.MONTHLY,
+                payment_status=PaymentStatus.PAID,
+                status=ContractStatus.ACTIVE,
+            ),
+            CriticalIncidentModel(
+                tenant_id=TENANT,
+                client_id="cl-dash-a",
+                event_description="Open incident",
+                severity=CriticalIncidentSeverity.HIGH,
+                affected_population_size=10,
+                occurred_at=utc_now(),
+                logged_by="user-dash",
+                status=CriticalIncidentStatus.OPEN,
+            ),
+            CriticalIncidentModel(
+                tenant_id=TENANT,
+                client_id="cl-dash-a",
+                event_description="Closed incident",
+                severity=CriticalIncidentSeverity.LOW,
+                affected_population_size=1,
+                occurred_at=utc_now(),
+                logged_by="user-dash",
+                status=CriticalIncidentStatus.CLOSED,
+            ),
+        ]
+    )
+    await db_session.commit()
+
+    response = await client.get("/dashboard", params={"tenant_id": TENANT, "range": "last_90d"})
+    assert response.status_code == 200, response.text
+    body = response.json()
+
+    # Three in-range sessions priced at 100k; the fourth carries no rate.
+    assert body["kpis"]["value_delivered_ugx"] == 300_000
+    assert body["kpis"]["sessions_unpriced"] == 1
+    assert body["kpis"]["contracts_ending_soon"] == 1
+
+    upcoming = body["upcoming"]
+    assert upcoming["total"] == 2
+    assert len(upcoming["days"]) == 7
+    assert sum(d["total"] for d in upcoming["days"]) == 2
+
+    assert body["risk"] == {"crisis_flags_open": 0, "incidents_open": 1, "cases_open": 0}
+
+
+@pytest.mark.asyncio
+async def test_dashboard_outcome_mix_fails_closed_without_the_clinical_scope(
+    client: AsyncClient, db_session: AsyncSession
+):
+    """The default test token carries no scopes, so the mix must be null.
+
+    The counts are aggregate, but outcomes belong to the clinical record;
+    the wall fails closed rather than arguing about aggregation. The admitted
+    path is covered in test_clinical_scope_wall.py against real minting.
+    """
+    await _seed(db_session)
+
+    response = await client.get("/dashboard", params={"tenant_id": TENANT, "range": "last_90d"})
+
+    assert response.status_code == 200
+    assert response.json()["outcome_mix"] is None

@@ -127,6 +127,7 @@ from app.shared.decorators import readonly, transactional
 from app.shared.handlers.audit_event_handler import AuditEventHandler
 from app.shared.utils.batched_commit import BatchedCommit
 from app.shared.utils.datetime import utc_now
+from app.shared.utils.errors import ErrorResponse
 from app.shared.utils.generators import generate_cuid
 from app.shared.utils.member_csv import MemberCsvRow, parse_member_csv
 from app.shared.utils.route_audit_helper import audit_change
@@ -134,6 +135,9 @@ from app.shared.utils.route_audit_helper import audit_change
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/members", tags=["members"])
+
+_MEMBER_NOT_FOUND = "Member not found"
+_DUPLICATE_MEMBER_CODE = "Member code already exists for this client"
 
 
 def _employment(data: MemberEmployment | None) -> EmploymentDetails | None:
@@ -328,7 +332,19 @@ async def _audit(
     )
 
 
-@router.post("", response_model=MemberResponse, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "",
+    response_model=MemberResponse,
+    status_code=status.HTTP_201_CREATED,
+    responses={
+        404: {"model": ErrorResponse, "description": "Client not found in this tenant"},
+        409: {"model": ErrorResponse, "description": _DUPLICATE_MEMBER_CODE},
+        422: {
+            "model": ErrorResponse,
+            "description": "Member code was set on create, or the primary employee is invalid",
+        },
+    },
+)
 @transactional()
 async def create_member(
     request: Request,
@@ -805,6 +821,11 @@ async def _require_import_batch(
     "/import",
     response_model=MemberImportBatchResponse,
     status_code=status.HTTP_201_CREATED,
+    responses={
+        413: {"model": ErrorResponse, "description": "Roster CSV is larger than 10 MB"},
+        415: {"model": ErrorResponse, "description": "Only CSV files are supported"},
+        422: {"model": ErrorResponse, "description": "Roster CSV could not be parsed"},
+    },
 )
 @transactional()
 async def stage_member_import(
@@ -1182,7 +1203,21 @@ def _csv_cell(value: str | None) -> str | None:
     return value
 
 
-@router.patch("/{member_id}", response_model=MemberResponse)
+@router.patch(
+    "/{member_id}",
+    response_model=MemberResponse,
+    responses={
+        404: {"model": ErrorResponse, "description": _MEMBER_NOT_FOUND},
+        409: {
+            "model": ErrorResponse,
+            "description": "Member code already exists, or beneficiaries block the change",
+        },
+        422: {
+            "model": ErrorResponse,
+            "description": "Update would leave the member invalid, or names itself as primary",
+        },
+    },
+)
 @transactional()
 async def update_member(
     request: Request,
@@ -1247,7 +1282,14 @@ async def _transition_member(
     return member
 
 
-@router.put("/{member_id}/account", response_model=MemberResponse)
+@router.put(
+    "/{member_id}/account",
+    response_model=MemberResponse,
+    responses={
+        404: {"model": ErrorResponse, "description": "Member or user account not found"},
+        409: {"model": ErrorResponse, "description": "User account is linked to another member"},
+    },
+)
 @transactional()
 async def link_member_account(
     request: Request,
@@ -1285,7 +1327,13 @@ async def link_member_account(
     return _response(member)
 
 
-@router.delete("/{member_id}/account", response_model=MemberResponse)
+@router.delete(
+    "/{member_id}/account",
+    response_model=MemberResponse,
+    responses={
+        404: {"model": ErrorResponse, "description": _MEMBER_NOT_FOUND},
+    },
+)
 @transactional()
 async def unlink_member_account(
     request: Request,
@@ -1311,7 +1359,15 @@ async def unlink_member_account(
     return _response(member)
 
 
-@router.post("/{member_id}/merge", response_model=MemberMergeResponse)
+@router.post(
+    "/{member_id}/merge",
+    response_model=MemberMergeResponse,
+    responses={
+        404: {"model": ErrorResponse, "description": "Target or source member not found"},
+        409: {"model": ErrorResponse, "description": "Members belong to different clients"},
+        422: {"model": ErrorResponse, "description": "Source and target members must differ"},
+    },
+)
 @transactional()
 async def merge_members(
     request: Request,
@@ -1359,7 +1415,13 @@ async def merge_members(
     )
 
 
-@router.post("/{member_id}/suspend", response_model=MemberResponse)
+@router.post(
+    "/{member_id}/suspend",
+    response_model=MemberResponse,
+    responses={
+        404: {"model": ErrorResponse, "description": _MEMBER_NOT_FOUND},
+    },
+)
 @transactional()
 async def suspend_member(
     request: Request,
@@ -1379,7 +1441,13 @@ async def suspend_member(
     return _response(member)
 
 
-@router.post("/{member_id}/reinstate", response_model=MemberResponse)
+@router.post(
+    "/{member_id}/reinstate",
+    response_model=MemberResponse,
+    responses={
+        404: {"model": ErrorResponse, "description": _MEMBER_NOT_FOUND},
+    },
+)
 @transactional()
 async def reinstate_member(
     request: Request,
@@ -1399,7 +1467,13 @@ async def reinstate_member(
     return _response(member)
 
 
-@router.post("/{member_id}/terminate", response_model=MemberResponse)
+@router.post(
+    "/{member_id}/terminate",
+    response_model=MemberResponse,
+    responses={
+        404: {"model": ErrorResponse, "description": _MEMBER_NOT_FOUND},
+    },
+)
 @transactional()
 async def terminate_member(
     request: Request,
@@ -1419,7 +1493,13 @@ async def terminate_member(
     return _response(member)
 
 
-@router.get("/{member_id}/beneficiaries", response_model=list[MemberResponse])
+@router.get(
+    "/{member_id}/beneficiaries",
+    response_model=list[MemberResponse],
+    responses={
+        404: {"model": ErrorResponse, "description": _MEMBER_NOT_FOUND},
+    },
+)
 @readonly()
 async def list_member_beneficiaries(
     member_id: str,
@@ -1437,7 +1517,13 @@ async def list_member_beneficiaries(
     return [_response(item) for item in beneficiaries]
 
 
-@router.get("/{member_id}/sessions", response_model=ServiceSessionListResponse)
+@router.get(
+    "/{member_id}/sessions",
+    response_model=ServiceSessionListResponse,
+    responses={
+        404: {"model": ErrorResponse, "description": _MEMBER_NOT_FOUND},
+    },
+)
 @readonly()
 async def list_member_sessions(
     member_id: str,
@@ -1458,7 +1544,7 @@ async def list_member_sessions(
     )
     total = await session_repo.count(tenant_id=member.tenant_id, member_id=member.id)
     return ServiceSessionListResponse(
-        items=[to_service_session_response(item) for item in items],
+        items=[to_service_session_response(item, current_user=current_user) for item in items],
         total=total,
         page=pg.page,
         limit=pg.limit,
@@ -1466,7 +1552,13 @@ async def list_member_sessions(
     )
 
 
-@router.get("/{member_id}/next-of-kin", response_model=list[MemberNextOfKinResponse])
+@router.get(
+    "/{member_id}/next-of-kin",
+    response_model=list[MemberNextOfKinResponse],
+    responses={
+        404: {"model": ErrorResponse, "description": _MEMBER_NOT_FOUND},
+    },
+)
 @readonly()
 async def list_member_next_of_kin(
     member_id: str,
@@ -1483,6 +1575,12 @@ async def list_member_next_of_kin(
     "/{member_id}/next-of-kin",
     response_model=MemberNextOfKinResponse,
     status_code=status.HTTP_201_CREATED,
+    responses={
+        404: {
+            "model": ErrorResponse,
+            "description": "Member or next-of-kin relationship not found",
+        },
+    },
 )
 @transactional()
 async def create_member_next_of_kin(
@@ -1526,7 +1624,16 @@ async def create_member_next_of_kin(
     return _next_of_kin_response(contact)
 
 
-@router.patch("/{member_id}/next-of-kin/{contact_id}", response_model=MemberNextOfKinResponse)
+@router.patch(
+    "/{member_id}/next-of-kin/{contact_id}",
+    response_model=MemberNextOfKinResponse,
+    responses={
+        404: {
+            "model": ErrorResponse,
+            "description": "Member, contact or next-of-kin relationship not found",
+        },
+    },
+)
 @transactional()
 async def update_member_next_of_kin(
     request: Request,
@@ -1569,7 +1676,13 @@ async def update_member_next_of_kin(
     return _next_of_kin_response(contact)
 
 
-@router.delete("/{member_id}/next-of-kin/{contact_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete(
+    "/{member_id}/next-of-kin/{contact_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    responses={
+        404: {"model": ErrorResponse, "description": "Member or next-of-kin contact not found"},
+    },
+)
 @transactional()
 async def delete_member_next_of_kin(
     request: Request,
@@ -1597,7 +1710,13 @@ async def delete_member_next_of_kin(
     return None
 
 
-@router.get("/{member_id}", response_model=MemberResponse)
+@router.get(
+    "/{member_id}",
+    response_model=MemberResponse,
+    responses={
+        404: {"model": ErrorResponse, "description": _MEMBER_NOT_FOUND},
+    },
+)
 @readonly()
 async def get_member(
     member_id: str,

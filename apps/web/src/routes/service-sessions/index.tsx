@@ -45,7 +45,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { Pagination } from "@/components/ui/pagination"
 import { Table, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { useCanWrite } from "@/hooks/useCanWrite"
+import { useCanWrite, useHasClinicalScope } from "@/hooks/useCanWrite"
 import { useListPage } from "@/hooks/useListPage"
 import { useTableSelection } from "@/hooks/useTableSelection"
 import { useVisiblePage } from "@/hooks/useVisiblePage"
@@ -54,7 +54,7 @@ import { normalizeErrorMessage } from "@/lib/errors"
 import { formatDate } from "@/lib/format"
 import { useEntityListPages } from "@/lib/queries"
 import { queryKeys } from "@/lib/query-keys"
-import { enumOptions, enumParam, listSearchSchema } from "@/lib/search-params"
+import { enumOptions, enumOrArrayParam, enumParam, listSearchSchema } from "@/lib/search-params"
 import { cn } from "@/lib/utils"
 import type { ServiceSession } from "@/types/entities"
 import { SessionCategory, SessionClinicalStatus, SessionStatus, SessionType } from "@/types/enums"
@@ -63,7 +63,7 @@ import { getStatusLabel } from "@/utils/statusColors"
 export const Route = createFileRoute("/service-sessions/")({
   component: ServiceSessionsListPage,
   validateSearch: listSearchSchema({
-    status: enumParam(SessionStatus),
+    status: enumOrArrayParam(SessionStatus),
     session_type: enumParam(SessionType),
     category: enumParam(SessionCategory),
     clinical_outcome: enumParam(SessionClinicalStatus),
@@ -108,6 +108,9 @@ const RANGE_OPTIONS = [
  */
 const FORWARD_RANGES = new Set<RangeFilter>(["today", "this_week", "this_month", "7d", "30d"])
 
+/** "Open" as the dashboard aggregate and its upcoming-bookings card define it. */
+const OPEN_BOOKING_STATUSES = [SessionStatus.SCHEDULED, SessionStatus.RESCHEDULED]
+
 type StatusFilter = (typeof STATUS_OPTIONS)[number]["value"]
 type ModeFilter = (typeof MODE_OPTIONS)[number]["value"]
 type CategoryFilter = (typeof CATEGORY_OPTIONS)[number]["value"]
@@ -144,6 +147,7 @@ function ServiceSessionsListPage() {
   })
   const [importOpen, setImportOpen] = useState(false)
   const canWrite = useCanWrite()
+  const { hasScope: hasClinicalScope } = useHasClinicalScope()
   const activeStatus = searchParams.status
   const activeServiceId = searchParams.service_id
   const activeMemberId = searchParams.member_id
@@ -167,12 +171,16 @@ function ServiceSessionsListPage() {
     void navigate({
       search: (prev) => ({
         ...prev,
-        status: SessionStatus.SCHEDULED,
+        status: OPEN_BOOKING_STATUSES,
         range: "7d" as const,
         page: undefined,
       }),
     })
-  const upcomingActive = activeStatus === SessionStatus.SCHEDULED && FORWARD_RANGES.has(activeRange)
+  const upcomingActive =
+    FORWARD_RANGES.has(activeRange) &&
+    Array.isArray(activeStatus) &&
+    activeStatus.length === OPEN_BOOKING_STATUSES.length &&
+    OPEN_BOOKING_STATUSES.every((s) => activeStatus.includes(s))
 
   const { data: activeServiceForChip = null } = useQuery({
     queryKey: ["services", "detail", activeServiceId ?? ""],
@@ -259,7 +267,7 @@ function ServiceSessionsListPage() {
       <FilterBar>
         {activeStatus ? (
           <FilterChip
-            label={`Status is ${activeStatus}`}
+            label={`Status is ${Array.isArray(activeStatus) ? activeStatus.join(" or ") : activeStatus}`}
             onRemove={() => handleStatusChange("all")}
           />
         ) : null}
@@ -271,7 +279,7 @@ function ServiceSessionsListPage() {
         ) : null}
         <FilterTrigger
           label="All statuses"
-          value={(activeStatus ?? "all") as StatusFilter}
+          value={(Array.isArray(activeStatus) ? "all" : (activeStatus ?? "all")) as StatusFilter}
           options={STATUS_OPTIONS}
           onChange={handleStatusChange}
         />
@@ -287,12 +295,14 @@ function ServiceSessionsListPage() {
           options={CATEGORY_OPTIONS}
           onChange={(v) => setFilter("category", v === "all" ? undefined : v)}
         />
-        <FilterTrigger
-          label="All outcomes"
-          value={(searchParams.clinical_outcome ?? "all") as OutcomeFilter}
-          options={OUTCOME_OPTIONS}
-          onChange={(v) => setFilter("clinical_outcome", v === "all" ? undefined : v)}
-        />
+        {hasClinicalScope ? (
+          <FilterTrigger
+            label="All outcomes"
+            value={(searchParams.clinical_outcome ?? "all") as OutcomeFilter}
+            options={OUTCOME_OPTIONS}
+            onChange={(v) => setFilter("clinical_outcome", v === "all" ? undefined : v)}
+          />
+        ) : null}
         <Button
           type="button"
           variant="ghost"
@@ -450,9 +460,13 @@ function ServiceSessionsListPage() {
                       </SortHeader>
                     </TableHead>
                     <TableHead>
-                      <SortHeader field="clinical_outcome" sort={sort} onToggle={toggleSort}>
-                        Outcome
-                      </SortHeader>
+                      {hasClinicalScope ? (
+                        <SortHeader field="clinical_outcome" sort={sort} onToggle={toggleSort}>
+                          Outcome
+                        </SortHeader>
+                      ) : (
+                        "Outcome"
+                      )}
                     </TableHead>
                     <TableHead className="w-16 text-right text-fg/65">
                       <span className="sr-only">Actions</span>

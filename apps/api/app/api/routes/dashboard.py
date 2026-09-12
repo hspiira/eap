@@ -30,15 +30,20 @@ from app.api.schemas.dashboard_schemas import (
     DashboardResponse,
     DataQuality,
     Granularity,
+    OutcomeCount,
     RangeInfo,
     RangePreset,
+    RiskCounts,
     SeriesPoint,
     ServiceTrend,
+    UpcomingBookings,
+    UpcomingDay,
 )
 from app.core.authorization import require_same_tenant
 from app.core.security import TokenData
 from app.domain.enums import SessionType
 from app.domain.enums.provider_network import ImportRowOutcome
+from app.domain.enums.tenancy import AccessScope
 from app.domain.exceptions import ValidationException
 from app.shared.decorators import readonly
 from app.shared.utils.datetime import utc_now
@@ -368,6 +373,40 @@ async def _data_quality(
     )
 
 
+UPCOMING_DAYS = 7
+CONTRACT_HORIZON_DAYS = 60
+
+
+async def _upcoming(runner, tenant_id: str, now: datetime) -> UpcomingBookings:
+    """The next seven days of open bookings, with empty days kept in."""
+    start = _midnight(now)
+    end = start + timedelta(days=UPCOMING_DAYS)
+    counts = dict(await runner.upcoming_bookings(tenant_id, now, end))
+    days = [
+        UpcomingDay(
+            bucket=day.isoformat(),
+            label=day.strftime("%a %d"),
+            total=counts.get(day, 0),
+        )
+        for day in (start.date() + timedelta(days=offset) for offset in range(UPCOMING_DAYS))
+    ]
+    return UpcomingBookings(total=sum(point.total for point in days), days=days)
+
+
+async def _outcome_mix(
+    runner, tenant_id: str, window: ResolvedRange, current_user: TokenData
+) -> list[OutcomeCount] | None:
+    """Outcome counts for a clinical caller; None for everyone else.
+
+    The counts are aggregate, but outcomes belong to the clinical record and
+    the privacy wall fails closed rather than arguing about aggregation.
+    """
+    if AccessScope.CLINICAL.value not in current_user.access_scopes:
+        return None
+    rows = await runner.outcome_mix(tenant_id, window.start, window.end)
+    return [OutcomeCount(outcome=outcome, total=total) for outcome, total in rows]
+
+
 @router.get(
     "",
     response_model=DashboardResponse,
@@ -384,10 +423,11 @@ async def get_dashboard(
     year: int | None = Query(
         None, ge=1970, le=2999, description="Calendar year when range is year"
     ),
-    _current_user: TokenData = Depends(require_same_tenant),
+    current_user: TokenData = Depends(require_same_tenant),
     runner=Depends(get_dashboard_query_runner),
 ) -> DashboardResponse:
     """All dashboard figures in one read, computed against the same instant."""
+    now = utc_now()
     earliest = await runner.earliest_session(tenant_id)
     window = resolve_range(range_preset, start, end, year=year, earliest=earliest)
 
@@ -396,6 +436,8 @@ async def get_dashboard(
     )
     covered, with_roster, clients_total = await runner.coverage(tenant_id)
     backlog = await _import_backlog(runner, tenant_id)
+    value_delivered, unpriced = await runner.value_delivered(tenant_id, window.start, window.end)
+    crisis, incidents, cases = await runner.risk_counts(tenant_id)
 
     return DashboardResponse(
         range=window.to_info(),
@@ -408,10 +450,18 @@ async def get_dashboard(
             clients_with_roster=with_roster,
             clients_total=clients_total,
             import_backlog=backlog,
+            value_delivered_ugx=value_delivered,
+            sessions_unpriced=unpriced,
+            contracts_ending_soon=await runner.contracts_ending_soon(
+                tenant_id, now.date(), now.date() + timedelta(days=CONTRACT_HORIZON_DAYS)
+            ),
         ),
         sessions_series=await _sessions_series(runner, tenant_id, window),
         sessions_by_category=await _category_split(runner, tenant_id, window),
         top_clients=await _top_clients(runner, tenant_id, window),
         trending_services=await _trending_services(runner, tenant_id, window),
         data_quality=await _data_quality(runner, tenant_id, clients_total, with_roster),
+        upcoming=await _upcoming(runner, tenant_id, now),
+        risk=RiskCounts(crisis_flags_open=crisis, incidents_open=incidents, cases_open=cases),
+        outcome_mix=await _outcome_mix(runner, tenant_id, window, current_user),
     )

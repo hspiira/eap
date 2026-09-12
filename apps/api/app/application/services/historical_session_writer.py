@@ -83,10 +83,15 @@ class HistoricalSessionWriterAdapter:
 
     @staticmethod
     def delivered_at(row: SessionImportRowEntity) -> datetime:
-        """Midday in the boundary timezone, so a date cannot slip a day."""
+        """The log's own time when it carries one, else midday.
+
+        Midday in the boundary timezone so a date-only row cannot slip a
+        day; a row that recorded its time keeps it.
+        """
         if row.session_date is None:
             raise ImportRowNotConvertible(row.row_number, "no session date")
-        return datetime.combine(row.session_date, time(12, 0), tzinfo=PROVIDER_BOUNDARY_TIMEZONE)
+        at = row.session_time if row.session_time is not None else time(12, 0)
+        return datetime.combine(row.session_date, at, tzinfo=PROVIDER_BOUNDARY_TIMEZONE)
 
     @staticmethod
     def delivery_context(row: SessionImportRowEntity) -> str:

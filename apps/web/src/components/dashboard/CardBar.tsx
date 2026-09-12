@@ -4,8 +4,10 @@
  * rather than repeating it in prose above them.
  */
 
+import { CircleAlert } from "lucide-react"
 import type { ElementType, ReactNode } from "react"
 
+import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 
 export function CardBar({
@@ -77,6 +79,39 @@ export function CardEmptyState({
   )
 }
 
+/** A dashed-box placeholder for a card whose data failed to load. */
+export function CardErrorState({
+  title = "Could not load",
+  description,
+  onRetry,
+  className,
+}: {
+  title?: string
+  description?: string
+  onRetry?: () => void
+  className?: string
+}) {
+  return (
+    <div
+      className={cn(
+        "flex flex-col items-center justify-center gap-1 border border-dashed border-danger/30 p-6 text-center",
+        className,
+      )}
+    >
+      <span className="mb-1 grid size-9 place-items-center rounded-full bg-danger-soft text-danger-fg">
+        <CircleAlert className="size-4" />
+      </span>
+      <p className="text-sm font-medium text-fg">{title}</p>
+      {description ? <p className="max-w-[28ch] text-xs text-fg-muted">{description}</p> : null}
+      {onRetry ? (
+        <Button variant="outline" size="sm" onClick={onRetry} className="mt-2">
+          Retry
+        </Button>
+      ) : null}
+    </div>
+  )
+}
+
 export function CardDelta({
   label,
   direction,
@@ -98,4 +133,10 @@ export function CardDelta({
       {direction === "up" ? "↑" : "↓"} {label}
     </span>
   )
+}
+
+/** The sentence under a chart: computed from the same data, never filler. */
+export function CardInsight({ text }: { text: string | null }) {
+  if (!text) return null
+  return <p className="border-t border-border px-3 py-2 text-xs text-fg-muted">{text}</p>
 }

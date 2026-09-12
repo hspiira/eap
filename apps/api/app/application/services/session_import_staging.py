@@ -20,7 +20,7 @@ import hashlib
 from collections import defaultdict
 from collections.abc import Sequence
 from dataclasses import dataclass, replace
-from datetime import date, datetime
+from datetime import date, datetime, time
 from enum import Enum
 
 from app.domain.entities.client import ClientEntity
@@ -55,7 +55,13 @@ from app.domain.services.provider_alias_normalisation import (
     normalise_practitioner_name,
 )
 from app.domain.services.provider_network_calendar import boundary_day
-from app.domain.value_objects.core import ClientId, ProviderId, TenantId
+from app.domain.value_objects.core import (
+    ClientId,
+    EligibleMemberId,
+    ProviderId,
+    ServiceId,
+    TenantId,
+)
 from app.domain.value_objects.provider_network import (
     ProviderAffiliationId,
     SessionImportBatchId,
@@ -123,6 +129,7 @@ class SourceRow:
     row_number: int
     raw_practitioner_name: str | None
     session_date: date | None
+    session_time: time | None = None
     source_record_key: str | None = None
     organisation_affiliation_id: str | None = None
     member_id: str | None = None
@@ -210,6 +217,7 @@ class StagedRow:
     source_record_key: str | None
     raw_practitioner_name: str | None
     session_date: date | None
+    session_time: time | None = None
     client_id: str | None = None
     attendance: SessionAttendance | None = None
     normalised: Normalised = Normalised()
@@ -797,13 +805,16 @@ class SessionImportStagingService:
             return None
         if subject.client_id is None or subject.service_id is None:
             return None
+        # The sessions repository speaks value objects; _Subject carries the
+        # raw ids it resolved. The old call passed the strings through and
+        # died on `.value` the first time a fully resolved row reached it.
         booked = await self._sessions.find_awaiting_confirmation(
             tenant_id,
             session_date=row.session_date,
             provider_id=resolution.provider_id,
-            client_id=subject.client_id,
-            service_id=subject.service_id,
-            member_id=subject.member_id,
+            client_id=ClientId(subject.client_id),
+            service_id=ServiceId(subject.service_id),
+            member_id=EligibleMemberId(subject.member_id) if subject.member_id else None,
         )
         if booked is None:
             return None
@@ -888,6 +899,7 @@ class SessionImportStagingService:
             source_record_key=row.source_record_key,
             raw_practitioner_name=row.raw_practitioner_name,
             session_date=row.session_date,
+            session_time=row.session_time,
         )
 
 

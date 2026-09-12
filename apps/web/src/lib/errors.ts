@@ -84,6 +84,20 @@ export function defaultErrorMessage(
 }
 
 /**
+ * Login-specific override for `useApiForm`'s default message. The login
+ * endpoint returns the same 401 for an unknown tenant, unknown user and wrong
+ * password, so this cannot say more than that; it only exists to stop a
+ * failed login attempt from claiming a session expired. Other error kinds
+ * (lockout, network, timeout, server error) fall through to the caller's
+ * default handling.
+ */
+export function loginErrorMessage(err: unknown): string | undefined {
+  if (isAuthError(err))
+    return "We couldn't sign you in. Check your tenant code, email and password."
+  return undefined
+}
+
+/**
  * Normalize any thrown value to a string message for display.
  * Use in catch blocks with a context-specific fallback (e.g. "Failed to load clients").
  */

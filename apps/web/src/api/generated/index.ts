@@ -83,6 +83,9 @@ export type CareCallbackCampaignCreate = Schemas["CareCallbackCampaignCreate"]
 
 // ----- Dashboard -------------------------------------------------------------
 export type DashboardResponse = Schemas["DashboardResponse"]
+export type OutcomeCount = Schemas["OutcomeCount"]
+export type UpcomingBookings = Schemas["UpcomingBookings"]
+export type RiskCounts = Schemas["RiskCounts"]
 export type DashboardKpis = Schemas["DashboardKpis"]
 export type RangeInfo = Schemas["RangeInfo"]
 export type SeriesPoint = Schemas["SeriesPoint"]

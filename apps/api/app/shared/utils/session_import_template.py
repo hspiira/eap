@@ -17,6 +17,7 @@ from openpyxl.worksheet.worksheet import Worksheet
 
 _HEADERS = (
     "Date",
+    "Time",
     "Company (CLEAN)",
     "Client Code",
     "Client-ID#",

@@ -15,8 +15,16 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.domain.enums import BaseStatus, EligibilityStatus, SessionStatus, SessionType
+from app.domain.enums.clinical import CaseStatus
+from app.domain.enums.contract import ContractStatus
+from app.domain.enums.crisis import CriticalIncidentStatus
+from app.domain.enums.outreach import OutreachStatus
 from app.domain.enums.provider_network import ImportBatchStatus
+from app.infrastructure.models.care_callback_model import OutreachRecordModel
+from app.infrastructure.models.case_model import CaseModel
 from app.infrastructure.models.client_model import ClientModel
+from app.infrastructure.models.contract_model import ContractModel
+from app.infrastructure.models.critical_incident_model import CriticalIncidentModel
 from app.infrastructure.models.eligible_member_model import EligibleMemberModel
 from app.infrastructure.models.provider_model import ProviderModel
 from app.infrastructure.models.service_model import ServiceModel
@@ -29,6 +37,17 @@ from app.shared.utils.datetime import utc_now
 
 if TYPE_CHECKING:
     from app.api.schemas.dashboard_schemas import Granularity
+
+
+OPEN_OUTREACH = (
+    OutreachStatus.PENDING,
+    OutreachStatus.ASSIGNED,
+    OutreachStatus.CONTACTED,
+    OutreachStatus.ESCALATED,
+)
+"""A flagged crisis stays on the board until its outreach reaches a terminal state."""
+
+OPEN_CASE_STATUSES = (CaseStatus.INTAKE, CaseStatus.ASSESSMENT, CaseStatus.ACTIVE)
 
 
 def _completed_sessions(tenant_id: str):
@@ -236,3 +255,88 @@ class DashboardQueryRunner:
             )
         )
         return missing_outcome, missing_rate, providers_pending
+
+    async def value_delivered(
+        self, tenant_id: str, start: datetime, end: datetime
+    ) -> tuple[int, int]:
+        """Summed rates of priced completed sessions in range, and the unpriced count."""
+        priced_sum, unpriced = (
+            await self._session.execute(
+                select(
+                    func.coalesce(func.sum(ServiceSessionModel.rate_ugx), 0),
+                    func.count(ServiceSessionModel.id).filter(
+                        ServiceSessionModel.rate_ugx.is_(None)
+                    ),
+                ).where(*_completed_sessions(tenant_id), *_within(start, end))
+            )
+        ).one()
+        return int(priced_sum or 0), int(unpriced or 0)
+
+    async def outcome_mix(
+        self, tenant_id: str, start: datetime, end: datetime
+    ) -> list[tuple[str | None, int]]:
+        rows = await self._session.execute(
+            select(ServiceSessionModel.clinical_outcome, func.count(ServiceSessionModel.id))
+            .where(*_completed_sessions(tenant_id), *_within(start, end))
+            .group_by(ServiceSessionModel.clinical_outcome)
+            .order_by(func.count(ServiceSessionModel.id).desc())
+        )
+        return [
+            (outcome.value if outcome is not None else None, int(total))
+            for outcome, total in rows.all()
+        ]
+
+    async def upcoming_bookings(
+        self, tenant_id: str, start: datetime, end: datetime
+    ) -> list[tuple[date, int]]:
+        """Open bookings per day between start and end."""
+        day = func.date_trunc("day", _utc_scheduled_at())
+        rows = await self._session.execute(
+            select(day, func.count(ServiceSessionModel.id))
+            .where(
+                ServiceSessionModel.tenant_id == tenant_id,
+                ServiceSessionModel.deleted_at.is_(None),
+                ServiceSessionModel.status.in_(
+                    (SessionStatus.SCHEDULED.value, SessionStatus.RESCHEDULED.value)
+                ),
+                ServiceSessionModel.scheduled_at >= start,
+                ServiceSessionModel.scheduled_at < end,
+            )
+            .group_by(day)
+            .order_by(day)
+        )
+        return [(bucket.date(), int(total)) for bucket, total in rows.all()]
+
+    async def risk_counts(self, tenant_id: str) -> tuple[int, int, int]:
+        """Open crisis flags, open critical incidents, open clinical cases."""
+        crisis = await self._count(
+            select(func.count(OutreachRecordModel.id)).where(
+                OutreachRecordModel.tenant_id == tenant_id,
+                OutreachRecordModel.crisis_flag.is_(True),
+                OutreachRecordModel.status.in_(tuple(s.value for s in OPEN_OUTREACH)),
+            )
+        )
+        incidents = await self._count(
+            select(func.count(CriticalIncidentModel.id)).where(
+                CriticalIncidentModel.tenant_id == tenant_id,
+                CriticalIncidentModel.status != CriticalIncidentStatus.CLOSED,
+            )
+        )
+        cases = await self._count(
+            select(func.count(CaseModel.id)).where(
+                CaseModel.tenant_id == tenant_id,
+                CaseModel.status.in_(tuple(s.value for s in OPEN_CASE_STATUSES)),
+            )
+        )
+        return crisis, incidents, cases
+
+    async def contracts_ending_soon(self, tenant_id: str, today: date, horizon: date) -> int:
+        return await self._count(
+            select(func.count(ContractModel.id)).where(
+                ContractModel.tenant_id == tenant_id,
+                ContractModel.deleted_at.is_(None),
+                ContractModel.status == ContractStatus.ACTIVE,
+                ContractModel.end_date >= today,
+                ContractModel.end_date <= horizon,
+            )
+        )

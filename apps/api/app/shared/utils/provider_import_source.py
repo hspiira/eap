@@ -10,7 +10,7 @@ reduced to the same list-of-dicts shape before it runs.
 import csv
 import io
 from collections.abc import Iterable
-from datetime import date, datetime
+from datetime import date, datetime, time
 
 import openpyxl
 
@@ -19,6 +19,7 @@ from app.domain.exceptions import DomainError
 
 _NAME_COLUMNS = ("counselor (clean)", "counselor", "counsellor")
 _DATE_COLUMNS = ("date", "session date")
+_TIME_COLUMNS = ("time", "session time", "time (hh:mm)", "start time")
 _CLIENT_COLUMNS = ("company (clean)", "client", "company")
 _CLIENT_CODE_COLUMNS = ("client code", "company code")
 _MEMBER_REF_COLUMNS = ("client-id#", "staff_id", "client id")
@@ -61,6 +62,7 @@ def parse_source_rows(content: bytes, source_record_key_field: str | None) -> li
     lookup = {(name or "").strip().lower(): name for name in fieldnames}
     name_column = _first_present(lookup, _NAME_COLUMNS)
     date_column = _first_present(lookup, _DATE_COLUMNS)
+    time_column = _first_present(lookup, _TIME_COLUMNS)
     if date_column is None:
         raise DomainError("Import file has no recognisable date column", http_status=422)
     key_column = lookup.get((source_record_key_field or "").strip().lower())
@@ -90,6 +92,7 @@ def parse_source_rows(content: bytes, source_record_key_field: str | None) -> li
             row_number=index,
             raw_practitioner_name=_value(row, name_column),
             session_date=_parse_date(_value(row, date_column)),
+            session_time=_parse_time(_value(row, time_column)),
             source_record_key=_value(row, key_column),
             **{field: _value(row, column) for field, column in columns.items()},
         )
@@ -156,10 +159,32 @@ def _normalise_cell(value: object) -> str | None:
         return value.date().isoformat()
     if isinstance(value, date):
         return value.isoformat()
+    if isinstance(value, time):
+        return value.isoformat(timespec="minutes")
     if isinstance(value, float) and value.is_integer():
         return str(int(value))
     text = str(value).strip()
     return text or None
+
+
+_TIME_FORMATS = ("%H:%M", "%H:%M:%S", "%I:%M %p", "%I%p", "%I %p")
+
+
+def _parse_time(raw: str | None) -> time | None:
+    """Returns None for a missing or unparseable time; the date still stands.
+
+    A time is a refinement, not a requirement: most counsellor logs carry
+    none, and a row must never be held because its optional column did not
+    parse.
+    """
+    if not raw:
+        return None
+    for pattern in _TIME_FORMATS:
+        try:
+            return datetime.strptime(raw.upper(), pattern).time()
+        except ValueError:
+            continue
+    return None
 
 
 def _first_present(lookup: dict[str, str], candidates: tuple[str, ...]) -> str | None:

@@ -22,7 +22,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
 import { cn } from "@/lib/utils"
 
-import { CardBar, CardStat } from "./CardBar"
+import { CardBar, CardErrorState, CardStat } from "./CardBar"
 
 type Severity = "high" | "medium" | "low" | "signal"
 
@@ -57,6 +57,9 @@ const SEVERITY_STYLE: Record<Severity, string> = {
 
 const SEVERITY_RANK: Record<Severity, number> = { high: 0, medium: 1, low: 2, signal: 3 }
 
+/** A crisis outranks every same-severity queue regardless of queue length. */
+const CRISIS_PRIORITY_BOOST = 100_000
+
 /**
  * Turn the aggregate into a ranked action list. Order is by severity first
  * and size second, so the largest queue does not outrank a smaller one that
@@ -64,16 +67,49 @@ const SEVERITY_RANK: Record<Severity, number> = { high: 0, medium: 1, low: 2, si
  */
 export function buildAttentionItems(data: DashboardResponse): AttentionItem[] {
   const quality = data.data_quality
-  const backlog = data.kpis.import_backlog
+  const risk = data.risk
   const items: (AttentionItem & { size: number })[] = []
 
+  if (risk.crisis_flags_open > 0) {
+    items.push({
+      key: "crisis",
+      severity: "high",
+      size: risk.crisis_flags_open + CRISIS_PRIORITY_BOOST,
+      headline: `Respond to ${risk.crisis_flags_open} open crisis ${risk.crisis_flags_open === 1 ? "flag" : "flags"}`,
+      consequence: "someone reported at risk is waiting on outreach",
+      action: "Worklist",
+      to: "/care-callbacks/worklist",
+    })
+  }
+  if (risk.incidents_open > 0) {
+    items.push({
+      key: "incidents",
+      severity: "high",
+      size: risk.incidents_open,
+      headline: `Work ${risk.incidents_open} open critical ${risk.incidents_open === 1 ? "incident" : "incidents"}`,
+      consequence: "an incident response is still running",
+      action: "Incidents",
+      to: "/incidents",
+    })
+  }
+  if (data.kpis.contracts_ending_soon > 0) {
+    items.push({
+      key: "renewals",
+      severity: "medium",
+      size: data.kpis.contracts_ending_soon,
+      headline: `Renew ${data.kpis.contracts_ending_soon} ${data.kpis.contracts_ending_soon === 1 ? "contract" : "contracts"} ending within 60 days`,
+      consequence: "cover lapses at the end date",
+      action: "Contracts",
+      to: "/contracts",
+    })
+  }
   if (quality.clients_without_roster > 0) {
     items.push({
       key: "rosters",
       severity: "high",
       size: quality.clients_without_roster,
       headline: `Import member rosters for ${quality.clients_without_roster} clients`,
-      consequence: backlog > 0 ? `unblocks ${backlog.toLocaleString()} import rows` : "",
+      consequence: "new sessions for these clients can't be matched to members",
       action: "Members",
       to: "/members",
     })
@@ -147,7 +183,7 @@ function buildSignals(data: DashboardResponse): AttentionItem[] {
         key: "concentration",
         severity: "signal",
         headline: `${leader.client_name} is ${share}% of delivery`,
-        consequence: "revenue concentrated in one client",
+        consequence: "session volume concentrated in one client",
         action: "Clients",
         to: "/clients",
       })
@@ -162,7 +198,7 @@ function buildSignals(data: DashboardResponse): AttentionItem[] {
     signals.push({
       key: "riser",
       severity: "signal",
-      headline: `${riser.service_name} demand up ${Math.round(riser.change_pct ?? 0)}%`,
+      headline: `${riser.service_name} recorded sessions up ${Math.round(riser.change_pct ?? 0)}%`,
       consequence: "check practitioner capacity",
       action: "Services",
       to: "/services",
@@ -173,8 +209,8 @@ function buildSignals(data: DashboardResponse): AttentionItem[] {
     signals.push({
       key: "faller",
       severity: "signal",
-      headline: `${faller.service_name} demand down ${Math.abs(Math.round(faller.change_pct ?? 0))}%`,
-      consequence: "demand shifting to other services",
+      headline: `${faller.service_name} recorded sessions down ${Math.abs(Math.round(faller.change_pct ?? 0))}%`,
+      consequence: "fewer recorded sessions than the prior window",
       action: "Services",
       to: "/services",
     })
@@ -192,15 +228,19 @@ function maxBy<T>(items: ReadonlyArray<T>, score: (item: T) => number): T | unde
 export function AttentionCard({
   items,
   loading,
+  error,
+  onRetry,
 }: {
   items: ReadonlyArray<AttentionItem>
   loading?: boolean
+  error?: boolean
+  onRetry?: () => void
 }) {
   const high = items.filter((item) => item.severity === "high").length
   return (
     <Card className="flex h-full flex-col rounded-md">
       <CardBar title="Needs attention">
-        {!loading && high > 0 ? <CardStat value={`${high}`} label="blocking" /> : null}
+        {!loading && !error && high > 0 ? <CardStat value={`${high}`} label="blocking" /> : null}
       </CardBar>
       <CardContent className="max-h-[220px] flex-1 overflow-y-auto p-0">
         {loading ? (
@@ -208,6 +248,8 @@ export function AttentionCard({
             <Skeleton className="h-9 w-full" />
             <Skeleton className="h-9 w-full" />
           </div>
+        ) : error ? (
+          <CardErrorState title="Needs attention unavailable" onRetry={onRetry} className="m-3" />
         ) : items.length === 0 ? (
           <div className="flex items-center gap-2 p-4">
             <CheckCircle2 className="size-4 shrink-0 text-success-fg" aria-hidden />

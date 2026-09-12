@@ -95,4 +95,17 @@ describe("sessions list: happy path", () => {
     expect(offered).toEqual(expect.arrayContaining(["scheduled_at", "status"]))
     expect(offered.filter((field) => field.endsWith("_id"))).toEqual([])
   })
+
+  it("gates the outcome filter and sort on clinical scope", async () => {
+    // Pins that both sit behind the same hasClinicalScope check.
+    const source = (await import("@/routes/service-sessions/index?raw")).default as string
+    const outcomeFilter = source.match(
+      /hasClinicalScope \? \(\s*<FilterTrigger[\s\S]*?clinical_outcome/,
+    )
+    const outcomeSort = source.match(
+      /hasClinicalScope \? \(\s*<SortHeader field="clinical_outcome"/,
+    )
+    expect(outcomeFilter).not.toBeNull()
+    expect(outcomeSort).not.toBeNull()
+  })
 })

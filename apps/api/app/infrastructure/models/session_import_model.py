@@ -1,6 +1,6 @@
 """Staged historical session import persistence."""
 
-from datetime import date, datetime
+from datetime import date, datetime, time
 
 from sqlalchemy import (
     JSON,
@@ -12,6 +12,7 @@ from sqlalchemy import (
     Integer,
     String,
     Text,
+    Time,
     UniqueConstraint,
     text,
 )
@@ -111,6 +112,9 @@ class SessionImportRowModel(CuidMixin, TenantMixin, Base, TimestampMixin):
     source_record_key: Mapped[str | None] = mapped_column(String(255), nullable=True)
     raw_practitioner_name: Mapped[str | None] = mapped_column(String(500), nullable=True)
     session_date: Mapped[date | None] = mapped_column(Date, nullable=True)
+    # The log's own clock when it carries one; scheduled_at falls back to
+    # midday without it, so absence stays visible rather than faked.
+    session_time: Mapped[time | None] = mapped_column(Time, nullable=True)
     outcome: Mapped[ImportRowOutcome] = mapped_column(
         EnumValueType(ImportRowOutcome), nullable=False, index=True
     )

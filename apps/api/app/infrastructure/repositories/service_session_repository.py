@@ -10,7 +10,7 @@ from datetime import date, datetime
 from typing import Any
 
 from sqlalchemy import Date as SADate
-from sqlalchemy import and_, cast, func, select, text
+from sqlalchemy import and_, cast, func, or_, select, text
 
 from app.domain.entities.service_session import ServiceSessionEntity
 from app.domain.enums import (
@@ -35,11 +35,22 @@ from app.domain.value_objects.core import (
     TenantId,
 )
 from app.infrastructure.mappers.service_session_mapper import ServiceSessionMapper
+from app.infrastructure.models.client_model import ClientModel
 from app.infrastructure.models.provider_affiliation_model import ProviderAffiliationModel
+from app.infrastructure.models.provider_model import ProviderModel
 from app.infrastructure.models.provider_organisation_model import ProviderOrganisationModel
 from app.infrastructure.models.service_model import ServiceModel
 from app.infrastructure.models.service_session_model import ServiceSessionModel
 from app.infrastructure.repositories.base import TenantScopedRepositoryImpl
+
+#: Bound on ids resolved per entity kind for a search term. A tenant with more
+#: matches than this on one search word has a naming problem, not a paging one.
+_SEARCH_MATCH_LIMIT = 500
+
+
+def _escape_like(value: str) -> str:
+    """Backslash-escape LIKE/ILIKE wildcards so a literal `%` or `_` searches literally."""
+    return value.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
 
 
 class ServiceSessionRepositoryImpl(
@@ -117,7 +128,6 @@ class ServiceSessionRepositoryImpl(
         member_id: EligibleMemberId | None,
         provider_id: ProviderId | None,
         service_id: ServiceId | None,
-        status: SessionStatus | None,
         session_type: SessionType | None = None,
         category: SessionCategory | None = None,
         clinical_outcome: SessionClinicalStatus | None = None,
@@ -132,8 +142,6 @@ class ServiceSessionRepositoryImpl(
             filters["provider_id"] = provider_id.value
         if service_id:
             filters["service_id"] = service_id.value
-        if status:
-            filters["status"] = status
         if session_type:
             filters["session_type"] = session_type
         if category:
@@ -141,6 +149,53 @@ class ServiceSessionRepositoryImpl(
         if clinical_outcome:
             filters["clinical_outcome"] = clinical_outcome
         return filters
+
+    @staticmethod
+    def _status_condition(status: SessionStatus | Sequence[SessionStatus] | None) -> list[Any]:
+        """`status` as one or several values, via IN rather than equality."""
+        if status is None:
+            return []
+        values = [status] if isinstance(status, SessionStatus) else list(status)
+        if not values:
+            return []
+        return [ServiceSessionModel.status.in_([s.value for s in values])]
+
+    async def _search_condition(self, tenant_id: str, search: str | None) -> list[Any]:
+        """Sessions whose service, client or practitioner name matches.
+
+        Resolved from each table separately rather than joined onto the
+        session query, so a session naming one of each is never duplicated
+        and the sessions table itself carries no denormalised name to scan.
+        Wildcard characters in `search` are escaped, so a literal `%` or `_`
+        searches literally rather than as a LIKE wildcard.
+        """
+        if search is None or not search.strip():
+            return []
+        pattern = f"%{_escape_like(search.strip())}%"
+
+        async def _ids(model: Any, name_column: Any) -> list[str]:
+            rows = await self.session.scalars(
+                select(model.id)
+                .where(model.tenant_id == tenant_id, name_column.ilike(pattern, escape="\\"))
+                .limit(_SEARCH_MATCH_LIMIT)
+            )
+            return list(rows.all())
+
+        service_ids = await _ids(ServiceModel, ServiceModel.name)
+        client_ids = await _ids(ClientModel, ClientModel.name)
+        provider_ids = await _ids(ProviderModel, ProviderModel.display_name)
+
+        matched = [
+            condition
+            for ids, column in (
+                (service_ids, ServiceSessionModel.service_id),
+                (client_ids, ServiceSessionModel.client_id),
+                (provider_ids, ServiceSessionModel.provider_id),
+            )
+            if ids
+            for condition in [column.in_(ids)]
+        ]
+        return [or_(*matched)] if matched else [ServiceSessionModel.id.in_([])]
 
     @staticmethod
     def _scheduled_conditions(
@@ -166,13 +221,14 @@ class ServiceSessionRepositoryImpl(
         member_id: EligibleMemberId | None = None,
         provider_id: ProviderId | None = None,
         service_id: ServiceId | None = None,
-        status: SessionStatus | None = None,
+        status: SessionStatus | Sequence[SessionStatus] | None = None,
         session_type: SessionType | None = None,
         category: SessionCategory | None = None,
         clinical_outcome: SessionClinicalStatus | None = None,
         client_id: ClientId | None = None,
         scheduled_from: datetime | None = None,
         scheduled_to: datetime | None = None,
+        search: str | None = None,
         limit: int = 100,
         offset: int = 0,
         sort_by: str = "scheduled_at",
@@ -189,7 +245,6 @@ class ServiceSessionRepositoryImpl(
                 member_id,
                 provider_id,
                 service_id,
-                status,
                 session_type,
                 category,
                 clinical_outcome,
@@ -197,7 +252,11 @@ class ServiceSessionRepositoryImpl(
             ),
             search=None,
             search_fields=None,
-            extra_conditions=self._scheduled_conditions(scheduled_from, scheduled_to),
+            extra_conditions=(
+                self._status_condition(status)
+                + self._scheduled_conditions(scheduled_from, scheduled_to)
+                + await self._search_condition(tenant_id.value, search)
+            ),
         )
 
     async def count(
@@ -206,13 +265,14 @@ class ServiceSessionRepositoryImpl(
         member_id: EligibleMemberId | None = None,
         provider_id: ProviderId | None = None,
         service_id: ServiceId | None = None,
-        status: SessionStatus | None = None,
+        status: SessionStatus | Sequence[SessionStatus] | None = None,
         session_type: SessionType | None = None,
         category: SessionCategory | None = None,
         clinical_outcome: SessionClinicalStatus | None = None,
         client_id: ClientId | None = None,
         scheduled_from: datetime | None = None,
         scheduled_to: datetime | None = None,
+        search: str | None = None,
     ) -> int:
         """Count sessions matching filters. Must mirror list_all exactly."""
         return await self._count_all(
@@ -221,13 +281,16 @@ class ServiceSessionRepositoryImpl(
                 member_id,
                 provider_id,
                 service_id,
-                status,
                 session_type,
                 category,
                 clinical_outcome,
                 client_id,
             ),
-            extra_conditions=self._scheduled_conditions(scheduled_from, scheduled_to),
+            extra_conditions=(
+                self._status_condition(status)
+                + self._scheduled_conditions(scheduled_from, scheduled_to)
+                + await self._search_condition(tenant_id.value, search)
+            ),
             search=None,
             search_fields=None,
         )

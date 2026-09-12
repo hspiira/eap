@@ -15,7 +15,11 @@ type Values = z.infer<typeof schema>
 
 function setup(
   onSubmit: (values: Values) => Promise<void> | void,
-  options: { successToast?: string; errorToast?: boolean } = {},
+  options: {
+    successToast?: string
+    errorToast?: boolean
+    errorMessage?: (err: unknown) => string | undefined
+  } = {},
 ) {
   return renderHook(
     () =>
@@ -114,6 +118,43 @@ describe("useApiForm: server error mapping", () => {
 
     await waitFor(() => {
       expect(result.current.serverError).toBe("plain throw")
+    })
+  })
+
+  it("uses errorMessage override when it returns a string", async () => {
+    const onSubmit = vi.fn().mockRejectedValue(new ApiError("Boom", "AUTH", 401))
+    const { result } = setup(onSubmit, {
+      errorToast: false,
+      errorMessage: () => "context-specific copy",
+    })
+
+    act(() => {
+      result.current.setValue("name", "X")
+      result.current.setValue("age", 1)
+    })
+    await act(async () => {
+      await result.current.submit()
+    })
+
+    await waitFor(() => {
+      expect(result.current.serverError).toBe("context-specific copy")
+    })
+  })
+
+  it("falls back to defaultErrorMessage when errorMessage returns undefined", async () => {
+    const onSubmit = vi.fn().mockRejectedValue(new ApiError("Boom", "CONFLICT", 409))
+    const { result } = setup(onSubmit, { errorToast: false, errorMessage: () => undefined })
+
+    act(() => {
+      result.current.setValue("name", "X")
+      result.current.setValue("age", 1)
+    })
+    await act(async () => {
+      await result.current.submit()
+    })
+
+    await waitFor(() => {
+      expect(result.current.serverError).toBe("Boom")
     })
   })
 

@@ -298,6 +298,75 @@ class TestListServiceSessions:
         assert other.status_code == 200
         assert other.json()["total"] == 0
 
+    async def test_status_accepts_several_values(
+        self, client: AsyncClient, session_test_tenant: dict, test_service_session: dict
+    ):
+        """R4: the single-value form still works, and now takes several too."""
+        tenant_id = session_test_tenant["id"]
+
+        response = await client.get(
+            f"/service-sessions/?tenant_id={tenant_id}&status=Scheduled&status=Cancelled"
+        )
+        assert response.status_code == 200, response.text
+        assert all(s["status"] in ("Scheduled", "Cancelled") for s in response.json()["items"])
+
+    async def test_excluded_statuses_never_push_out_an_eligible_booking(
+        self,
+        client: AsyncClient,
+        session_test_tenant: dict,
+        session_test_service: dict,
+        session_test_provider: dict,
+        session_test_client_person: dict,
+    ):
+        """R4: server-side status filtering, not a client-side page filter.
+
+        20 chronologically-first sessions are cancelled; one later, eligible
+        booking must still come back from a status-filtered, limit=20 page.
+        Filtering after the LIMIT would silently drop it.
+        """
+        tenant_id = session_test_tenant["id"]
+        base = datetime.now(UTC) + timedelta(days=300)
+
+        for i in range(20):
+            created = await client.post(
+                f"/service-sessions/?tenant_id={tenant_id}",
+                json={
+                    "service_id": session_test_service["id"],
+                    "provider_id": session_test_provider["id"],
+                    "member_id": session_test_client_person["id"],
+                    "scheduled_at": (base + timedelta(minutes=i)).isoformat(),
+                    "delivery_context": "Direct",
+                },
+            )
+            assert created.status_code == 201, created.text
+            cancelled = await client.post(
+                f"/service-sessions/{created.json()['id']}/cancel",
+                json={"reason": "excluded by design for this fixture"},
+            )
+            assert cancelled.status_code == 200, cancelled.text
+
+        eligible = await client.post(
+            f"/service-sessions/?tenant_id={tenant_id}",
+            json={
+                "service_id": session_test_service["id"],
+                "provider_id": session_test_provider["id"],
+                "member_id": session_test_client_person["id"],
+                "scheduled_at": (base + timedelta(minutes=21)).isoformat(),
+                "delivery_context": "Direct",
+            },
+        )
+        assert eligible.status_code == 201, eligible.text
+
+        response = await client.get(
+            f"/service-sessions/?tenant_id={tenant_id}&status=Scheduled&status=Rescheduled"
+            f"&sort_by=scheduled_at&sort_desc=false&limit=20"
+        )
+        assert response.status_code == 200, response.text
+        data = response.json()
+        assert eligible.json()["id"] in [s["id"] for s in data["items"]]
+        assert all(s["status"] in ("Scheduled", "Rescheduled") for s in data["items"])
+        assert data["total"] == 1
+
 
 # =============================================================================
 # LIFECYCLE TESTS (Complete, Cancel, Reschedule, No-Show, Archive, Restore)
@@ -307,8 +376,11 @@ class TestListServiceSessions:
 class TestCompleteServiceSession:
     """Tests for POST /service-sessions/{session_id}/complete endpoint."""
 
-    async def test_complete_session_success(self, client: AsyncClient, test_service_session: dict):
+    async def test_complete_session_success(
+        self, client_with_clinical_scope: AsyncClient, test_service_session: dict
+    ):
         """Test completing a scheduled session."""
+        client = client_with_clinical_scope
         session_id = test_service_session["id"]
 
         response = await client.post(
@@ -478,8 +550,11 @@ class TestUpdateServiceSession:
         data = response.json()
         assert data["location"] == "Conference Room B"
 
-    async def test_update_session_notes(self, client: AsyncClient, test_service_session: dict):
+    async def test_update_session_notes(
+        self, client_with_clinical_scope: AsyncClient, test_service_session: dict
+    ):
         """Test updating session notes."""
+        client = client_with_clinical_scope
         session_id = test_service_session["id"]
 
         response = await client.patch(
@@ -504,8 +579,11 @@ class TestUpdateServiceSession:
 class TestUpdateSessionFeedback:
     """Tests for PATCH /service-sessions/{session_id}/feedback endpoint."""
 
-    async def test_update_feedback_success(self, client: AsyncClient, test_service_session: dict):
+    async def test_update_feedback_success(
+        self, client_with_clinical_scope: AsyncClient, test_service_session: dict
+    ):
         """Test updating session feedback (requires completed session)."""
+        client = client_with_clinical_scope
         session_id = test_service_session["id"]
 
         # Complete the session first (feedback requires completed status)
@@ -544,13 +622,14 @@ class TestServiceSessionLifecycleFlow:
 
     async def test_full_lifecycle_scheduled_to_completed(
         self,
-        client: AsyncClient,
+        client_with_clinical_scope: AsyncClient,
         session_test_tenant: dict,
         session_test_service: dict,
         session_test_provider: dict,
         session_test_client_person: dict,
     ):
         """Test complete flow: create -> update -> complete -> feedback."""
+        client = client_with_clinical_scope
         tenant_id = session_test_tenant["id"]
         scheduled_at = (datetime.now(UTC) + timedelta(days=1)).isoformat()
 
@@ -1313,7 +1392,7 @@ class TestFollowUpSessions:
 
     async def test_a_continuing_outcome_and_a_follow_up_are_different_things(
         self,
-        client: AsyncClient,
+        client_with_clinical_scope: AsyncClient,
         session_test_tenant: dict,
         session_test_service: dict,
         session_test_provider: dict,
@@ -1322,6 +1401,7 @@ class TestFollowUpSessions:
         """The outcome says the person is coming back; the link says which
         booking answered that. One does not imply the other, and a session can
         carry either alone."""
+        client = client_with_clinical_scope
         response = await client.post(
             f"/service-sessions/?tenant_id={session_test_tenant['id']}",
             json={
@@ -1859,3 +1939,429 @@ class TestSessionChain:
 
         assert response.status_code == 200, response.text
         assert "following" in response.json()
+
+
+CLINICAL_FIELDS = (
+    "notes",
+    "feedback",
+    "issue_topic",
+    "diagnosis_type_id",
+    "diagnosis_id",
+    "partner_name",
+    "partner_relationship",
+    "clinical_outcome",
+)
+
+
+class TestClinicalScopeGating:
+    """R1: clinical fields are null without AccessScope.CLINICAL, on every read path."""
+
+    async def _clinical_session(self, client, tenant_id, service, provider, member, *, at) -> dict:
+        response = await client.post(
+            f"/service-sessions/?tenant_id={tenant_id}",
+            json={
+                "service_id": service["id"],
+                "provider_id": provider["id"],
+                "member_id": member["id"],
+                "scheduled_at": at.isoformat(),
+                "delivery_context": "Direct",
+                "category": "Couples",
+                "issue_topic": "Workplace stress",
+                "diagnosis_type_id": "dx-type-1",
+                "diagnosis_id": "dx-1",
+                "partner_name": "Alex",
+                "partner_relationship": "Spouse",
+                "clinical_outcome": "ToBeContinued",
+            },
+        )
+        assert response.status_code == 201, response.text
+        return response.json()
+
+    def _assert_redacted(self, data: dict) -> None:
+        for field in CLINICAL_FIELDS:
+            assert data[field] is None, f"{field} was not redacted: {data[field]!r}"
+
+    def _assert_visible(self, data: dict) -> None:
+        assert data["issue_topic"] == "Workplace stress"
+        assert data["diagnosis_id"] == "dx-1"
+        assert data["partner_name"] == "Alex"
+        assert data["clinical_outcome"] == "ToBeContinued"
+
+    # `client` and `client_with_clinical_scope` share one FastAPI app whose
+    # dependency_overrides is a single global dict, so requesting both in one
+    # test would have the second fixture's scope silently apply to calls made
+    # with the "other" client too. Each test below picks exactly one.
+
+    async def test_detail_redacts_without_scope(
+        self,
+        client: AsyncClient,
+        session_test_tenant: dict,
+        session_test_service: dict,
+        session_test_provider: dict,
+        session_test_client_person: dict,
+    ):
+        session = await self._clinical_session(
+            client,
+            session_test_tenant["id"],
+            session_test_service,
+            session_test_provider,
+            session_test_client_person,
+            at=datetime.now(UTC) + timedelta(days=200),
+        )
+        response = await client.get(f"/service-sessions/{session['id']}")
+        assert response.status_code == 200
+        self._assert_redacted(response.json())
+        assert response.json()["status"] == "Scheduled"  # operational field intact
+
+    async def test_detail_visible_with_clinical_scope(
+        self,
+        client_with_clinical_scope: AsyncClient,
+        session_test_tenant: dict,
+        session_test_service: dict,
+        session_test_provider: dict,
+        session_test_client_person: dict,
+    ):
+        session = await self._clinical_session(
+            client_with_clinical_scope,
+            session_test_tenant["id"],
+            session_test_service,
+            session_test_provider,
+            session_test_client_person,
+            at=datetime.now(UTC) + timedelta(days=201),
+        )
+        response = await client_with_clinical_scope.get(f"/service-sessions/{session['id']}")
+        assert response.status_code == 200
+        self._assert_visible(response.json())
+
+    async def test_list_redacts_without_scope(
+        self,
+        client: AsyncClient,
+        session_test_tenant: dict,
+        session_test_service: dict,
+        session_test_provider: dict,
+        session_test_client_person: dict,
+    ):
+        tenant_id = session_test_tenant["id"]
+        await self._clinical_session(
+            client,
+            tenant_id,
+            session_test_service,
+            session_test_provider,
+            session_test_client_person,
+            at=datetime.now(UTC) + timedelta(days=202),
+        )
+        response = await client.get(f"/service-sessions/?tenant_id={tenant_id}")
+        assert response.status_code == 200
+        for item in response.json()["items"]:
+            self._assert_redacted(item)
+
+    async def test_list_visible_with_clinical_scope(
+        self,
+        client_with_clinical_scope: AsyncClient,
+        session_test_tenant: dict,
+        session_test_service: dict,
+        session_test_provider: dict,
+        session_test_client_person: dict,
+    ):
+        tenant_id = session_test_tenant["id"]
+        await self._clinical_session(
+            client_with_clinical_scope,
+            tenant_id,
+            session_test_service,
+            session_test_provider,
+            session_test_client_person,
+            at=datetime.now(UTC) + timedelta(days=203),
+        )
+        response = await client_with_clinical_scope.get(f"/service-sessions/?tenant_id={tenant_id}")
+        assert response.status_code == 200
+        assert any(item["clinical_outcome"] == "ToBeContinued" for item in response.json()["items"])
+
+    async def test_by_member_provider_service_redact_without_scope(
+        self,
+        client: AsyncClient,
+        session_test_tenant: dict,
+        session_test_service: dict,
+        session_test_provider: dict,
+        session_test_client_person: dict,
+    ):
+        tenant_id = session_test_tenant["id"]
+        await self._clinical_session(
+            client,
+            tenant_id,
+            session_test_service,
+            session_test_provider,
+            session_test_client_person,
+            at=datetime.now(UTC) + timedelta(days=204),
+        )
+        member_id = session_test_client_person["id"]
+        provider_id = session_test_provider["id"]
+        service_id = session_test_service["id"]
+
+        for path in (
+            f"/service-sessions/member/{member_id}?tenant_id={tenant_id}",
+            f"/service-sessions/provider/{provider_id}?tenant_id={tenant_id}",
+            f"/service-sessions/service/{service_id}?tenant_id={tenant_id}",
+        ):
+            response = await client.get(path)
+            assert response.status_code == 200, response.text
+            for item in response.json():
+                self._assert_redacted(item)
+
+    async def test_by_member_provider_service_visible_with_clinical_scope(
+        self,
+        client_with_clinical_scope: AsyncClient,
+        session_test_tenant: dict,
+        session_test_service: dict,
+        session_test_provider: dict,
+        session_test_client_person: dict,
+    ):
+        tenant_id = session_test_tenant["id"]
+        await self._clinical_session(
+            client_with_clinical_scope,
+            tenant_id,
+            session_test_service,
+            session_test_provider,
+            session_test_client_person,
+            at=datetime.now(UTC) + timedelta(days=205),
+        )
+        member_id = session_test_client_person["id"]
+        provider_id = session_test_provider["id"]
+        service_id = session_test_service["id"]
+
+        for path in (
+            f"/service-sessions/member/{member_id}?tenant_id={tenant_id}",
+            f"/service-sessions/provider/{provider_id}?tenant_id={tenant_id}",
+            f"/service-sessions/service/{service_id}?tenant_id={tenant_id}",
+        ):
+            response = await client_with_clinical_scope.get(path)
+            assert response.status_code == 200, response.text
+            assert any(item["clinical_outcome"] == "ToBeContinued" for item in response.json())
+
+    async def test_chain_redacts_without_scope(
+        self,
+        client: AsyncClient,
+        session_test_tenant: dict,
+        session_test_service: dict,
+        session_test_provider: dict,
+        session_test_client_person: dict,
+    ):
+        tenant_id = session_test_tenant["id"]
+        first = await self._clinical_session(
+            client,
+            tenant_id,
+            session_test_service,
+            session_test_provider,
+            session_test_client_person,
+            at=datetime.now(UTC) + timedelta(days=206),
+        )
+        follow_up = await self._clinical_session(
+            client,
+            tenant_id,
+            session_test_service,
+            session_test_provider,
+            session_test_client_person,
+            at=datetime.now(UTC) + timedelta(days=207),
+        )
+        await client.patch(
+            f"/service-sessions/{follow_up['id']}",
+            json={"follow_up_of_session_id": first["id"]},
+        )
+
+        response = await client.get(f"/service-sessions/{first['id']}/chain")
+        assert response.status_code == 200
+        for item in response.json()["following"]:
+            self._assert_redacted(item)
+
+    async def test_awaiting_confirmation_redacts_without_scope(
+        self,
+        client: AsyncClient,
+        session_test_tenant: dict,
+        session_test_service: dict,
+        session_test_provider: dict,
+        session_test_client_person: dict,
+    ):
+        tenant_id = session_test_tenant["id"]
+        past = await self._clinical_session(
+            client,
+            tenant_id,
+            session_test_service,
+            session_test_provider,
+            session_test_client_person,
+            at=datetime.now(UTC) - timedelta(days=1),
+        )
+
+        response = await client.get(
+            f"/service-sessions/awaiting-confirmation?tenant_id={tenant_id}"
+        )
+        assert response.status_code == 200, response.text
+        matching = [item for item in response.json()["items"] if item["id"] == past["id"]]
+        assert len(matching) == 1
+        self._assert_redacted(matching[0])
+
+    async def test_wrong_tenant_still_gets_404_with_clinical_scope(
+        self,
+        client_with_clinical_scope: AsyncClient,
+        session_test_tenant: dict,
+        session_test_service: dict,
+        session_test_provider: dict,
+        session_test_client_person: dict,
+    ):
+        """Clinical scope is not a substitute for tenant membership."""
+        session = await self._clinical_session(
+            client_with_clinical_scope,
+            session_test_tenant["id"],
+            session_test_service,
+            session_test_provider,
+            session_test_client_person,
+            at=datetime.now(UTC) + timedelta(days=208),
+        )
+        other_tenant = await client_with_clinical_scope.post(
+            "/tenants/", json={"name": "Other Tenant", "code": "other-scope"}
+        )
+        assert other_tenant.status_code == 201, other_tenant.text
+
+        response = await client_with_clinical_scope.get(
+            f"/service-sessions/{session['id']}?tenant_id={other_tenant.json()['id']}"
+        )
+        assert response.status_code == 404
+
+
+class TestSessionSearch:
+    """R5: bounded server search over service, client and practitioner names."""
+
+    async def test_a_matching_search_changes_items_and_total(
+        self, client: AsyncClient, session_test_tenant: dict, test_service_session: dict
+    ):
+        tenant_id = session_test_tenant["id"]
+
+        response = await client.get(f"/service-sessions/?tenant_id={tenant_id}&search=Test+Service")
+
+        assert response.status_code == 200, response.text
+        data = response.json()
+        assert data["total"] == 1
+        assert data["items"][0]["id"] == test_service_session["id"]
+
+    async def test_a_nonmatching_search_returns_nothing(
+        self, client: AsyncClient, session_test_tenant: dict, test_service_session: dict
+    ):
+        tenant_id = session_test_tenant["id"]
+
+        response = await client.get(f"/service-sessions/?tenant_id={tenant_id}&search=NoSuchThing")
+
+        assert response.status_code == 200, response.text
+        assert response.json() == {
+            "items": [],
+            "total": 0,
+            "page": 1,
+            "limit": 20,
+            "has_more": False,
+        }
+
+    async def test_search_matches_client_and_practitioner_names_too(
+        self, client: AsyncClient, session_test_tenant: dict, test_service_session: dict
+    ):
+        tenant_id = session_test_tenant["id"]
+
+        by_client = await client.get(f"/service-sessions/?tenant_id={tenant_id}&search=employer")
+        assert by_client.json()["total"] == 1
+
+        by_provider = await client.get(
+            f"/service-sessions/?tenant_id={tenant_id}&search=practitioner"
+        )
+        assert by_provider.json()["total"] == 1
+
+    async def test_search_is_case_insensitive(
+        self, client: AsyncClient, session_test_tenant: dict, test_service_session: dict
+    ):
+        tenant_id = session_test_tenant["id"]
+
+        response = await client.get(f"/service-sessions/?tenant_id={tenant_id}&search=SESSION test")
+        assert response.json()["total"] == 1
+
+    async def test_wildcard_characters_search_literally_not_as_wildcards(
+        self, client: AsyncClient, session_test_tenant: dict, test_service_session: dict
+    ):
+        """None of the fixture names contain a literal `%` or `_`.
+
+        An unescaped search would treat `%` as "match anything" and return
+        every session; escaped, it must return none.
+        """
+        tenant_id = session_test_tenant["id"]
+
+        response = await client.get(f"/service-sessions/?tenant_id={tenant_id}&search=%25")
+        assert response.status_code == 200, response.text
+        assert response.json()["total"] == 0
+
+    async def test_search_stays_within_the_caller_s_tenant(
+        self,
+        client: AsyncClient,
+        session_test_tenant: dict,
+        session_test_provider: dict,
+        session_test_client_person: dict,
+        test_service_session: dict,
+    ):
+        """A same-named service in another tenant must not leak into this search."""
+        other_tenant = await client.post(
+            "/tenants/", json={"name": "Other Tenant", "code": "other-search"}
+        )
+        assert other_tenant.status_code == 201
+        other_tenant_id = other_tenant.json()["id"]
+
+        other_service = await client.post(
+            f"/services/?tenant_id={other_tenant_id}",
+            json={
+                "name": "Session Test Service",
+                "description": "Same name, different tenant",
+                "category": "WellnessCoaching",
+                "duration_minutes": 60,
+                "is_group_service": False,
+            },
+        )
+        assert other_service.status_code == 201, other_service.text
+
+        response = await client.get(
+            f"/service-sessions/?tenant_id={session_test_tenant['id']}&search=Test+Service"
+        )
+        assert response.status_code == 200, response.text
+        assert response.json()["total"] == 1
+        assert response.json()["items"][0]["id"] == test_service_session["id"]
+
+    async def test_search_composes_with_pagination_and_sorting(
+        self,
+        client: AsyncClient,
+        session_test_tenant: dict,
+        session_test_service: dict,
+        session_test_provider: dict,
+        session_test_client_person: dict,
+    ):
+        tenant_id = session_test_tenant["id"]
+        base = datetime.now(UTC) + timedelta(days=400)
+        created_ids = []
+        for i in range(3):
+            created = await client.post(
+                f"/service-sessions/?tenant_id={tenant_id}",
+                json={
+                    "service_id": session_test_service["id"],
+                    "provider_id": session_test_provider["id"],
+                    "member_id": session_test_client_person["id"],
+                    "scheduled_at": (base + timedelta(days=i)).isoformat(),
+                    "delivery_context": "Direct",
+                },
+            )
+            assert created.status_code == 201, created.text
+            created_ids.append(created.json()["id"])
+
+        page = await client.get(
+            f"/service-sessions/?tenant_id={tenant_id}&search=Test+Service"
+            f"&sort_by=scheduled_at&sort_desc=false&page=1&limit=2"
+        )
+        assert page.status_code == 200, page.text
+        data = page.json()
+        assert data["total"] == 3
+        assert [s["id"] for s in data["items"]] == created_ids[:2]
+
+        second_page = await client.get(
+            f"/service-sessions/?tenant_id={tenant_id}&search=Test+Service"
+            f"&sort_by=scheduled_at&sort_desc=false&page=2&limit=2"
+        )
+        assert [s["id"] for s in second_page.json()["items"]] == created_ids[2:]

@@ -114,6 +114,25 @@ class TestTheWall:
         r_hr = await wall_client.get("/auth/me", headers=_bearer(token_hr))
         assert r_hr.json()["access_scopes"] == []
 
+    async def test_dashboard_outcome_mix_follows_the_wall(
+        self, wall_client: AsyncClient, seeded: Any
+    ) -> None:
+        """The aggregate outcome mix is clinical data like any other.
+
+        A counsellor gets the block (a list, possibly empty); HR gets null in
+        the same 200 response, not a 403, because the rest of the dashboard is
+        theirs to see.
+        """
+        token = await _login(wall_client, COUNSELLOR_EMAIL)
+        r = await wall_client.get(f"/dashboard?tenant_id={TENANT}", headers=_bearer(token))
+        assert r.status_code == 200, r.text[:300]
+        assert isinstance(r.json()["outcome_mix"], list)
+
+        token_hr = await _login(wall_client, HR_EMAIL)
+        r_hr = await wall_client.get(f"/dashboard?tenant_id={TENANT}", headers=_bearer(token_hr))
+        assert r_hr.status_code == 200
+        assert r_hr.json()["outcome_mix"] is None
+
 
 class TestGrantRules:
     async def test_tenant_admin_cannot_grant_clinical(

@@ -11,9 +11,11 @@ import { useMemo, useState } from "react"
 import { Link } from "@tanstack/react-router"
 import {
   ArrowUpRight,
+  Banknote,
   Building2,
   CalendarClock,
   ClipboardList,
+  Gauge,
   Plus,
   UserCheck,
 } from "lucide-react"
@@ -21,11 +23,12 @@ import {
 import { AttentionCard, buildAttentionItems } from "@/components/dashboard/AttentionCard"
 import { CardDelta } from "@/components/dashboard/CardBar"
 import { CategoryDonutCard } from "@/components/dashboard/CategoryDonutCard"
+import { OutcomeMixCard } from "@/components/dashboard/OutcomeMixCard"
 import { RangeFilter } from "@/components/dashboard/RangeFilter"
 import { SessionsAreaCard } from "@/components/dashboard/SessionsAreaCard"
 import { type StatSpec, StatStrip } from "@/components/dashboard/StatStrip"
 import { TopClientsCard } from "@/components/dashboard/TopClientsCard"
-import { TrendingServicesCard } from "@/components/dashboard/TrendingServicesCard"
+import { UpcomingBookingsCard } from "@/components/dashboard/UpcomingBookingsCard"
 import { OnboardingProgressCard } from "@/components/OnboardingProgressCard"
 import { Button } from "@/components/ui/button"
 import {
@@ -37,6 +40,12 @@ import {
   useDashboard,
   useOnboardingCounts,
 } from "@/lib/dashboard"
+import {
+  outcomeInsight,
+  sessionsInsight,
+  utilizationPerThousand,
+  valueHint,
+} from "@/lib/dashboard-insights"
 
 export function DashboardMain() {
   const [range, setRange] = useState<DashboardRange>(DEFAULT_RANGE)
@@ -45,6 +54,9 @@ export function DashboardMain() {
   const loading = dashboard.isLoading
   const error = dashboard.isError
   const refreshing = dashboard.isFetching && !dashboard.isLoading
+  const retry = () => {
+    void dashboard.refetch()
+  }
 
   const attention = useMemo(() => (data ? buildAttentionItems(data) : []), [data])
   const stats = useStatSpecs(data, { loading, error, range })
@@ -61,6 +73,7 @@ export function DashboardMain() {
               series={data?.sessions_series ?? []}
               total={data?.kpis.sessions ?? 0}
               delta={<SessionsDelta data={data} />}
+              insight={data ? sessionsInsight(data) : null}
               loading={loading}
               error={error}
               refreshing={refreshing}
@@ -70,19 +83,42 @@ export function DashboardMain() {
             />
           </div>
           <div className="lg:col-span-4">
-            <AttentionCard items={attention} loading={loading} />
+            <AttentionCard items={attention} loading={loading} error={error} onRetry={retry} />
           </div>
         </div>
 
+        <UpcomingBookingsCard
+          upcoming={data?.upcoming ?? null}
+          loading={loading}
+          error={error}
+          onRetry={retry}
+        />
+
         <div className="grid gap-4 lg:grid-cols-12">
-          <div className="lg:col-span-5">
-            <TopClientsCard clients={data?.top_clients ?? []} loading={loading} />
+          <div className={data?.outcome_mix ? "lg:col-span-5" : "lg:col-span-7"}>
+            <TopClientsCard
+              clients={data?.top_clients ?? []}
+              loading={loading}
+              error={error}
+              onRetry={retry}
+            />
           </div>
-          <div className="lg:col-span-3">
-            <TrendingServicesCard services={data?.trending_services ?? []} loading={loading} />
-          </div>
-          <div className="lg:col-span-4">
-            <CategoryDonutCard categories={data?.sessions_by_category ?? []} loading={loading} />
+          {data?.outcome_mix ? (
+            <div className="lg:col-span-4">
+              <OutcomeMixCard
+                mix={data.outcome_mix}
+                insight={outcomeInsight(data.outcome_mix)}
+                loading={loading}
+              />
+            </div>
+          ) : null}
+          <div className={data?.outcome_mix ? "lg:col-span-3" : "lg:col-span-5"}>
+            <CategoryDonutCard
+              categories={data?.sessions_by_category ?? []}
+              loading={loading}
+              error={error}
+              onRetry={retry}
+            />
           </div>
         </div>
 
@@ -128,6 +164,26 @@ function useStatSpecs(
       icon: UserCheck,
       tone: "info",
       hint: kpis ? `${kpis.clients_with_roster} of ${kpis.clients_total} rostered` : undefined,
+      loading,
+      error,
+    },
+    {
+      id: "utilization",
+      label: "Utilization",
+      value: data ? (utilizationPerThousand(data)?.toLocaleString() ?? "-") : "-",
+      icon: Gauge,
+      tone: "success",
+      hint: "sessions per 1,000 covered",
+      loading,
+      error,
+    },
+    {
+      id: "value-delivered",
+      label: "Delivered value",
+      value: kpis ? `UGX ${formatKpi(kpis.value_delivered_ugx)}` : "-",
+      icon: Banknote,
+      tone: "info",
+      hint: data ? valueHint(data) : undefined,
       loading,
       error,
     },

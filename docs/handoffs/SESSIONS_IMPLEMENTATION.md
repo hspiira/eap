@@ -417,3 +417,177 @@ D: not code
 
 Blocked and needing a person, not an agent: the clinical vocabulary in B2, and
 every item in Phase D.
+
+## R1: clinical-scope gating on session reads (2026-09-12)
+
+Closes the finding in `docs/reviews/UI_BACKEND_REVIEW_2026_09_12.md` (R1):
+`to_service_session_response` returned `notes`, `feedback`, `issue_topic`,
+`diagnosis_type_id`, `diagnosis_id`, `partner_name`, `partner_relationship` and
+`clinical_outcome` to any same-tenant caller, with no clinical-scope check.
+Full plan and evidence: `docs/reviews/UI_BACKEND_EXECUTION_PLAN_2026_09_12.md`.
+
+**Policy** (product owner, 2026-09-12, restating Q2 in
+`docs/design/PAGES_REDESIGN.md:397`): the eight fields above are null for a
+caller without `AccessScope.CLINICAL`, on every read path. Operational fields
+(status, scheduled_at, display names, cancellation_reason, approved_by) are
+unaffected. The existing grant path is unchanged: a platform admin still
+grants `CLINICAL` per user. Identifiable operational fields (who had a
+session, when, with whom) stay visible without the scope, matching current UI
+behaviour.
+
+**Mechanism**: `to_service_session_response`/`_one`/`_many` in
+`service_sessions.py` take `current_user` and null the clinical fields when
+`has_clinical_scope()` is false, the same pattern `dashboard.py`'s
+`_outcome_mix` already uses. Applied to all 7 read paths (list, detail, chain,
+awaiting-confirmation, by-member/provider/service) and to mutation responses,
+since they share the same serializer. `clinical_outcome` as a list filter or
+sort column now needs the scope too (422 otherwise).
+
+**Read audit**: a caller with clinical scope who receives at least one
+session enqueues one `AuditActionType.VIEW`/`LIST` event per request
+(`ServiceSession`/`ServiceSessionClinicalRead`), carrying session ids and a
+count, never clinical values. Added to `SECURITY_SENSITIVE_RESOURCES` in
+`audit_filter.py` so it is never dropped by `AUDIT_SAMPLE_RATE` sampling.
+These 7 routes moved from `@readonly()` to `@transactional()` so the enqueue
+actually commits; a failed enqueue now fails the response instead of
+releasing content unlogged.
+
+**Frontend**: `SessionOverviewCards.tsx`'s `NotesCard` now gates on
+`useHasClinicalScope()`, matching `ClinicalCard`'s existing gate (`NotesCard`
+had none before this). The sessions list page hides the outcome filter and
+disables the outcome column's sort toggle without the scope, rather than
+offering controls the API now rejects.
+
+**Not done here, in scope for whoever owns write permissions next**: writes
+to the clinical fields are not scope-gated, only reads and mutation-response
+echoes. A non-clinical caller can still submit `notes`/`clinical_outcome` on
+create/update; whether that itself should require clinical scope is a
+separate, unasked question.
+
+**Also found, not changed**: `members.py:1440` (`GET
+/members/{id}/sessions`, a different route serving the same
+`ServiceSessionListResponse`) already required `require_clinical_scope` and
+fully blocks a non-clinical caller (403), rather than redacting. That
+predates this pass and was left as is; the two routes now use different
+mechanisms (block vs redact) for the same schema, which is worth reconciling
+but is a separate decision.
+
+**Not added**: `tests/e2e/test_clinical_scope_wall.py` is the existing
+real-login (real JWT mint, not a mocked token) wall suite for `/cases` and
+the dashboard outcome mix; a service-sessions case belongs there too but was
+not added here, since the mock-token coverage below already exercises the
+same redaction logic across all 7 paths.
+
+**Verified**: `tests/e2e/test_service_session_api.py::TestClinicalScopeGating`
+(9 cases: redacted without scope, visible with scope, wrong tenant still
+404s, across all 7 read paths); `tests/unit/api/test_session_list_hydration.py`
+(filter/sort rejection and admission); full `tests/unit` (2336 passed) and
+`tests/e2e` suites pass; `pnpm contracts` regenerated cleanly; frontend
+`pnpm test` (854 passed) and `pnpm typecheck` pass. Not run: a production
+deployment check.
+
+## R4: session queues agree on status and window (2026-09-12)
+
+Closes R4 (`docs/reviews/UI_BACKEND_REVIEW_2026_09_12.md`). Depended on R1's
+projection contract landing first, which it did.
+
+**The bug**: `UpcomingBookingsCard.tsx` fetched 20 sessions with no status
+filter, then filtered to Scheduled/Rescheduled client-side after the server
+already applied `limit=20`. If the 20 chronologically-first sessions were
+cancelled or completed, a real upcoming booking fell off the page even
+though the dashboard's aggregate count said it existed.
+
+**Fix**: `list_all`/`count` (`service_session_repository.py`, domain
+interface and impl) now accept `status: SessionStatus | Sequence[SessionStatus]
+| None`, applied via `.in_()` in `extra_conditions` rather than the
+equality-only `filters` dict. The route's `status` query param is now
+`list[SessionStatus] = Query(default=[], ...)` (the existing convention in
+`providers.py`), so a single `?status=X` still works. The card now sends
+`status=[Scheduled, Rescheduled]` server-side and no longer post-filters.
+
+**Frontend `status` is now repeatable end to end**: `FilterParams.status` was
+already typed `string | string[]`, and `buildUrl` already serialized an
+array as repeated query params — both were ahead of the backend. Added
+`enumOrArrayParam` (`lib/search-params.ts`) so a list route's search schema
+can parse either shape (collapsing a one-element array back to a bare
+value, so an existing single-status link round-trips unchanged). The
+sessions list page's status dropdown stays single-select; only the
+"Upcoming" shortcut and the dashboard's links use the two-status array, and
+now send both Scheduled and Rescheduled (it previously sent only Scheduled).
+
+**Window boundary, only partly reconciled**: the sessions list page's `7d`
+range (`rangeBounds`) and the card's own window already used the same
+formula (`now` to `now + 7 days`), so those two already agreed. The
+dashboard aggregate (`dashboard.py::_upcoming`) does not: its count query
+uses `now` as the true lower bound (matching the other two) but
+`midnight(now) + 7 days` as the upper bound, for its day-bucket chart. That
+leaves up to ~24h of disagreement at the window's far edge between the
+aggregate's count and the card/list's row window. Not fixed here: changing
+`_upcoming`'s bucketing changes chart behavior elsewhere and was judged out
+of scope for this pass. Recorded as a known, accepted gap rather than
+silently left unstated.
+
+**Verified**: `TestListServiceSessions::test_status_accepts_several_values`
+and `test_excluded_statuses_never_push_out_an_eligible_booking` (the R4 gate
+fixture: 20 cancelled sessions followed by one eligible booking, still
+returned under a status-filtered, limit=20, sorted page); existing
+`test_service_session_repository_filters.py` and
+`test_session_list_hydration.py` suites pass unchanged. Frontend: `enumOrArrayParam`
+unit tests, `DashboardMain.test.tsx` updated to assert the status filter
+reaches the request rather than relying on client-side hiding. Full
+`tests/unit`+`tests/e2e` and frontend `pnpm test`/`typecheck` pass;
+`pnpm contracts` regenerated.
+
+**Process note**: the plan asked for R4 and R5 as separate commits. The
+repository's `_search_condition`/`_escape_like` and the route's `search`
+query param (R5's backend half) were written and reviewed alongside R4's
+`_status_condition` in the same file and ended up in the R4 commit
+(`91424adc`) before this was caught. Not unwound: both are independently
+correct and tested, and a git-history rewrite to separate them after the
+fact carried more risk than the sequencing was worth. This entry is the
+honest record of what happened; the R5 section below covers what verifying
+and closing that already-committed backend logic, plus the frontend side,
+actually involved.
+
+## R5: session search, over names, not clinical content (2026-09-12)
+
+Closes R5. Backend logic (`_search_condition`, `service_sessions.py`'s
+`search` query param) shipped in the R4 commit per the process note above;
+this pass verified it end-to-end and did the remaining frontend-adjacent
+work.
+
+**Mechanism**: `search` matches `ServiceModel.name`, `ClientModel.name` and
+`ProviderModel.display_name`, each resolved via its own bounded
+(`_SEARCH_MATCH_LIMIT = 500`), tenant-scoped `ILIKE` query, then combined
+into `ServiceSessionModel.service_id/client_id/provider_id IN (...)` via
+`extra_conditions` — never a join onto `service_sessions`, so a session
+naming one of each is never duplicated and the sessions table carries no
+denormalised name to scan. `%`/`_`/`\` in the search term are backslash-escaped
+(`_escape_like`) before reaching `ILIKE`, so a literal percent sign searches
+literally instead of matching everything. Clinical fields (notes, feedback,
+diagnosis, etc.) are never searched. Shared between `list_all` and `count`,
+so a match changes both the page and the total together.
+
+**Frontend**: `apps/web/src/routes/service-sessions/index.tsx` already sent
+`search: activeSearch` to the list endpoint before this pass (the review's
+finding was that the backend ignored it, not that the frontend was
+missing); no frontend code change was needed once the backend accepted the
+param. `ServiceSessionListParams.search` and `.status` were given explicit
+types (previously inherited only from the generic `FilterParams`) for
+clarity.
+
+**Not indexed**: `ProviderModel.display_name` carries no index. A
+leading-wildcard `ILIKE '%term%'` cannot use a plain B-tree index regardless
+(would need a trigram/GIN index), so this is a full scan of `providers`
+per search, bounded only in rows returned. Left alone per the plan's
+"measure query plans before adding indexes" — no query-plan measurement was
+done in this pass, so this is flagged, not sized.
+
+**Verified**: `TestSessionSearch` (7 e2e cases against local Postgres):
+matching search changes items and total; nonmatching returns an empty page;
+service, client and practitioner names all match; case-insensitive; a
+literal `%` matches nothing (proving escaping, not just absence of a
+crash); a same-named service in another tenant does not leak in; pagination
+and sorting compose correctly with an active search across 3 sessions.
+Existing `tests/unit`+`tests/e2e` suites unaffected (already verified under
+R4's run, since the backend logic was already present).

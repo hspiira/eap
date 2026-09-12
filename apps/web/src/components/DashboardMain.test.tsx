@@ -16,6 +16,12 @@ vi.mock("@/api/endpoints/dashboard", () => ({
   dashboardApi: { get: vi.fn(async () => makeDashboard()) },
 }))
 
+vi.mock("@/api/endpoints/service-sessions", () => ({
+  serviceSessionsApi: {
+    list: vi.fn(async () => ({ items: [], total: 0, page: 1, limit: 20, has_more: false })),
+  },
+}))
+
 vi.mock("@tanstack/react-router", () => ({
   Link: ({ children, to }: { children?: React.ReactNode; to?: string }) => (
     <a href={to ?? "#"}>{children}</a>
@@ -24,6 +30,8 @@ vi.mock("@tanstack/react-router", () => ({
 }))
 
 const { DashboardMain } = await import("@/components/DashboardMain")
+const { dashboardApi } = await import("@/api/endpoints/dashboard")
+const { serviceSessionsApi } = await import("@/api/endpoints/service-sessions")
 
 describe("DashboardMain", () => {
   it("leads with the decision panel, ranked by what is blocking", async () => {
@@ -37,8 +45,9 @@ describe("DashboardMain", () => {
     expect(rows[0]).toHaveTextContent("Activate 112 pending practitioners")
     expect(rows[0]).toHaveTextContent("they cannot take new bookings")
     expect(rows[1]).toHaveTextContent("Import member rosters for 38 clients")
-    // The action names the consequence, not just the count.
-    expect(rows[1]).toHaveTextContent("unblocks 7,103 import rows")
+    // The consequence names what the missing roster itself breaks, not a
+    // causal claim about the tenant's whole import backlog.
+    expect(rows[1]).toHaveTextContent("new sessions for these clients can't be matched to members")
   })
 
   it("renders the analytics cards from the aggregate", async () => {
@@ -48,9 +57,65 @@ describe("DashboardMain", () => {
     expect(screen.getByRole("heading", { name: "Sessions delivered" })).toBeInTheDocument()
     expect(screen.getByRole("heading", { name: "Top clients" })).toBeInTheDocument()
     expect(screen.getByRole("heading", { name: "By category" })).toBeInTheDocument()
-    expect(screen.getByRole("heading", { name: "Services in demand" })).toBeInTheDocument()
+    expect(screen.getByRole("heading", { name: "Upcoming sessions" })).toBeInTheDocument()
 
-    expect(screen.getByText("Group Counselling")).toBeInTheDocument()
+    // The trending card gave way to the outcome mix; its ranking restated the
+    // area chart, and its percentages were noise against tiny denominators.
+    expect(screen.queryByRole("heading", { name: "Services in demand" })).not.toBeInTheDocument()
+    // Outcomes are clinical: the fixture carries none, so no card either.
+    expect(screen.queryByRole("heading", { name: "Clinical outcomes" })).not.toBeInTheDocument()
+  })
+
+  it("shows the outcome mix only when the API sent it", async () => {
+    vi.mocked(dashboardApi.get).mockResolvedValueOnce(
+      makeDashboard({
+        outcome_mix: [
+          { outcome: "Completed", total: 3 },
+          { outcome: null, total: 2 },
+        ],
+      }),
+    )
+    renderWithProviders(<DashboardMain />)
+
+    expect(await screen.findByRole("heading", { name: "Clinical outcomes" })).toBeInTheDocument()
+    expect(screen.getByText("Not recorded")).toBeInTheDocument()
+  })
+
+  it("lists the week's sessions themselves, not day counts", async () => {
+    vi.mocked(dashboardApi.get).mockResolvedValueOnce(
+      makeDashboard({
+        upcoming: {
+          total: 1,
+          days: [{ bucket: "2026-09-14", label: "Mon 14", total: 1 }],
+        },
+      }),
+    )
+    vi.mocked(serviceSessionsApi.list).mockResolvedValueOnce({
+      items: [
+        {
+          id: "ss-up-1",
+          scheduled_at: "2026-09-14T09:00:00Z",
+          status: "Scheduled",
+          service_name: "Individual Counselling",
+          client_name: "Minet Uganda",
+          member_display_label: "Afimani Joseph",
+          provider_display_name: "Moses Mpanga",
+        },
+      ],
+      total: 1,
+      page: 1,
+      limit: 20,
+      has_more: false,
+    } as never)
+    renderWithProviders(<DashboardMain />)
+
+    expect(await screen.findByText("Individual Counselling")).toBeInTheDocument()
+    expect(screen.getByText("Minet Uganda / Afimani Joseph · Moses Mpanga")).toBeInTheDocument()
+    // R4: filtering to open bookings is the server's job now, not a client
+    // post-filter after a hard page limit.
+    expect(vi.mocked(serviceSessionsApi.list).mock.calls[0][0]).toMatchObject({
+      status: ["Scheduled", "Rescheduled"],
+    })
   })
 
   it("no longer carries the import health card", async () => {
@@ -62,7 +127,41 @@ describe("DashboardMain", () => {
     expect(screen.queryByRole("heading", { name: "Import health" })).not.toBeInTheDocument()
     // The backlog itself still has a home: the KPI tile and the attention panel.
     expect(screen.getByText("Import backlog")).toBeInTheDocument()
-    expect(screen.getByText(/unblocks 7,103 import rows/)).toBeInTheDocument()
+    expect(
+      screen.getByText(/new sessions for these clients can't be matched to members/),
+    ).toBeInTheDocument()
+  })
+
+  it("shows unavailable states, not an all-clear, when the aggregate fails", async () => {
+    vi.mocked(dashboardApi.get).mockRejectedValueOnce(new Error("boom"))
+    renderWithProviders(<DashboardMain />)
+
+    expect(await screen.findByText("Needs attention unavailable")).toBeInTheDocument()
+    expect(screen.queryByText("Nothing is blocked.")).not.toBeInTheDocument()
+
+    expect(screen.getByText("Top clients unavailable")).toBeInTheDocument()
+    expect(screen.queryByText("No sessions yet")).not.toBeInTheDocument()
+
+    expect(screen.getByText("Upcoming sessions unavailable")).toBeInTheDocument()
+    expect(screen.queryByText("Nothing booked yet")).not.toBeInTheDocument()
+  })
+
+  it("keeps the upcoming count and shows a separate error when only the week-ahead query fails", async () => {
+    vi.mocked(dashboardApi.get).mockResolvedValueOnce(
+      makeDashboard({
+        upcoming: {
+          total: 2,
+          days: [{ bucket: "2026-09-14", label: "Mon 14", total: 2 }],
+        },
+      }),
+    )
+    vi.mocked(serviceSessionsApi.list).mockRejectedValueOnce(new Error("boom"))
+    renderWithProviders(<DashboardMain />)
+
+    await screen.findByText("Stanbic Bank")
+    expect(await screen.findByText("This week's bookings unavailable")).toBeInTheDocument()
+    // The aggregate's own count is unaffected by the row query failing.
+    expect(screen.getByText("booked")).toBeInTheDocument()
   })
 
   it("re-scopes the figures when the window changes", async () => {
