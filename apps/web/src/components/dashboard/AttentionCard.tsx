@@ -78,6 +78,17 @@ export function buildAttentionItems(data: DashboardResponse): AttentionItem[] {
       to: "/members",
     })
   }
+  if (quality.sessions_awaiting_confirmation > 0) {
+    items.push({
+      key: "unconfirmed",
+      severity: "high",
+      size: quality.sessions_awaiting_confirmation,
+      headline: `Confirm ${quality.sessions_awaiting_confirmation.toLocaleString()} past bookings`,
+      consequence: "their date has passed and no outcome is recorded",
+      action: "Sessions",
+      to: "/service-sessions",
+    })
+  }
   if (quality.providers_pending > 0) {
     items.push({
       key: "practitioners",

@@ -8,7 +8,7 @@ Implementation lives in infrastructure layer.
 from abc import abstractmethod
 from collections.abc import Sequence
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import date, datetime
 
 from app.domain.entities.service_session import ServiceSessionEntity
 from app.domain.enums import (
@@ -20,6 +20,7 @@ from app.domain.enums import (
 )
 from app.domain.repositories.base_repository import BaseRepository
 from app.domain.value_objects.core import (
+    ClientId,
     EligibleMemberId,
     ProviderId,
     ServiceId,
@@ -172,6 +173,45 @@ class ServiceSessionRepository(BaseRepository[ServiceSessionEntity, SessionId]):
 
         Returns:
             Total count
+        """
+
+    @abstractmethod
+    async def list_awaiting_confirmation(
+        self,
+        tenant_id: TenantId,
+        *,
+        as_of: datetime,
+        provider_id: ProviderId | None = None,
+        client_id: ClientId | None = None,
+        limit: int = 50,
+        offset: int = 0,
+    ) -> tuple[Sequence[ServiceSessionEntity], int]:
+        """Bookings whose date has passed and which nobody has resolved.
+
+        The system never witnesses delivery, so a booking sits Scheduled until
+        a counsellor's month-end log confirms it. Past its date it is no longer
+        a plan, it is an open question: did it happen, and was it recorded?
+        Oldest first, because the oldest is the one most likely to be forgotten.
+        """
+
+    @abstractmethod
+    async def find_awaiting_confirmation(
+        self,
+        tenant_id: TenantId,
+        *,
+        session_date: date,
+        provider_id: ProviderId,
+        client_id: ClientId,
+        service_id: ServiceId,
+        member_id: EligibleMemberId | None,
+    ) -> ServiceSessionEntity | None:
+        """A session this tenant booked for that day and has not confirmed yet.
+
+        The counsellor's month-end log reports work the system may already be
+        expecting. Matched on the finest grain the log supports, which carries
+        a date and no time of day. Scheduled and Rescheduled only: a session
+        already Completed, Cancelled or marked a no-show has been resolved and
+        is not what an incoming line is reporting.
         """
 
     @abstractmethod

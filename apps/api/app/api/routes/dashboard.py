@@ -69,13 +69,22 @@ MONTH_NAMES = (
     "Dec",
 )
 
-UNRESOLVED_OUTCOMES = (
+#: Every outcome that leaves a staged row unwritten and awaiting a person.
+#:
+#: Conflicting and Rejected belong here as much as the unresolved identities:
+#: a row with no date, or one naming an organisation the practitioner did not
+#: hold that day, is just as stuck. Leaving them out let a batch stuck
+#: entirely on those report nothing blocked. Failed is deliberately absent,
+#: being an apply-time write refusal rather than something staging held.
+HELD_OUTCOMES = (
     ImportRowOutcome.MISSING_PRACTITIONER,
     ImportRowOutcome.UNMAPPED_PRACTITIONER,
     ImportRowOutcome.AMBIGUOUS_PRACTITIONER,
     ImportRowOutcome.UNRESOLVED_CLIENT,
     ImportRowOutcome.UNRESOLVED_MEMBER,
     ImportRowOutcome.UNRESOLVED_SERVICE,
+    ImportRowOutcome.CONFLICTING,
+    ImportRowOutcome.REJECTED,
 )
 
 
@@ -343,7 +352,7 @@ async def _import_state(
     queues = sorted(
         (
             ImportQueueEntry(outcome=outcome.value, total=by_outcome[outcome])
-            for outcome in UNRESOLVED_OUTCOMES
+            for outcome in HELD_OUTCOMES
             if by_outcome.get(outcome)
         ),
         key=lambda entry: entry.total,
@@ -357,6 +366,7 @@ async def _import_state(
         accepted=by_outcome.get(ImportRowOutcome.ACCEPTED, 0),
         duplicate=by_outcome.get(ImportRowOutcome.DUPLICATE, 0),
         blocked=blocked,
+        failed=by_outcome.get(ImportRowOutcome.FAILED, 0),
         applied_at=batch.applied_at.isoformat() if batch.applied_at else None,
     )
     return summary, queues, blocked
@@ -371,6 +381,7 @@ async def _data_quality(
         sessions_missing_rate=missing_rate,
         clients_without_roster=max(clients_total - clients_with_roster, 0),
         providers_pending=providers_pending,
+        sessions_awaiting_confirmation=await runner.sessions_awaiting_confirmation(tenant_id),
     )
 
 

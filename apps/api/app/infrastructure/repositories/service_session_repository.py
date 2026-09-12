@@ -6,10 +6,11 @@ Uses TenantScopedRepositoryImpl base class to eliminate boilerplate.
 """
 
 from collections.abc import Sequence
-from datetime import datetime
+from datetime import date, datetime
 from typing import Any
 
-from sqlalchemy import and_, func, select
+from sqlalchemy import Date as SADate
+from sqlalchemy import and_, cast, func, select
 
 from app.domain.entities.service_session import ServiceSessionEntity
 from app.domain.enums import (
@@ -236,6 +237,89 @@ class ServiceSessionRepositoryImpl(
             ServiceSessionModel.provider_id == provider_id.value,
             ServiceSessionModel.deleted_at.is_(None),
         ]
+
+    def _awaiting_confirmation_filter(
+        self,
+        tenant_id: TenantId,
+        as_of: datetime,
+        provider_id: ProviderId | None,
+        client_id: ClientId | None,
+    ) -> list[Any]:
+        conditions: list[Any] = [
+            ServiceSessionModel.tenant_id == tenant_id.value,
+            ServiceSessionModel.deleted_at.is_(None),
+            ServiceSessionModel.status.in_(
+                (SessionStatus.SCHEDULED.value, SessionStatus.RESCHEDULED.value)
+            ),
+            ServiceSessionModel.scheduled_at < as_of,
+        ]
+        if provider_id is not None:
+            conditions.append(ServiceSessionModel.provider_id == provider_id.value)
+        if client_id is not None:
+            conditions.append(ServiceSessionModel.client_id == client_id.value)
+        return conditions
+
+    async def list_awaiting_confirmation(
+        self,
+        tenant_id: TenantId,
+        *,
+        as_of: datetime,
+        provider_id: ProviderId | None = None,
+        client_id: ClientId | None = None,
+        limit: int = 50,
+        offset: int = 0,
+    ) -> tuple[Sequence[ServiceSessionEntity], int]:
+        conditions = self._awaiting_confirmation_filter(tenant_id, as_of, provider_id, client_id)
+        total = await self.session.scalar(
+            select(func.count(ServiceSessionModel.id)).where(*conditions)
+        )
+        models = await self.session.scalars(
+            select(ServiceSessionModel)
+            .where(*conditions)
+            .order_by(ServiceSessionModel.scheduled_at)
+            .limit(limit)
+            .offset(offset)
+        )
+        return [ServiceSessionMapper.to_entity(m) for m in models], int(total or 0)
+
+    async def find_awaiting_confirmation(
+        self,
+        tenant_id: TenantId,
+        *,
+        session_date: date,
+        provider_id: ProviderId,
+        client_id: ClientId,
+        service_id: ServiceId,
+        member_id: EligibleMemberId | None,
+    ) -> ServiceSessionEntity | None:
+        """The oldest unresolved booking matching this line of a counsellor's log.
+
+        Compares the calendar day rather than the instant: the log carries a
+        date and the booking carries a time nobody promised to keep.
+        """
+        member_match = (
+            ServiceSessionModel.member_id == member_id.value
+            if member_id is not None
+            else ServiceSessionModel.member_id.is_(None)
+        )
+        model = await self.session.scalar(
+            select(ServiceSessionModel)
+            .where(
+                ServiceSessionModel.tenant_id == tenant_id.value,
+                ServiceSessionModel.deleted_at.is_(None),
+                ServiceSessionModel.status.in_(
+                    (SessionStatus.SCHEDULED.value, SessionStatus.RESCHEDULED.value)
+                ),
+                cast(ServiceSessionModel.scheduled_at, SADate) == session_date,
+                ServiceSessionModel.provider_id == provider_id.value,
+                ServiceSessionModel.client_id == client_id.value,
+                ServiceSessionModel.service_id == service_id.value,
+                member_match,
+            )
+            .order_by(ServiceSessionModel.scheduled_at)
+            .limit(1)
+        )
+        return ServiceSessionMapper.to_entity(model) if model else None
 
     async def provider_delivery_stats(
         self, tenant_id: TenantId, provider_id: ProviderId

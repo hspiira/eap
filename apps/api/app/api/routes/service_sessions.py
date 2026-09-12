@@ -815,6 +815,47 @@ async def list_service_sessions(
 
 
 @router.get(
+    "/awaiting-confirmation",
+    response_model=ServiceSessionListResponse,
+    summary="Bookings past their date that nobody has confirmed yet",
+)
+@readonly()
+async def list_sessions_awaiting_confirmation(
+    tenant_id: str = Query(..., description="Tenant identifier"),
+    provider_id: str | None = Query(None, description="Narrow to one practitioner"),
+    client_id: str | None = Query(None, description="Narrow to one client"),
+    pg: PageParams = Depends(pagination(default_limit=50, max_limit=200)),
+    current_user: TokenData = Depends(require_same_tenant),
+    session_repo: ServiceSessionRepository = Depends(get_service_session_repository),
+    attribution_reader: SessionAttributionReader = Depends(get_session_attribution_reader),
+    name_reader: SessionNameReader = Depends(get_session_name_reader),
+):
+    """What the system expected but has not been told the outcome of.
+
+    Delivery happens outside the system, so a booking stays Scheduled until a
+    counsellor's month-end log confirms it. Once its date has passed it stops
+    being a plan and becomes an open question, and until now nothing
+    distinguished the two: a booking for last Tuesday looked exactly like one
+    for next Tuesday. Oldest first. See docs/design/REALTIME_SESSION_CAPTURE.md.
+    """
+    sessions, total = await session_repo.list_awaiting_confirmation(
+        TenantId(tenant_id),
+        as_of=utc_now(),
+        provider_id=ProviderId(provider_id) if provider_id else None,
+        client_id=ClientId(client_id) if client_id else None,
+        limit=pg.limit,
+        offset=pg.offset,
+    )
+    return ServiceSessionListResponse(
+        items=await _many(sessions, attribution_reader, name_reader),
+        total=total,
+        page=pg.page,
+        limit=pg.limit,
+        has_more=(pg.offset + len(sessions)) < total,
+    )
+
+
+@router.get(
     "/{session_id}",
     response_model=ServiceSessionResponse,
     summary="Get service session by ID",

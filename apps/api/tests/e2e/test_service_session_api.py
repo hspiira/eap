@@ -631,3 +631,157 @@ class TestServiceSessionLifecycleFlow:
             json={"reason": "Client unavailable"},
         )
         assert cancel_response.json()["status"] == "Cancelled"
+
+
+# =============================================================================
+# AWAITING CONFIRMATION QUEUE
+# =============================================================================
+
+
+class TestAwaitingConfirmation:
+    """GET /service-sessions/awaiting-confirmation.
+
+    Delivery happens outside the system, so a booking stays Scheduled until a
+    counsellor's month-end log confirms it. Past its date it stops being a plan
+    and becomes an open question. See docs/design/REALTIME_SESSION_CAPTURE.md.
+    """
+
+    async def _book(self, client, tenant_id, service, provider, member, *, days):
+        response = await client.post(
+            f"/service-sessions/?tenant_id={tenant_id}",
+            json={
+                "service_id": service["id"],
+                "provider_id": provider["id"],
+                "member_id": member["id"],
+                "scheduled_at": (datetime.now(UTC) + timedelta(days=days)).isoformat(),
+                "delivery_context": "Direct",
+            },
+        )
+        assert response.status_code == 201, response.text
+        return response.json()
+
+    async def test_lists_a_booking_whose_date_has_passed(
+        self,
+        client: AsyncClient,
+        session_test_tenant: dict,
+        session_test_service: dict,
+        session_test_provider: dict,
+        session_test_client_person: dict,
+    ):
+        tenant_id = session_test_tenant["id"]
+        overdue = await self._book(
+            client,
+            tenant_id,
+            session_test_service,
+            session_test_provider,
+            session_test_client_person,
+            days=-5,
+        )
+
+        response = await client.get(
+            f"/service-sessions/awaiting-confirmation?tenant_id={tenant_id}"
+        )
+
+        assert response.status_code == 200, response.text
+        ids = [item["id"] for item in response.json()["items"]]
+        assert overdue["id"] in ids
+
+    async def test_leaves_out_a_booking_still_in_the_future(
+        self,
+        client: AsyncClient,
+        session_test_tenant: dict,
+        session_test_service: dict,
+        session_test_provider: dict,
+        session_test_client_person: dict,
+    ):
+        """The distinction the queue exists to draw: last Tuesday is not next Tuesday."""
+        tenant_id = session_test_tenant["id"]
+        upcoming = await self._book(
+            client,
+            tenant_id,
+            session_test_service,
+            session_test_provider,
+            session_test_client_person,
+            days=3,
+        )
+
+        response = await client.get(
+            f"/service-sessions/awaiting-confirmation?tenant_id={tenant_id}"
+        )
+
+        assert response.status_code == 200, response.text
+        ids = [item["id"] for item in response.json()["items"]]
+        assert upcoming["id"] not in ids
+
+    async def test_drops_a_booking_once_it_is_completed(
+        self,
+        client: AsyncClient,
+        session_test_tenant: dict,
+        session_test_service: dict,
+        session_test_provider: dict,
+        session_test_client_person: dict,
+    ):
+        tenant_id = session_test_tenant["id"]
+        overdue = await self._book(
+            client,
+            tenant_id,
+            session_test_service,
+            session_test_provider,
+            session_test_client_person,
+            days=-5,
+        )
+
+        completed = await client.post(
+            f"/service-sessions/{overdue['id']}/complete",
+            json={"duration": 60, "notes": "Confirmed from the monthly log"},
+        )
+        assert completed.status_code == 200, completed.text
+
+        response = await client.get(
+            f"/service-sessions/awaiting-confirmation?tenant_id={tenant_id}"
+        )
+
+        ids = [item["id"] for item in response.json()["items"]]
+        assert overdue["id"] not in ids
+
+    async def test_is_not_swallowed_by_the_session_id_route(
+        self,
+        client: AsyncClient,
+        session_test_tenant: dict,
+    ):
+        """Declared before /{session_id}, so the literal path wins the match."""
+        tenant_id = session_test_tenant["id"]
+
+        response = await client.get(
+            f"/service-sessions/awaiting-confirmation?tenant_id={tenant_id}"
+        )
+
+        assert response.status_code == 200, response.text
+        assert "items" in response.json()
+
+    async def test_oldest_first(
+        self,
+        client: AsyncClient,
+        session_test_tenant: dict,
+        session_test_service: dict,
+        session_test_provider: dict,
+        session_test_client_person: dict,
+    ):
+        """The oldest is the one most likely to have been forgotten."""
+        tenant_id = session_test_tenant["id"]
+        for days in (-2, -30, -9):
+            await self._book(
+                client,
+                tenant_id,
+                session_test_service,
+                session_test_provider,
+                session_test_client_person,
+                days=days,
+            )
+
+        response = await client.get(
+            f"/service-sessions/awaiting-confirmation?tenant_id={tenant_id}"
+        )
+
+        dates = [item["scheduled_at"] for item in response.json()["items"]]
+        assert dates == sorted(dates)

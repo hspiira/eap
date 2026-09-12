@@ -84,6 +84,7 @@ export function makeDashboard(overrides: Partial<DashboardResponse> = {}): Dashb
       sessions_missing_rate: 161,
       clients_without_roster: 38,
       providers_pending: 112,
+      sessions_awaiting_confirmation: 24,
     },
     ...overrides,
   }

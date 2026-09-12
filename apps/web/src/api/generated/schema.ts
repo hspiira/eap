@@ -5124,6 +5124,32 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/service-sessions/awaiting-confirmation": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Bookings past their date that nobody has confirmed yet
+         * @description What the system expected but has not been told the outcome of.
+         *
+         *     Delivery happens outside the system, so a booking stays Scheduled until a
+         *     counsellor's month-end log confirms it. Once its date has passed it stops
+         *     being a plan and becomes an open question, and until now nothing
+         *     distinguished the two: a booking for last Tuesday looked exactly like one
+         *     for next Tuesday. Oldest first. See docs/design/REALTIME_SESSION_CAPTURE.md.
+         */
+        get: operations["list_sessions_awaiting_confirmation_service_sessions_awaiting_confirmation_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/service-sessions/member/{member_id}": {
         parameters: {
             query?: never;
@@ -8980,7 +9006,7 @@ export interface components {
             covered_members: number;
             /**
              * Import Backlog
-             * @description Rows in the current import batch still blocked on an unresolved identity
+             * @description Rows in the current import batch that staging held, for any reason
              */
             import_backlog: number;
             /**
@@ -9035,6 +9061,12 @@ export interface components {
              * @description Practitioners not yet activated
              */
             providers_pending: number;
+            /**
+             * Sessions Awaiting Confirmation
+             * @description Bookings whose date has passed that nobody has confirmed or closed. Delivery happens outside the system, so these stay open until a counsellor's log accounts for them.
+             * @default 0
+             */
+            sessions_awaiting_confirmation: number;
             /**
              * Sessions Missing Outcome
              * @description Completed sessions with no clinical outcome recorded
@@ -10157,6 +10189,11 @@ export interface components {
         /**
          * ImportBatchSummary
          * @description The batch the backlog figures describe, as a part-to-whole composition.
+         *
+         *     The four parts account for every row: `accepted + duplicate + blocked +
+         *     failed == row_count`. `blocked` covers every reason staging held a row,
+         *     not only an unresolved identity, so a batch stuck entirely on conflicting
+         *     or undated rows cannot report nothing blocked.
          */
         ImportBatchSummary: {
             /** Accepted */
@@ -10165,11 +10202,17 @@ export interface components {
             applied_at?: string | null;
             /**
              * Blocked
-             * @description Rows held on an unresolved identity
+             * @description Rows staging held, for any reason
              */
             blocked: number;
             /** Duplicate */
             duplicate: number;
+            /**
+             * Failed
+             * @description Accepted rows the write path refused at apply time
+             * @default 0
+             */
+            failed: number;
             /** File Name */
             file_name: string;
             /** Row Count */
@@ -10179,7 +10222,7 @@ export interface components {
         };
         /**
          * ImportQueueEntry
-         * @description One unresolved outcome bucket in the current import batch.
+         * @description One held-outcome bucket in the current import batch.
          */
         ImportQueueEntry: {
             /** Outcome */
@@ -25392,6 +25435,45 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ServiceSessionResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_sessions_awaiting_confirmation_service_sessions_awaiting_confirmation_get: {
+        parameters: {
+            query: {
+                tenant_id: string;
+                /** @description Narrow to one practitioner */
+                provider_id?: string | null;
+                /** @description Narrow to one client */
+                client_id?: string | null;
+                /** @description Page number */
+                page?: number;
+                /** @description Items per page */
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ServiceSessionListResponse"];
                 };
             };
             /** @description Validation Error */

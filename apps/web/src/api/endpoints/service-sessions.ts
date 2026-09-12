@@ -56,6 +56,24 @@ export const serviceSessionsApi = {
   },
 
   /**
+   * Bookings whose date has passed that nobody has confirmed or closed.
+   *
+   * Not expressible through `list`: its status filter takes one value, and
+   * this needs Scheduled or Rescheduled together. Oldest first.
+   */
+  async awaitingConfirmation(params?: {
+    provider_id?: string
+    client_id?: string
+    page?: number
+    limit?: number
+  }): Promise<PaginatedResponse<ServiceSession>> {
+    return apiClient.get<PaginatedResponse<ServiceSession>>(
+      "/service-sessions/awaiting-confirmation",
+      params,
+    )
+  },
+
+  /**
    * Update service session (BE accepts only `{location?, notes?}`).
    */
   async update(sessionId: string, data: ServiceSessionUpdate): Promise<ServiceSession> {

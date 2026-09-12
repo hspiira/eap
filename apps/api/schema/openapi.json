@@ -5113,7 +5113,7 @@
             "type": "integer"
           },
           "import_backlog": {
-            "description": "Rows in the current import batch still blocked on an unresolved identity",
+            "description": "Rows in the current import batch that staging held, for any reason",
             "title": "Import Backlog",
             "type": "integer"
           },
@@ -5231,6 +5231,12 @@
           "providers_pending": {
             "description": "Practitioners not yet activated",
             "title": "Providers Pending",
+            "type": "integer"
+          },
+          "sessions_awaiting_confirmation": {
+            "default": 0,
+            "description": "Bookings whose date has passed that nobody has confirmed or closed. Delivery happens outside the system, so these stay open until a counsellor's log accounts for them.",
+            "title": "Sessions Awaiting Confirmation",
             "type": "integer"
           },
           "sessions_missing_outcome": {
@@ -7762,7 +7768,7 @@
         "type": "string"
       },
       "ImportBatchSummary": {
-        "description": "The batch the backlog figures describe, as a part-to-whole composition.",
+        "description": "The batch the backlog figures describe, as a part-to-whole composition.\n\nThe four parts account for every row: `accepted + duplicate + blocked +\nfailed == row_count`. `blocked` covers every reason staging held a row,\nnot only an unresolved identity, so a batch stuck entirely on conflicting\nor undated rows cannot report nothing blocked.",
         "properties": {
           "accepted": {
             "title": "Accepted",
@@ -7780,12 +7786,18 @@
             "title": "Applied At"
           },
           "blocked": {
-            "description": "Rows held on an unresolved identity",
+            "description": "Rows staging held, for any reason",
             "title": "Blocked",
             "type": "integer"
           },
           "duplicate": {
             "title": "Duplicate",
+            "type": "integer"
+          },
+          "failed": {
+            "default": 0,
+            "description": "Accepted rows the write path refused at apply time",
+            "title": "Failed",
             "type": "integer"
           },
           "file_name": {
@@ -7813,7 +7825,7 @@
         "type": "object"
       },
       "ImportQueueEntry": {
-        "description": "One unresolved outcome bucket in the current import batch.",
+        "description": "One held-outcome bucket in the current import batch.",
         "properties": {
           "outcome": {
             "title": "Outcome",
@@ -37397,6 +37409,117 @@
           }
         ],
         "summary": "Create a new service session",
+        "tags": [
+          "service-sessions"
+        ]
+      }
+    },
+    "/service-sessions/awaiting-confirmation": {
+      "get": {
+        "description": "What the system expected but has not been told the outcome of.\n\nDelivery happens outside the system, so a booking stays Scheduled until a\ncounsellor's month-end log confirms it. Once its date has passed it stops\nbeing a plan and becomes an open question, and until now nothing\ndistinguished the two: a booking for last Tuesday looked exactly like one\nfor next Tuesday. Oldest first. See docs/design/REALTIME_SESSION_CAPTURE.md.",
+        "operationId": "list_sessions_awaiting_confirmation_service_sessions_awaiting_confirmation_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "tenant_id",
+            "required": true,
+            "schema": {
+              "title": "Tenant Id",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Narrow to one practitioner",
+            "in": "query",
+            "name": "provider_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Narrow to one practitioner",
+              "title": "Provider Id"
+            }
+          },
+          {
+            "description": "Narrow to one client",
+            "in": "query",
+            "name": "client_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Narrow to one client",
+              "title": "Client Id"
+            }
+          },
+          {
+            "description": "Page number",
+            "in": "query",
+            "name": "page",
+            "required": false,
+            "schema": {
+              "default": 1,
+              "description": "Page number",
+              "minimum": 1,
+              "title": "Page",
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Items per page",
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 50,
+              "description": "Items per page",
+              "maximum": 200,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ServiceSessionListResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Bookings past their date that nobody has confirmed yet",
         "tags": [
           "service-sessions"
         ]
