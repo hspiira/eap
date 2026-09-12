@@ -17,7 +17,7 @@ import {
   type DiagnosisCapabilities,
   type DiagnosisOverlay,
 } from "@/api/endpoints/diagnoses"
-import { AppLayout } from "@/components/AppLayout"
+import { AuthedLayout } from "@/components/common/AuthedLayout"
 import { EmptyState } from "@/components/common/EmptyState"
 import { ErrorState } from "@/components/common/ErrorState"
 import { FilterBar, FilterSearch } from "@/components/common/FilterBar"
@@ -163,7 +163,7 @@ function DiagnosesPage() {
   const canReorder = canOverlay && !search.trim()
 
   return (
-    <AppLayout>
+    <AuthedLayout>
       <PageShell
         icon={Stethoscope}
         breadcrumb="Reference · Diagnoses"
@@ -307,7 +307,7 @@ function DiagnosesPage() {
           onSaved={() => void reload()}
         />
       )}
-    </AppLayout>
+    </AuthedLayout>
   )
 }
 

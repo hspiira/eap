@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router"
 import { Users } from "lucide-react"
 
-import { AppLayout } from "@/components/AppLayout"
+import { AuthedLayout } from "@/components/common/AuthedLayout"
 import { EmptyState } from "@/components/common/EmptyState"
 
 export const Route = createFileRoute("/contacts")({
@@ -10,12 +10,12 @@ export const Route = createFileRoute("/contacts")({
 
 function ContactsRoute() {
   return (
-    <AppLayout>
+    <AuthedLayout>
       <EmptyState
         icon={Users}
         title="Contacts coming soon"
         description="Unified contact directory across clients and persons. This module is in active development."
       />
-    </AppLayout>
+    </AuthedLayout>
   )
 }

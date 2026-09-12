@@ -9,11 +9,8 @@ vi.mock("@/api/endpoints/industries", () => ({
     getChildren: vi.fn(),
   },
 }))
-vi.mock("@/components/AppLayout", () => ({
-  AppLayout: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
-}))
-vi.mock("@/store/slices/authSlice", () => ({
-  useAuthStore: () => ({ isAuthenticated: true, isLoading: false }),
+vi.mock("@/components/common/AuthedLayout", () => ({
+  AuthedLayout: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
 }))
 
 import { industriesApi } from "@/api/endpoints/industries"

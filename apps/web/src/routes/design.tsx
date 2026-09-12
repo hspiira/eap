@@ -12,6 +12,7 @@ import {
 import { type Activity, ActivityFeedCard } from "@/components/ActivityFeedCard"
 import { type ClientAlert, ClientAlertsCard } from "@/components/clients/ClientAlertsCard"
 import { ProviderTierBadge } from "@/components/common/ProviderTierBadge"
+import { RequireAuth } from "@/components/common/RequireAuth"
 import { SeverityBadge } from "@/components/common/SeverityBadge"
 import { StatusBadge } from "@/components/common/StatusBadge"
 import { TierBadge } from "@/components/common/TierBadge"
@@ -47,35 +48,37 @@ function GalleryRoute() {
   const [density, setDensity] = useState<Density>("compact")
 
   return (
-    <div data-density={density} className="min-h-svh bg-bg text-fg">
-      <div className="mx-auto max-w-6xl px-6 py-8">
-        <GalleryControls density={density} onDensityChange={setDensity} />
+    <RequireAuth>
+      <div data-density={density} className="min-h-svh bg-bg text-fg">
+        <div className="mx-auto max-w-6xl px-6 py-8">
+          <GalleryControls density={density} onDensityChange={setDensity} />
 
-        <nav aria-label="Gallery sections" className="mb-8 flex flex-wrap gap-2">
-          {SECTIONS.map((s) => (
-            <a
-              key={s.id}
-              href={`#${s.id}`}
-              className="rounded-sm border border-border-subtle px-2.5 py-1 text-xs text-fg-muted transition-colors hover:border-border hover:text-fg"
-            >
-              {s.label}
-            </a>
-          ))}
-        </nav>
+          <nav aria-label="Gallery sections" className="mb-8 flex flex-wrap gap-2">
+            {SECTIONS.map((s) => (
+              <a
+                key={s.id}
+                href={`#${s.id}`}
+                className="rounded-sm border border-border-subtle px-2.5 py-1 text-xs text-fg-muted transition-colors hover:border-border hover:text-fg"
+              >
+                {s.label}
+              </a>
+            ))}
+          </nav>
 
-        <ColorTokens />
-        <TypographyTokens />
-        <SpacingAndRadius />
-        <ButtonsSpecimen />
-        <BadgesSpecimen />
-        <DomainBadgesSpecimen />
-        <CardsSpecimen />
-        <MigratedCardsSpecimen />
-        <FormsSpecimen />
-        <FeedbackSpecimen />
-        <ComponentRegistry />
+          <ColorTokens />
+          <TypographyTokens />
+          <SpacingAndRadius />
+          <ButtonsSpecimen />
+          <BadgesSpecimen />
+          <DomainBadgesSpecimen />
+          <CardsSpecimen />
+          <MigratedCardsSpecimen />
+          <FormsSpecimen />
+          <FeedbackSpecimen />
+          <ComponentRegistry />
+        </div>
       </div>
-    </div>
+    </RequireAuth>
   )
 }
 

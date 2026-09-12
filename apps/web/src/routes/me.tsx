@@ -1,7 +1,7 @@
 import { useMemo } from "react"
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
-import { createFileRoute, Link, useNavigate, useSearch } from "@tanstack/react-router"
+import { createFileRoute, Link, useSearch } from "@tanstack/react-router"
 import { AlertCircle, Building2, Inbox, LogOut, User as UserIcon } from "lucide-react"
 import { z } from "zod"
 
@@ -25,8 +25,8 @@ import {
 } from "@/components/ui/select"
 import { useToast } from "@/contexts/ToastContext"
 import { useApiForm } from "@/hooks/useApiForm"
-import { authActions } from "@/lib/auth-store"
 import { queryKeys } from "@/lib/query-keys"
+import { signOutAndRedirect } from "@/lib/sign-out"
 import { useAuthStore } from "@/store/slices/authSlice"
 import { useTenantStore } from "@/store/slices/tenantSlice"
 import type { User } from "@/types/entities"
@@ -109,7 +109,6 @@ interface ProfileBodyProps {
 }
 
 function ProfileBody({ userId }: ProfileBodyProps) {
-  const navigate = useNavigate()
   const queryClient = useQueryClient()
   const toast = useToast()
 
@@ -149,13 +148,8 @@ function ProfileBody({ userId }: ProfileBodyProps) {
       formOptions: { values: defaults },
     })
 
-  async function handleLogout() {
-    await authActions.logout()
-    navigate({
-      to: "/auth/login",
-      search: { tenant_code: undefined, email: undefined, redirect: undefined },
-      replace: true,
-    })
+  function handleLogout() {
+    void signOutAndRedirect()
   }
 
   if (isLoading || !user) return <DetailSkeleton />

@@ -12,8 +12,8 @@ vi.mock("@/api/endpoints/diagnoses", () => ({
   },
 }))
 
-vi.mock("@/components/AppLayout", () => ({
-  AppLayout: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+vi.mock("@/components/common/AuthedLayout", () => ({
+  AuthedLayout: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
 }))
 
 import { diagnosesApi } from "@/api/endpoints/diagnoses"

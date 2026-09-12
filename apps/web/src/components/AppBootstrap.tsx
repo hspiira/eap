@@ -16,7 +16,7 @@ import { authActions } from "@/lib/auth-store"
 import { resetIdentityState } from "@/lib/identity-reset"
 import { currentRedirectPath } from "@/lib/redirect"
 import { tenantActions } from "@/lib/tenant-actions"
-import { useAuthStore } from "@/store/slices/authSlice"
+import { hasPersistedSession, useAuthStore } from "@/store/slices/authSlice"
 import { useTenantStore } from "@/store/slices/tenantSlice"
 
 export function AppBootstrap() {
@@ -42,6 +42,18 @@ export function AppBootstrap() {
     document.body.style.removeProperty("background")
     document.body.style.removeProperty("background-color")
     document.body.style.removeProperty("overflow")
+  }, [])
+
+  // A page served from the back/forward cache is painted as it was left, and no
+  // effect re-runs to notice the session has since ended. Signing out and
+  // pressing back would show the last authed screen; reloading sends it back
+  // through the guards instead.
+  useEffect(() => {
+    const onPageShow = (event: PageTransitionEvent) => {
+      if (event.persisted && !hasPersistedSession()) window.location.reload()
+    }
+    window.addEventListener("pageshow", onPageShow)
+    return () => window.removeEventListener("pageshow", onPageShow)
   }, [])
 
   useSilentRefresh()
