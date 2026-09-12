@@ -92,7 +92,8 @@ export function defaultErrorMessage(
  * default handling.
  */
 export function loginErrorMessage(err: unknown): string | undefined {
-  if (isAuthError(err)) return "We couldn't sign you in. Check your tenant code, email and password."
+  if (isAuthError(err))
+    return "We couldn't sign you in. Check your tenant code, email and password."
   return undefined
 }
 
