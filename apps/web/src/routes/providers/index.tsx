@@ -1,5 +1,6 @@
 import { useState } from "react"
 
+import { useQuery } from "@tanstack/react-query"
 import { createFileRoute, Link, useNavigate, useSearch } from "@tanstack/react-router"
 import {
   ExternalLink,
@@ -22,9 +23,14 @@ import { PageShell } from "@/components/common/PageShell"
 import { ProviderTierBadge } from "@/components/common/ProviderTierBadge"
 import { SelectionBar } from "@/components/common/SelectionBar"
 import { StatusBadge } from "@/components/common/StatusBadge"
+import { SummaryStrip } from "@/components/common/SummaryStrip"
 import { ROW_BORDER } from "@/components/common/tableStyles"
 import { ProviderFormSheet } from "@/components/providers/ProviderFormSheet"
 import { ProviderSectionTabs } from "@/components/providers/ProviderSectionTabs"
+import {
+  ProviderSummaryCard,
+  ProviderSummaryPlaceholder,
+} from "@/components/providers/ProviderSummaryCard"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import {
@@ -93,6 +99,11 @@ function ProvidersListPage() {
   const canWrite = useCanWrite()
   const isAdmin = useCurrentRole() === TenantRole.ADMIN
   const [editing, setEditing] = useState<Provider | null>(null)
+  const [selectedId, setSelectedId] = useState<string | null>(null)
+  const statsQuery = useQuery({
+    queryKey: ["providers", "stats"],
+    queryFn: providersApi.getStats,
+  })
 
   const query = useEntityListPages<Provider, ProviderListParams>({
     resource: "providers",
@@ -111,6 +122,7 @@ function ProvidersListPage() {
 
   const items = query.data?.items ?? []
   const selection = useTableSelection(items)
+  const selectedProvider = items.find((provider) => provider.id === selectedId) ?? null
   const hasFilters = Boolean(
     list.activeSearch ||
     searchParams.tier ||
@@ -138,6 +150,25 @@ function ProvidersListPage() {
       }
     >
       <ProviderSectionTabs />
+
+      {statsQuery.data ? (
+        <SummaryStrip
+          cells={[
+            { label: "In the network", value: statsQuery.data.total, emphasis: true },
+            { label: "On panel", value: statsQuery.data.active, filter: PanelStatus.ACTIVE },
+            { label: "Onboarding", value: statsQuery.data.pending, filter: PanelStatus.PENDING },
+            { label: "Suspended", value: statsQuery.data.suspended, filter: PanelStatus.SUSPENDED },
+            { label: "Removed", value: statsQuery.data.removed, filter: PanelStatus.REMOVED },
+          ]}
+          activeFilter={searchParams.panel_status}
+          onFilter={(value) =>
+            list.setFilter(
+              "panel_status",
+              value === undefined || value === searchParams.panel_status ? undefined : value,
+            )
+          }
+        />
+      ) : null}
 
       <FilterBar>
         {searchParams.tier ? (
@@ -201,6 +232,8 @@ function ProvidersListPage() {
         }}
       />
 
+      <div className="grid min-h-0 flex-1 grid-cols-12 gap-3 lg:h-full">
+        <div className="col-span-12 flex min-h-0 flex-col lg:col-span-8 lg:h-full">
       <EntityListView
         onLoadMore={query.loadMore}
         hasMore={query.hasMore}
@@ -212,6 +245,8 @@ function ProvidersListPage() {
           <ProviderRow
             provider={row}
             isSelected={selection.selectedIds.has(row.id)}
+            highlighted={row.id === selectedId}
+            onSelect={() => setSelectedId(row.id === selectedId ? null : row.id)}
             onToggle={() => selection.toggleSelect(row.id)}
             onEdit={canWrite ? () => setEditing(row) : undefined}
           />
@@ -327,6 +362,18 @@ function ProvidersListPage() {
           ) : undefined
         }
       />
+        </div>
+        <div className="col-span-12 hidden min-h-0 min-w-0 flex-col lg:col-span-4 lg:flex lg:h-full">
+          {selectedProvider ? (
+            <ProviderSummaryCard
+              provider={selectedProvider}
+              onClose={() => setSelectedId(null)}
+            />
+          ) : (
+            <ProviderSummaryPlaceholder />
+          )}
+        </div>
+      </div>
     </PageShell>
   )
 }
@@ -334,17 +381,31 @@ function ProvidersListPage() {
 function ProviderRow({
   provider,
   isSelected,
+  highlighted,
+  onSelect,
   onToggle,
   onEdit,
 }: {
   provider: Provider
   isSelected: boolean
+  highlighted: boolean
+  onSelect: () => void
   onToggle: () => void
   onEdit?: () => void
 }) {
   const profile = provider.provider_profile
   return (
-    <TableRow className={`group h-9 ${ROW_BORDER}`}>
+    <TableRow
+      onClick={(event) => {
+        // The checkbox, name link and action menu keep their own behaviour;
+        // the rest of the row previews the practitioner in the side panel.
+        if ((event.target as HTMLElement).closest("a,button,[role=checkbox],[role=menu]")) return
+        onSelect()
+      }}
+      className={`group h-9 cursor-pointer ${ROW_BORDER} ${
+        highlighted ? "bg-primary/5 hover:bg-primary/5" : ""
+      }`}
+    >
       <TableCell className="px-3">
         <Checkbox
           aria-label={`Select ${provider.display_name}`}

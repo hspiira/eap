@@ -255,3 +255,31 @@ describe("member roster", () => {
     expect(screen.getByRole("button", { name: "Confirm merge 2" })).toBeInTheDocument()
   })
 })
+
+
+describe("roster summary strip", () => {
+  it("status counts are buttons that read as filters", async () => {
+    renderWithProviders(<Page />)
+
+    const active = await screen.findByRole("button", { name: "1 Active" })
+    expect(active).toHaveAttribute("aria-pressed", "false")
+  })
+
+  it("marks the applied status as pressed", async () => {
+    mocks.search = { status: "Active" }
+    renderWithProviders(<Page />)
+
+    const active = await screen.findByRole("button", { name: "1 Active" })
+    expect(active).toHaveAttribute("aria-pressed", "true")
+  })
+
+  it("the strip's counts are never filtered by the status they facet", async () => {
+    mocks.search = { status: "Suspended" }
+    renderWithProviders(<Page />)
+
+    await waitFor(() => expect(mocks.getStats).toHaveBeenCalled())
+    expect(mocks.getStats).toHaveBeenCalledWith(
+      expect.not.objectContaining({ status: "Suspended" }),
+    )
+  })
+})

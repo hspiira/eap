@@ -178,4 +178,16 @@ export const providersApi = {
   async getDeliveryStats(id: string): Promise<ProviderDeliveryStats> {
     return apiClient.get<ProviderDeliveryStats>(`/providers/${id}/delivery-stats`)
   },
+
+  async getStats(): Promise<ProviderStats> {
+    return apiClient.get<ProviderStats>("/providers/stats")
+  },
+}
+
+export interface ProviderStats {
+  total: number
+  active: number
+  pending: number
+  suspended: number
+  removed: number
 }

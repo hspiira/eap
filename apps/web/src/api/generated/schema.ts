@@ -4650,6 +4650,28 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/providers/stats": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Provider Stats
+         * @description Panel readiness counts over the whole live directory.
+         *
+         *     Declared before ``/{provider_id}`` so "stats" cannot be read as an id.
+         */
+        get: operations["provider_stats_providers_stats_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/providers/{provider_id}": {
         parameters: {
             query?: never;
@@ -12469,6 +12491,28 @@ export interface components {
             is_active: boolean;
             /** Label */
             label: string;
+        };
+        /**
+         * ProviderStatsResponse
+         * @description Panel readiness counts for the directory's summary strip.
+         */
+        ProviderStatsResponse: {
+            /**
+             * Active
+             * @description On the panel and bookable
+             */
+            active: number;
+            /**
+             * Pending
+             * @description Mid-onboarding, not yet bookable
+             */
+            pending: number;
+            /** Removed */
+            removed: number;
+            /** Suspended */
+            suspended: number;
+            /** Total */
+            total: number;
         };
         /**
          * ProviderTier
@@ -24815,6 +24859,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ProviderResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    provider_stats_providers_stats_get: {
+        parameters: {
+            query: {
+                tenant_id: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProviderStatsResponse"];
                 };
             };
             /** @description Validation Error */

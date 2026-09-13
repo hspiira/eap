@@ -7,6 +7,7 @@ import type { Provider } from "@/types/entities"
 
 const mocks = vi.hoisted(() => ({
   list: vi.fn(),
+  getStats: vi.fn(),
   canWrite: true,
   search: {} as Record<string, unknown>,
   listeners: new Set<() => void>(),
@@ -92,6 +93,7 @@ beforeEach(() => {
   mocks.search = {}
   mocks.listeners.clear()
   mocks.list.mockResolvedValue(page([makeProvider()], 1))
+  mocks.getStats.mockResolvedValue({ total: 113, active: 1, pending: 112, suspended: 0, removed: 0 })
 })
 
 describe("practitioner directory", () => {
@@ -140,5 +142,78 @@ describe("practitioner directory", () => {
     renderWithProviders(<Page />)
     await screen.findByText("Amina Okello")
     expect(screen.queryByRole("button", { name: /add practitioner/i })).not.toBeInTheDocument()
+  })
+})
+
+
+describe("readiness strip", () => {
+  it("shows the network's readiness counts, hiding statuses at zero", async () => {
+    renderWithProviders(<Page />)
+
+    expect(await screen.findByRole("button", { name: /112 Onboarding/ })).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: /1 On panel/ })).toBeInTheDocument()
+    expect(screen.queryByText("Suspended")).not.toBeInTheDocument()
+  })
+
+  it("filters the directory to the count that was clicked", async () => {
+    const user = userEvent.setup()
+    renderWithProviders(<Page />)
+
+    await user.click(await screen.findByRole("button", { name: /112 Onboarding/ }))
+
+    await waitFor(() =>
+      expect(mocks.list).toHaveBeenCalledWith(
+        expect.objectContaining({ panel_status: ["Pending"] }),
+      ),
+    )
+  })
+
+  it("clicking the active count clears the filter rather than reapplying it", async () => {
+    mocks.search = { panel_status: "Pending" }
+    const user = userEvent.setup()
+    renderWithProviders(<Page />)
+
+    const cell = await screen.findByRole("button", { name: /112 Onboarding/ })
+    expect(cell).toHaveAttribute("aria-pressed", "true")
+    await user.click(cell)
+
+    await waitFor(() =>
+      expect(mocks.list).toHaveBeenCalledWith(
+        expect.objectContaining({ panel_status: undefined }),
+      ),
+    )
+  })
+})
+
+describe("master-detail preview", () => {
+  it("clicking a row previews the practitioner without navigating", async () => {
+    const user = userEvent.setup()
+    renderWithProviders(<Page />)
+
+    await user.click(await screen.findByText("KampalaMetro"))
+
+    const panel = await screen.findByText("Open full profile")
+    expect(panel).toBeInTheDocument()
+    expect(screen.getByText("Booking readiness")).toBeInTheDocument()
+  })
+
+  it("closing the preview brings the placeholder back", async () => {
+    const user = userEvent.setup()
+    renderWithProviders(<Page />)
+
+    await user.click(await screen.findByText("KampalaMetro"))
+    await user.click(await screen.findByRole("button", { name: "Close details" }))
+
+    expect(await screen.findByText("Pick a practitioner")).toBeInTheDocument()
+    expect(screen.queryByText("Open full profile")).not.toBeInTheDocument()
+  })
+
+  it("the name link and the checkbox keep their own behaviour", async () => {
+    const user = userEvent.setup()
+    renderWithProviders(<Page />)
+
+    await user.click(await screen.findByRole("checkbox", { name: "Select Amina Okello" }))
+
+    expect(screen.queryByText("Open full profile")).not.toBeInTheDocument()
   })
 })

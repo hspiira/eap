@@ -27,6 +27,7 @@ from app.api.schemas.provider_schemas import (
     ProviderDeliveryStatsResponse,
     ProviderListResponse,
     ProviderResponse,
+    ProviderStatsResponse,
     ProviderUpdate,
     StatusCommand,
     TierCommand,
@@ -155,6 +156,28 @@ async def list_providers(
         page=page,
         limit=limit,
         has_more=query.offset + len(providers) < total,
+    )
+
+
+@router.get("/stats", response_model=ProviderStatsResponse)
+@readonly()
+async def provider_stats(
+    tenant_id: str = Query(...),
+    current_user: TokenData = Depends(require_same_tenant),
+    repo: ProviderRepository = Depends(get_provider_repository),
+    db: AsyncSession = Depends(get_db),
+):
+    """Panel readiness counts over the whole live directory.
+
+    Declared before ``/{provider_id}`` so "stats" cannot be read as an id.
+    """
+    counts = await repo.count_by_panel_status(TenantId(tenant_id))
+    return ProviderStatsResponse(
+        total=sum(counts.values()),
+        active=counts.get(PanelStatus.ACTIVE.value, 0),
+        pending=counts.get(PanelStatus.PENDING.value, 0),
+        suspended=counts.get(PanelStatus.SUSPENDED.value, 0),
+        removed=counts.get(PanelStatus.REMOVED.value, 0),
     )
 
 

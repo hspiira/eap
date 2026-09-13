@@ -7,6 +7,7 @@ from sqlalchemy import ColumnElement, Select, func, or_, select
 
 from app.domain.entities.provider import ProviderEntity
 from app.domain.entities.user import UserEntity
+from app.domain.enums import PanelStatus
 from app.domain.repositories.provider_repository import (
     SORTABLE_FIELDS,
     ProviderListQuery,
@@ -79,6 +80,25 @@ class ProviderRepositoryImpl(
         )
         result = await self.session.execute(statement)
         return int(result.scalar_one())
+
+    async def count_by_panel_status(self, tenant_id: TenantId) -> dict[str, int]:
+        panel = _profile_field("panel_status")
+        statement = (
+            select(panel, func.count(ProviderModel.id))
+            .where(
+                ProviderModel.tenant_id == tenant_id.value,
+                ProviderModel.deleted_at.is_(None),
+            )
+            .group_by(panel)
+        )
+        rows = (await self.session.execute(statement)).all()
+        # A profile without the key groups under NULL; those practitioners are
+        # not on the active panel, so they count as Pending rather than vanish.
+        counts: dict[str, int] = {}
+        for value, count in rows:
+            key = value if value is not None else PanelStatus.PENDING.value
+            counts[key] = counts.get(key, 0) + int(count)
+        return counts
 
     def _apply_filters(
         self, statement: Select[Any], tenant_id: TenantId, query: ProviderListQuery

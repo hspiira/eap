@@ -13127,6 +13127,42 @@
         "title": "ProviderSpecialtyResponse",
         "type": "object"
       },
+      "ProviderStatsResponse": {
+        "description": "Panel readiness counts for the directory's summary strip.",
+        "properties": {
+          "active": {
+            "description": "On the panel and bookable",
+            "title": "Active",
+            "type": "integer"
+          },
+          "pending": {
+            "description": "Mid-onboarding, not yet bookable",
+            "title": "Pending",
+            "type": "integer"
+          },
+          "removed": {
+            "title": "Removed",
+            "type": "integer"
+          },
+          "suspended": {
+            "title": "Suspended",
+            "type": "integer"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "total",
+          "active",
+          "pending",
+          "suspended",
+          "removed"
+        ],
+        "title": "ProviderStatsResponse",
+        "type": "object"
+      },
       "ProviderTier": {
         "description": "Provider panel tier, drives routing and rate cards (Joseph's framework).",
         "enum": [
@@ -35896,6 +35932,54 @@
           }
         ],
         "summary": "Create a practitioner, with no account and no lifecycle standing",
+        "tags": [
+          "providers"
+        ]
+      }
+    },
+    "/providers/stats": {
+      "get": {
+        "description": "Panel readiness counts over the whole live directory.\n\nDeclared before ``/{provider_id}`` so \"stats\" cannot be read as an id.",
+        "operationId": "provider_stats_providers_stats_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "tenant_id",
+            "required": true,
+            "schema": {
+              "title": "Tenant Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProviderStatsResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Provider Stats",
         "tags": [
           "providers"
         ]
