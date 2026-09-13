@@ -31513,6 +31513,77 @@
       }
     },
     "/members/import": {
+      "get": {
+        "description": "Recent roster uploads, newest first.\n\nA staged batch is otherwise reachable only by an id the drawer forgets when\nit closes, which strands its undecided rows.",
+        "operationId": "list_member_import_batches_members_import_get",
+        "parameters": [
+          {
+            "description": "Filter by lifecycle, e.g. Staged for an unfinished upload",
+            "in": "query",
+            "name": "status",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter by lifecycle, e.g. Staged for an unfinished upload",
+              "title": "Status"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 20,
+              "maximum": 100,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/MemberImportBatchResponse"
+                  },
+                  "title": "Response List Member Import Batches Members Import Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "List Member Import Batches",
+        "tags": [
+          "members"
+        ]
+      },
       "post": {
         "description": "Stage a roster for review. Writes no members; apply does that.\n\nRestaging a roster whose batch is still awaiting a decision is a\nconflict, not a second batch. Restaging one already applied or abandoned\nis how a corrected file re-judges against the roster as it now stands.",
         "operationId": "stage_member_import_members_import_post",
