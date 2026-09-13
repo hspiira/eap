@@ -13,6 +13,8 @@ const api = vi.hoisted(() => ({
   applyImport: vi.fn(),
   getImportTemplate: vi.fn(),
   abandonImport: vi.fn(),
+  listImportBatches: vi.fn(),
+  getImportBatch: vi.fn(),
 }))
 vi.mock("@/api/endpoints/members", () => ({ membersApi: api }))
 
@@ -73,6 +75,51 @@ async function stage(rows: MemberImportRow[]) {
 
 beforeEach(() => {
   vi.clearAllMocks()
+  // The global afterEach restores mocks, so implementations belong here.
+  api.listImportBatches.mockResolvedValue([])
+})
+
+describe("unfinished uploads", () => {
+  const staged = () =>
+    ({
+      id: "batch-q",
+      tenant_id: "t-1",
+      file_name: "members-import-template-2.csv",
+      file_hash: "sha256:old",
+      row_count: 40,
+      status: "Staged",
+      outcome_counts: {},
+      staged_by: "u-1",
+      created_at: "2026-09-12T00:00:00Z",
+    }) as MemberImportBatch
+
+  it("names the uploads still holding Staff_IDs, so they can be found at all", async () => {
+    api.listImportBatches.mockResolvedValue([staged()])
+    renderWithProviders(<MemberImportDialog open onOpenChange={() => {}} onImported={() => {}} />)
+
+    expect(await screen.findByText(/1 upload awaiting a decision/i)).toBeInTheDocument()
+    expect(screen.getByText("members-import-template-2.csv")).toBeInTheDocument()
+    expect(screen.getByText(/still holds its rows/i)).toBeInTheDocument()
+  })
+
+  it("reopens one into the review table instead of only offering to discard it", async () => {
+    api.listImportBatches.mockResolvedValue([staged()])
+    api.getImportBatch.mockResolvedValue(staged())
+    api.listImportRows.mockResolvedValue({ items: [makeRow()], total: 1, page: 1, limit: 200 })
+
+    renderWithProviders(<MemberImportDialog open onOpenChange={() => {}} onImported={() => {}} />)
+    await userEvent.click(await screen.findByRole("button", { name: "Review" }))
+
+    await waitFor(() => expect(api.getImportBatch).toHaveBeenCalledWith("batch-q"))
+    expect(await screen.findByText("Amina Namukasa")).toBeInTheDocument()
+  })
+
+  it("says nothing when every upload is finished", async () => {
+    api.listImportBatches.mockResolvedValue([])
+    renderWithProviders(<MemberImportDialog open onOpenChange={() => {}} onImported={() => {}} />)
+    await waitFor(() => expect(api.listImportBatches).toHaveBeenCalled())
+    expect(screen.queryByText(/awaiting a decision/i)).not.toBeInTheDocument()
+  })
 })
 
 describe("member import preview", () => {

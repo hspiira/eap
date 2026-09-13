@@ -61,6 +61,19 @@ class MemberImportRepositoryImpl(MemberImportRepository):
         )
         return MemberImportMapper.batch_to_entity(model) if model else None
 
+    async def list_batches(
+        self, tenant_id: TenantId, *, status: str | None = None, limit: int = 20
+    ) -> Sequence[MemberImportBatchEntity]:
+        statement = select(MemberImportBatchModel).where(
+            MemberImportBatchModel.tenant_id == tenant_id.value
+        )
+        if status:
+            statement = statement.where(MemberImportBatchModel.status == status)
+        rows = await self.session.scalars(
+            statement.order_by(MemberImportBatchModel.created_at.desc()).limit(limit)
+        )
+        return [MemberImportMapper.batch_to_entity(m) for m in rows]
+
     async def save_batch(self, batch: MemberImportBatchEntity) -> None:
         await self.session.merge(MemberImportMapper.batch_to_model(batch))
         await self.session.flush()

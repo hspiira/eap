@@ -908,6 +908,26 @@ async def stage_member_import(
     return _batch_response(batch, await imports.outcome_counts(tenant, batch.id))
 
 
+@router.get("/import", response_model=list[MemberImportBatchResponse])
+@readonly()
+async def list_member_import_batches(
+    status: str | None = Query(
+        None, description="Filter by lifecycle, e.g. Staged for an unfinished upload"
+    ),
+    limit: int = Query(20, ge=1, le=100),
+    current_user: TokenData = Depends(get_current_user),
+    imports: MemberImportRepository = Depends(get_member_import_repository),
+):
+    """Recent roster uploads, newest first.
+
+    A staged batch is otherwise reachable only by an id the drawer forgets when
+    it closes, which strands its undecided rows.
+    """
+    tenant = TenantId(current_user.tenant_id)
+    batches = await imports.list_batches(tenant, status=status, limit=limit)
+    return [_batch_response(b, await imports.outcome_counts(tenant, b.id)) for b in batches]
+
+
 @router.get("/import/{batch_id}", response_model=MemberImportBatchResponse)
 @readonly()
 async def get_member_import_batch(

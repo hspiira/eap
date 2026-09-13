@@ -147,6 +147,16 @@ export const membersApi = {
     return apiClient.postFormData<MemberImportBatch>("/members/import", body)
   },
 
+  /**
+   * Recent roster uploads, newest first.
+   *
+   * A staged batch is otherwise reachable only by an id the drawer forgets
+   * when it closes, stranding its undecided rows.
+   */
+  async listImportBatches(status?: string, limit = 20): Promise<MemberImportBatch[]> {
+    return apiClient.get<MemberImportBatch[]>("/members/import", { status, limit })
+  },
+
   async getImportBatch(batchId: string): Promise<MemberImportBatch> {
     return apiClient.get<MemberImportBatch>(`/members/import/${batchId}`)
   },

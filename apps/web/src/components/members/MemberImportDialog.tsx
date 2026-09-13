@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react"
+import { useCallback, useEffect, useRef, useState } from "react"
 
 import { Download, FileInput, RefreshCw } from "lucide-react"
 
@@ -454,6 +454,63 @@ function ImportFooter({
   )
 }
 
+/**
+ * Uploads still awaiting a decision.
+ *
+ * A staged batch holds its rows' Staff_IDs, so a later upload of the same
+ * people comes back entirely Duplicate with nothing to import. Before this the
+ * only route back was the id in a 409, which the drawer forgot on close, so
+ * the rows were unreachable and the batch invisible.
+ */
+function UnfinishedUploads({
+  batches,
+  openBatchId,
+  busy,
+  onOpen,
+}: {
+  batches: MemberImportBatch[]
+  openBatchId: string | null
+  busy: boolean
+  onOpen: (batchId: string) => void
+}) {
+  const others = batches.filter((b) => b.id !== openBatchId)
+  if (others.length === 0) return null
+  return (
+    <section className="space-y-2 border border-fg/15 bg-surface p-3">
+      <h3 className="text-xs font-semibold text-fg">
+        {others.length} upload{others.length === 1 ? "" : "s"} awaiting a decision
+      </h3>
+      <p className="text-xs text-fg-muted">
+        Each one still holds its rows&apos; Staff_IDs, so re-uploading the same people imports
+        nothing until these are applied or discarded.
+      </p>
+      <ul className="divide-y divide-fg/10">
+        {others.map((b) => (
+          <li key={b.id} className="flex items-center justify-between gap-3 py-1.5">
+            <span className="min-w-0">
+              <span className="block truncate text-xs font-medium text-fg">{b.file_name}</span>
+              <span className="block text-[11px] text-fg-muted">
+                {b.row_count} row{b.row_count === 1 ? "" : "s"} · staged{" "}
+                {new Date(b.created_at).toLocaleDateString()}
+              </span>
+            </span>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="h-7 shrink-0"
+              disabled={busy}
+              onClick={() => onOpen(b.id)}
+            >
+              Review
+            </Button>
+          </li>
+        ))}
+      </ul>
+    </section>
+  )
+}
+
 /** Compact, toast-style status while a chunked apply is in flight. */
 function ApplyProgressBanner({
   fileName,
@@ -506,6 +563,7 @@ export function MemberImportDialog({ open, onOpenChange, onImported }: MemberImp
   const [applied, setApplied] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [conflictBatchId, setConflictBatchId] = useState<string | null>(null)
+  const [stagedBatches, setStagedBatches] = useState<MemberImportBatch[]>([])
   const [discarding, setDiscarding] = useState(false)
   const [confirmDiscardOpen, setConfirmDiscardOpen] = useState(false)
   const applyCancelledRef = useRef(false)
@@ -526,6 +584,35 @@ export function MemberImportDialog({ open, onOpenChange, onImported }: MemberImp
 
   const queued = rows.filter(isQueued)
   const showEmployment = rows.some((row) => row.employment)
+
+  /** Unfinished uploads, so a staged batch is reachable without its id. */
+  const refreshStagedBatches = useCallback(() => {
+    void membersApi
+      .listImportBatches("Staged")
+      .then(setStagedBatches)
+      .catch(() => setStagedBatches([]))
+  }, [])
+
+  useEffect(() => {
+    if (open) refreshStagedBatches()
+  }, [open, refreshStagedBatches])
+
+  /** Reopen an unfinished upload in the same review table it was staged into. */
+  const openStagedBatch = async (batchId: string) => {
+    setError(null)
+    setStaging(true)
+    try {
+      const existing = await membersApi.getImportBatch(batchId)
+      setBatch(existing)
+      setRows(await fetchAllRows(existing.id))
+      setApplied(false)
+      setConflictBatchId(null)
+    } catch (cause) {
+      setError(normalizeErrorMessage(cause, "Could not open that upload"))
+    } finally {
+      setStaging(false)
+    }
+  }
 
   const selectFile = (selected: File | null, handle: FileSystemFileHandle | null = null) => {
     setFile(selected)
@@ -593,6 +680,7 @@ export function MemberImportDialog({ open, onOpenChange, onImported }: MemberImp
         "Discarded from the import dialog after a restage conflict",
       )
       setConflictBatchId(null)
+      refreshStagedBatches()
       selectFile(file, fileHandle)
     } catch (cause) {
       setError(normalizeErrorMessage(cause, "Could not discard the stuck batch"))
@@ -703,6 +791,12 @@ export function MemberImportDialog({ open, onOpenChange, onImported }: MemberImp
             onSelectFile={selectFile}
             onDownloadTemplate={() => void downloadTemplate()}
             onDiscardStuck={() => setConfirmDiscardOpen(true)}
+          />
+          <UnfinishedUploads
+            batches={stagedBatches}
+            openBatchId={batch?.id ?? null}
+            busy={staging || applying}
+            onOpen={(id) => void openStagedBatch(id)}
           />
           <ImportPreview
             batch={batch}

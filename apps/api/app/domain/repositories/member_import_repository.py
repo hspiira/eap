@@ -21,6 +21,17 @@ class MemberImportRepository(ABC):
         """Used to detect a replay of the same file before staging it again."""
 
     @abstractmethod
+    async def list_batches(
+        self, tenant_id: TenantId, *, status: str | None = None, limit: int = 20
+    ) -> Sequence[MemberImportBatchEntity]:
+        """Recent batches, newest first, so an unfinished one can be found again.
+
+        Without this a staged batch is only reachable by its id, which the UI
+        forgets as soon as the drawer closes: the rows sit undecided and the
+        only way back is to re-upload the file that triggered the conflict.
+        """
+
+    @abstractmethod
     async def save_batch(self, batch: MemberImportBatchEntity) -> None: ...
 
     @abstractmethod
