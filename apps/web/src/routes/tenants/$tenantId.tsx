@@ -5,7 +5,6 @@ import { createFileRoute } from "@tanstack/react-router"
 import { ShieldCheck, SquarePen } from "lucide-react"
 
 import { tenantsApi } from "@/api/endpoints/tenants"
-import { AppLayout } from "@/components/AppLayout"
 import { PageShell } from "@/components/common/PageShell"
 import { DetailSkeleton } from "@/components/common/PageSkeletons"
 import { RequirePlatformAdmin } from "@/components/common/RequirePlatformAdmin"
@@ -48,7 +47,7 @@ function TenantDetailBody() {
   })
 
   return (
-    <AppLayout>
+    <>
       <PageShell
         icon={ShieldCheck}
         trail={[
@@ -94,6 +93,6 @@ function TenantDetailBody() {
           onSaved={() => setEditOpen(false)}
         />
       ) : null}
-    </AppLayout>
+    </>
   )
 }

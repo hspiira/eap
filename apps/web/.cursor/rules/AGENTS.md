@@ -10,9 +10,10 @@
   - NURTURING: `#D0B5B3` (dusty rose) - for secondary actions, highlights
   - Use **white** for backgrounds; avoid cream/beige unless explicitly requested
 
-### NO Rounded Corners
-- **CRITICAL**: All buttons, cards, inputs, and components MUST have sharp, square corners
-- Always use `rounded-none` in Tailwind
+### Corner treatment
+- Cards, inputs, and other non-button components use sharp, square corners.
+- Buttons use `rounded-full`, as explicitly requested by the user.
+- Use `rounded-none` for other elements covered by this rule.
 - Only add rounded corners if the user explicitly requests it
 
 ### Flat Design Only
@@ -28,7 +29,7 @@
 
 ## When Creating Components
 
-1. Use `rounded-none` on all elements
+1. Keep buttons fully rounded; use `rounded-none` for other elements covered above.
 2. Use only the approved color palette
 3. Remove any gradients or shadows
 4. Remove any blue/cyan/teal colors

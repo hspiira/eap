@@ -3607,7 +3607,14 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get?: never;
+        /**
+         * List Member Import Batches
+         * @description Recent roster uploads, newest first.
+         *
+         *     A staged batch is otherwise reachable only by an id the drawer forgets when
+         *     it closes, which strands its undecided rows.
+         */
+        get: operations["list_member_import_batches_members_import_get"];
         put?: never;
         /**
          * Stage Member Import
@@ -14485,6 +14492,18 @@ export interface components {
             /** Days */
             days: components["schemas"]["UpcomingDay"][];
             /**
+             * Scheduled From
+             * Format: date-time
+             * @description Inclusive booking window start
+             */
+            scheduled_from: string;
+            /**
+             * Scheduled To
+             * Format: date-time
+             * @description Inclusive booking window end
+             */
+            scheduled_to: string;
+            /**
              * Total
              * @description Open bookings in the next seven days
              */
@@ -22310,6 +22329,39 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_member_import_batches_members_import_get: {
+        parameters: {
+            query?: {
+                /** @description Filter by lifecycle, e.g. Staged for an unfinished upload */
+                status?: string | null;
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MemberImportBatchResponse"][];
+                };
             };
             /** @description Validation Error */
             422: {

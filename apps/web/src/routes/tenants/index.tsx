@@ -4,7 +4,6 @@ import { createFileRoute, Link, useNavigate, useSearch } from "@tanstack/react-r
 import { ExternalLink, KeyRound, Plus, ShieldCheck } from "lucide-react"
 
 import { type TenantCreateResponse, tenantsApi } from "@/api/endpoints/tenants"
-import { AppLayout } from "@/components/AppLayout"
 import { EmptyState } from "@/components/common/EmptyState"
 import { FilterBar, FilterSearch, FilterTrigger } from "@/components/common/FilterBar"
 import { InfiniteScrollSentinel } from "@/components/common/InfiniteScrollSentinel"
@@ -117,7 +116,7 @@ function TenantsListBody() {
   const filtersActive = Boolean(activeSearch || activeStatus)
 
   return (
-    <AppLayout>
+    <>
       <PageShell
         icon={ShieldCheck}
         breadcrumb="Tenants"
@@ -243,7 +242,7 @@ function TenantsListBody() {
           if (id) navigate({ to: "/tenants/$tenantId", params: { tenantId: id } })
         }}
       />
-    </AppLayout>
+    </>
   )
 }
 

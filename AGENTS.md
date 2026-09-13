@@ -25,6 +25,15 @@ without being asked.
 - Avoid uppercase for emphasis unless asked for it.
 - Keep a professional tone.
 
+## Interface
+
+- Buttons remain fully rounded (`rounded-full`), including landing-page buttons.
+  This overrides older square-button instructions in app design rules.
+- Input focus rings use the theme's black/white action token, not green.
+- Landing-page buttons use the shared default button color tokens.
+- Keep shared application chrome mounted across page navigation; load changing
+  page content within it.
+
 ## Commits
 
 - Commit your work when a piece of it is finished. Do not leave it sitting in

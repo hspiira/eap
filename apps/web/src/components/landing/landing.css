@@ -57,9 +57,8 @@
 
 .landing a:focus-visible,
 .landing button:focus-visible {
-  outline: 2px solid var(--lp-accent);
+  outline: 2px solid var(--ring);
   outline-offset: 3px;
-  border-radius: 2px;
 }
 
 .lp-display {
@@ -177,4 +176,26 @@
 
 .lp-now {
   left: var(--lp-at);
+}
+
+@keyframes lp-arrow-pass {
+  0%,
+  100% {
+    transform: translateX(0);
+    opacity: 1;
+  }
+  45% {
+    transform: translateX(180%);
+    opacity: 0;
+  }
+  46% {
+    transform: translateX(-180%);
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .lp-sign-in:is(:hover, :focus-visible) .lp-sign-in-arrow {
+    animation: lp-arrow-pass 420ms ease-out;
+  }
 }

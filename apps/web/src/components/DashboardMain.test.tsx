@@ -10,7 +10,7 @@ import userEvent from "@testing-library/user-event"
 import { describe, expect, it, vi } from "vitest"
 
 import { makeDashboard } from "@/test/dashboard"
-import { renderWithProviders } from "@/test/utils"
+import { makeTestQueryClient, renderWithProviders } from "@/test/utils"
 
 vi.mock("@/api/endpoints/dashboard", () => ({
   dashboardApi: { get: vi.fn(async () => makeDashboard()) },
@@ -34,6 +34,19 @@ const { dashboardApi } = await import("@/api/endpoints/dashboard")
 const { serviceSessionsApi } = await import("@/api/endpoints/service-sessions")
 
 describe("DashboardMain", () => {
+  it("labels retained data after a failed refresh, including clinical outcomes", async () => {
+    const queryClient = makeTestQueryClient()
+    queryClient.setQueryData(
+      ["dashboard", "aggregate", { preset: "last_90d" }],
+      makeDashboard({ outcome_mix: [{ outcome: "Completed", total: 3 }] }),
+      { updatedAt: Date.now() - 120_000 },
+    )
+    vi.mocked(dashboardApi.get).mockRejectedValueOnce(new Error("Refresh failed"))
+    renderWithProviders(<DashboardMain />, { queryClient })
+    expect(await screen.findByRole("status")).toHaveTextContent("Retained figures")
+    expect(screen.queryByText("Nothing is blocked.")).not.toBeInTheDocument()
+    expect(screen.getByText("Clinical outcomes unavailable")).toBeInTheDocument()
+  })
   it("leads with the decision panel, ranked by what is blocking", async () => {
     renderWithProviders(<DashboardMain />)
 
@@ -86,6 +99,8 @@ describe("DashboardMain", () => {
       makeDashboard({
         upcoming: {
           total: 1,
+          scheduled_from: "2026-09-13T09:00:00Z",
+          scheduled_to: "2026-09-19T23:59:59.999999Z",
           days: [{ bucket: "2026-09-14", label: "Mon 14", total: 1 }],
         },
       }),
@@ -115,6 +130,8 @@ describe("DashboardMain", () => {
     // post-filter after a hard page limit.
     expect(vi.mocked(serviceSessionsApi.list).mock.calls[0][0]).toMatchObject({
       status: ["Scheduled", "Rescheduled"],
+      scheduled_from: "2026-09-13T09:00:00Z",
+      scheduled_to: "2026-09-19T23:59:59.999999Z",
     })
   })
 
@@ -151,6 +168,8 @@ describe("DashboardMain", () => {
       makeDashboard({
         upcoming: {
           total: 2,
+          scheduled_from: "2026-09-13T09:00:00Z",
+          scheduled_to: "2026-09-19T23:59:59.999999Z",
           days: [{ bucket: "2026-09-14", label: "Mon 14", total: 2 }],
         },
       }),

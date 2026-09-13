@@ -53,11 +53,6 @@
   --brand-soft: #e8f0eb;
   --brand-fg: var(--neutral-0);
 
-  /* Action: the colour a button actually is. Near-black rather than the brand,
-     so a primary action reads as a control and the brand stays an identity
-     carried by links, active nav and focus. Borrowed from the dashboard work
-     that uses black for every control and keeps its one saturated colour for a
-     single highlight per screen. */
   --action: #111111;
   --action-fg: #ffffff;
 
@@ -104,7 +99,7 @@
   --chart-serious: #ec835a;
 
   /* Focus ring + selection. */
-  --ring: var(--brand);
+  --ring: var(--action);
   --selection-bg: rgb(15 81 50 / 0.15);
 
   /* shadcn-compatible aliases. Upstream shadcn primitives reference these

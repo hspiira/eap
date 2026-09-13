@@ -11,8 +11,6 @@
  * mistake the schema decision guards against.
  */
 
-import { useState } from "react"
-
 import { useQuery } from "@tanstack/react-query"
 import { Link } from "@tanstack/react-router"
 import { ArrowUpRight, CalendarPlus, ChevronRight } from "lucide-react"
@@ -28,7 +26,6 @@ import { SessionStatus } from "@/types/enums"
 import { CardBar, CardEmptyState, CardErrorState, CardStat } from "./CardBar"
 
 const SHOWN = 6
-const WINDOW_DAYS = 7
 /** Matches the dashboard aggregate's own definition of "open" (dashboard_query_runner.py). */
 const OPEN_BOOKING_STATUSES = [SessionStatus.SCHEDULED, SessionStatus.RESCHEDULED]
 
@@ -51,17 +48,12 @@ function participants(session: ServiceSession): string {
   return [who, session.provider_display_name].filter(Boolean).join(" · ")
 }
 
-function useWeekAhead(enabled: boolean) {
-  // Anchored per mount: an inline `new Date()` would mint a fresh query key
-  // on every render and refetch forever, the trap the sessions list page
-  // documents on its own range params.
-  const [from] = useState(() => new Date())
-  const to = new Date(from.getTime() + WINDOW_DAYS * 24 * 60 * 60 * 1000)
+function useWeekAhead(upcoming: UpcomingBookings | null) {
   const params = {
     limit: SHOWN,
     status: OPEN_BOOKING_STATUSES,
-    scheduled_from: from.toISOString(),
-    scheduled_to: to.toISOString(),
+    scheduled_from: upcoming?.scheduled_from,
+    scheduled_to: upcoming?.scheduled_to,
     sort_by: "scheduled_at",
     sort_desc: false,
   }
@@ -69,7 +61,7 @@ function useWeekAhead(enabled: boolean) {
     queryKey: entityListKey("service-sessions", { ...params, card: "week-ahead" }),
     queryFn: () => serviceSessionsApi.list(params),
     staleTime: 60_000,
-    enabled,
+    enabled: !!upcoming && upcoming.total > 0,
     select: (page) => page.items,
   })
 }
@@ -90,7 +82,7 @@ export function UpcomingBookingsCard({
   onRetry,
 }: UpcomingBookingsCardProps) {
   const total = upcoming?.total ?? 0
-  const rows = useWeekAhead(total > 0)
+  const rows = useWeekAhead(upcoming)
   const sessions = rows.data ?? []
   const overflow = total - sessions.length
 
@@ -101,7 +93,12 @@ export function UpcomingBookingsCard({
         control={
           <Link
             to="/service-sessions"
-            search={{ status: OPEN_BOOKING_STATUSES, range: "7d" }}
+            search={{
+              status: OPEN_BOOKING_STATUSES,
+              range: "7d",
+              scheduled_from: upcoming?.scheduled_from,
+              scheduled_to: upcoming?.scheduled_to,
+            }}
             className="inline-flex items-center gap-1 text-xs text-fg-muted hover:text-primary"
           >
             Sessions
@@ -164,7 +161,12 @@ export function UpcomingBookingsCard({
             {overflow > 0 ? (
               <Link
                 to="/service-sessions"
-                search={{ status: OPEN_BOOKING_STATUSES, range: "7d" }}
+                search={{
+                  status: OPEN_BOOKING_STATUSES,
+                  range: "7d",
+                  scheduled_from: upcoming?.scheduled_from,
+                  scheduled_to: upcoming?.scheduled_to,
+                }}
                 className="mt-1.5 inline-flex items-center gap-1 text-xs text-fg-muted hover:text-primary"
               >
                 and {overflow} more this week

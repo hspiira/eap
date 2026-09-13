@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router"
 
-import { AppLayout } from "@/components/AppLayout"
+import { DashboardMain } from "@/components/DashboardMain"
 import { LandingPage } from "@/components/landing/LandingPage"
 import { useAuthStore } from "@/store/slices/authSlice"
 
@@ -23,5 +23,5 @@ function HomePage() {
     return <LandingPage />
   }
 
-  return <AppLayout>{null}</AppLayout>
+  return <DashboardMain />
 }

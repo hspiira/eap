@@ -69,6 +69,10 @@ export const Route = createFileRoute("/service-sessions/")({
     clinical_outcome: enumParam(SessionClinicalStatus),
     service_id: (v) => (typeof v === "string" && v.trim() ? v : undefined),
     member_id: (v) => (typeof v === "string" && v.trim() ? v : undefined),
+    scheduled_from: (value) =>
+      typeof value === "string" && Number.isFinite(Date.parse(value)) ? value : undefined,
+    scheduled_to: (value) =>
+      typeof value === "string" && Number.isFinite(Date.parse(value)) ? value : undefined,
     range: (v): Exclude<RangeFilter, "all"> | undefined =>
       v === "today" || v === "7d" || v === "30d" || v === "past" ? v : undefined,
   }),
@@ -153,9 +157,14 @@ function ServiceSessionsListPage() {
   const activeMemberId = searchParams.member_id
   const activeRange: RangeFilter = searchParams.range ?? "all"
 
-  // Anchored to the selected range, not to render: `new Date()` inline would mint
-  // a new query key on every render and refetch forever.
-  const rangeParams = useMemo(() => rangeBounds(activeRange, new Date()), [activeRange])
+  const rangeParams = useMemo(
+    () => ({
+      ...rangeBounds(activeRange, new Date()),
+      ...(searchParams.scheduled_from ? { scheduled_from: searchParams.scheduled_from } : {}),
+      ...(searchParams.scheduled_to ? { scheduled_to: searchParams.scheduled_to } : {}),
+    }),
+    [activeRange, searchParams.scheduled_from, searchParams.scheduled_to],
+  )
 
   const handleStatusChange = (next: StatusFilter) =>
     setFilter("status", next === "all" ? undefined : next)
@@ -164,7 +173,15 @@ function ServiceSessionsListPage() {
   const clearMember = () => setFilter("member_id", undefined)
 
   const handleRangeChange = (next: RangeFilter) =>
-    setFilter("range", next === "all" ? undefined : next)
+    void navigate({
+      search: (prev) => ({
+        ...prev,
+        range: next === "all" ? undefined : next,
+        scheduled_from: undefined,
+        scheduled_to: undefined,
+        page: undefined,
+      }),
+    })
 
   /** Booked and still to come, which otherwise takes two dropdowns to ask for. */
   const showUpcoming = () =>
@@ -173,6 +190,8 @@ function ServiceSessionsListPage() {
         ...prev,
         status: OPEN_BOOKING_STATUSES,
         range: "7d" as const,
+        scheduled_from: undefined,
+        scheduled_to: undefined,
         page: undefined,
       }),
     })

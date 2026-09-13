@@ -70,6 +70,8 @@ export function makeDashboard(overrides: Partial<DashboardResponse> = {}): Dashb
       },
     ],
     upcoming: {
+      scheduled_from: "2026-09-07T09:00:00Z",
+      scheduled_to: "2026-09-13T23:59:59.999999Z",
       total: 0,
       days: [
         { bucket: "2026-09-07", label: "Mon 07", total: 0 },

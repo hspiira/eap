@@ -65,6 +65,12 @@ export function DashboardMain() {
     <div className="flex min-h-0 flex-1 flex-col bg-bg">
       <div className="grid w-full gap-4 p-4 md:p-6">
         <DashboardHeader />
+        {data && error ? (
+          <p role="status" className="text-sm text-fg-muted">
+            Refresh failed. Retained figures were last updated at{" "}
+            {new Date(dashboard.dataUpdatedAt).toLocaleTimeString()}.
+          </p>
+        ) : null}
         <StatStrip stats={stats} />
 
         <div className="grid gap-4 lg:grid-cols-12">
@@ -109,6 +115,8 @@ export function DashboardMain() {
                 mix={data.outcome_mix}
                 insight={outcomeInsight(data.outcome_mix)}
                 loading={loading}
+                error={error}
+                onRetry={retry}
               />
             </div>
           ) : null}

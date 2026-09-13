@@ -16,6 +16,8 @@ interface OutcomeMixCardProps {
   mix: ReadonlyArray<OutcomeCount>
   insight?: string | null
   loading?: boolean
+  error?: boolean
+  onRetry?: () => void
 }
 
 function toSlice(item: OutcomeCount): DonutSlice {
@@ -30,7 +32,7 @@ function toSlice(item: OutcomeCount): DonutSlice {
   return { key: item.outcome, label: getStatusLabel(item.outcome), total: item.total }
 }
 
-export function OutcomeMixCard({ mix, insight, loading }: OutcomeMixCardProps) {
+export function OutcomeMixCard({ mix, insight, loading, error, onRetry }: OutcomeMixCardProps) {
   return (
     <DonutBreakdownCard
       title="Clinical outcomes"
@@ -40,6 +42,8 @@ export function OutcomeMixCard({ mix, insight, loading }: OutcomeMixCardProps) {
       emptyDescription="Outcomes appear here once sessions complete in this window."
       insight={insight}
       loading={loading}
+      error={error}
+      onRetry={onRetry}
     />
   )
 }

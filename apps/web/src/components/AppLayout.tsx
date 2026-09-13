@@ -3,13 +3,11 @@ import { useEffect, useState } from "react"
 import { AppSidebar } from "@/components/AppSidebar"
 import { FixtureBanner } from "@/components/common/FixtureBanner"
 import { DashboardHeader } from "@/components/DashboardHeader"
-import { DashboardMain } from "@/components/DashboardMain"
 import { GlobalSearch } from "@/components/search/GlobalSearch"
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar"
 import { uiStorage } from "@/lib/storage"
 
 export function AppLayout({ children }: { children?: React.ReactNode }) {
-  // Read persisted state once on mount; default to collapsed.
   const [open, setOpen] = useState<boolean>(() => {
     if (typeof window === "undefined") return false
     return uiStorage.read().sidebar_open
@@ -27,9 +25,7 @@ export function AppLayout({ children }: { children?: React.ReactNode }) {
         <SidebarInset>
           <FixtureBanner />
           <DashboardHeader />
-          <div className="content-area-scroll min-h-0 flex-1 overflow-y-auto">
-            {children ?? <DashboardMain />}
-          </div>
+          <div className="content-area-scroll min-h-0 flex-1 overflow-y-auto">{children}</div>
         </SidebarInset>
       </SidebarProvider>
     </div>

@@ -1,7 +1,7 @@
 # UI and backend execution plan, 12 September 2026
 
-Status: planning complete. Application changes, runtime verification and deployment
-have not started under this plan.
+Status: corrective implementation applied; see the 13 September completion record
+below for verification and remaining deployment evidence.
 
 Source review: [UI_BACKEND_REVIEW_2026_09_12.md](UI_BACKEND_REVIEW_2026_09_12.md).
 Planning baseline: `92ef7194`. Owner roles below describe responsibility, not assigned
@@ -307,9 +307,67 @@ product work as a dependency of the nine corrective findings.
   (2850 passed, 26 skipped); 8 new frontend tests plus full `pnpm test`
   (867 passed, 104 files); typecheck and eslint clean; manual Playwright
   browser verification. Not verified: production.
-- Tested: see each package above; no `pnpm verify` / full build run yet this
-  pass.
+- Tested: the package records above describe the initial implementation pass.
+  The 13 September completion record supersedes its verification gaps.
 - Deployed: none.
 - Pending decision: none blocking for R1-R9 as scoped. A dev-database safety
   guard (recommended in `AUDIT_COVERAGE.md`'s R2 section) is a separate,
   unimplemented follow-up for whoever owns deployment configuration.
+
+## Completion pass, 13 September 2026
+
+Implemented:
+
+- R4's previously deferred window mismatch is reopened and corrected. The dashboard
+  owns the exact window: now through the last microsecond of the seventh UTC calendar
+  day. It exposes inclusive `scheduled_from`/`scheduled_to` values, consumed verbatim
+  by the card and its queue links. This preserves the existing seven-day aggregate
+  policy and the session API's inclusive upper bound. Selecting a new queue range
+  clears the captured window. API contracts regenerated.
+- R1 now has database-backed tests for LIST/VIEW clinical read persistence, original
+  event time and actor, and rollback after an enqueue writes then fails. R8b detail
+  and change tests remove the test-only loader override and exercise the production
+  tenant-checking dependency with own-tenant and other-tenant tokens.
+- R3 labels retained figures after a failed refresh and propagates errors to the
+  clinical outcomes card as well. The stale-data regression checks both behaviours.
+- Shared chrome now lives above the route outlet. Section routes retain auth guards
+  but no longer recreate the sidebar, header and global search. Home, profile and
+  tenant pages use that same persistent shell. Authentication and design pages stay
+  outside it. Sidebar state and DOM identity survive cross-section navigation.
+- Audits is enabled by default under Settings, at `/audit`. Environment overrides
+  remain supported. This changes discoverability, not the existing access policy.
+- User-directed styling: buttons remain fully rounded, input focus uses the existing
+  monochrome action token, and landing buttons use shared button colors. The main
+  sign-in actions use an inset arrow disc with hover/focus animation and reduced-motion
+  support, inspired by the supplied references. Lime is limited to the disc's emphasis
+  state; no project-wide color replacement was performed. Rules updated accordingly.
+
+Verified so far:
+
+- Audit HTTP suite: 25 passed, including the six new read/tenant isolation cases.
+- Dashboard boundary test passes at the start, final microsecond and excluded next
+  midnight; queue ids and totals equal the aggregate.
+- Audit/outbox PostgreSQL integration suites: 20 passed against isolated local test
+  schemas. Local `/health/outbox` reports `status=ok`, `depth=0`, `failed=0`.
+- Persistent shell browser test and light/dark control tests: three passed, with
+  animation and reduced-motion assertions. Screenshots inspected in both themes.
+- Dashboard regression suite: 12 passed. Production web build passed.
+- Full backend HTTP suite: `TEST_DATABASE_URL` set to local `eap_test`,
+  `.venv/bin/pytest tests/e2e -n 4 -q`: 521 passed in isolated worker databases.
+- Final `pnpm verify`: passed, including lint, formatting, typechecks, unit tests
+  and generated-contract drift checks. Frontend: 871 passed across 105 files.
+  Backend unit tests: 2336 passed, 26 skipped. Skipped tests are not claimed as
+  verified; the explicit HTTP and audit integration gates above ran without skips.
+- UI/navigation/styling commit: `8e55c767`. The review-closure commit contains the
+  remaining source changes and this evidence record.
+
+Existing test warnings remain: Recharts reports zero-size jsdom containers, and
+client query-key tests emit missing-query-function warnings for synthetic keys.
+Follow-up for the chart/client test owners: supply dimensions or query functions
+where those behaviours are under test. No warning was suppressed in this pass.
+
+Remaining external evidence: the historical backlog's target database cannot be
+reconstructed from the review alone. Production API URL and hosting service were
+requested for a targeted supervision/health inspection. No production deployment,
+worker restart or audit-history mutation was performed in this completion pass.
+The optional follow-on queue remains outside the corrective work.
