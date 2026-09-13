@@ -84,7 +84,7 @@ jobs:
           cache-dependency-glob: "apps/api/uv.lock"
 
       - name: Install dependencies
-        run: uv sync --group dev
+        run: uv sync --group dev --frozen
 
       # Mirrors `pnpm lint:api` from the repo root.
       - name: Lint
@@ -180,6 +180,16 @@ jobs:
       - name: Build
         run: pnpm build:web
 
+      # Nothing ran these until now, so they had rotted: three member-import
+      # specs failed on a drawer change no other gate could see. They stub the
+      # API, so they prove the dialog's behaviour, not that browser, deployed
+      # API and database agree. That end-to-end proof is REG-04, still open.
+      - name: Install Playwright browsers
+        run: pnpm --filter @evexia/web exec playwright install --with-deps chromium
+
+      - name: Browser tests (API stubbed)
+        run: pnpm --filter @evexia/web exec playwright test --reporter=line
+
       # The router plugin rewrites routeTree.gen.ts during the build. It is
       # committed, so a stale copy has to fail here the way the contract does.
       - name: Fail if the committed route tree is stale
@@ -221,7 +231,7 @@ jobs:
 
       - name: Install backend deps
         working-directory: apps/api
-        run: uv sync --group dev
+        run: uv sync --group dev --frozen
 
       # Settings have no defaults, so importing app.main without a .env fails.
       # One file at the root now feeds both apps.

@@ -3702,11 +3702,17 @@ export interface paths {
         put?: never;
         /**
          * Apply Member Import
-         * @description Write up to `limit` still-pending rows, one at a time, in their own transaction.
+         * @description Write up to `limit` still-pending rows, each in its own savepoint.
+         *
+         *     Durability is batched, not per row: `BatchedCommit` commits every
+         *     `COMMIT_EVERY_ROWS`, because the WAL flush is the expensive part of writing
+         *     a row. A row still writes inside its own savepoint, so one bad row costs
+         *     only itself, and a call that dies mid-chunk leaves at most
+         *     `COMMIT_EVERY_ROWS - 1` rows for the next call to write again. Nothing is
+         *     lost: a row that never committed never claimed itself and is still pending.
          *
          *     A roster of thousands of rows cannot be written in a single call without
-         *     risking a platform request timeout, since each row costs its own
-         *     round trip and commit. Call this repeatedly while `remaining` in the
+         *     risking a platform request timeout. Call this repeatedly while `remaining` in the
          *     response is above zero; `list_pending_rows` re-queries what is left each
          *     time rather than trusting an offset, so a client that stops calling
          *     (a closed tab, a timeout) leaves the batch safely Staged for the next

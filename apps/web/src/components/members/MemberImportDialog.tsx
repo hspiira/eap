@@ -605,7 +605,9 @@ export function MemberImportDialog({ open, onOpenChange, onImported }: MemberImp
   const refreshStagedBatches = useCallback(() => {
     void membersApi
       .listImportBatches("Staged")
-      .then(setStagedBatches)
+      // Defensive: an unexpected shape must not take the drawer down with it.
+      // The list is an aside; uploading is the job.
+      .then((found) => setStagedBatches(Array.isArray(found) ? found : []))
       .catch(() => setStagedBatches([]))
   }, [])
 
