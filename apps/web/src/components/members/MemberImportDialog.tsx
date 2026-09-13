@@ -467,11 +467,13 @@ function UnfinishedUploads({
   openBatchId,
   busy,
   onOpen,
+  onDiscard,
 }: {
   batches: MemberImportBatch[]
   openBatchId: string | null
   busy: boolean
   onOpen: (batchId: string) => void
+  onDiscard: (batch: MemberImportBatch) => void
 }) {
   const others = batches.filter((b) => b.id !== openBatchId)
   if (others.length === 0) return null
@@ -482,7 +484,8 @@ function UnfinishedUploads({
       </h3>
       <p className="text-xs text-fg-muted">
         Each one still holds its rows&apos; Staff_IDs, so re-uploading the same people imports
-        nothing until these are applied or discarded.
+        nothing until these are applied or discarded. Review to decide its rows, or discard it if
+        the upload is no longer wanted.
       </p>
       <ul className="divide-y divide-fg/10">
         {others.map((b) => (
@@ -494,16 +497,28 @@ function UnfinishedUploads({
                 {new Date(b.created_at).toLocaleDateString()}
               </span>
             </span>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              className="h-7 shrink-0"
-              disabled={busy}
-              onClick={() => onOpen(b.id)}
-            >
-              Review
-            </Button>
+            <span className="flex shrink-0 items-center gap-1">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="h-7"
+                disabled={busy}
+                onClick={() => onOpen(b.id)}
+              >
+                Review
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="h-7 text-fg-muted"
+                disabled={busy}
+                onClick={() => onDiscard(b)}
+              >
+                Discard
+              </Button>
+            </span>
           </li>
         ))}
       </ul>
@@ -564,6 +579,7 @@ export function MemberImportDialog({ open, onOpenChange, onImported }: MemberImp
   const [error, setError] = useState<string | null>(null)
   const [conflictBatchId, setConflictBatchId] = useState<string | null>(null)
   const [stagedBatches, setStagedBatches] = useState<MemberImportBatch[]>([])
+  const [discardTarget, setDiscardTarget] = useState<MemberImportBatch | null>(null)
   const [discarding, setDiscarding] = useState(false)
   const [confirmDiscardOpen, setConfirmDiscardOpen] = useState(false)
   const applyCancelledRef = useRef(false)
@@ -596,6 +612,33 @@ export function MemberImportDialog({ open, onOpenChange, onImported }: MemberImp
   useEffect(() => {
     if (open) refreshStagedBatches()
   }, [open, refreshStagedBatches])
+
+  /**
+   * Give up an upload nobody will apply.
+   *
+   * Frees the Staff_IDs its rows were holding, which is what lets the same
+   * people stage again. Any decisions already made on it go with it.
+   */
+  const discardStagedBatch = async () => {
+    if (!discardTarget) return
+    setDiscarding(true)
+    try {
+      await membersApi.abandonImport(
+        discardTarget.id,
+        "Discarded from the import drawer: upload no longer needed",
+      )
+      if (batch?.id === discardTarget.id) {
+        setBatch(null)
+        setRows([])
+      }
+      setDiscardTarget(null)
+      refreshStagedBatches()
+    } catch (cause) {
+      setError(normalizeErrorMessage(cause, "Could not discard that upload"))
+    } finally {
+      setDiscarding(false)
+    }
+  }
 
   /** Reopen an unfinished upload in the same review table it was staged into. */
   const openStagedBatch = async (batchId: string) => {
@@ -797,6 +840,7 @@ export function MemberImportDialog({ open, onOpenChange, onImported }: MemberImp
             openBatchId={batch?.id ?? null}
             busy={staging || applying}
             onOpen={(id) => void openStagedBatch(id)}
+            onDiscard={setDiscardTarget}
           />
           <ImportPreview
             batch={batch}
@@ -836,6 +880,17 @@ export function MemberImportDialog({ open, onOpenChange, onImported }: MemberImp
         destructive
         loading={discarding}
         onConfirm={discardStuckBatch}
+      />
+
+      <ConfirmDialog
+        open={discardTarget !== null}
+        onOpenChange={(next) => !next && setDiscardTarget(null)}
+        title={`Discard ${discardTarget?.file_name ?? "this upload"}?`}
+        description="Its rows stop holding their Staff_IDs, so the same people can be staged again. Any decisions already made on this upload are lost."
+        confirmLabel="Discard upload"
+        destructive
+        loading={discarding}
+        onConfirm={discardStagedBatch}
       />
     </Sheet>
   )
