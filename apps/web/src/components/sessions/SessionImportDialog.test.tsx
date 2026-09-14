@@ -110,6 +110,25 @@ describe("session import", () => {
   })
 })
 
+describe("guidance gives way to the staged rows", () => {
+  it("shows both explanations before a file is staged", () => {
+    const screen = renderWithProviders(
+      <SessionImportDialog open onOpenChange={() => {}} onImported={() => {}} />,
+    )
+    expect(screen.getByText(/Staging writes nothing/i)).toBeVisible()
+    expect(screen.getByText(/Files are limited to 10 MB/i)).toBeVisible()
+  })
+
+  it("drops the file guidance and hides the header guidance once staged", async () => {
+    const screen = await stageFile({ Accepted: 3 })
+    await screen.findByRole("button", { name: /apply 3 rows/i })
+
+    expect(screen.queryByText(/Files are limited to 10 MB/i)).not.toBeInTheDocument()
+    // Kept for aria-describedby, so it must stay in the tree but out of the layout.
+    expect(screen.getByText(/Staging writes nothing/i).closest("ul")).toHaveClass("sr-only")
+  })
+})
+
 describe("a row the practitioner name stopped", () => {
   /** Stage, then open the tab holding the blocked rows. */
   async function reviewing(rows: Record<string, unknown>[]) {
