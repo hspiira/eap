@@ -256,7 +256,6 @@ describe("member roster", () => {
   })
 })
 
-
 describe("roster summary strip", () => {
   it("status counts are buttons that read as filters", async () => {
     renderWithProviders(<Page />)

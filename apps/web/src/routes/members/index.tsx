@@ -316,9 +316,7 @@ function MembersListPage() {
         activeStatus={searchParams.status}
         onStatus={(value) =>
           setStatus(
-            value === undefined || value === searchParams.status
-              ? "all"
-              : (value as StatusFilter),
+            value === undefined || value === searchParams.status ? "all" : (value as StatusFilter),
           )
         }
       />
