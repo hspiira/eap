@@ -82,6 +82,7 @@ _STATIC_LISTS: dict[str, tuple[str, ...]] = {
 _EXAMPLE_ROWS = (
     (
         "2026-01-15",
+        "09:30",
         "Example Client",
         "EXM",
         "EXM-001",
@@ -103,6 +104,7 @@ _EXAMPLE_ROWS = (
     ),
     (
         "2026-01-16",
+        "14:00",
         "Example Client",
         "EXM",
         "",
