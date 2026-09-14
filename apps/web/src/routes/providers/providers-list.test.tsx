@@ -93,7 +93,13 @@ beforeEach(() => {
   mocks.search = {}
   mocks.listeners.clear()
   mocks.list.mockResolvedValue(page([makeProvider()], 1))
-  mocks.getStats.mockResolvedValue({ total: 113, active: 1, pending: 112, suspended: 0, removed: 0 })
+  mocks.getStats.mockResolvedValue({
+    total: 113,
+    active: 1,
+    pending: 112,
+    suspended: 0,
+    removed: 0,
+  })
 })
 
 describe("practitioner directory", () => {
@@ -145,7 +151,6 @@ describe("practitioner directory", () => {
   })
 })
 
-
 describe("readiness strip", () => {
   it("shows the network's readiness counts, hiding statuses at zero", async () => {
     renderWithProviders(<Page />)
@@ -178,9 +183,7 @@ describe("readiness strip", () => {
     await user.click(cell)
 
     await waitFor(() =>
-      expect(mocks.list).toHaveBeenCalledWith(
-        expect.objectContaining({ panel_status: undefined }),
-      ),
+      expect(mocks.list).toHaveBeenCalledWith(expect.objectContaining({ panel_status: undefined })),
     )
   })
 })

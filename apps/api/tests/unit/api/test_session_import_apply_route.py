@@ -329,8 +329,10 @@ class TestTemplate:
         response = await api.http.get("/session-imports/template")
         sheet = _load_workbook(response.content)["Sessions"]
         assert sheet.max_row == 3
-        assert [cell.value for cell in sheet[2]][5] == "Staff"
-        assert [cell.value for cell in sheet[3]][5] == "Group/Event"
+        headers = [cell.value for cell in sheet[1]]
+        audience = headers.index("Client Type (Staff/Dep)")
+        assert [cell.value for cell in sheet[2]][audience] == "Staff"
+        assert [cell.value for cell in sheet[3]][audience] == "Group/Event"
 
     async def test_dropdown_columns_reference_the_hidden_list_sheet(self, api):
         response = await api.http.get("/session-imports/template")

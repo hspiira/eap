@@ -234,141 +234,143 @@ function ProvidersListPage() {
 
       <div className="grid min-h-0 flex-1 grid-cols-12 gap-3 lg:h-full">
         <div className="col-span-12 flex min-h-0 flex-col lg:col-span-8 lg:h-full">
-      <EntityListView
-        onLoadMore={query.loadMore}
-        hasMore={query.hasMore}
-        loadingMore={query.loadingMore}
-        columns={COLUMNS}
-        items={items}
-        rowKey={(row) => row.id}
-        renderRow={(row) => (
-          <ProviderRow
-            provider={row}
-            isSelected={selection.selectedIds.has(row.id)}
-            highlighted={row.id === selectedId}
-            onSelect={() => setSelectedId(row.id === selectedId ? null : row.id)}
-            onToggle={() => selection.toggleSelect(row.id)}
-            onEdit={canWrite ? () => setEditing(row) : undefined}
-          />
-        )}
-        loading={query.isPending}
-        error={
-          query.isError ? normalizeErrorMessage(query.error, "Failed to load practitioners") : null
-        }
-        onRetry={() => void query.refetch()}
-        empty={
-          <EmptyState
-            icon={Stethoscope}
-            title={hasFilters ? "No practitioners match your filters" : "No practitioners yet"}
-            description={
-              hasFilters
-                ? "Try a different search or clear a filter."
-                : "Add the counsellors who deliver sessions. A practitioner does not need a login."
+          <EntityListView
+            onLoadMore={query.loadMore}
+            hasMore={query.hasMore}
+            loadingMore={query.loadingMore}
+            columns={COLUMNS}
+            items={items}
+            rowKey={(row) => row.id}
+            renderRow={(row) => (
+              <ProviderRow
+                provider={row}
+                isSelected={selection.selectedIds.has(row.id)}
+                highlighted={row.id === selectedId}
+                onSelect={() => setSelectedId(row.id === selectedId ? null : row.id)}
+                onToggle={() => selection.toggleSelect(row.id)}
+                onEdit={canWrite ? () => setEditing(row) : undefined}
+              />
+            )}
+            loading={query.isPending}
+            error={
+              query.isError
+                ? normalizeErrorMessage(query.error, "Failed to load practitioners")
+                : null
             }
-            action={
-              canWrite && !hasFilters ? (
-                <Button size="sm" onClick={() => list.setAddOpen(true)}>
-                  Add practitioner
-                </Button>
-              ) : null
+            onRetry={() => void query.refetch()}
+            empty={
+              <EmptyState
+                icon={Stethoscope}
+                title={hasFilters ? "No practitioners match your filters" : "No practitioners yet"}
+                description={
+                  hasFilters
+                    ? "Try a different search or clear a filter."
+                    : "Add the counsellors who deliver sessions. A practitioner does not need a login."
+                }
+                action={
+                  canWrite && !hasFilters ? (
+                    <Button size="sm" onClick={() => list.setAddOpen(true)}>
+                      Add practitioner
+                    </Button>
+                  ) : null
+                }
+              />
+            }
+            sort={list.sort}
+            onToggleSort={list.toggleSort}
+            page={list.page}
+            total={query.data?.total ?? 0}
+            limit={list.limit}
+            onPageChange={list.setPage}
+            selectAllState={selection.selectAllState}
+            onToggleSelectAll={selection.toggleSelectAll}
+            toolbar={
+              isAdmin ? (
+                <SelectionBar count={selection.selectedIds.size} onClear={selection.clearSelection}>
+                  <BulkActionWithReason
+                    ids={selection.selectedIds}
+                    label="Activate"
+                    icon={Power}
+                    confirmTitle="Activate practitioners"
+                    confirmDescription={(n) =>
+                      `Activate ${n} selected ${n === 1 ? "practitioner" : "practitioners"}?`
+                    }
+                    labelFor={(id) => items.find((i) => i.id === id)?.display_name ?? id}
+                    action={(id, reason) =>
+                      providersApi.changeStatus(id, { status: BaseStatus.ACTIVE, reason })
+                    }
+                    invalidateKey={["providers"]}
+                    verb="activated"
+                    noun="practitioner"
+                    onDone={selection.clearSelection}
+                  />
+                  <BulkActionWithReason
+                    ids={selection.selectedIds}
+                    label="Deactivate"
+                    icon={PowerOff}
+                    confirmTitle="Deactivate practitioners"
+                    confirmDescription={(n) =>
+                      `Deactivate ${n} selected ${n === 1 ? "practitioner" : "practitioners"}?`
+                    }
+                    destructive
+                    labelFor={(id) => items.find((i) => i.id === id)?.display_name ?? id}
+                    action={(id, reason) =>
+                      providersApi.changeStatus(id, { status: BaseStatus.INACTIVE, reason })
+                    }
+                    invalidateKey={["providers"]}
+                    verb="deactivated"
+                    noun="practitioner"
+                    onDone={selection.clearSelection}
+                  />
+                  <BulkActionWithReason
+                    ids={selection.selectedIds}
+                    label="Suspend from panel"
+                    icon={UserMinus}
+                    confirmTitle="Suspend practitioners from panel"
+                    confirmDescription={(n) =>
+                      `Suspend ${n} selected ${n === 1 ? "practitioner" : "practitioners"} from the panel? They will not be bookable.`
+                    }
+                    destructive
+                    labelFor={(id) => items.find((i) => i.id === id)?.display_name ?? id}
+                    action={(id, reason) =>
+                      providersApi.changePanelStatus(id, {
+                        panel_status: PanelStatus.SUSPENDED,
+                        reason,
+                      })
+                    }
+                    invalidateKey={["providers"]}
+                    verb="suspended from panel"
+                    noun="practitioner"
+                    onDone={selection.clearSelection}
+                  />
+                  <BulkActionWithReason
+                    ids={selection.selectedIds}
+                    label="Reactivate panel"
+                    icon={UserPlus}
+                    confirmTitle="Reactivate practitioners on panel"
+                    confirmDescription={(n) =>
+                      `Reactivate ${n} selected ${n === 1 ? "practitioner" : "practitioners"} on the panel?`
+                    }
+                    labelFor={(id) => items.find((i) => i.id === id)?.display_name ?? id}
+                    action={(id, reason) =>
+                      providersApi.changePanelStatus(id, {
+                        panel_status: PanelStatus.ACTIVE,
+                        reason,
+                      })
+                    }
+                    invalidateKey={["providers"]}
+                    verb="reactivated on panel"
+                    noun="practitioner"
+                    onDone={selection.clearSelection}
+                  />
+                </SelectionBar>
+              ) : undefined
             }
           />
-        }
-        sort={list.sort}
-        onToggleSort={list.toggleSort}
-        page={list.page}
-        total={query.data?.total ?? 0}
-        limit={list.limit}
-        onPageChange={list.setPage}
-        selectAllState={selection.selectAllState}
-        onToggleSelectAll={selection.toggleSelectAll}
-        toolbar={
-          isAdmin ? (
-            <SelectionBar count={selection.selectedIds.size} onClear={selection.clearSelection}>
-              <BulkActionWithReason
-                ids={selection.selectedIds}
-                label="Activate"
-                icon={Power}
-                confirmTitle="Activate practitioners"
-                confirmDescription={(n) =>
-                  `Activate ${n} selected ${n === 1 ? "practitioner" : "practitioners"}?`
-                }
-                labelFor={(id) => items.find((i) => i.id === id)?.display_name ?? id}
-                action={(id, reason) =>
-                  providersApi.changeStatus(id, { status: BaseStatus.ACTIVE, reason })
-                }
-                invalidateKey={["providers"]}
-                verb="activated"
-                noun="practitioner"
-                onDone={selection.clearSelection}
-              />
-              <BulkActionWithReason
-                ids={selection.selectedIds}
-                label="Deactivate"
-                icon={PowerOff}
-                confirmTitle="Deactivate practitioners"
-                confirmDescription={(n) =>
-                  `Deactivate ${n} selected ${n === 1 ? "practitioner" : "practitioners"}?`
-                }
-                destructive
-                labelFor={(id) => items.find((i) => i.id === id)?.display_name ?? id}
-                action={(id, reason) =>
-                  providersApi.changeStatus(id, { status: BaseStatus.INACTIVE, reason })
-                }
-                invalidateKey={["providers"]}
-                verb="deactivated"
-                noun="practitioner"
-                onDone={selection.clearSelection}
-              />
-              <BulkActionWithReason
-                ids={selection.selectedIds}
-                label="Suspend from panel"
-                icon={UserMinus}
-                confirmTitle="Suspend practitioners from panel"
-                confirmDescription={(n) =>
-                  `Suspend ${n} selected ${n === 1 ? "practitioner" : "practitioners"} from the panel? They will not be bookable.`
-                }
-                destructive
-                labelFor={(id) => items.find((i) => i.id === id)?.display_name ?? id}
-                action={(id, reason) =>
-                  providersApi.changePanelStatus(id, {
-                    panel_status: PanelStatus.SUSPENDED,
-                    reason,
-                  })
-                }
-                invalidateKey={["providers"]}
-                verb="suspended from panel"
-                noun="practitioner"
-                onDone={selection.clearSelection}
-              />
-              <BulkActionWithReason
-                ids={selection.selectedIds}
-                label="Reactivate panel"
-                icon={UserPlus}
-                confirmTitle="Reactivate practitioners on panel"
-                confirmDescription={(n) =>
-                  `Reactivate ${n} selected ${n === 1 ? "practitioner" : "practitioners"} on the panel?`
-                }
-                labelFor={(id) => items.find((i) => i.id === id)?.display_name ?? id}
-                action={(id, reason) =>
-                  providersApi.changePanelStatus(id, { panel_status: PanelStatus.ACTIVE, reason })
-                }
-                invalidateKey={["providers"]}
-                verb="reactivated on panel"
-                noun="practitioner"
-                onDone={selection.clearSelection}
-              />
-            </SelectionBar>
-          ) : undefined
-        }
-      />
         </div>
         <div className="col-span-12 hidden min-h-0 min-w-0 flex-col lg:col-span-4 lg:flex lg:h-full">
           {selectedProvider ? (
-            <ProviderSummaryCard
-              provider={selectedProvider}
-              onClose={() => setSelectedId(null)}
-            />
+            <ProviderSummaryCard provider={selectedProvider} onClose={() => setSelectedId(null)} />
           ) : (
             <ProviderSummaryPlaceholder />
           )}
