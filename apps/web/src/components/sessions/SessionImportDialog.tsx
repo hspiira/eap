@@ -1,6 +1,6 @@
 import { useCallback, useMemo, useRef, useState } from "react"
 
-import { AlertTriangle, Download, FileInput, RefreshCw, Upload } from "lucide-react"
+import { AlertTriangle, Download, FileInput, Info, RefreshCw, Upload } from "lucide-react"
 
 import {
   type SessionImportApplyResult,
@@ -198,6 +198,79 @@ function presentCounts(batch: SessionImportBatch): { outcome: SessionImportOutco
 }
 
 /** Compact, toast-style status while a chunked apply is in flight. */
+/** Sits on the sheet's title row, so revealing the notes costs no vertical space. */
+function GuidanceToggle({ shown, onToggle }: { shown: boolean; onToggle: () => void }) {
+  return (
+    <Button
+      type="button"
+      variant="ghost"
+      size="icon"
+      aria-expanded={shown}
+      aria-label={shown ? "Hide the import notes" : "Show the import notes"}
+      title={shown ? "Hide the import notes" : "Show the import notes"}
+      className="size-6 shrink-0 text-fg-muted hover:text-fg"
+      onClick={onToggle}
+    >
+      <Info className="size-3.5" />
+    </Button>
+  )
+}
+
+/** Header guidance. Stays mounted when hidden: Radix points aria-describedby at
+ * it, and a screen reader still needs it once the staged rows take the room. */
+function StagingGuidance({ hidden }: { hidden: boolean }) {
+  return (
+    <ul
+      className={cn(
+        "list-disc space-y-1 pl-4 text-xs leading-relaxed text-fg/60",
+        hidden && "sr-only",
+      )}
+    >
+      <li>Staging writes nothing.</li>
+      <li>
+        Every row is judged against the practitioners, clients, members and services this
+        environment holds now, and each row says what stopped it.
+      </li>
+      <li>
+        Practitioners are matched on their name, so a row naming somebody who is not here yet stops
+        until you add them.
+      </li>
+      <li>Applying writes only the accepted rows.</li>
+      <li>
+        Stage the same file again after the reference data improves and the rest are judged afresh.
+      </li>
+    </ul>
+  )
+}
+
+/** What the file must contain. Dropped once a batch is staged: by then the row
+ * outcomes answer the same questions against the file actually uploaded. */
+function FileGuidance() {
+  return (
+    <ul className="list-disc space-y-1 pl-4 text-xs text-fg-muted">
+      <li>
+        Rows are judged against the activity-log workbook&apos;s practitioner, client and service
+        names. Client Code, if present, is used instead of the company name.
+      </li>
+      <li>
+        Download the template (.xlsx) for the full column list, with one Individual and one
+        company-wide example row. Columns backed by a fixed or tenant list get a dropdown on a
+        hidden sheet; every value is still validated server-side regardless of how it got into the
+        cell.
+      </li>
+      <li>
+        &quot;Client Type (Staff/Dep)&quot; says who attended. &quot;Client Type&quot; is unrelated
+        and says whether this is a new or repeat client engagement.
+      </li>
+      <li>
+        Issue/Topic, Diagnosis Type, Diagnosis and Approved By are optional enrichment: a row is
+        still imported even if none of them resolve.
+      </li>
+      <li>Files are limited to 10 MB.</li>
+    </ul>
+  )
+}
+
 function ApplyProgressBanner({
   fileName,
   progress,
@@ -242,6 +315,8 @@ export function SessionImportDialog({ open, onOpenChange, onImported }: SessionI
   const [file, setFile] = useState<File | null>(null)
   const [fileHandle, setFileHandle] = useState<FileSystemFileHandle | null>(null)
   const [batch, setBatch] = useState<SessionImportBatch | null>(null)
+  /** Collapses itself when rows arrive; the toggle then reopens it on demand. */
+  const [showGuidance, setShowGuidance] = useState(true)
   const [rows, setRows] = useState<SessionImportRow[]>([])
   const [filter, setFilter] = useState<SessionImportOutcome>("Accepted")
   const [busy, setBusy] = useState<"" | "staging" | "rows" | "applying" | "abandoning">("")
@@ -267,6 +342,7 @@ export function SessionImportDialog({ open, onOpenChange, onImported }: SessionI
     setError(null)
     setConflictBatchId(null)
     setFilter("Accepted")
+    setShowGuidance(true)
   }, [])
 
   const loadRows = useCallback(async (batchId: string, outcome: SessionImportOutcome) => {
@@ -341,6 +417,7 @@ export function SessionImportDialog({ open, onOpenChange, onImported }: SessionI
     try {
       const result = await sessionImportsApi.stage(file, SOURCE_SYSTEM)
       setBatch(result)
+      setShowGuidance(false)
       setConflictBatchId(null)
       await loadRows(result.id, "Accepted")
     } catch (cause) {
@@ -466,25 +543,13 @@ export function SessionImportDialog({ open, onOpenChange, onImported }: SessionI
         className="flex h-full w-full flex-col gap-0 rounded-none border-l border-fg/15 bg-bg p-0 shadow-lg sm:max-w-2xl lg:max-w-4xl"
         onPointerDownOutside={(event) => event.preventDefault()}
       >
-        <SheetHeader className="shrink-0 border-b border-fg/10 px-6 py-5 pr-14 text-left">
-          <SheetTitle className="text-base text-fg">Import sessions</SheetTitle>
+        <SheetHeader className="shrink-0 border-b border-fg/10 px-6 py-4 pr-14 text-left">
+          <div className="flex items-center gap-1.5">
+            <SheetTitle className="text-base text-fg">Import sessions</SheetTitle>
+            <GuidanceToggle shown={showGuidance} onToggle={() => setShowGuidance((on) => !on)} />
+          </div>
           <SheetDescription asChild>
-            <ul className="list-disc space-y-1 pl-4 text-xs leading-relaxed text-fg/60">
-              <li>Staging writes nothing.</li>
-              <li>
-                Every row is judged against the practitioners, clients, members and services this
-                environment holds now, and each row says what stopped it.
-              </li>
-              <li>
-                Practitioners are matched on their name, so a row naming somebody who is not here
-                yet stops until you add them.
-              </li>
-              <li>Applying writes only the accepted rows.</li>
-              <li>
-                Stage the same file again after the reference data improves and the rest are judged
-                afresh.
-              </li>
-            </ul>
+            <StagingGuidance hidden={!showGuidance} />
           </SheetDescription>
         </SheetHeader>
 
@@ -539,27 +604,7 @@ export function SessionImportDialog({ open, onOpenChange, onImported }: SessionI
               Template
             </Button>
           </div>
-          <ul className="list-disc space-y-1 pl-4 text-xs text-fg-muted">
-            <li>
-              Rows are judged against the activity-log workbook&apos;s practitioner, client and
-              service names. Client Code, if present, is used instead of the company name.
-            </li>
-            <li>
-              Download the template (.xlsx) for the full column list, with one Individual and one
-              company-wide example row. Columns backed by a fixed or tenant list get a dropdown on a
-              hidden sheet; every value is still validated server-side regardless of how it got into
-              the cell.
-            </li>
-            <li>
-              &quot;Client Type (Staff/Dep)&quot; says who attended. &quot;Client Type&quot; is
-              unrelated and says whether this is a new or repeat client engagement.
-            </li>
-            <li>
-              Issue/Topic, Diagnosis Type, Diagnosis and Approved By are optional enrichment: a row
-              is still imported even if none of them resolve.
-            </li>
-            <li>Files are limited to 10 MB.</li>
-          </ul>
+          {showGuidance ? <FileGuidance /> : null}
 
           {error ? (
             <div className="flex flex-wrap items-center gap-2">

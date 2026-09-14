@@ -110,6 +110,39 @@ describe("session import", () => {
   })
 })
 
+describe("guidance gives way to the staged rows", () => {
+  it("shows both explanations before a file is staged", () => {
+    const screen = renderWithProviders(
+      <SessionImportDialog open onOpenChange={() => {}} onImported={() => {}} />,
+    )
+    expect(screen.getByText(/Staging writes nothing/i)).toBeVisible()
+    expect(screen.getByText(/Files are limited to 10 MB/i)).toBeVisible()
+  })
+
+  it("collapses both explanations once staged, leaving the rows the room", async () => {
+    const screen = await stageFile({ Accepted: 3 })
+    await screen.findByRole("button", { name: /apply 3 rows/i })
+
+    expect(screen.queryByText(/Files are limited to 10 MB/i)).not.toBeInTheDocument()
+    // Kept for aria-describedby, so it must stay in the tree but out of the layout.
+    expect(screen.getByText(/Staging writes nothing/i).closest("ul")).toHaveClass("sr-only")
+  })
+
+  it("brings both back on demand, from a control that costs no vertical space", async () => {
+    const user = userEvent.setup()
+    const screen = await stageFile({ Accepted: 3 })
+    await screen.findByRole("button", { name: /apply 3 rows/i })
+
+    await user.click(screen.getByRole("button", { name: /show the import notes/i }))
+
+    expect(screen.getByText(/Files are limited to 10 MB/i)).toBeVisible()
+    expect(screen.getByText(/Staging writes nothing/i).closest("ul")).not.toHaveClass("sr-only")
+
+    await user.click(screen.getByRole("button", { name: /hide the import notes/i }))
+    expect(screen.queryByText(/Files are limited to 10 MB/i)).not.toBeInTheDocument()
+  })
+})
+
 describe("a row the practitioner name stopped", () => {
   /** Stage, then open the tab holding the blocked rows. */
   async function reviewing(rows: Record<string, unknown>[]) {

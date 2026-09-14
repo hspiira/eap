@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react"
 
-import { Download, FileInput, RefreshCw } from "lucide-react"
+import { Download, FileInput, Info, RefreshCw } from "lucide-react"
 
 import {
   type MemberImportBatch,
@@ -38,6 +38,7 @@ import {
 import { useToast } from "@/contexts/ToastContext"
 import { applyPace } from "@/lib/apply-progress"
 import { normalizeErrorMessage } from "@/lib/errors"
+import { cn } from "@/lib/utils"
 import { ApiError } from "@/types/api"
 
 /** Only Chromium browsers support a re-readable file handle; others fall back to a plain input. */
@@ -199,6 +200,41 @@ async function fetchAllRows(batchId: string): Promise<MemberImportRow[]> {
     if (!response.has_more) return items
     page += 1
   }
+}
+
+/** Sits on the sheet's title row, so revealing the notes costs no vertical space. */
+function GuidanceToggle({ shown, onToggle }: { shown: boolean; onToggle: () => void }) {
+  return (
+    <Button
+      type="button"
+      variant="ghost"
+      size="icon"
+      aria-expanded={shown}
+      aria-label={shown ? "Hide the import notes" : "Show the import notes"}
+      title={shown ? "Hide the import notes" : "Show the import notes"}
+      className="size-6 shrink-0 text-fg-muted hover:text-fg"
+      onClick={onToggle}
+    >
+      <Info className="size-3.5" />
+    </Button>
+  )
+}
+
+/** Header guidance. Stays mounted when hidden: Radix points aria-describedby at
+ * it, and a screen reader still needs it once the review table takes the room. */
+function StagingGuidance({ hidden }: { hidden: boolean }) {
+  return (
+    <ul
+      className={cn(
+        "list-disc space-y-1 pl-4 text-xs leading-relaxed text-fg/60",
+        hidden && "sr-only",
+      )}
+    >
+      <li>Upload a roster, review every row, then apply.</li>
+      <li>Staff_ID is the stable identity key.</li>
+      <li>An existing member is only changed if you set their row to Update.</li>
+    </ul>
+  )
 }
 
 function ImportControls({
@@ -571,6 +607,8 @@ export function MemberImportDialog({ open, onOpenChange, onImported }: MemberImp
   const [file, setFile] = useState<File | null>(null)
   const [fileHandle, setFileHandle] = useState<FileSystemFileHandle | null>(null)
   const [batch, setBatch] = useState<MemberImportBatch | null>(null)
+  /** Collapses itself when rows arrive; the toggle then reopens it on demand. */
+  const [showGuidance, setShowGuidance] = useState(true)
   const [rows, setRows] = useState<MemberImportRow[]>([])
   const [staging, setStaging] = useState(false)
   const [applying, setApplying] = useState(false)
@@ -589,6 +627,7 @@ export function MemberImportDialog({ open, onOpenChange, onImported }: MemberImp
     setFile(null)
     setFileHandle(null)
     setBatch(null)
+    setShowGuidance(true)
     setRows([])
     setStaging(false)
     setApplying(false)
@@ -649,6 +688,7 @@ export function MemberImportDialog({ open, onOpenChange, onImported }: MemberImp
     try {
       const existing = await membersApi.getImportBatch(batchId)
       setBatch(existing)
+      setShowGuidance(false)
       setRows(await fetchAllRows(existing.id))
       setApplied(false)
       setConflictBatchId(null)
@@ -673,6 +713,7 @@ export function MemberImportDialog({ open, onOpenChange, onImported }: MemberImp
       .stageImport(selected)
       .then(async (staged) => {
         setBatch(staged)
+        setShowGuidance(false)
         setRows(await fetchAllRows(staged.id))
       })
       .catch((cause) => {
@@ -811,14 +852,13 @@ export function MemberImportDialog({ open, onOpenChange, onImported }: MemberImp
         onPointerDownOutside={(event) => event.preventDefault()}
         onEscapeKeyDown={(event) => event.preventDefault()}
       >
-        <SheetHeader className="shrink-0 border-b border-fg/10 px-6 py-5 pr-14 text-left">
-          <SheetTitle className="text-base text-fg">Import members</SheetTitle>
+        <SheetHeader className="shrink-0 border-b border-fg/10 px-6 py-4 pr-14 text-left">
+          <div className="flex items-center gap-1.5">
+            <SheetTitle className="text-base text-fg">Import members</SheetTitle>
+            <GuidanceToggle shown={showGuidance} onToggle={() => setShowGuidance((on) => !on)} />
+          </div>
           <SheetDescription asChild>
-            <ul className="list-disc space-y-1 pl-4 text-xs leading-relaxed text-fg/60">
-              <li>Upload a roster, review every row, then apply.</li>
-              <li>Staff_ID is the stable identity key.</li>
-              <li>An existing member is only changed if you set their row to Update.</li>
-            </ul>
+            <StagingGuidance hidden={!showGuidance} />
           </SheetDescription>
         </SheetHeader>
 
@@ -830,7 +870,7 @@ export function MemberImportDialog({ open, onOpenChange, onImported }: MemberImp
             staging={staging}
             error={error}
             canDiscardStuck={Boolean(conflictBatchId)}
-            showFieldHelp={!batch}
+            showFieldHelp={showGuidance}
             onPick={() => void pickFile()}
             onRefresh={() => void refreshFile()}
             onSelectFile={selectFile}
