@@ -93,6 +93,9 @@ async function stubApi(page: Page, applyCalls: ApplyCall[]) {
     const json = (body: unknown, status = 200) =>
       route.fulfill({ status, contentType: "application/json", body: JSON.stringify(body) })
 
+    if (path.endsWith("/members/import") && request.method() === "GET") {
+      return json([])
+    }
     if (path.endsWith("/members/import") && request.method() === "POST") {
       return json(batchBody(), 201)
     }

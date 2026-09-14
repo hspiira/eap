@@ -58,6 +58,16 @@ class ProviderRepository(BaseRepository[ProviderEntity, ProviderId]):
     async def count_matching(self, tenant_id: TenantId, query: ProviderListQuery) -> int: ...
 
     @abstractmethod
+    async def count_by_panel_status(self, tenant_id: TenantId) -> dict[str, int]:
+        """Live practitioners grouped by panel status, missing statuses absent.
+
+        Backs the readiness strip on the practitioner directory, where most of
+        the network is mid-onboarding and the useful fact is how many are
+        bookable versus still pending.
+        """
+        ...
+
+    @abstractmethod
     async def get_for_booking(
         self, tenant_id: TenantId, provider_id: ProviderId
     ) -> ProviderEntity | None:

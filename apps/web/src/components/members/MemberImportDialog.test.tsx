@@ -114,6 +114,31 @@ describe("unfinished uploads", () => {
     expect(await screen.findByText("Amina Namukasa")).toBeInTheDocument()
   })
 
+  it("discards an upload nobody wants, freeing the Staff_IDs it held", async () => {
+    api.listImportBatches.mockResolvedValue([staged()])
+    api.abandonImport.mockResolvedValue(staged())
+
+    renderWithProviders(<MemberImportDialog open onOpenChange={() => {}} onImported={() => {}} />)
+    await userEvent.click(await screen.findByRole("button", { name: "Discard" }))
+
+    // Named, so the wrong upload is not thrown away.
+    expect(await screen.findByText(/Discard members-import-template-2\.csv\?/i)).toBeInTheDocument()
+    await userEvent.click(screen.getByRole("button", { name: "Discard upload" }))
+
+    await waitFor(() =>
+      expect(api.abandonImport).toHaveBeenCalledWith("batch-q", expect.any(String)),
+    )
+  })
+
+  it("asks first, because a discard takes any decisions with it", async () => {
+    api.listImportBatches.mockResolvedValue([staged()])
+    renderWithProviders(<MemberImportDialog open onOpenChange={() => {}} onImported={() => {}} />)
+    await userEvent.click(await screen.findByRole("button", { name: "Discard" }))
+
+    expect(await screen.findByText(/decisions already made on this upload are lost/i)).toBeVisible()
+    expect(api.abandonImport).not.toHaveBeenCalled()
+  })
+
   it("says nothing when every upload is finished", async () => {
     api.listImportBatches.mockResolvedValue([])
     renderWithProviders(<MemberImportDialog open onOpenChange={() => {}} onImported={() => {}} />)

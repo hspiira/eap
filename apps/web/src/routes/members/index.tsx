@@ -28,6 +28,7 @@ import { IconButton } from "@/components/common/IconButton"
 import { PageShell } from "@/components/common/PageShell"
 import { SelectionBar } from "@/components/common/SelectionBar"
 import { StatusBadge } from "@/components/common/StatusBadge"
+import { SummaryStrip } from "@/components/common/SummaryStrip"
 import { ROW_BORDER } from "@/components/common/tableStyles"
 import { MemberFormSheet } from "@/components/MemberFormSheet"
 import { MemberMergeDialog } from "@/components/MemberMergeDialog"
@@ -142,10 +143,11 @@ function MembersListPage() {
     queryFn: membersApi.scanDuplicates,
     enabled: false,
   })
+  // Deliberately not filtered by status: the strip is the status facet, and a
+  // facet filtered by itself collapses to one count the moment it is used.
   const statsFilters = {
     search: list.activeSearch,
     relation: searchParams.relation,
-    status: searchParams.status,
     client_id: searchParams.client_id,
   }
   const statsQuery = useQuery({
@@ -308,7 +310,18 @@ function MembersListPage() {
         />
       </FilterBar>
 
-      <MemberRosterSummary stats={statsQuery.data} loading={statsQuery.isPending} />
+      <MemberRosterSummary
+        stats={statsQuery.data}
+        loading={statsQuery.isPending}
+        activeStatus={searchParams.status}
+        onStatus={(value) =>
+          setStatus(
+            value === undefined || value === searchParams.status
+              ? "all"
+              : (value as StatusFilter),
+          )
+        }
+      />
 
       <MemberImportDialog
         open={importOpen}
@@ -463,32 +476,34 @@ function MembersListPage() {
   )
 }
 
-/** Roster counts for the current filter context, above the table. */
-function MemberRosterSummary({ stats, loading }: { stats?: MemberStats; loading: boolean }) {
+/** Roster counts for the current filter context, above the table. Each status count filters. */
+function MemberRosterSummary({
+  stats,
+  loading,
+  activeStatus,
+  onStatus,
+}: {
+  stats?: MemberStats
+  loading: boolean
+  activeStatus?: string
+  onStatus: (value: string | undefined) => void
+}) {
   if (loading || !stats) return null
   // A roster of thousands is mostly one status. Counts that are zero say
   // nothing and crowd out the ones that do.
-  const cells = [
-    { label: "On roster", value: stats.total, emphasis: true },
-    { label: "Active", value: stats.active },
-    { label: "Suspended", value: stats.suspended },
-    { label: "Pending", value: stats.pending },
-    { label: "Terminated", value: stats.terminated },
-    { label: "Portal accounts", value: stats.with_account },
-  ].filter((cell) => cell.emphasis || cell.value > 0)
   return (
-    <div className="flex shrink-0 flex-wrap items-center gap-x-6 gap-y-1 border-b border-fg/10 bg-surface px-3 py-2">
-      {cells.map((cell) => (
-        <span key={cell.label} className="flex items-baseline gap-1.5">
-          <span
-            className={`text-sm tabular-nums ${cell.emphasis ? "font-semibold text-fg" : "font-medium text-fg/80"}`}
-          >
-            {cell.value.toLocaleString()}
-          </span>
-          <span className="text-xs text-fg-muted">{cell.label}</span>
-        </span>
-      ))}
-    </div>
+    <SummaryStrip
+      cells={[
+        { label: "On roster", value: stats.total, emphasis: true },
+        { label: "Active", value: stats.active, filter: EligibilityStatus.ACTIVE },
+        { label: "Suspended", value: stats.suspended, filter: EligibilityStatus.SUSPENDED },
+        { label: "Pending", value: stats.pending, filter: EligibilityStatus.PENDING },
+        { label: "Terminated", value: stats.terminated, filter: EligibilityStatus.TERMINATED },
+        { label: "Portal accounts", value: stats.with_account },
+      ]}
+      activeFilter={activeStatus}
+      onFilter={onStatus}
+    />
   )
 }
 

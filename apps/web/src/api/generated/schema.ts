@@ -3702,11 +3702,17 @@ export interface paths {
         put?: never;
         /**
          * Apply Member Import
-         * @description Write up to `limit` still-pending rows, one at a time, in their own transaction.
+         * @description Write up to `limit` still-pending rows, each in its own savepoint.
+         *
+         *     Durability is batched, not per row: `BatchedCommit` commits every
+         *     `COMMIT_EVERY_ROWS`, because the WAL flush is the expensive part of writing
+         *     a row. A row still writes inside its own savepoint, so one bad row costs
+         *     only itself, and a call that dies mid-chunk leaves at most
+         *     `COMMIT_EVERY_ROWS - 1` rows for the next call to write again. Nothing is
+         *     lost: a row that never committed never claimed itself and is still pending.
          *
          *     A roster of thousands of rows cannot be written in a single call without
-         *     risking a platform request timeout, since each row costs its own
-         *     round trip and commit. Call this repeatedly while `remaining` in the
+         *     risking a platform request timeout. Call this repeatedly while `remaining` in the
          *     response is above zero; `list_pending_rows` re-queries what is left each
          *     time rather than trusting an offset, so a client that stops calling
          *     (a closed tab, a timeout) leaves the batch safely Staged for the next
@@ -4638,6 +4644,28 @@ export interface paths {
         put?: never;
         /** Create a practitioner, with no account and no lifecycle standing */
         post: operations["create_provider_providers_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/providers/stats": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Provider Stats
+         * @description Panel readiness counts over the whole live directory.
+         *
+         *     Declared before ``/{provider_id}`` so "stats" cannot be read as an id.
+         */
+        get: operations["provider_stats_providers_stats_get"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -12463,6 +12491,28 @@ export interface components {
             is_active: boolean;
             /** Label */
             label: string;
+        };
+        /**
+         * ProviderStatsResponse
+         * @description Panel readiness counts for the directory's summary strip.
+         */
+        ProviderStatsResponse: {
+            /**
+             * Active
+             * @description On the panel and bookable
+             */
+            active: number;
+            /**
+             * Pending
+             * @description Mid-onboarding, not yet bookable
+             */
+            pending: number;
+            /** Removed */
+            removed: number;
+            /** Suspended */
+            suspended: number;
+            /** Total */
+            total: number;
         };
         /**
          * ProviderTier
@@ -24809,6 +24859,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ProviderResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    provider_stats_providers_stats_get: {
+        parameters: {
+            query: {
+                tenant_id: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProviderStatsResponse"];
                 };
             };
             /** @description Validation Error */

@@ -161,6 +161,16 @@ class ProviderListResponse(BaseModel):
     has_more: bool
 
 
+class ProviderStatsResponse(BaseModel):
+    """Panel readiness counts for the directory's summary strip."""
+
+    total: int
+    active: int = Field(..., description="On the panel and bookable")
+    pending: int = Field(..., description="Mid-onboarding, not yet bookable")
+    suspended: int
+    removed: int
+
+
 class EngagementDocumentUpsert(BaseModel):
     """Set one checklist entry. The document kind comes from the path."""
 

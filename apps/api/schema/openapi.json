@@ -13127,6 +13127,42 @@
         "title": "ProviderSpecialtyResponse",
         "type": "object"
       },
+      "ProviderStatsResponse": {
+        "description": "Panel readiness counts for the directory's summary strip.",
+        "properties": {
+          "active": {
+            "description": "On the panel and bookable",
+            "title": "Active",
+            "type": "integer"
+          },
+          "pending": {
+            "description": "Mid-onboarding, not yet bookable",
+            "title": "Pending",
+            "type": "integer"
+          },
+          "removed": {
+            "title": "Removed",
+            "type": "integer"
+          },
+          "suspended": {
+            "title": "Suspended",
+            "type": "integer"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "total",
+          "active",
+          "pending",
+          "suspended",
+          "removed"
+        ],
+        "title": "ProviderStatsResponse",
+        "type": "object"
+      },
       "ProviderTier": {
         "description": "Provider panel tier, drives routing and rate cards (Joseph's framework).",
         "enum": [
@@ -31782,7 +31818,7 @@
     },
     "/members/import/{batch_id}/apply": {
       "post": {
-        "description": "Write up to `limit` still-pending rows, one at a time, in their own transaction.\n\nA roster of thousands of rows cannot be written in a single call without\nrisking a platform request timeout, since each row costs its own\nround trip and commit. Call this repeatedly while `remaining` in the\nresponse is above zero; `list_pending_rows` re-queries what is left each\ntime rather than trusting an offset, so a client that stops calling\n(a closed tab, a timeout) leaves the batch safely Staged for the next\ncall to continue from exactly where the last one left off, with nothing\nskipped or written twice. The batch only closes -- flips to Applied,\nfires its audit event -- once a call finds nothing left to write.",
+        "description": "Write up to `limit` still-pending rows, each in its own savepoint.\n\nDurability is batched, not per row: `BatchedCommit` commits every\n`COMMIT_EVERY_ROWS`, because the WAL flush is the expensive part of writing\na row. A row still writes inside its own savepoint, so one bad row costs\nonly itself, and a call that dies mid-chunk leaves at most\n`COMMIT_EVERY_ROWS - 1` rows for the next call to write again. Nothing is\nlost: a row that never committed never claimed itself and is still pending.\n\nA roster of thousands of rows cannot be written in a single call without\nrisking a platform request timeout. Call this repeatedly while `remaining` in the\nresponse is above zero; `list_pending_rows` re-queries what is left each\ntime rather than trusting an offset, so a client that stops calling\n(a closed tab, a timeout) leaves the batch safely Staged for the next\ncall to continue from exactly where the last one left off, with nothing\nskipped or written twice. The batch only closes -- flips to Applied,\nfires its audit event -- once a call finds nothing left to write.",
         "operationId": "apply_member_import_members_import__batch_id__apply_post",
         "parameters": [
           {
@@ -35896,6 +35932,54 @@
           }
         ],
         "summary": "Create a practitioner, with no account and no lifecycle standing",
+        "tags": [
+          "providers"
+        ]
+      }
+    },
+    "/providers/stats": {
+      "get": {
+        "description": "Panel readiness counts over the whole live directory.\n\nDeclared before ``/{provider_id}`` so \"stats\" cannot be read as an id.",
+        "operationId": "provider_stats_providers_stats_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "tenant_id",
+            "required": true,
+            "schema": {
+              "title": "Tenant Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProviderStatsResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Provider Stats",
         "tags": [
           "providers"
         ]
