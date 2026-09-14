@@ -207,6 +207,28 @@ describe("member import preview", () => {
       ),
     ).not.toBeInTheDocument()
   })
+
+  it("takes the header guidance out of the layout too, without losing it", async () => {
+    await stage([makeRow()])
+    // Kept for aria-describedby, so it must stay in the tree but out of the flow.
+    expect(screen.getByText(/Staff_ID is the stable identity key/i).closest("ul")).toHaveClass(
+      "sr-only",
+    )
+  })
+
+  it("brings the notes back on demand, from a control that costs no vertical space", async () => {
+    const user = userEvent.setup()
+    await stage([makeRow()])
+
+    await user.click(screen.getByRole("button", { name: /show the import notes/i }))
+
+    expect(
+      screen.getByText(/Job Title, Job Classification, Skill, Department, Unit and Contract type/),
+    ).toBeVisible()
+    expect(screen.getByText(/Staff_ID is the stable identity key/i).closest("ul")).not.toHaveClass(
+      "sr-only",
+    )
+  })
 })
 
 describe("chunked apply", () => {
