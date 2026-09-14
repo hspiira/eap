@@ -1,6 +1,7 @@
 """Mapper-level evidence that OutreachRecord.notes/triage_responses/
 triage_scores are encrypted at rest, matching the sibling clinical fields."""
 
+import json
 from datetime import UTC, datetime
 
 import pytest
@@ -55,21 +56,31 @@ def _make_outreach(
 
 class TestOutreachRecordEncryptionWiring:
     def test_to_model_persists_ciphertext_not_plaintext(self):
+        """Asserts the serialised plaintext is absent, not a short token from it.
+
+        `_encrypt_json` stores `encrypt(json.dumps(value))`, so the dumped JSON
+        is what a lost encryption step would leave behind. Searching the
+        ciphertext for a key as short as "q1" matched base64 output by chance
+        in roughly one run in eighty.
+        """
+        notes = "Discloses ongoing self-harm ideation."
+        triage_responses = {"q1": "yes"}
+        triage_scores = {"phq9": 21}
         entity = _make_outreach(
             "t-1",
-            notes="Discloses ongoing self-harm ideation.",
-            triage_responses={"q1": "yes"},
-            triage_scores={"phq9": 21},
+            notes=notes,
+            triage_responses=triage_responses,
+            triage_scores=triage_scores,
         )
 
         model = OutreachRecordMapper.to_model(entity)
 
         assert model.notes is not None
-        assert "self-harm" not in model.notes
+        assert notes not in model.notes
         assert model.triage_responses is not None
-        assert "q1" not in model.triage_responses
+        assert json.dumps(triage_responses) not in model.triage_responses
         assert model.triage_scores is not None
-        assert "phq9" not in model.triage_scores
+        assert json.dumps(triage_scores) not in model.triage_scores
 
     def test_round_trip_preserves_plaintext(self):
         entity = _make_outreach(
